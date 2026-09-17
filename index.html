@@ -56,7 +56,19 @@
   .home button.consulta strong{ color:var(--blue); }
   .operari .home{ grid-template-columns:1fr; max-width:520px; }
   .operari .home button strong{ font-size:24px; }
-  .operari .main{ padding:20px 18px 60px; }
+  .operari .main{ padding:14px 12px 90px; max-width:100%; }
+  body.operari{ overflow-x:hidden; }
+  .operari .grid{ grid-template-columns:1fr; }
+  .operari form .actions{ position:sticky; bottom:0; background:#fff; padding:12px 0; border-top:1px solid var(--line); z-index:5; }
+  .operari .btn{ padding:12px 20px; font-size:16px; }
+  .operari h1{ font-size:22px; }
+  .targeta{ border:1px solid var(--line-2); border-radius:8px; padding:10px 12px; margin:0 0 10px; background:#fff; }
+  .tcap{ font-size:14px; margin-bottom:6px; }
+  .xips{ display:flex; flex-wrap:wrap; gap:6px; margin:4px 0; }
+  .xip{ font-size:13px; padding:3px 8px; border-radius:6px; background:var(--bg-2); border:1px solid var(--line); white-space:nowrap; }
+  .xip.ok{ color:#2e7d32; border-color:#a5d6a7; background:#fff; }
+  .xip.fet{ color:#1f4e79; border-color:#9dc3e6; background:#fff; }
+  .tobs{ font-size:13px; color:var(--ink-2); margin-top:4px; }
   .panel{ border:1px solid var(--line-2); border-left:4px solid var(--mode); border-radius:6px; padding:22px 26px 24px; margin-bottom:28px; background:#fff; }
   .panel.editing{ border-left-color:var(--red); }
   .panel .ph{ display:flex; align-items:baseline; gap:12px; margin-bottom:18px; }
@@ -191,6 +203,8 @@
    Configuració
    ===================================================================== */
 const CONFIG_KEY = 'gestio_manteniment_config';
+// true a la versió publicada per als mòbils: només tasques de piscina, per a tothom
+const APP_NOMES_TASQUES = true;
 const BUCKET = 'documents';
 
 /* Logos de la factura (verd si l'agrupació té jardí, blau si no) */
@@ -226,7 +240,7 @@ const diesDes = (data, ref) => data ? Math.round((new Date(ref || avui()) - new 
 const tocaCada = (dies, camp, estiu) => (vals) => { if (!vals.piscina_id) return true; if (estiu && !entreEstiu(vals.data)) return false; return diesDes(ultimaMesura(vals.piscina_id, camp, vals.data), vals.data) > dies; };
 const distKm = (a, b, c, d) => { const r = x => x * Math.PI / 180; const h = Math.sin(r(c - a) / 2) ** 2 + Math.cos(r(a)) * Math.cos(r(c)) * Math.sin(r(d - b) / 2) ** 2; return 12742 * Math.asin(Math.sqrt(h)); };
 const treballadorActual = () => user ? C.rows('treballadors').find(t => t.actiu && t.email_acces && t.email_acces.toLowerCase() === String(user.email).toLowerCase()) : null;
-const esOperari = () => { const t = treballadorActual(); return !t || t.rol === 'tecnic'; };
+const esOperari = () => { if (APP_NOMES_TASQUES) return true; const t = treballadorActual(); return !t || t.rol === 'tecnic'; };
 const nomTreballador = t => t ? [t.nom, t.cognoms].filter(Boolean).join(' ') : '';
 const nomCurtTreballador = t => t ? (t.nom || '') + (t.cognoms ? ' ' + t.cognoms.trim()[0].toUpperCase() + '.' : '') : '';
 const MESOS = ['Gener', 'Febrer', 'Març', 'Abril', 'Maig', 'Juny', 'Juliol', 'Agost', 'Setembre', 'Octubre', 'Novembre', 'Desembre'];
@@ -1091,7 +1105,8 @@ function renderAppOperari() {
   if (SCHEMA.pages[state.table]) { SCHEMA.pages[state.table].render(main); return; }
   if (state.table !== 'tasques_piscina') { state.table = null; renderApp(); return; }
   const td = SCHEMA.tables.tasques_piscina;
-  main.innerHTML = `<h1>${h(td.label)}</h1>` + formHTML(td, state.editing ? C.get('tasques_piscina', state.editing) : null) + recentHTML(td);
+  const recents = [...C.rows('tasques_piscina')].filter(r => r.actiu).sort((a, b) => (a.creat_el < b.creat_el ? 1 : -1)).slice(0, 8);
+  main.innerHTML = `<h1>${h(td.label)}</h1>` + formHTML(td, state.editing ? C.get('tasques_piscina', state.editing) : null) + `<h3>Darreres tasques</h3>` + targetesTasquesHTML(recents, { piscina: true });
   bindMain(td);
 }
 
@@ -1980,6 +1995,24 @@ function taulaTasquesHTML(rows, opts) {
   return rows.length ? `<table class="tbl informe tasques"><thead><tr>${head.join('')}</tr></thead><tbody>${body}</tbody></table>` : '<div class="empty">Cap tasca en aquest període.</div>';
 }
 
+// versió per a mòbil: una targeta per tasca, sense taules amples
+function targetesTasquesHTML(rows, opts) {
+  const td = SCHEMA.tables.tasques_piscina;
+  if (!rows.length) return '<div class="empty">Cap tasca.</div>';
+  const xip = (lab, k, r) => { const f = fieldDef(td, k); const v = r[k]; if (v == null || v === '') return ''; const c = f.color ? f.color(v, r) : ''; return `<span class="xip ${c}">${h(lab)} <b>${h(cellText(td, k, r))}</b></span>`; };
+  const mesures = [['Cl1', 'clor_lliure_1'], ['Cl2', 'clor_lliure_2'], ['Cc1', 'clor_combinat_1'], ['Cc2', 'clor_combinat_2'], ['pH1', 'ph_1'], ['pH2', 'ph_2'], ['Iso', 'isocianuric'], ['Alc', 'alcalinitat'], ['Dur', 'duresa'], ['T', 'temperatura'], ['Sal', 'salinitat'], ['Compt', 'comptador_aigua_nova'], ['Transp', 'transparencia']];
+  return rows.map(r => {
+    const ok = TASCA_CHECKS.filter(([k]) => r[k] === true).map(([k, l]) => `<span class="xip ok">✓ ${h(l)}</span>`);
+    const fe = TASCA_FEINES.filter(([k]) => r[k]).map(([k, l]) => `<span class="xip fet">✓ ${h(l)}</span>`);
+    return `<div class="targeta">
+      <div class="tcap"><b>${dmy(r.data).slice(0, 5)}</b>${r.hora ? ' · ' + h(String(r.hora).slice(0, 5)) : ''}${opts.piscina ? ' · ' + h(L('piscines', r.piscina_id)) : ''} · ${h(nomCurtTreballador(C.get('treballadors', r.treballador_id)))}</div>
+      <div class="xips">${mesures.map(([l, k]) => xip(l, k, r)).join('')}</div>
+      ${ok.length || fe.length ? `<div class="xips">${ok.join('')}${fe.join('')}</div>` : ''}
+      ${r.observacions ? `<div class="tobs">${h(r.observacions)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
 function imprimeixApaisat() {
   const st = document.createElement('style'); st.id = 'print-apaisat'; st.textContent = '@page { size: A4 landscape; margin: 10mm; }';
   document.head.appendChild(st);
@@ -2003,15 +2036,15 @@ function renderInformeTasquesPiscina(main) {
       <select id="tp-lloc"><option value="">Tria el lloc…</option>${llocs.map(l => `<option value="${l.id}" ${String(l.id) === st.lloc ? 'selected' : ''}>${h(l.nom)}${l.poblacio ? ' — ' + h(l.poblacio) : ''}</option>`).join('')}</select>
       <select id="tp-piscina" ${piscines.length ? '' : 'disabled'}><option value="">Tria la piscina…</option>${piscines.map(p => `<option value="${p.id}" ${String(p.id) === st.piscina ? 'selected' : ''}>${h(p.nom)}</option>`).join('')}</select>
       <input type="date" id="tp-desde" value="${st.desde}" style="width:auto"> <input type="date" id="tp-fins" value="${st.fins}" style="width:auto">
-      <button class="btn ghost" id="tp-print" ${pisc ? '' : 'disabled'}>Imprimeix (A4 apaïsat)</button>
+      ${esOperari() ? '' : `<button class="btn ghost" id="tp-print" ${pisc ? '' : 'disabled'}>Imprimeix (A4 apaïsat)</button>`}
     </div>
     ${pisc ? `<div class="capsal"><span>Client <b>${h(L('clients', lloc ? lloc.client_id : null))}</b></span><span>Lloc <b>${h(lloc ? lloc.nom : '')}</b></span><span>Piscina <b>${h(pisc.nom)}</b></span><span>Període <b>${dmy(st.desde)} – ${dmy(st.fins)}</b></span><span>Tasques <b>${rows.length}</b></span></div>` : ''}
-    ${pisc ? taulaTasquesHTML(rows, { hora: false, piscina: false }) : '<div class="empty">Tria un lloc i una piscina.</div>'}`;
+    ${pisc ? (esOperari() ? targetesTasquesHTML(rows, { piscina: false }) : taulaTasquesHTML(rows, { hora: false, piscina: false })) : '<div class="empty">Tria un lloc i una piscina.</div>'}`;
   $('#tp-lloc').addEventListener('change', e => { st.lloc = e.target.value; st.piscina = ''; renderMain(); });
   $('#tp-piscina').addEventListener('change', e => { st.piscina = e.target.value; renderMain(); });
   $('#tp-desde').addEventListener('change', e => { st.desde = e.target.value; renderMain(); });
   $('#tp-fins').addEventListener('change', e => { st.fins = e.target.value; renderMain(); });
-  $('#tp-print').addEventListener('click', imprimeixApaisat);
+  if ($('#tp-print')) $('#tp-print').addEventListener('click', imprimeixApaisat);
 }
 
 function renderInformeTasquesDates(main) {
@@ -2023,13 +2056,13 @@ function renderInformeTasquesDates(main) {
     <h1>Tasca per dates</h1>
     <div class="bar">
       <input type="date" id="td-desde" value="${st.desde}" style="width:auto"> <input type="date" id="td-fins" value="${st.fins}" style="width:auto">
-      <button class="btn ghost" id="td-print">Imprimeix (A4 apaïsat)</button>
+      ${esOperari() ? '' : '<button class="btn ghost" id="td-print">Imprimeix (A4 apaïsat)</button>'}
     </div>
     <div class="capsal"><span>Període <b>${dmy(st.desde)} – ${dmy(st.fins)}</b></span><span>Tasques <b>${rows.length}</b></span><span>Piscines <b>${new Set(rows.map(r => r.piscina_id)).size}</b></span></div>
-    ${taulaTasquesHTML(rows, { hora: false, piscina: true })}`;
+    ${esOperari() ? targetesTasquesHTML(rows, { piscina: true }) : taulaTasquesHTML(rows, { hora: false, piscina: true })}`;
   $('#td-desde').addEventListener('change', e => { st.desde = e.target.value; renderMain(); });
   $('#td-fins').addEventListener('change', e => { st.fins = e.target.value; renderMain(); });
-  $('#td-print').addEventListener('click', imprimeixApaisat);
+  if ($('#td-print')) $('#td-print').addEventListener('click', imprimeixApaisat);
 }
 
 /* ---------- Informe: adob per equips ---------- */
