@@ -1061,7 +1061,19 @@ function fieldDef(td, key) { return td.fields.find(f => f.key === key); }
    Supabase
    ===================================================================== */
 // la connexió pot venir d'un fitxer config.js al costat de la pàgina (versió publicada) o del navegador
-function configPredefinida() { const p = window.CONFIG_PREDEFINIDA; return p && p.url && p.key ? { url: String(p.url).trim().replace(/\/+$/, ''), key: String(p.key).trim() } : null; }
+function normalitzaUrl(url) {
+  url = String(url || '').trim();
+  const dash = url.match(/supabase\.com\/dashboard\/project\/([a-z0-9]+)/i);
+  const proj = url.match(/https?:\/\/[a-z0-9-]+\.supabase\.co/i);
+  if (dash) return 'https://' + dash[1] + '.supabase.co';
+  if (proj) return proj[0];
+  return url.replace(/\/+$/, '');
+}
+function configPredefinida() {
+  const p = window.CONFIG_PREDEFINIDA; if (!p || !p.url || !p.key) return null;
+  if (/XXXX/.test(p.url) || /XXXX/.test(p.key)) return null;   // encara és la plantilla
+  return { url: normalitzaUrl(p.url), key: String(p.key).trim() };
+}
 function readConfig() {
   try { const c = JSON.parse(localStorage.getItem(CONFIG_KEY) || 'null'); if (c && c.url && c.key) return c; } catch (e) {}
   return configPredefinida();
@@ -1108,12 +1120,7 @@ function renderConfig(err) {
   $('#cfg').addEventListener('submit', e => {
     e.preventDefault();
     const fd = new FormData(e.target);
-    let url = fd.get('url').trim();
-    const dash = url.match(/supabase\.com\/dashboard\/project\/([a-z0-9]+)/i);
-    const proj = url.match(/https?:\/\/[a-z0-9-]+\.supabase\.co/i);
-    if (dash) url = 'https://' + dash[1] + '.supabase.co';
-    else if (proj) url = proj[0];
-    else url = url.replace(/\/+$/, '');
+    const url = normalitzaUrl(fd.get('url'));
     localStorage.setItem(CONFIG_KEY, JSON.stringify({ url, key: fd.get('key').trim() }));
     init();
   });
@@ -1140,7 +1147,7 @@ function renderLogin(err) {
     const fd = new FormData(e.target);
     const btn = e.target.querySelector('button[type=submit]'); btn.disabled = true;
     const { data, error } = await sb.auth.signInWithPassword({ email: fd.get('email'), password: fd.get('password') });
-    if (error) { renderLogin(friendly(error)); return; }
+    if (error) { renderLogin(/failed to fetch|networkerror|load failed/i.test(error.message || '') ? 'No s’ha pogut connectar amb la base de dades: revisa l’URL de la connexió (a config.js, si és la versió publicada: ha de ser https://xxxxxxxx.supabase.co).' : friendly(error)); return; }
     user = data.user;
     start();
   });
