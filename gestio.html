@@ -86,6 +86,12 @@
   .f .nota.n-ok{ color:#2e7d32; } .f .nota.n-no{ color:#b8432b; }
   h3.seccio{ grid-column:1 / -1; margin:14px 0 0; padding-bottom:4px; border-bottom:1px solid var(--line-2); font-size:15px; font-weight:600; display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 16px; }
   h3.seccio .avui{ font-weight:500; font-size:13px; color:#1f5fbf; }
+  h4.seccio{ grid-column:1 / -1; margin:10px 0 0; font-size:14px; font-weight:600; color:var(--ink-2); }
+  .seccio-nota{ grid-column:1 / -1; margin:-4px 0 2px; }
+  .tl{ display:flex; height:14px; width:100%; max-width:560px; border-radius:4px; overflow:hidden; border:1px solid var(--line-2); } .tl i{ display:block; min-width:0; }
+  .t-on{ background:#2e7d32; } .t-pos{ background:#ffb74d; } .t-off{ background:#e6e6e6; }
+  .tl-esc{ display:flex; justify-content:space-between; max-width:560px; font-size:11px; color:var(--ink-3); } .tl-esc b{ font-weight:400; }
+  .tl-txt{ display:block; font-size:13px; color:#1f5fbf; margin-top:2px; }
   .f .dup{ font-size:12.5px; color:var(--red); }
   .f .info{ padding:7px 0; font-weight:500; }
   .c-verd-fort{ background:#2e7d32 !important; color:#fff !important; }
@@ -451,6 +457,94 @@ const campsEstiu = [
   { key: 'estiu_fi', label: 'Estiu (llums): fins al (dd/mm)', type: 'text', default: '15/09' },
 ];
 const validaEstiu = p => (p.estiu_inici && !/^\d{2}\/\d{2}$/.test(p.estiu_inici)) || (p.estiu_fi && !/^\d{2}\/\d{2}$/.test(p.estiu_fi)) ? 'Les dates d’estiu han de ser dd/mm (15/06).' : null;
+
+/* ---------- Horari de les bombes de la piscina ---------- */
+const esDdMm = v => /^\d{2}\/\d{2}$/.test(String(v || ''));
+// una data (dd/mm/aaaa o aaaa-mm-dd) és dins del període dd/mm – dd/mm? (pot passar d'any)
+function dinsPeriodeDdMm(ini, fi, dataIso) {
+  const md = v => { const m = /^(\d{2})\/(\d{2})$/.exec(String(v || '')); return m ? m[2] + '-' + m[1] : null; };
+  const a = md(ini), b = md(fi); if (!a || !b) return false;
+  const d = String(dataIso || avui()).slice(5, 10);
+  return a <= b ? (d >= a && d <= b) : (d >= a || d <= b);
+}
+const temporadaBombes = (r, dataIso) => dinsPeriodeDdMm(r.bombes_estiu_inici, r.bombes_estiu_fi, dataIso) ? 'estiu' : dinsPeriodeDdMm(r.bombes_hivern_inici, r.bombes_hivern_fi, dataIso) ? 'hivern' : 'entretemps';
+const TEMPORADA_NOM = { estiu: 'estiu', hivern: 'hivern', entretemps: 'entretemps' };
+const minutsDeHora = v => { const m = /^(\d{1,2}):(\d{2})/.exec(String(v || '')); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+const minutsAHora = m => String(Math.floor((m % 1440) / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+// marca un tram de–a (pot passar de mitjanit; de = a vol dir tot el dia) en un vector de 1440 minuts
+function marcaTram(cat, de, a, valor) {
+  const i = minutsDeHora(de), f = minutsDeHora(a); if (i == null || f == null) return false;
+  let solap = false; const posa = m => { if (cat[m] !== 'pos' && cat[m] !== valor) solap = true; cat[m] = valor; };
+  if (i === f) { for (let m = 0; m < 1440; m++) posa(m); }
+  else if (i < f) { for (let m = i; m < f; m++) posa(m); }
+  else { for (let m = i; m < 1440; m++) posa(m); for (let m = 0; m < f; m++) posa(m); }
+  return solap;
+}
+// el pla d'un dia d'una temporada: sempre ON (de–a), sempre OFF (de–a) i, entremig, possible ON a cada banda del tram ON
+function plaBombes(r, temporada) {
+  const k = 'bombes_' + temporada, on = [r[k + '_on_inici'], r[k + '_on_fi']], off = [r[k + '_off_inici'], r[k + '_off_fi']];
+  const teOn = on[0] && on[1], teOff = off[0] && off[1];
+  if ((on[0] || on[1]) && !teOn) return { error: 'el tram "sempre ON" necessita les dues hores' };
+  if ((off[0] || off[1]) && !teOff) return { error: 'el tram "sempre OFF" necessita les dues hores' };
+  const cat = new Array(1440).fill(teOn || teOff ? 'pos' : 'off'); let solap = false;
+  if (teOn) solap = marcaTram(cat, on[0], on[1], 'on') || solap;
+  if (teOff) solap = marcaTram(cat, off[0], off[1], 'off') || solap;
+  const segs = []; let cur = cat[0], ini = 0;
+  for (let m = 1; m <= 1440; m++) if (m === 1440 || cat[m] !== cur) { segs.push({ cat: cur, ini, fi: m }); if (m < 1440) { cur = cat[m]; ini = m; } }
+  return { segs, solap, minuts: { on: cat.filter(c => c === 'on').length, pos: cat.filter(c => c === 'pos').length } };
+}
+const CAT_BOMBES = { on: 'ON', pos: 'POSSIBLE', off: 'OFF' };
+// "ON 07:00–21:00 · POSSIBLE 05:00–07:00, 21:00–23:00 · OFF 23:00–05:00" (el tram que passa de mitjanit s'escriu sencer)
+function textPla(pla) {
+  if (!pla || pla.error) return pla && pla.error ? pla.error : 'horari incomplet';
+  if (pla.segs.length === 1) return CAT_BOMBES[pla.segs[0].cat] + ' tot el dia';
+  let segs = pla.segs.slice();
+  if (segs.length > 1 && segs[0].cat === segs[segs.length - 1].cat) { const u = segs.pop(); segs[0] = { cat: u.cat, ini: u.ini, fi: segs[0].fi + 1440 }; }
+  const perCat = {};
+  segs.forEach(sg => { (perCat[sg.cat] = perCat[sg.cat] || []).push(minutsAHora(sg.ini) + '–' + minutsAHora(sg.fi)); });
+  return ['on', 'pos', 'off'].filter(c => perCat[c]).map(c => CAT_BOMBES[c] + ' ' + perCat[c].join(', ')).join(' · ');
+}
+function timelineHTML(pla) {
+  if (!pla || pla.error) return `<span class="v-no">${h(pla && pla.error ? pla.error : 'horari incomplet')}</span>`;
+  return `<span class="tl">${pla.segs.map(sg => `<i class="t-${sg.cat}" style="flex:${sg.fi - sg.ini} 1 0" title="${CAT_BOMBES[sg.cat]} ${minutsAHora(sg.ini)}–${minutsAHora(sg.fi)}"></i>`).join('')}</span><span class="tl-esc"><b>0 h</b><b>6 h</b><b>12 h</b><b>18 h</b><b>24 h</b></span><span class="tl-txt">${h(textPla(pla))}${pla.solap ? ' <b class="v-no">· els trams ON i OFF se solapen</b>' : ''}</span>`;
+}
+const notaTemporadaBombes = temporada => vals => ({ html: timelineHTML(plaBombes(vals, temporada)) });
+const notaBombesAvui = vals => {
+  const t = temporadaBombes(vals, avui()), pla = plaBombes(vals, t);
+  return { html: `<span class="tl-txt">Avui (${h(dmy(avui()))}) és <b>${TEMPORADA_NOM[t]}</b>: ${h(textPla(pla))}</span>` };
+};
+const bombesAvuiCurt = r => { const t = temporadaBombes(r, avui()), pla = plaBombes(r, t); if (!pla || pla.error) return 'horari incomplet'; if (pla.segs.length === 1 && pla.segs[0].cat === 'off') return ''; return TEMPORADA_NOM[t] + ' · ' + textPla(pla); };
+function validaBombes(p) {
+  for (const t of ['estiu', 'hivern']) {
+    const a = p['bombes_' + t + '_inici'], b = p['bombes_' + t + '_fi'];
+    if ((a || b) && !(esDdMm(a) && esDdMm(b))) return `Les dates d’${t} de les bombes han de ser dd/mm, totes dues (16/06 i 15/09).`;
+  }
+  if (esDdMm(p.bombes_estiu_inici) && esDdMm(p.bombes_hivern_inici)) {
+    for (let m = 0; m < 12; m++) for (const d of [1, 15, 28]) { const iso = '2026-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0'); if (dinsPeriodeDdMm(p.bombes_estiu_inici, p.bombes_estiu_fi, iso) && dinsPeriodeDdMm(p.bombes_hivern_inici, p.bombes_hivern_fi, iso)) return 'Les dates d’estiu i d’hivern de les bombes se solapen (' + dmy(iso) + ' seria de totes dues).'; }
+  }
+  for (const t of ['estiu', 'hivern', 'entretemps']) {
+    const pla = plaBombes(p, t);
+    if (pla.error) return `Bombes, ${TEMPORADA_NOM[t]}: ${pla.error}.`;
+    if (pla.solap) return `Bombes, ${TEMPORADA_NOM[t]}: els trams "sempre ON" i "sempre OFF" se solapen.`;
+  }
+  return null;
+}
+// la norma general (es pot canviar a cada piscina)
+const BOMBES_PREDETERMINAT = { estiu: { on: ['09:00', '18:00'], off: ['00:00', '06:00'] }, hivern: { on: ['12:00', '14:00'], off: ['20:00', '09:00'] }, entretemps: { on: ['11:00', '15:00'], off: ['20:00', '08:00'] } };
+const campsBombes = [
+  { key: 'bombes__titol', type: 'seccio', label: 'Horari de les bombes (compartit per totes les bombes de la piscina)', notaBloc: notaBombesAvui },
+  { key: 'bombes_estiu_inici', label: 'Estiu: des del (dd/mm)', type: 'text', default: '16/06' },
+  { key: 'bombes_estiu_fi', label: 'Estiu: fins al (dd/mm)', type: 'text', default: '15/09' },
+  { key: 'bombes_hivern_inici', label: 'Hivern: des del (dd/mm)', type: 'text', default: '01/11' },
+  { key: 'bombes_hivern_fi', label: 'Hivern: fins al (dd/mm)', type: 'text', default: '15/04', hint: 'entretemps = la resta de dies' },
+  ...['estiu', 'hivern', 'entretemps'].flatMap(t => [
+    { key: 'bombes_' + t + '__titol', type: 'seccio', nivell: 2, label: TEMPORADA_NOM[t].charAt(0).toUpperCase() + TEMPORADA_NOM[t].slice(1), notaBloc: notaTemporadaBombes(t) },
+    { key: 'bombes_' + t + '_on_inici', label: 'Sempre ON: de', type: 'time', default: BOMBES_PREDETERMINAT[t].on[0] },
+    { key: 'bombes_' + t + '_on_fi', label: 'Sempre ON: a', type: 'time', default: BOMBES_PREDETERMINAT[t].on[1] },
+    { key: 'bombes_' + t + '_off_inici', label: 'Sempre OFF: de', type: 'time', default: BOMBES_PREDETERMINAT[t].off[0], hint: 'pot passar de mitjanit' },
+    { key: 'bombes_' + t + '_off_fi', label: 'Sempre OFF: a', type: 'time', default: BOMBES_PREDETERMINAT[t].off[1], hint: 'entremig, a cada banda del tram ON, hi queda el possible ON (segons l’aforament)' },
+  ]),
+];
 
 const SCHEMA = {
   groups: [
@@ -1198,9 +1292,10 @@ const SCHEMA = {
     piscines: {
       label: 'Piscines', nou: 'Nova piscina', order: 'nom',
       display: r => r.nom + ' — ' + ((C.get('llocs', r.lloc_id) || {}).nom || ''),
-      list: ['nom', 'lloc_id', 'llargada', 'amplada', 'profunditat', 'tractament', 'agrupacio_id', 'treballador_id', 'bombes', 'filtres', 'cloradors', 'focus_avui'],
+      list: ['nom', 'lloc_id', 'llargada', 'amplada', 'profunditat', 'tractament', 'agrupacio_id', 'treballador_id', 'bombes', 'filtres', 'cloradors', 'focus_avui', 'bombes_avui'],
       computed: {
         focus_avui: { label: 'Focus avui', fn: r => liniaAvui(r, 'focus') },
+        bombes_avui: { label: 'Bombes avui', fn: r => bombesAvuiCurt(r) },
         bombes: { label: 'Bombes', fn: llistaEnllacos('piscina_bombes', 'piscina_id', 'bombes', 'bomba_id') },
         filtres: { label: 'Filtres', fn: llistaEnllacos('piscina_filtres', 'piscina_id', 'filtres', 'filtre_id') },
         cloradors: { label: 'Cloradors', fn: llistaEnllacos('piscina_cloradors', 'piscina_id', 'cloradors_salins', 'clorador_id') },
@@ -1210,7 +1305,7 @@ const SCHEMA = {
         { table: 'piscina_filtres', fk: 'piscina_id', label: 'Filtres d’aquesta piscina' },
         { table: 'piscina_cloradors', fk: 'piscina_id', label: 'Cloradors salins d’aquesta piscina' },
       ],
-      validate: validaEstiu,
+      validate: p => validaEstiu(p) || validaBombes(p),
       fields: [
         { key: 'lloc_id', label: 'Lloc', type: 'ref', ref: 'llocs', required: true },
         { key: 'nom', label: 'Nom', type: 'text', required: true, default: 'piscina', hint: '"gran", "infantil" si n’hi ha més d’una', dup: 'exact', dupScope: 'lloc_id' },
@@ -1227,6 +1322,7 @@ const SCHEMA = {
         { key: 'climatitzada', label: 'Climatitzada', type: 'boolean' },
         ...campsEstiu,
         ...campsLinia('focus', 'Línia de focus de dins de la piscina'),
+        ...campsBombes,
         { key: 'observacions', label: 'Observacions', type: 'textarea' },
       ],
     },
@@ -1588,7 +1684,7 @@ function formHTML(td, row) {
   const editing = !!row;
   const unCamp = f => {
     const wide = f.type === 'textarea' || f.wide ? 'wide' : '';
-    if (f.type === 'seccio') return `<h3 class="seccio wide">${h(f.label)}${f.nota ? `<span class="nota avui" data-nota-for="${f.key}" hidden></span>` : ''}</h3>`;
+    if (f.type === 'seccio') return `<${f.nivell === 2 ? 'h4' : 'h3'} class="seccio wide">${h(f.label)}${f.nota ? `<span class="nota avui" data-nota-for="${f.key}" hidden></span>` : ''}</${f.nivell === 2 ? 'h4' : 'h3'}>${f.notaBloc ? `<div class="wide seccio-nota" data-nota-for="${f.key}" hidden></div>` : ''}`;
     if (f.type === 'hidden') return inputHTML(f, vals, row);
     const dk = `data-fkey="${f.key}"`;
     if (f.type === 'boolean') return `<label class="f chk" ${dk}><span>${inputHTML(f, vals, row)}</span><span class="l">${h(f.label)}</span></label>`;
@@ -1870,14 +1966,14 @@ function pintaColors(td, frm) {
 }
 // notes vives sota un camp (text i color calculats amb tot el formulari), p. ex. si el venciment coincideix amb les condicions del proveïdor
 function pintaNotes(td, frm) {
-  if (!td.fields.some(f => f.nota)) return;
+  if (!td.fields.some(f => f.nota || f.notaBloc)) return;
   const vals = formValues(frm);
   const row = state.editing ? C.get(state.table, state.editing) : null;
-  td.fields.filter(f => f.nota).forEach(f => {
+  td.fields.filter(f => f.nota || f.notaBloc).forEach(f => {
     const box = frm.querySelector(`[data-nota-for="${f.key}"]`), el = frm.querySelector(`[name="${f.key}"]`); if (!box) return;
-    const n = f.nota(vals, row, C) || {};
+    const n = (f.nota || f.notaBloc)(vals, row, C) || {};
     if (el) { el.classList.remove('v-ok', 'v-no', 'v-calc'); if (n.classe) el.classList.add(n.classe); }
-    box.textContent = n.text || ''; box.hidden = !n.text;
+    if (n.html != null) { box.innerHTML = n.html; box.hidden = !n.html; } else { box.textContent = n.text || ''; box.hidden = !n.text; }
     if (f.type !== 'seccio') box.className = 'hint nota' + (n.classe ? ' n-' + n.classe.replace('v-', '') : '');
   });
 }
