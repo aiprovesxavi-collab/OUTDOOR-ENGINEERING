@@ -80,6 +80,12 @@
   .f .l{ font-size:13.5px; color:var(--ink-2); }
   .f .l b{ color:var(--red); font-weight:500; }
   .f .hint{ font-size:12.5px; color:var(--ink-3); }
+  .v-ok{ color:#2e7d32 !important; font-weight:600; } input.v-ok{ border-color:#a5d6a7; }
+  .v-no{ color:#b8432b !important; font-weight:600; } input.v-no{ border-color:#f0b9ad; }
+  .v-calc{ color:var(--ink-3) !important; font-style:italic; }
+  .f .nota.n-ok{ color:#2e7d32; } .f .nota.n-no{ color:#b8432b; }
+  h3.seccio{ grid-column:1 / -1; margin:14px 0 0; padding-bottom:4px; border-bottom:1px solid var(--line-2); font-size:15px; font-weight:600; display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 16px; }
+  h3.seccio .avui{ font-weight:500; font-size:13px; color:#1f5fbf; }
   .f .dup{ font-size:12.5px; color:var(--red); }
   .f .info{ padding:7px 0; font-weight:500; }
   .c-verd-fort{ background:#2e7d32 !important; color:#fff !important; }
@@ -97,6 +103,10 @@
   .f[hidden]{ display:none; }
   .chks{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px 20px; padding:12px 14px; border:1px solid var(--line-2); border-radius:6px; }
   .chks .f.chk{ padding-top:0; }
+  .multi{ border:1px solid var(--line-2); border-radius:6px; padding:10px 14px; display:grid; gap:8px; }
+  .multi h4{ margin:6px 0 0; font-size:12.5px; color:var(--ink-2); font-weight:500; text-transform:uppercase; letter-spacing:.03em; }
+  .multi label{ display:flex; align-items:flex-start; gap:8px; font-size:14px; } .multi label input{ margin-top:2px; }
+  .multi .obl{ color:var(--ink-3); font-size:13px; }
   @media (max-width:820px){ .chks{ grid-template-columns:1fr; } }
   .f .l .toca{ color:var(--red); font-weight:600; margin-left:6px; }
   .extres{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:0 0 16px; }
@@ -163,6 +173,36 @@
   .graf{ position:relative; max-width:900px; height:380px; margin:8px 0 30px; }
   h2.grup{ margin-top:28px; padding-bottom:6px; border-bottom:2px solid var(--mode); display:inline-block; }
   .informe tr.total td{ font-weight:600; border-top:2px solid var(--ink-2); border-bottom:0; }
+  .cal .dia{ display:flex; align-items:baseline; gap:14px; margin:26px 0 8px; }
+  .cal .dia h2{ margin:0; font-size:18px; font-weight:600; }
+  .cal .dia .setm{ color:var(--ink-2); font-size:14px; }
+  .cal .dia .net{ margin-left:auto; font-size:14px; color:var(--ink-2); }
+  .cal .dia .net b{ font-size:16px; color:var(--ink); }
+  .cal td.cobr, .cal .cobr{ color:#2e7d32; } .cal td.pag, .cal .pag{ color:#b8432b; }
+  .cal .tipus{ display:inline-block; font-size:12px; padding:1px 7px; border-radius:10px; border:1px solid var(--line-2); color:var(--ink-2); white-space:nowrap; }
+  .cal .tipus.c{ border-color:#a5d6a7; color:#2e7d32; } .cal .tipus.p{ border-color:#f0b9ad; color:#b8432b; }
+  .resum{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px; margin:0 0 18px; max-width:760px; }
+  .resum div{ border:1px solid var(--line-2); border-radius:8px; padding:10px 14px; }
+  .resum .k{ font-size:12.5px; color:var(--ink-2); } .resum .v{ font-size:20px; font-weight:600; }
+  @media print{ .cal .dia{ page-break-after:avoid; } .resum{ gap:8px; } }
+  .cpa .blk{ border:1px solid var(--line-2); border-radius:8px; padding:10px 16px 2px; margin:0 0 16px; }
+  .cpa .blk.off{ border-style:dashed; }
+  .cpa .cap{ display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 18px; margin:0 0 4px; }
+  .cpa .cap h2{ margin:0; font-size:17px; font-weight:600; }
+  .cpa .cap .meta{ color:var(--ink-2); font-size:13px; }
+  .cpa .cap .n{ margin-left:auto; color:var(--ink-3); font-size:13px; white-space:nowrap; }
+  .cpa .tbl{ table-layout:fixed; }
+  .cpa .tbl th{ white-space:normal; vertical-align:bottom; }
+  .cpa .tbl td{ padding:6px 10px; overflow-wrap:anywhere; }
+  .cpa .tbl tr:last-child td{ border-bottom:0; }
+  .cpa td.lloc{ font-weight:500; }
+  .cpa .tel{ color:var(--ink-2); font-size:13px; white-space:nowrap; }
+  @media print{ .cpa .blk{ break-inside:avoid; page-break-inside:avoid; border-color:#333; margin-bottom:10px; padding:6px 10px 0; } .cpa .cap h2{ font-size:14px; } .cpa .cap .meta, .cpa .cap .n, .cpa .tel{ font-size:11px; } .cpa .tbl{ font-size:12px; } .cpa .tbl td, .cpa .tbl th{ padding:4px 8px; } }
+  .sol-mesos{ display:grid; grid-template-columns:repeat(auto-fill, minmax(290px, 1fr)); gap:14px 28px; }
+  .sol-mes h3{ margin:8px 0 4px; }
+  .sol-mes .tbl{ font-size:13px; } .sol-mes .tbl td, .sol-mes .tbl th{ padding:3px 8px; }
+  .sol-mes tr.avui td{ background:#e3f0ff; font-weight:600; }
+  @media print{ .sol-mesos{ grid-template-columns:repeat(3, 1fr); gap:6px 16px; } .sol-mes{ break-inside:avoid; } .sol-mes .tbl{ font-size:9.5px; } .sol-mes .tbl td, .sol-mes .tbl th{ padding:1px 5px; } .sol-mes tr.avui td{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
   .informe th.num{ text-align:right; }
   .sub{ color:var(--ink-2); font-size:14px; max-width:760px; }
   .capsal{ display:flex; flex-wrap:wrap; gap:6px 28px; margin:0 0 14px; }
@@ -178,7 +218,7 @@
   .tasques td.obs{ font-size:11.5px; min-width:200px; white-space:normal; width:100%; }
   @media print{ .tasques{ font-size:9.5px; } .tasques th.vert{ height:70px; } .tasques td.cel, .tasques td.ok, .tasques td.no, .tasques td.fet, .avis{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } .capsal{ margin-bottom:8px; } }
   @media print{
-    .modebar,.top,.side,.bar,.toast{ display:none !important; }
+    .modebar,.top,.side,.bar,.toast,.noprint{ display:none !important; }
     .shell{ display:block; }
     .main{ padding:0; max-width:none; }
     body{ font-size:12px; }
@@ -238,6 +278,10 @@ const OPT = {
   forma_pagament_prov: [['domiciliacio','Domiciliació'],['transferencia','Transferència'],['talo','Taló'],['visa','Targeta'],['altres','Altres']],
   estat_fp: [['revisar','Per revisar'],['ok','Revisada']],
   estat_pressupost: [['esborrany','Esborrany'],['enviat','Enviat'],['acceptat','Acceptat'],['rebutjat','Rebutjat']],
+  ambit_clausula: [['general','General'],['jardi','Jardí'],['piscina','Piscina'],['aigues_grises','Aigües grises']],
+  linia_llum: [['primaria','Primària (la principal)'],['secundaria','Secundària (llum de fons, tota la nit)']],
+  encesa_tipus: [['sol','Posta de sol (+ minuts)'],['fix','Horari fix'],['sensor','Sensor de llum'],['off','Apagat']],
+  apagada_tipus: [['sol','Sortida del sol (± minuts)'],['fix','Horari fix'],['sensor','Sensor de llum'],['off','Apagat']],
   termini: [['0','Al comptat'],['30','A 30 dies'],['60','A 60 dies'],['90','A 90 dies']],
   estat_factura: [['esborrany','Esborrany'],['emesa','Emesa'],['cobrada','Cobrada'],['anul_lada','Anul·lada']],
 };
@@ -250,6 +294,28 @@ const distKm = (a, b, c, d) => { const r = x => x * Math.PI / 180; const h = Mat
 const treballadorActual = () => user ? C.rows('treballadors').find(t => t.actiu && t.email_acces && t.email_acces.toLowerCase() === String(user.email).toLowerCase()) : null;
 const esOperari = () => { if (APP_NOMES_TASQUES) return true; const t = treballadorActual(); return !t || t.rol === 'tecnic'; };
 const nomTreballador = t => t ? [t.nom, t.cognoms].filter(Boolean).join(' ') : '';
+const senseAccents = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const inicialsTreballador = t => t ? senseAccents(((t.nom || '').trim()[0] || '') + ((t.cognoms || '').trim()[0] || '')).toUpperCase() : '';
+const potConformar = t => !!t && t.actiu && (t.rol === 'admin' || t.rol === 'oficina');
+const compteLabel = c => c.codi + ' · ' + c.nom;
+const ambitLabel = a => (OPT.ambit_clausula.find(o => o[0] === a) || [])[1] || a;
+const ORDRE_PARTS = ['piscina', 'jardi', 'aigues_grises', 'general']; // ordre al PDF i al formulari: les clàusules generals tanquen el pressupost
+const MESOS_CAT = ['gener', 'febrer', 'març', 'abril', 'maig', 'juny', 'juliol', 'agost', 'setembre', 'octubre', 'novembre', 'desembre'];
+// omple els claudàtors d'una clàusula amb les dades del pressupost
+function ompleClaudators(txt, pr) {
+  const client = C.get('clients', pr.client_id) || {}, lloc = pr.lloc_id ? C.get('llocs', pr.lloc_id) : null;
+  const d = new Date(String(pr.data || avui()).slice(0, 10) + 'T00:00:00Z');
+  const valors = {
+    'preu mensual sense iva': fmtEur(preuMensualPressupost(pr)).replace(' €', ''),
+    'preu mensual amb iva': fmtEur(Math.round(preuMensualPressupost(pr) * (1 + ivaVigent(pr.data) / 100) * 100) / 100).replace(' €', ''),
+    'població del lloc': (lloc && lloc.poblacio) || client.poblacio || '', 'poblacio del lloc': (lloc && lloc.poblacio) || client.poblacio || '',
+    'mes de la data de creació del pressupost': MESOS_CAT[d.getUTCMonth()] || '', 'mes': MESOS_CAT[d.getUTCMonth()] || '',
+    'any data': String(d.getUTCFullYear()), 'any': String(d.getUTCFullYear()),
+    'data': dmy(pr.data), 'client': client.nom || '', 'lloc': lloc ? lloc.nom : '', 'adreça del lloc': lloc ? lloc.adreca || '' : '',
+  };
+  return String(txt || '').replace(/\[([^\]]+)\]/g, (m, k) => { const v = valors[k.trim().toLowerCase().replace(/\s+/g, ' ')]; return v == null ? m : v; });
+}
+const preuMensualPressupost = r => ['jardi', 'piscina', 'aigues_grises'].reduce((t, k) => t + (r['inclou_' + k] && r['preu_' + k] != null ? Number(r['preu_' + k]) : 0), 0);
 const nomCurtTreballador = t => t ? (t.nom || '') + (t.cognoms ? ' ' + t.cognoms.trim()[0].toUpperCase() + '.' : '') : '';
 const MESOS = ['Gener', 'Febrer', 'Març', 'Abril', 'Maig', 'Juny', 'Juliol', 'Agost', 'Setembre', 'Octubre', 'Novembre', 'Desembre'];
 /* Colors de les mesures de piscina: intervals [mín, màx, color], del millor al pitjor; als límits mana el millor */
@@ -307,18 +373,97 @@ const ORDRE_GRUPS = [];
 const clientAmbLlocs = (r, C) => { const ll = C.rows('llocs').filter(l => l.actiu && Number(l.client_id) === r.id).map(l => l.nom); return (ll.length ? ll.join(', ') + ' — ' : '') + r.nom; };
 const comptadorAmbLloc = r => L('llocs', r.lloc_id) + ' — ' + cobreixText(r) + ' — ' + (r.numero_serie || 'comptador ' + r.id) + (r.data_baixa ? ' (baixa ' + dmy(r.data_baixa) + ')' : (r.actiu ? '' : ' (donat de baixa)'));
 
+/* ---------- Sol i línies de llum ---------- */
+// Sortida i posta del sol (equació del sol, precisió d'un parell de minuts) en hora local
+function solEnDia(lat, lon, dataIso, zona) {
+  const rad = Math.PI / 180;
+  const d = new Date(String(dataIso).slice(0, 10) + 'T12:00:00Z');
+  if (isNaN(d.getTime()) || lat == null || lon == null) return null;
+  const n = Math.round(d.getTime() / 86400000 + 2440587.5 - 2451545.0);
+  const Jstar = n - Number(lon) / 360;
+  const M = ((357.5291 + 0.98560028 * Jstar) % 360 + 360) % 360;
+  const Cc = 1.9148 * Math.sin(M * rad) + 0.02 * Math.sin(2 * M * rad) + 0.0003 * Math.sin(3 * M * rad);
+  const lambda = (M + Cc + 180 + 102.9372) % 360;
+  const Jtransit = 2451545.0 + Jstar + 0.0053 * Math.sin(M * rad) - 0.0069 * Math.sin(2 * lambda * rad);
+  const delta = Math.asin(Math.sin(lambda * rad) * Math.sin(23.4397 * rad));
+  const cosw = (Math.sin(-0.833 * rad) - Math.sin(Number(lat) * rad) * Math.sin(delta)) / (Math.cos(Number(lat) * rad) * Math.cos(delta));
+  if (cosw < -1 || cosw > 1) return null;
+  const w = Math.acos(cosw) / rad;
+  const aHora = J => { const t = new Date((J - 2440587.5) * 86400000); return new Intl.DateTimeFormat('ca-ES', { timeZone: zona || 'Europe/Madrid', hour: '2-digit', minute: '2-digit', hour12: false }).format(t).replace(/^24/, '00'); };
+  return { sortida: aHora(Jtransit - w / 360), posta: aHora(Jtransit + w / 360) };
+}
+const sumaMinuts = (hhmm, min) => { const [h, m] = String(hhmm).split(':').map(Number); const t = ((h * 60 + m + (Number(min) || 0)) % 1440 + 1440) % 1440; return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0'); };
+const hhmm = v => v ? String(v).slice(0, 5) : '';
+// sol del lloc: amb les coordenades del lloc si en té; si no, amb la població del lloc (taula poblacions_sol); si no, la primera població
+function poblacioDelLloc(llocId) {
+  const lloc = llocId ? C.get('llocs', llocId) : null;
+  const pobl = C.rows('poblacions_sol').filter(x => x.actiu).sort((a, b) => a.id - b.id);
+  return (lloc && lloc.poblacio && pobl.find(x => senseAccents(x.nom).toLowerCase() === senseAccents(lloc.poblacio).toLowerCase())) || pobl[0] || null;
+}
+function solDelLloc(llocId, dataIso) { const p = poblacioDelLloc(llocId); return p ? solEnDia(p.latitud, p.longitud, dataIso) : null; }
+// és estiu? segons les dates dd/mm del jardí o la piscina (si no n'hi ha, del 15/06 al 15/09)
+function esEstiu(r, dataIso) {
+  const md = v => { const m = /^(\d{2})\/(\d{2})$/.exec(String(v || '')); return m ? m[2] + '-' + m[1] : null; };
+  const ini = md(r.estiu_inici) || '06-15', fi = md(r.estiu_fi) || '09-15', avuiMd = String(dataIso || avui()).slice(5, 10);
+  return ini <= fi ? (avuiMd >= ini && avuiMd <= fi) : (avuiMd >= ini || avuiMd <= fi);
+}
+// hora d'encesa o d'apagada d'una línia (prefix l1, l2 o focus) un dia concret: "21:30", "sensor", "apagat" o "?"
+function horaLinia(r, prefix, quan, dataIso) {
+  const k = prefix + '_' + (esEstiu(r, dataIso) ? 'estiu' : 'hivern') + '_' + quan;
+  const tipus = r[k + '_tipus'] || 'off';
+  if (tipus === 'fix') return hhmm(r[k + '_hora']) || '?';
+  if (tipus === 'sensor') return 'sensor';
+  if (tipus === 'off') return 'apagat';
+  const sol = solDelLloc(r.lloc_id, dataIso); if (!sol) return '?';
+  return sumaMinuts(quan === 'encesa' ? sol.posta : sol.sortida, r[k + '_minuts']);
+}
+const liniaAvui = (r, prefix) => { const e = horaLinia(r, prefix, 'encesa', avui()), a = horaLinia(r, prefix, 'apagada', avui()); return e === 'apagat' && a === 'apagat' ? 'apagat' : e + ' → ' + a; };
+// nota viva sota el tipus d'encesa/apagada: què passa avui amb aquesta tria
+const notaSol = (prefix, est, quan) => vals => {
+  const k = prefix + '_' + est + '_' + quan;
+  if (vals[k + '_tipus'] !== 'sol') return { text: '' };
+  const sol = solDelLloc(vals.lloc_id, avui()); if (!sol) return { text: 'tria el lloc per saber l’hora del sol' };
+  const base = quan === 'encesa' ? sol.posta : sol.sortida, m = Number(vals[k + '_minuts']) || 0;
+  return { text: `avui el sol ${quan === 'encesa' ? 'es pon' : 'surt'} a les ${base}: ${quan} a les ${sumaMinuts(base, m)}` };
+};
+// els camps d'una línia de llum (prefix l1, l2 o focus), amb el seu encapçalament
+const notaLiniaAvui = prefix => vals => {
+  const e = horaLinia(vals, prefix, 'encesa', avui()), a = horaLinia(vals, prefix, 'apagada', avui());
+  if (e === 'apagat' && a === 'apagat') return { text: 'avui: apagada' };
+  const tE = e === 'sensor' ? 's’encén pel sensor' : e === 'apagat' ? 'no s’encén' : e === '?' ? 'encesa sense hora' : `s’encén a les ${e}`;
+  const tA = a === 'sensor' ? 's’apaga pel sensor' : a === 'apagat' ? 'sense hora d’apagada' : a === '?' ? 'apagada sense hora' : `s’apaga a les ${a}`;
+  const p = poblacioDelLloc(vals.lloc_id), ambSol = /^\d/.test(e) || /^\d/.test(a);
+  return { text: `avui ${tE} i ${tA}` + (p && ambSol ? ` (sol de ${p.nom})` : '') };
+};
+const campsLinia = (prefix, titol) => [
+  { key: prefix + '__titol', type: 'seccio', label: titol, nota: notaLiniaAvui(prefix) },
+  ...['estiu', 'hivern'].flatMap(est => ['encesa', 'apagada'].flatMap(quan => {
+    const k = prefix + '_' + est + '_' + quan, lab = (est === 'estiu' ? 'Estiu · ' : 'Hivern · ') + quan;
+    return [
+      { key: k + '_tipus', label: lab, type: 'select', options: quan === 'encesa' ? OPT.encesa_tipus : OPT.apagada_tipus, required: true, default: 'off', nota: notaSol(prefix, est, quan), wide: true },
+      { key: k + '_hora', label: lab + ': hora', type: 'time', visible: v => v[k + '_tipus'] === 'fix', neteja: true },
+      { key: k + '_minuts', label: lab + ': minuts ' + (quan === 'encesa' ? 'després de la posta' : 'respecte la sortida (negatiu = abans)'), type: 'integer', min: -180, max: 180, visible: v => v[k + '_tipus'] === 'sol', neteja: true },
+    ];
+  })),
+];
+const campsEstiu = [
+  { key: 'estiu_inici', label: 'Estiu (llums): des del (dd/mm)', type: 'text', default: '15/06', hint: 'la resta de l’any és hivern' },
+  { key: 'estiu_fi', label: 'Estiu (llums): fins al (dd/mm)', type: 'text', default: '15/09' },
+];
+const validaEstiu = p => (p.estiu_inici && !/^\d{2}\/\d{2}$/.test(p.estiu_inici)) || (p.estiu_fi && !/^\d{2}\/\d{2}$/.test(p.estiu_fi)) ? 'Les dates d’estiu han de ser dd/mm (15/06).' : null;
+
 const SCHEMA = {
   groups: [
-    { label: 'QUI · ON', color: '#e08a8a', tables: ['administradors', 'contactes', 'clients', 'llocs'] },
-    { label: 'FACTURACIÓ', color: '#8a8a8a', tables: ['agrupacions', 'facturacio_recurrent', 'factures', 'pressupostos_tasca'] },
+    { label: 'QUI · ON', color: '#e08a8a', tables: ['administradors', 'contactes', 'clients', 'llocs', 'clients_per_administrador'] },
+    { label: 'FACTURACIÓ', color: '#8a8a8a', tables: ['agrupacions', 'facturacio_recurrent', 'factures', 'calendari_facturacio', 'pressupostos_tasca', 'pressupostos_agrupacio', 'clausules_pressupost'] },
     { label: 'ALBARANS I PRODUCTES', color: '#c9c9c9', tables: ['productes', 'albarans', 'albarans_pendents'] },
-    { label: 'PROVEÏDORS', color: '#c0691e', tables: ['proveidors', 'factures_proveidor', 'puja_factures_proveidor'] },
+    { label: 'PROVEÏDORS', color: '#c0691e', tables: ['proveidors', 'factures_proveidor', 'puja_factures_proveidor', 'comptes_despesa'] },
     { label: 'TASQUES', color: '#8b5a2b', tables: ['tasques_piscina', 'informe_tasques_piscina', 'informe_tasques_dates'] },
     { label: 'CONSUM', color: '#1f5fbf', tables: ['comptadors', 'lectures', 'consum_aigua'] },
     { label: 'INSTAL·LACIONS', color: '#8fcf9a', tables: ['jardins', 'piscines', 'informe_adob'] },
     { label: 'EQUIPAMENTS I INSTAL·LACIONS', color: '#e5b800', tables: ['programadors', 'bombes', 'filtres', 'cloradors_salins'] },
     { label: 'PERSONAL', color: '#222222', tables: ['treballadors', 'equips'] },
-    { label: 'ALTRES', color: '#b48ede', tables: ['tipus_iva', 'empresa', 'aigua_parametres_mensuals', 'avisos_piscina', 'comptes_bancaris'] },
+    { label: 'ALTRES', color: '#b48ede', tables: ['tipus_iva', 'empresa', 'aigua_parametres_mensuals', 'avisos_piscina', 'comptes_bancaris', 'poblacions_sol', 'hores_sol'] },
   ],
   pages: {
     facturacio_recurrent: { label: 'Facturació recurrent', render: main => renderFacturacio(main) },
@@ -328,6 +473,9 @@ const SCHEMA = {
     informe_tasques_piscina: { label: 'Tasca per piscina', render: main => renderInformeTasquesPiscina(main) },
     informe_tasques_dates: { label: 'Tasca per dates', render: main => renderInformeTasquesDates(main) },
     puja_factures_proveidor: { label: 'Puja factures (PDF)', render: main => renderPujaFactures(main) },
+    calendari_facturacio: { label: 'Calendari de facturació', render: main => renderCalendariFacturacio(main) },
+    clients_per_administrador: { label: 'Clients per administrador', render: main => renderClientsPerAdministrador(main) },
+    hores_sol: { label: 'Hores del sol (tot l’any)', render: main => renderHoresSol(main) },
   },
   tables: {
     administradors: {
@@ -619,12 +767,18 @@ const SCHEMA = {
       display: r => (r.numero_complet || 'esborrany') + ' — ' + L('clients', r.client_id),
       list: ['numero_complet', 'data_factura', 'client_id', 'concepte', 'total', 'estat', 'data_venciment', 'data_cobrament'],
       canBaixa: r => r.estat === 'esborrany',
-      abansDesar: p => { if (p.amb_linies || p.base_imponible == null) p.base_imponible = p.amb_linies ? 0 : (p.base_imponible ?? 0); },
+      abansDesar: (p, id) => {
+        if (id && esEmesa(C.get('factures', id))) { delete p.base_imponible; return; } // emesa: només caràtula, cobrament i observacions
+        if (p.amb_linies || p.base_imponible == null) p.base_imponible = p.amb_linies ? 0 : (p.base_imponible ?? 0);
+      },
+      despresDesar: async (id, p, old) => {
+        if (old && esEmesa(old) && 'tema' in p && (p.tema || null) !== (old.tema || null)) { await generaPdfFactura(id, { obrir: false }); toast('PDF refet amb la caràtula nova'); }
+      },
       children: [{ table: 'factura_linies', fk: 'factura_id', label: 'Línies de la factura', show: r => !!r.amb_linies, editable: r => r.estat === 'esborrany', sum: { field: 'base', label: 'Base imposable' } }],
       actions: r => r.estat === 'esborrany'
         ? [{ label: 'Emet la factura', run: () => emetFactura(r.id) }, { label: 'Previsualitza el PDF', run: () => generaPdfFactura(r.id).catch(e => showFormError(friendly(e))) }]
-        : [{ label: r.pdf ? 'Regenera el PDF' : 'Genera el PDF', run: () => generaPdfFactura(r.id).then(() => { toast('PDF desat'); renderMain(); }).catch(e => showFormError(friendly(e))) },
-           ...(r.pdf ? [{ label: 'Obre el PDF desat', run: () => obreFitxer(r.pdf) }] : [])],
+        : (r.pdf ? [{ label: 'Obre el PDF', noDesa: true, run: () => obreFitxer(r.pdf) }]
+                 : [{ label: 'Genera el PDF', run: () => generaPdfFactura(r.id, { obrir: false }).then(() => { toast('PDF desat'); renderMain(); }).catch(e => showFormError(friendly(e))) }]),
       fields: [
         { key: 'numero_complet', label: 'Número', type: 'info', fmt: r => r.numero_complet || '(s’assigna en emetre)' },
         { key: 'estat', label: 'Estat', type: 'info', fmt: r => (OPT.estat_factura.find(o => o[0] === r.estat) || [])[1] || r.estat },
@@ -632,7 +786,7 @@ const SCHEMA = {
         { key: 'agrupacio_id', label: 'Agrupació (només recurrents)', type: 'ref', ref: 'agrupacions', dependsOn: 'client_id', ro: esEmesa,
           filter: (r, f) => Number(r.client_id) === Number(f.client_id) },
         { key: 'amb_linies', label: 'Tipus', type: 'select', options: OPT.tipus_factura, bool: true, required: true, default: 'true', ro: r => esEmesa(r) || (!!r && r.origen === 'recurrent'), hint: 'la recurrent és sempre sense línies' },
-        { key: 'tema', label: 'Caràtula', type: 'select', options: OPT.tema_factura, hint: 'buit = automàtica: verda si l’agrupació inclou jardí, blava si no' },
+        { key: 'tema', label: 'Caràtula', type: 'select', options: OPT.tema_factura, hint: 'buit = automàtica: verda si l’agrupació inclou jardí, blava si no; si la canvies en una factura emesa, el PDF es refà' },
         { key: 'data_factura', label: 'Data de la factura', type: 'date', required: true, default: 'avui', ro: esEmesa },
         { key: 'periode_inici', label: 'Període: inici', type: 'date', ro: esEmesa },
         { key: 'periode_fi', label: 'Període: fi', type: 'date', ro: esEmesa },
@@ -736,6 +890,7 @@ const SCHEMA = {
         { key: 'email_acces', label: 'Correu d’accés a l’aplicació', type: 'email', dup: 'exact', hint: 'el mateix amb què entra; lliga la persona amb el que fa' },
         { key: 'rol', label: 'Rol', type: 'select', options: OPT.rol, required: true, default: 'tecnic' },
         { key: 'codi_pressupost', label: 'Lletra als pressupostos', type: 'text', hint: 'una majúscula: X, E, M…' },
+        { key: 'titol_signatura', label: 'Titulació sota la signatura', type: 'textarea', hint: 'als pressupostos d’agrupació, sota el nom; una línia per títol' },
         { key: 'equip_id', label: 'Equip', type: 'ref', ref: 'equips' },
         { key: 'data_alta', label: 'Data d’alta', type: 'date' },
         { key: 'data_baixa', label: 'Data de baixa', type: 'date' },
@@ -754,7 +909,7 @@ const SCHEMA = {
       children: [{ table: 'pressupost_tasca_linies', fk: 'pressupost_id', label: 'Línies del pressupost', editable: r => !r.factura_id, sum: { field: 'base', label: 'Subtotal (sense IVA)' } }],
       actions: r => [
         { label: r.pdf ? 'Regenera el PDF' : 'Genera el PDF', run: () => generaPdfPressupost(r.id).then(() => { toast('PDF desat'); renderMain(); }).catch(e => showFormError(friendly(e))) },
-        ...(r.pdf ? [{ label: 'Obre el PDF desat', run: () => obreFitxer(r.pdf) }] : []),
+        ...(r.pdf ? [{ label: 'Obre el PDF desat', noDesa: true, run: () => obreFitxer(r.pdf) }] : []),
         ...(!r.factura_id ? [{ label: 'Converteix en factura', run: () => facturaPressupost(r.id) }] : []),
       ],
       fields: [
@@ -791,6 +946,57 @@ const SCHEMA = {
         { key: 'base', label: 'Total', type: 'info', fmt: r => eur(r.base) },
       ],
     },
+    clausules_pressupost: {
+      label: 'Clàusules de pressupost', nou: 'Nova clàusula', order: 'ordre',
+      display: r => r.nom,
+      list: ['ambit', 'ordre', 'nom', 'titol', 'obligatoria'],
+      fields: [
+        { key: 'ambit', label: 'Part', type: 'select', options: OPT.ambit_clausula, required: true, default: 'piscina' },
+        { key: 'ordre', label: 'Ordre dins de la part', type: 'integer', min: 1, required: true, default: 10 },
+        { key: 'nom', label: 'Nom curt', type: 'text', required: true, hint: 'com surt a la casella del pressupost: "Neteja de dipòsits"' },
+        { key: 'titol', label: 'Encapçalament al PDF', type: 'text', hint: 'en negreta i majúscules: "MANTENIMENT DE LA PISCINA"; buit si no en té' },
+        { key: 'obligatoria', label: 'Obligatòria (surt sempre que el pressupost inclou aquesta part)', type: 'boolean' },
+        { key: 'text', label: 'Text', type: 'textarea', wide: true, hint: 'una línia per paràgraf · una línia que comença amb "· " és un punt de llista · **entre asteriscs** surt en negreta · buit si només és un encapçalament · claudàtors que s’omplen sols: [preu mensual sense IVA], [població del lloc], [mes], [any], [client], [lloc]' },
+        { key: 'observacions', label: 'Observacions (no surten al PDF)', type: 'textarea' },
+      ],
+    },
+    pressupostos_agrupacio: {
+      label: 'Pressupostos d’agrupació', nou: 'Nou pressupost d’agrupació', order: 'data', desc: true,
+      display: r => (r.numero || 'pressupost') + ' — ' + L('clients', r.client_id),
+      list: ['numero', 'data', 'client_id', 'lloc_id', 'inclou', 'preu_mensual', 'estat', 'treballador_id'],
+      computed: {
+        inclou: { label: 'Inclou', fn: r => inclouText(r) },
+        preu_mensual: { label: 'Preu mensual', num: true, fn: r => eur(preuMensualPressupost(r)) },
+      },
+      filtres: [{ key: 'data', tipus: 'dates', label: 'Data' }, { key: 'lloc_id', tipus: 'ref', ref: 'llocs', label: 'Lloc' }],
+      validate: p => (p.inclou_jardi || p.inclou_piscina || p.inclou_aigues_grises) ? null : 'Marca almenys una part: jardí, piscina o aigües grises.',
+      actions: r => [
+        { label: r.pdf ? 'Regenera el PDF' : 'Genera el PDF', run: () => generaPdfPressupostAgrupacio(r.id).then(() => { toast('PDF desat'); renderMain(); }).catch(e => showFormError(friendly(e))) },
+        ...(r.pdf ? [{ label: 'Obre el PDF desat', noDesa: true, run: () => obreFitxer(r.pdf) }] : []),
+      ],
+      fields: [
+        { key: 'numero', label: 'Número', type: 'info', fmt: r => r.numero || '(s’assigna en desar)' },
+        { key: 'client_id', label: 'Client', type: 'ref', ref: 'clients', required: true, optionLabel: clientAmbLlocs },
+        { key: 'lloc_id', label: 'Lloc', type: 'ref', ref: 'llocs', dependsOn: 'client_id', filter: (r, f) => Number(r.client_id) === Number(f.client_id) },
+        { key: 'data', label: 'Data', type: 'date', required: true, default: 'avui' },
+        { key: 'treballador_id', label: 'Qui el fa', type: 'ref', ref: 'treballadors', default: () => { const t = treballadorActual(); return t ? t.id : ''; }, hint: 'la seva lletra va al número' },
+        { key: 'inclou_jardi', label: 'Inclou el jardí', type: 'boolean', grup: 'I' },
+        { key: 'inclou_piscina', label: 'Inclou la piscina', type: 'boolean', grup: 'I' },
+        { key: 'inclou_aigues_grises', label: 'Inclou les aigües grises', type: 'boolean', grup: 'I' },
+        { key: 'preu_jardi', label: 'Preu mensual del jardí (sense IVA)', type: 'number', step: '0.01' },
+        { key: 'preu_piscina', label: 'Preu mensual de la piscina (sense IVA)', type: 'number', step: '0.01' },
+        { key: 'preu_aigues_grises', label: 'Preu mensual de les aigües grises (sense IVA)', type: 'number', step: '0.01' },
+        { key: 'clausules_ids', label: 'Clàusules opcionals', type: 'multi', ref: 'clausules_pressupost', wide: true,
+          filter: (r, f) => !r.obligatoria && (r.ambit === 'general' || !!f['inclou_' + r.ambit]), optgroup: r => ambitLabel(r.ambit), ordreGrups: ORDRE_PARTS.map(ambitLabel), optionLabel: r => r.nom,
+          hint: 'les obligatòries de cada part marcada hi surten sempre, no cal triar-les' },
+        { key: 'signant_id', label: 'Qui el signa', type: 'ref', ref: 'treballadors', default: () => { const t = C.rows('treballadors').filter(x => x.actiu && x.titol_signatura).sort((a, b) => a.id - b.id)[0]; return t ? t.id : ''; }, hint: 'nom i titulació al peu del pressupost (la titulació és a la fitxa del treballador)' },
+        { key: 'tema', label: 'Caràtula', type: 'select', options: OPT.tema_factura, hint: 'buit = automàtica: verda si inclou jardí, blava si no' },
+        { key: 'estat', label: 'Estat', type: 'select', options: OPT.estat_pressupost, required: true, default: 'esborrany' },
+        { key: 'data_acceptacio', label: 'Data d’acceptació', type: 'date' },
+        { key: 'pdf', label: 'PDF', type: 'info', fmt: r => r.pdf ? String(r.pdf).split('/').pop() : '(encara no generat)' },
+        { key: 'observacions', label: 'Observacions (no surten al PDF)', type: 'textarea' },
+      ],
+    },
     proveidors: {
       label: 'Proveïdors', nou: 'Nou proveïdor', order: 'nom',
       display: r => r.nom,
@@ -816,28 +1022,49 @@ const SCHEMA = {
     factures_proveidor: {
       label: 'Factures de proveïdor', nou: 'Nova factura de proveïdor (a mà)', order: 'data_factura', desc: true,
       display: (r, L) => (r.numero || 'sense número') + ' — ' + L('proveidors', r.proveidor_id) + ' — ' + dmy(r.data_factura),
-      list: ['data_factura', 'proveidor_id', 'numero', 'concepte', 'total', 'data_venciment', 'pagada', 'estat'],
-      filtres: [{ key: 'data_factura', tipus: 'dates', label: 'Data' }, { key: 'proveidor_id', tipus: 'ref', ref: 'proveidors', label: 'Proveïdor' }],
+      list: ['data_factura', 'proveidor_id', 'numero', 'concepte', 'total', 'compte', 'conforme', 'data_venciment', 'pagada', 'estat'],
+      computed: {
+        compte: { label: 'Compte', fn: (r, C) => { const c = C.get('comptes_despesa', r.compte_despesa_id); return c ? c.codi : ''; } },
+        conforme: { label: 'Conforme', fn: (r, C) => { const t = C.get('treballadors', r.conforme_treballador_id); return (t ? 'C' + inicialsTreballador(t) : '') + (r.conforme_data ? ' ' + dmy(r.conforme_data) : ''); } },
+      },
+      filtres: [{ key: 'data_factura', tipus: 'dates', label: 'Data' }, { key: 'proveidor_id', tipus: 'ref', ref: 'proveidors', label: 'Proveïdor' }, { key: 'compte_despesa_id', tipus: 'ref', ref: 'comptes_despesa', label: 'Compte' }],
+      validate: (p, id) => !id && p.estat === 'ok' && !(p.compte_despesa_id && p.conforme_treballador_id && p.conforme_data) ? faltaConformitat : null,
+      abansDesar: (p, id) => { const r = id ? C.get('factures_proveidor', id) : null; const abans = r ? String(r.data_venciment || '').slice(0, 10) : ''; if ((p.data_venciment || '') !== abans) p.venciment_origen = p.data_venciment ? 'manual' : null; },
       actions: r => [
-        ...(r.pdf ? [{ label: 'Obre el PDF', run: () => obreFitxer(r.pdf) }] : []),
+        ...(r.pdf ? [{ label: 'Obre el PDF', noDesa: true, run: () => obreFitxer(r.pdf) }] : []),
         ...(r.estat === 'revisar' ? [{ label: 'Marca com a revisada', run: () => marcaRevisada(r.id) }] : []),
       ],
       fields: [
         { key: 'proveidor_id', label: 'Proveïdor', type: 'ref', ref: 'proveidors', required: true },
         { key: 'numero', label: 'Número de factura', type: 'text' },
         { key: 'data_factura', label: 'Data de la factura', type: 'date', required: true, default: 'avui' },
-        { key: 'data_venciment', label: 'Venciment', type: 'date' },
+        { key: 'data_venciment', label: 'Venciment (data de cobrament)', type: 'date', color: (v, r) => r ? estatVenciment(r).classe : '', nota: (vals, r) => estatVenciment(r, vals) },
         { key: 'concepte', label: 'Concepte', type: 'text' },
         { key: 'base_imponible', label: 'Base imposable', type: 'number', step: '0.01' },
         { key: 'iva_percent', label: 'IVA %', type: 'number', step: '0.01' },
         { key: 'quota_iva', label: 'Quota IVA', type: 'number', step: '0.01' },
         { key: 'total', label: 'Total', type: 'number', step: '0.01', required: true },
+        { key: 'compte_despesa_id', label: 'Compte de despesa', type: 'ref', ref: 'comptes_despesa', optionLabel: compteLabel, hint: 'el de la conformitat manuscrita: CXA · 6001001 · 21/04/2026' },
+        { key: 'conforme_treballador_id', label: 'Conforme per', type: 'ref', ref: 'treballadors', filter: r => potConformar(r), optionLabel: r => inicialsTreballador(r) + ' — ' + nomTreballador(r), hint: 'les inicials que van després de la C' },
+        { key: 'conforme_data', label: 'Data de la conformitat', type: 'date' },
+        { key: 'conformitat_llegida', label: 'Conformitat llegida al PDF', type: 'info', fmt: r => r.conformitat_llegida || '(cap)' },
         { key: 'forma_pagament', label: 'Forma de pagament', type: 'select', options: OPT.forma_pagament_prov },
         { key: 'pagada', label: 'Pagada', type: 'boolean' },
         { key: 'data_pagament', label: 'Data de pagament', type: 'date' },
         { key: 'dubtosa', label: 'De cobrament dubtós', type: 'boolean' },
         { key: 'estat', label: 'Estat', type: 'select', options: OPT.estat_fp, required: true, default: 'ok' },
         { key: 'pdf', label: 'PDF', type: 'file', folder: 'proveidors' },
+        { key: 'observacions', label: 'Observacions', type: 'textarea' },
+      ],
+    },
+    comptes_despesa: {
+      label: 'Comptes de despesa', nou: 'Nou compte de despesa', order: 'codi',
+      display: r => compteLabel(r),
+      list: ['codi', 'nom', 'observacions'],
+      validate: p => /^[0-9]{7}$/.test(p.codi || '') ? null : 'El codi del compte ha de tenir 7 xifres (6001001).',
+      fields: [
+        { key: 'codi', label: 'Codi', type: 'text', required: true, dup: 'exact', hint: '7 xifres: 6001001' },
+        { key: 'nom', label: 'Nom', type: 'text', required: true, hint: 'PLANTES, CLOR, LLOGUER MAQUINÀRIA…' },
         { key: 'observacions', label: 'Observacions', type: 'textarea' },
       ],
     },
@@ -923,12 +1150,28 @@ const SCHEMA = {
         { key: 'factor_torrid', label: 'Factor tòrrid (× escenari alt)', type: 'number', step: '0.001', min: 1, required: true, default: 1.15 },
       ],
     },
+    poblacions_sol: {
+      label: 'Poblacions (hora del sol)', nou: 'Nova població', order: 'nom',
+      display: r => r.nom,
+      list: ['nom', 'latitud', 'longitud', 'avui'],
+      computed: { avui: { label: 'Avui: sortida → posta', fn: r => { const s = solEnDia(r.latitud, r.longitud, avui()); return s ? s.sortida + ' → ' + s.posta : ''; } } },
+      fields: [
+        { key: 'nom', label: 'Població', type: 'text', required: true, dup: 'exact' },
+        { key: 'latitud', label: 'Latitud', type: 'number', step: '0.000001', required: true, hint: 'de Google Maps: clic dret al mapa i copia les coordenades' },
+        { key: 'longitud', label: 'Longitud', type: 'number', step: '0.000001', required: true },
+        { key: 'observacions', label: 'Observacions', type: 'textarea' },
+      ],
+    },
     jardins: {
       label: 'Jardins', nou: 'Nou jardí', order: 'nom',
       display: r => r.nom + ' — ' + ((C.get('llocs', r.lloc_id) || {}).nom || ''),
-      list: ['nom', 'lloc_id', 'm2_gespa', 'm2_arbusts', 'm2_prat', 'agrupacio_id', 'equip_id', 'programadors'],
-      computed: { programadors: { label: 'Programadors', fn: llistaEnllacos('jardi_programadors', 'jardi_id', 'programadors', 'programador_id') } },
+      list: ['nom', 'lloc_id', 'm2_gespa', 'm2_arbusts', 'm2_prat', 'agrupacio_id', 'equip_id', 'programadors', 'llums_avui'],
+      computed: {
+        programadors: { label: 'Programadors', fn: llistaEnllacos('jardi_programadors', 'jardi_id', 'programadors', 'programador_id') },
+        llums_avui: { label: 'Fanals avui (L1 · L2)', fn: r => liniaAvui(r, 'l1') + ' · ' + liniaAvui(r, 'l2') },
+      },
       children: [{ table: 'jardi_programadors', fk: 'jardi_id', label: 'Programadors d’aquest jardí' }],
+      validate: validaEstiu,
       fields: [
         { key: 'lloc_id', label: 'Lloc', type: 'ref', ref: 'llocs', required: true },
         { key: 'nom', label: 'Nom', type: 'text', required: true, default: 'jardí', hint: '"davant", "darrere" si n’hi ha més d’un', dup: 'exact', dupScope: 'lloc_id' },
@@ -946,18 +1189,18 @@ const SCHEMA = {
         { key: 'hra', label: 'Homogeneïtat reg arbusts (%)', type: 'integer', min: 0, max: 100 },
         { key: 'hrp', label: 'Homogeneïtat reg prat (%)', type: 'integer', min: 0, max: 100 },
         { key: 'hrap', label: 'Homogeneïtat reg arbusts del prat (%)', type: 'integer', min: 0, max: 100 },
-        { key: 'fanals_estiu_on', label: 'Fanals estiu: encesa', type: 'time' },
-        { key: 'fanals_estiu_off', label: 'Fanals estiu: apagada', type: 'time' },
-        { key: 'fanals_hivern_on', label: 'Fanals hivern: encesa', type: 'time' },
-        { key: 'fanals_hivern_off', label: 'Fanals hivern: apagada', type: 'time' },
+        ...campsEstiu,
+        ...campsLinia('l1', 'Línia d’il·luminació 1 (fanals)'),
+        ...campsLinia('l2', 'Línia d’il·luminació 2 (fanals)'),
         { key: 'observacions', label: 'Observacions', type: 'textarea' },
       ],
     },
     piscines: {
       label: 'Piscines', nou: 'Nova piscina', order: 'nom',
       display: r => r.nom + ' — ' + ((C.get('llocs', r.lloc_id) || {}).nom || ''),
-      list: ['nom', 'lloc_id', 'llargada', 'amplada', 'profunditat', 'tractament', 'agrupacio_id', 'treballador_id', 'bombes', 'filtres', 'cloradors'],
+      list: ['nom', 'lloc_id', 'llargada', 'amplada', 'profunditat', 'tractament', 'agrupacio_id', 'treballador_id', 'bombes', 'filtres', 'cloradors', 'focus_avui'],
       computed: {
+        focus_avui: { label: 'Focus avui', fn: r => liniaAvui(r, 'focus') },
         bombes: { label: 'Bombes', fn: llistaEnllacos('piscina_bombes', 'piscina_id', 'bombes', 'bomba_id') },
         filtres: { label: 'Filtres', fn: llistaEnllacos('piscina_filtres', 'piscina_id', 'filtres', 'filtre_id') },
         cloradors: { label: 'Cloradors', fn: llistaEnllacos('piscina_cloradors', 'piscina_id', 'cloradors_salins', 'clorador_id') },
@@ -967,6 +1210,7 @@ const SCHEMA = {
         { table: 'piscina_filtres', fk: 'piscina_id', label: 'Filtres d’aquesta piscina' },
         { table: 'piscina_cloradors', fk: 'piscina_id', label: 'Cloradors salins d’aquesta piscina' },
       ],
+      validate: validaEstiu,
       fields: [
         { key: 'lloc_id', label: 'Lloc', type: 'ref', ref: 'llocs', required: true },
         { key: 'nom', label: 'Nom', type: 'text', required: true, default: 'piscina', hint: '"gran", "infantil" si n’hi ha més d’una', dup: 'exact', dupScope: 'lloc_id' },
@@ -981,6 +1225,8 @@ const SCHEMA = {
         { key: 'cabal_dutxes', label: 'Cabal de les dutxes (l/polsació)', type: 'number', step: '0.1', min: 0, default: 6 },
         { key: 'interior', label: 'Interior', type: 'boolean' },
         { key: 'climatitzada', label: 'Climatitzada', type: 'boolean' },
+        ...campsEstiu,
+        ...campsLinia('focus', 'Línia de focus de dins de la piscina'),
         { key: 'observacions', label: 'Observacions', type: 'textarea' },
       ],
     },
@@ -992,8 +1238,8 @@ const MSG = {
   jardins_gespa_coherent: 'Sense m² de gespa no hi pot haver necessitats hídriques ni homogeneïtat de gespa.',
   jardins_arbusts_coherent: 'Sense m² d’arbusts no hi pot haver necessitats hídriques ni homogeneïtat d’arbusts.',
   jardins_prat_coherent: 'Sense m² de prat no hi pot haver necessitats hídriques ni homogeneïtat de prat.',
-  jardins_fanals_estiu: 'Les hores de fanals d’estiu van per parelles: totes dues o cap.',
-  jardins_fanals_hivern: 'Les hores de fanals d’hivern van per parelles: totes dues o cap.',
+  estiu_inici_check: 'Les dates d’estiu han de ser dd/mm (15/06).',
+  estiu_fi_check: 'Les dates d’estiu han de ser dd/mm (15/09).',
   jardi_programadors_unic: 'Aquest model ja és a la llista: canvia’n la quantitat en lloc d’afegir-lo dos cops.',
   piscina_bombes_unic: 'Aquest model ja és a la llista: canvia’n la quantitat en lloc d’afegir-lo dos cops.',
   piscina_filtres_unic: 'Aquest model ja és a la llista: canvia’n la quantitat en lloc d’afegir-lo dos cops.',
@@ -1026,6 +1272,11 @@ function friendly(err) {
   const m = (err && err.message) || String(err);
   const nn = m.match(/null value in column "(\w+)"/);
   if (nn) { const td = SCHEMA.tables[state.table]; const f = td && fieldDef(td, nn[1]); return `Falta un camp obligatori: ${f ? f.label : nn[1]}.`; }
+  if (/row-level security|permission denied/i.test(m)) {
+    const taula = (m.match(/for (?:table|relation) "?(\w+)"?/) || [])[1] || (state.table || '');
+    const t = treballadorActual();
+    return `No tens permís per a aquesta acció${taula ? ' (taula ' + taula + ')' : ''}. El programa et veu com a ${t ? nomTreballador(t) + ', rol ' + t.rol : 'un usuari sense fitxa de treballador (' + (user ? user.email : '') + ')'}; només oficina i administradors poden escriure. Si el rol és correcte, executa el SQL de permisos (042).`;
+  }
   for (const k in MSG) if (m.includes(k)) return MSG[k];
   return m;
 }
@@ -1039,7 +1290,7 @@ const C = {
   rows: t => cache[t] || [],
   get: (t, id) => { const pk = (SCHEMA.tables[t] || {}).pk; return pk ? (cache[t] || []).find(r => String(r[pk]) === String(id)) : (cache[t] || []).find(r => r.id === Number(id)); },
 };
-const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {} };
+const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) } };
 const L = (t, id) => { const r = C.get(t, id); return r ? SCHEMA.tables[t].display(r, L) : ''; };
 
 /* =====================================================================
@@ -1186,7 +1437,7 @@ function renderApp() {
         <button data-mode="entrada" class="${state.mode === 'entrada' ? 'on' : ''}">Entrada de dades</button>
         <button data-mode="consulta" class="${state.mode === 'consulta' ? 'on' : ''}">Consulta de dades</button>
       </span>
-      <span class="who">${h(nomTreballador(treballadorActual()) || user.email)} <button class="btn ghost small" id="logout">Surt</button></span>
+      <span class="who">${h(nomTreballador(treballadorActual()) || user.email)}${treballadorActual() ? ` <span class="sub">· ${h((OPT.rol.find(o => o[0] === treballadorActual().rol) || [])[1] || treballadorActual().rol)}</span>` : ' <span class="sub">· sense fitxa de treballador</span>'} <button class="btn ghost small" id="logout">Surt</button></span>
     </div>
     <div class="shell">
       <nav class="side">
@@ -1292,6 +1543,19 @@ function optionsHTML(f, vals, current) {
   return out;
 }
 
+// caselles múltiples (una per registre de la taula referida), agrupades si el camp té optgroup
+function multiHTML(f, vals, marcats) {
+  let rows = C.rows(f.ref).filter(r => r.actiu);
+  if (f.filter) rows = rows.filter(r => f.filter(r, vals, C)); // les que ja no toquen desapareixen (i no es desen)
+  const items = rows.map(r => ({ id: r.id, label: f.optionLabel ? f.optionLabel(r, C) : L(f.ref, r.id), grup: f.optgroup ? f.optgroup(r, vals, C) : null, ordre: r.ordre || 0 }))
+    .sort((a, b) => (a.ordre - b.ordre) || a.label.localeCompare(b.label, 'ca'));
+  if (!items.length) return `<span class="hint">${h(f.buit || 'cap opció per triar')}</span>`;
+  const un = i => `<label><input type="checkbox" name="${f.key}" value="${i.id}" ${marcats.has(i.id) ? 'checked' : ''}><span>${h(i.label)}</span></label>`;
+  if (!f.optgroup) return items.map(un).join('');
+  const ordre = f.ordreGrups || ORDRE_GRUPS;
+  const grups = [...new Set(items.map(i => i.grup))].sort((a, b) => ordre.indexOf(a) - ordre.indexOf(b));
+  return grups.map(g => `<h4>${h(g)}</h4>${items.filter(i => i.grup === g).map(un).join('')}`).join('');
+}
 function valueOf(f, row) { return row ? (f.derive ? f.derive(row, C) : row[f.key]) : defaultValue(f); }
 function inputHTML(f, vals, row) {
   const v = valueOf(f, row);
@@ -1304,6 +1568,7 @@ function inputHTML(f, vals, row) {
     case 'textarea': return `<textarea ${n} ${req}>${h(v)}</textarea>`;
     case 'select': return `<select ${n} ${req} class="${f.color ? f.color(v, row) : ''}"><option value="">${f.required ? 'Tria…' : '—'}</option>${f.options.map(o => `<option value="${o[0]}" ${String(v) === o[0] ? 'selected' : ''}>${h(o[1])}</option>`).join('')}</select>`;
     case 'ref': return `<select ${n} ${req} data-ref="${f.ref}">${optionsHTML(f, vals, v)}</select>`;
+    case 'multi': return `<div class="multi" data-multi="${f.key}">${multiHTML(f, vals, new Set((Array.isArray(v) ? v : []).map(Number)))}</div>`;
     case 'boolean': return `<input type="checkbox" ${n} value="1" ${v === true || v === 'true' ? 'checked' : ''}>`;
     case 'number': return `<input type="number" ${n} ${req} step="${f.step || 'any'}" ${f.min != null ? `min="${f.min}"` : ''} ${f.max != null ? `max="${f.max}"` : ''} value="${h(v)}" class="${f.color ? f.color(v, row) : ''}" inputmode="decimal">`;
     case 'integer': return `<input type="number" ${n} ${req} step="1" ${f.min != null ? `min="${f.min}"` : ''} ${f.max != null ? `max="${f.max}"` : ''} value="${h(v)}">`;
@@ -1323,10 +1588,11 @@ function formHTML(td, row) {
   const editing = !!row;
   const unCamp = f => {
     const wide = f.type === 'textarea' || f.wide ? 'wide' : '';
+    if (f.type === 'seccio') return `<h3 class="seccio wide">${h(f.label)}${f.nota ? `<span class="nota avui" data-nota-for="${f.key}" hidden></span>` : ''}</h3>`;
     if (f.type === 'hidden') return inputHTML(f, vals, row);
     const dk = `data-fkey="${f.key}"`;
     if (f.type === 'boolean') return `<label class="f chk" ${dk}><span>${inputHTML(f, vals, row)}</span><span class="l">${h(f.label)}</span></label>`;
-    return `<label class="f ${wide}" ${dk}><span class="l">${h(f.label)}${f.required ? ' <b>*</b>' : ''}${f.quan ? `<span class="toca" data-toca="${f.key}"></span>` : ''}</span>${inputHTML(f, vals, row)}${f.hint ? `<span class="hint">${h(f.hint)}</span>` : ''}${f.dup ? `<span class="dup" data-dup="${f.key}"></span>` : ''}${f.avis ? `<div class="avis" data-avis-for="${f.key}" hidden></div>` : ''}</label>`;
+    return `<label class="f ${wide}" ${dk}><span class="l">${h(f.label)}${f.required ? ' <b>*</b>' : ''}${f.quan ? `<span class="toca" data-toca="${f.key}"></span>` : ''}</span>${inputHTML(f, vals, row)}${f.hint ? `<span class="hint">${h(f.hint)}</span>` : ''}${f.nota ? `<span class="hint nota" data-nota-for="${f.key}" hidden></span>` : ''}${f.dup ? `<span class="dup" data-dup="${f.key}"></span>` : ''}${f.avis ? `<div class="avis" data-avis-for="${f.key}" hidden></div>` : ''}</label>`;
   };
   // els camps amb el mateix "grup" (caselles) van junts en una fila de tres
   const trossos = []; let grupObert = null;
@@ -1376,9 +1642,17 @@ function childrenHTML(td, row) {
           ${suma}
         </tbody></table>`
       : `<div class="empty">Cap.</div>`;
-    if (!editable) return `<div class="children"><h3>${h(ch.label)}</h3>${tbl}</div>`;
+    if (!editable) {
+      const tblObre = ch.obre && rows.length
+        ? `<table class="tbl informe"><thead><tr>${cols.map(k => `<th class="${isNum(ct, k) ? 'num' : ''}">${h(colLabel(ct, k))}</th>`).join('')}</tr></thead><tbody>
+            ${rows.map(r => `<tr class="row" data-obre-taula="${ch.table}" data-obre-id="${r.id}">${cols.map(k => `<td class="${isNum(ct, k) ? 'num' : ''}">${h(cellText(ct, k, r))}</td>`).join('')}</tr>`).join('')}
+          </tbody></table>`
+        : tbl;
+      const nou = ch.nou ? `<div class="bar" style="margin-top:8px"><button type="button" class="btn ghost small" data-nou-fill="${ch.table}" data-fk="${ch.fk}" data-id="${row.id}">${h(ch.nou)}</button></div>` : '';
+      return `<div class="children"><h3>${h(ch.label)}</h3>${tblObre}${nou}</div>`;
+    }
     const add = `<div class="addrow" data-child="${ch.table}">
-      ${ct.fields.filter(f => f.type !== 'info').map(f => f.type === 'boolean'
+      ${ct.fields.filter(f => f.type !== 'info' && f.type !== 'seccio').map(f => f.type === 'boolean'
         ? `<label class="f chk" style="flex:${f.ample || 1} 1 0"><span>${inputHTML(f, {}, null)}</span><span class="l">${h(f.label)}</span></label>`
         : `<label class="f" style="flex:${f.ample || 1} 1 0"><span class="l">${h(f.label)}${f.required ? ' <b>*</b>' : ''}</span>${inputHTML(f, {}, null)}</label>`).join('')}
       <button type="button" class="btn small" data-add="${ch.table}">Afegeix</button>
@@ -1397,6 +1671,7 @@ function cellText(td, key, row) {
   switch (f.type) {
     case 'info': return f.fmt ? f.fmt(row) : String(v);
     case 'ref': return L(f.ref, v);
+    case 'multi': return (Array.isArray(v) ? v : []).map(id => { const r = C.get(f.ref, id); return r ? (f.optionLabel ? f.optionLabel(r, C) : L(f.ref, id)) : ''; }).filter(Boolean).join(', ');
     case 'boolean': return v ? 'sí' : 'no';
     case 'select': { const o = f.options.find(o => o[0] === String(v)); return o ? o[1] : String(v); }
     case 'date': return dmy(v);
@@ -1493,9 +1768,14 @@ function bindMain(td) {
         sel.innerHTML = optionsHTML(f, vals, cur);
         if (!sel.querySelector(`option[value="${cur}"]`)) sel.value = '';
       });
+      td.fields.filter(f => f.type === 'multi' && changed !== f.key).forEach(f => {
+        const box = frm.querySelector(`[data-multi="${f.key}"]`); if (!box) return;
+        const marcats = new Set([...box.querySelectorAll(`[name="${f.key}"]:checked`)].map(e => Number(e.value)));
+        box.innerHTML = multiHTML(f, vals, marcats);
+      });
     });
     frm.addEventListener('submit', e => { e.preventDefault(); save(td, frm); });
-    const viu = () => { updateCtx(td, frm); checkDups(td, frm); pintaColors(td, frm); aplicaVisibilitat(td, frm); pintaAvisos(td, frm); };
+    const viu = () => { updateCtx(td, frm); checkDups(td, frm); pintaColors(td, frm); aplicaVisibilitat(td, frm); pintaAvisos(td, frm); pintaNotes(td, frm); };
     frm.addEventListener('input', viu); frm.addEventListener('change', viu); viu();
     // focs artificials quan un valor queda en verd (fort: grans; suau: petits), un cop per canvi de color
     const darrerColor = {}, temps = {};
@@ -1512,10 +1792,14 @@ function bindMain(td) {
     const baixa = $('#baixa'); if (baixa) baixa.addEventListener('click', () => toggleActiu(td));
   }
   main.querySelectorAll('[data-action]').forEach(b => b.addEventListener('click', async () => {
+    const accio = td.actions(C.get(state.table, state.editing))[Number(b.dataset.action)];
+    if (accio.noDesa) { accio.run(); return; } // obrir un PDF no desa res: així el navegador no bloqueja la finestra
     if (frm && !(await desaFormulari(td, frm))) return;
     td.actions(C.get(state.table, state.editing))[Number(b.dataset.action)].run();
   }));
   main.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => addChild(td, b.dataset.add, b.closest('.addrow'))));
+  main.querySelectorAll('tr[data-obre-taula]').forEach(tr => tr.addEventListener('click', () => { state.mode = 'consulta'; state.table = tr.dataset.obreTaula; state.editing = Number(tr.dataset.obreId); renderApp(); window.scrollTo({ top: 0 }); }));
+  main.querySelectorAll('[data-nou-fill]').forEach(b => b.addEventListener('click', () => { state.keep = { [b.dataset.fk]: Number(b.dataset.id) }; state.mode = 'entrada'; state.table = b.dataset.nouFill; state.editing = null; renderApp(); window.scrollTo({ top: 0 }); }));
   main.querySelectorAll('.addrow[data-child]').forEach(box => {
     const ct = SCHEMA.tables[box.dataset.child]; if (!ct.autofill) return;
     const sel = box.querySelector(`[name="${ct.autofill.from}"]`); if (!sel) return;
@@ -1536,7 +1820,7 @@ function bindMain(td) {
   bindRows(td);
 }
 function bindRows(td) {
-  document.querySelectorAll('#main tr.row').forEach(tr => tr.addEventListener('click', () => {
+  document.querySelectorAll('#main tr.row:not([data-obre-taula])').forEach(tr => tr.addEventListener('click', () => {
     state.editing = td.pk ? tr.dataset.id : Number(tr.dataset.id); renderMain(); window.scrollTo({ top: 0 });
   }));
 }
@@ -1584,6 +1868,19 @@ function pintaColors(td, frm) {
     const c = f.color(el.value); if (c) el.classList.add(c);
   });
 }
+// notes vives sota un camp (text i color calculats amb tot el formulari), p. ex. si el venciment coincideix amb les condicions del proveïdor
+function pintaNotes(td, frm) {
+  if (!td.fields.some(f => f.nota)) return;
+  const vals = formValues(frm);
+  const row = state.editing ? C.get(state.table, state.editing) : null;
+  td.fields.filter(f => f.nota).forEach(f => {
+    const box = frm.querySelector(`[data-nota-for="${f.key}"]`), el = frm.querySelector(`[name="${f.key}"]`); if (!box) return;
+    const n = f.nota(vals, row, C) || {};
+    if (el) { el.classList.remove('v-ok', 'v-no', 'v-calc'); if (n.classe) el.classList.add(n.classe); }
+    box.textContent = n.text || ''; box.hidden = !n.text;
+    if (f.type !== 'seccio') box.className = 'hint nota' + (n.classe ? ' n-' + n.classe.replace('v-', '') : '');
+  });
+}
 function pintaAvisos(td, frm) {
   if (!td.fields.some(f => f.avis)) return;
   const vals = formValues(frm);
@@ -1626,6 +1923,7 @@ function aplicaVisibilitat(td, frm) {
     const w = frm.querySelector(`[data-fkey="${f.key}"]`); if (!w) return;
     const toca = f.visible(vals, C);
     const el = frm.querySelector(`[name="${f.key}"]`);
+    if (f.neteja && !toca && el && el.value !== '') el.value = ''; // camp que no toca amb aquesta tria: es buida (p. ex. els minuts quan passes de "posta de sol" a "sensor")
     const teValor = el && el.value !== '';
     w.hidden = !(toca || tot || teValor);
     const t = w.querySelector('[data-toca]'); if (t) t.textContent = toca ? 'toca avui' : (f.quan ? '(' + f.quan + ')' : '');
@@ -1677,6 +1975,7 @@ function showFormError(msg) {
 function readRaw(fields, box) {
   const o = {};
   fields.forEach(f => {
+    if (f.type === 'multi') { if (box.querySelector(`[data-multi="${f.key}"]`)) o[f.key] = [...box.querySelectorAll(`[name="${f.key}"]:checked`)].map(e => Number(e.value)); return; }
     const el = box.querySelector(`[name="${f.key}"]`); if (!el || el.disabled) return;
     if (f.type === 'boolean') o[f.key] = el.checked;
     else if (f.type === 'file') {
@@ -1701,6 +2000,7 @@ async function buildPayload(fields, raw) {
     const v = raw[f.key];
     switch (f.type) {
       case 'boolean': payload[f.key] = !!v; break;
+      case 'multi': payload[f.key] = Array.isArray(v) ? v : []; break;
       case 'number': payload[f.key] = v === '' || v == null ? null : Number(v); break;
       case 'integer': payload[f.key] = v === '' || v == null ? null : parseInt(v, 10); break;
       case 'ref': payload[f.key] = v === '' || v == null ? null : Number(v); break;
@@ -1731,14 +2031,16 @@ async function save(td, frm) {
     const raw = readRaw(td.fields, frm);
     const payload = await buildPayload(td.fields, raw);
     if (td.abansDesar) td.abansDesar(payload, id);
-    if (td.validate) { const m = td.validate(payload); if (m) { showFormError(m); return; } }
+    if (td.validate) { const m = td.validate(payload, id); if (m) { showFormError(m); return; } }
     btn.disabled = true;
+    const abans = id ? { ...(C.get(t, id) || {}) } : null;
     const res = id
       ? await sb.from(t).update(payload).eq(td.pk || 'id', id)
       : await sb.from(t).insert(payload).select(td.pk || 'id').single();
     btn.disabled = false;
     if (res.error) { showFormError(friendly(res.error)); return; }
     await loadTable(t);
+    if (id && td.despresDesar) { try { await td.despresDesar(id, payload, abans); } catch (e) { toastErr(friendly(e)); } }
     if (id) {
       state.editing = null; toast('Canvis desats');
     } else if (td.children && res.data && res.data.id) {
@@ -1766,10 +2068,12 @@ async function desaFormulari(td, frm) {
   try {
     const payload = await buildPayload(td.fields, readRaw(td.fields, frm));
     if (td.abansDesar) td.abansDesar(payload, id);
-    if (td.validate) { const m = td.validate(payload); if (m) { showFormError(m); return false; } }
+    if (td.validate) { const m = td.validate(payload, id); if (m) { showFormError(m); return false; } }
+    const abans = { ...(C.get(state.table, id) || {}) };
     const res = await sb.from(state.table).update(payload).eq(td.pk || 'id', id);
     if (res.error) { showFormError(friendly(res.error)); return false; }
     await loadTable(state.table);
+    if (td.despresDesar) { try { await td.despresDesar(id, payload, abans); } catch (e) { toastErr(friendly(e)); } }
     return true;
   } catch (e) { showFormError(friendly(e)); return false; }
 }
@@ -1812,9 +2116,10 @@ async function emetFactura(id) {
 }
 
 async function obreFitxer(path) {
+  const w = window.open('', '_blank'); // s'obre dins del clic, abans d'esperar l'enllaç, perquè el navegador no la bloquegi
   const { data, error } = await sb.storage.from(BUCKET).createSignedUrl(path, 3600);
-  if (error) { toastErr('No s’ha pogut obrir: ' + friendly(error)); return; }
-  window.open(data.signedUrl, '_blank');
+  if (error) { if (w) w.close(); toastErr('No s’ha pogut obrir: ' + friendly(error)); return; }
+  if (w) w.location.href = data.signedUrl; else window.open(data.signedUrl, '_blank');
 }
 
 /* ---------- PDF de la factura ---------- */
@@ -2099,6 +2404,129 @@ async function facturaPressupost(id) {
   state.mode = 'consulta'; state.table = 'factures'; state.editing = Number(data); renderApp(); window.scrollTo({ top: 0 });
 }
 
+/* ---------- Pressupostos d'agrupació: clàusules de text i PDF ---------- */
+// Text d'una clàusula: una línia per paràgraf; "· " al davant = punt de llista; **negreta**.
+function paragrafsClausula(txt) {
+  return String(txt || '').replace(/\r/g, '').split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+    const li = /^(?:[·•]|-|\*(?!\*))\s+/.test(l); // punt de llista: "· ", "- " o "* " (no confondre amb **negreta**)
+    const cos = li ? l.replace(/^(?:[·•]|-|\*(?!\*))\s+/, '') : l;
+    const runs = []; cos.split('**').forEach((t, i) => { if (t) runs.push({ t, b: i % 2 === 1 }); });
+    return { li, runs };
+  });
+}
+// paraules amb estil; "glue" = va enganxada a l'anterior (sense espai entremig)
+function tokensRics(runs) {
+  const toks = []; let prevEndsSpace = true;
+  runs.forEach(r => {
+    const startsSpace = /^\s/.test(r.t), endsSpace = /\s$/.test(r.t);
+    r.t.split(/\s+/).filter(Boolean).forEach((p, i) => toks.push({ t: p, b: r.b, glue: i === 0 && !startsSpace && !prevEndsSpace && toks.length > 0 }));
+    prevEndsSpace = endsSpace;
+  });
+  return toks;
+}
+// escriu un paràgraf justificat (amb trossos en negreta i punt de llista si cal); salta(y, alçada) torna la y on escriure (nova pàgina si cal)
+function escriuParagraf(doc, par, x, y, w, size, salta, color) {
+  const lh = size * 0.3528 * 1.38, ind = par.li ? 7 : 0, wx = w - ind;
+  const prepara = () => { doc.setFontSize(size); doc.setTextColor(...(color || [40, 40, 40])); }; // el peu de pàgina canvia mida i color
+  prepara();
+  // amplades sense kerning: el PDF tampoc no l'aplica, i així les paraules queden on toca
+  const mida = t => doc.getStringUnitWidth(t, { doKerning: false }) * size / doc.internal.scaleFactor;
+  const sw = b => { doc.setFont('helvetica', b ? 'bold' : 'normal'); return mida(' '); };
+  const toks = tokensRics(par.runs).map(t => { doc.setFont('helvetica', t.b ? 'bold' : 'normal'); return { ...t, w: mida(t.t) }; });
+  const lines = []; let cur = [], curW = 0;
+  toks.forEach(t => {
+    const gap = cur.length && !t.glue ? sw(t.b) : 0;
+    if (cur.length && curW + gap + t.w > wx) { lines.push(cur); cur = [{ ...t, glue: false }]; curW = t.w; }
+    else { cur.push(t); curW += gap + t.w; }
+  });
+  if (cur.length) lines.push(cur);
+  const esTitol = lines.length === 1 && toks.length > 0 && toks.every(t => t.b); // una línia sola en negreta ("GESPA:", "REG:"): que no quedi sola a peu de pàgina
+  lines.forEach((ln, i) => {
+    y = salta(y, i === 0 ? lh * (esTitol ? 4 : Math.min(2, lines.length)) : lh); prepara(); // un títol necessita lloc per a ell i dues línies del paràgraf següent
+    if (par.li && i === 0) { doc.setFont('helvetica', 'normal'); doc.text('•', x + 2, y); }
+    const last = i === lines.length - 1;
+    const gaps = ln.filter((t, j) => j > 0 && !t.glue).length;
+    const natural = ln.reduce((acc, t, j) => acc + t.w + (j > 0 && !t.glue ? sw(t.b) : 0), 0);
+    const extra = !last && gaps > 0 ? (wx - natural) / gaps : 0;
+    let cx = x + ind;
+    ln.forEach((t, j) => { if (j > 0 && !t.glue) cx += sw(t.b) + extra; doc.setFont('helvetica', t.b ? 'bold' : 'normal'); doc.text(t.t, cx, y); cx += t.w; });
+    y += lh;
+  });
+  return y;
+}
+// clàusules que surten en un pressupost: les obligatòries de cada part inclosa + les opcionals triades, per part i ordre
+function clausulesPressupost(pr) {
+  const ambits = ORDRE_PARTS.filter(a => a === 'general' || pr['inclou_' + a]);
+  const triades = new Set((pr.clausules_ids || []).map(Number));
+  return C.rows('clausules_pressupost').filter(c => c.actiu && ambits.includes(c.ambit) && (c.obligatoria || triades.has(c.id)))
+    .sort((a, b) => (ambits.indexOf(a.ambit) - ambits.indexOf(b.ambit)) || ((a.ordre || 0) - (b.ordre || 0)) || (a.id - b.id));
+}
+
+function pdfPressupostAgrupacio(pr) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const emp = C.rows('empresa').find(e => e.actiu) || {};
+  const client = C.get('clients', pr.client_id) || {};
+  const lloc = pr.lloc_id ? C.get('llocs', pr.lloc_id) : null;
+  const tema = pr.tema || (pr.inclou_jardi ? 'verd' : 'blau');
+  const ink = [40, 40, 40], grey = [125, 125, 125];
+  const M = 22, R = 210 - M, W = R - M, LIMIT = 262;
+  doc.setTextColor(...ink);
+  const text = (t, x, y, size, style, color, opt) => { doc.setTextColor(...(color || ink)); doc.setFont('helvetica', style || 'normal'); doc.setFontSize(size || 10); doc.text(t, x, y, opt); };
+  const wrap = (t, w, size, style) => { doc.setFont('helvetica', style || 'normal'); doc.setFontSize(size); return doc.splitTextToSize(String(t || ''), w); };
+  const peu = () => {
+    const l1 = [emp.nom, emp.nif ? 'NIF: ' + emp.nif : '', [emp.adreca, [emp.cp, emp.poblacio].filter(Boolean).join(' ')].filter(Boolean).join(' '), emp.telefon ? 'Tel: ' + emp.telefon : ''].filter(Boolean).join(' | ');
+    text(wrap(l1, W, 7.5), 105, 286, 7.5, 'normal', grey, { align: 'center' });
+  };
+  const logo = () => { const lw = 62, lh = lw * LOGO_RATIO; doc.addImage(LOGOS[tema], 'JPEG', (210 - lw) / 2, 12, lw, lh); return 12 + lh; };
+  const novaPagina = () => { peu(); doc.addPage(); logo(); return 50; };
+  const salta = (y, alt) => (y + alt > LIMIT ? novaPagina() : y);
+  // portada: títol amb el número i les parts, client; a baix, població i mes
+  logo();
+  const noms = [pr.inclou_jardi && 'JARDÍ', pr.inclou_piscina && 'PISCINA', pr.inclou_aigues_grises && 'AIGÜES GRISES'].filter(Boolean);
+  const article = { 'JARDÍ': 'DEL', 'PISCINA': 'DE LA', 'AIGÜES GRISES': 'DE LES' }[noms[0]] || 'DE';
+  const parts = noms.length ? article + ' ' + (noms.length === 1 ? noms[0] : noms.slice(0, -1).join(', ') + ' I ' + noms[noms.length - 1]) : '';
+  const titol = `PRESSUPOST ${pr.numero || 'ESBORRANY'} DE MANTENIMENT “DESPREOCUPA’T” ${parts} DE LA ZONA COMUNITÀRIA DE`;
+  const tL = wrap(titol, 156, 16, 'bold');
+  let y = 78; text(tL, 105, y, 16, 'bold', ink, { align: 'center' }); y += tL.length * 9;
+  const cL = wrap(client.nom || '', 156, 16, 'bold'); text(cL, 105, y, 16, 'bold', ink, { align: 'center' });
+  text(client.poblacio || (lloc && lloc.poblacio) || '', 105, 250, 15, 'bold', ink, { align: 'center' });
+  text(ompleClaudators('[mes] de [any]', pr), 105, 260, 13, 'normal', ink, { align: 'center' });
+  // contingut: comença directament amb les parts
+  y = novaPagina();
+  for (const c of clausulesPressupost(pr)) {
+    if (c.titol) { y = salta(y, 16); y += 2; text(String(c.titol).toUpperCase(), M, y, 11, 'bold'); y += 7.5; }
+    for (const par of paragrafsClausula(ompleClaudators(c.text, pr))) { y = escriuParagraf(doc, par, M, y, W, 11, salta, ink); y += 2.6; }
+    y += 3;
+  }
+  // lloc i data, i signatura de qui el signa (nom en Times, titulació a sota)
+  const signant = pr.signant_id ? C.get('treballadors', pr.signant_id) : null;
+  const titols = signant && signant.titol_signatura ? String(signant.titol_signatura).split(/\r?\n/).map(t => t.trim()).filter(Boolean) : [];
+  y = salta(y, 34 + titols.length * 5); y += 8;
+  text(ompleClaudators('[població del lloc], [mes] de [any]', pr), M, y, 11); y += 22;
+  if (signant) {
+    const sx = 150;
+    doc.setFont('times', 'normal'); doc.setFontSize(15); doc.setTextColor(...ink); doc.text(nomTreballador(signant), sx, y, { align: 'center' }); y += 6;
+    doc.setFontSize(10.5); titols.forEach(t => { doc.text(t, sx, y, { align: 'center' }); y += 5; });
+  }
+  peu();
+  return doc;
+}
+
+async function generaPdfPressupostAgrupacio(id, { obrir = true } = {}) {
+  const pr = C.get('pressupostos_agrupacio', id);
+  const doc = pdfPressupostAgrupacio(pr);
+  const blob = doc.output('blob');
+  if (obrir) window.open(URL.createObjectURL(blob), '_blank');
+  const path = 'pressupostos/' + String(pr.numero || 'agrupacio-id' + pr.id).replace(/[^\w.-]+/g, '-') + '.pdf';
+  const { error } = await sb.storage.from(BUCKET).upload(path, blob, { upsert: true, contentType: 'application/pdf' });
+  if (error) throw new Error('No s’ha pogut desar el PDF: ' + friendly(error));
+  const res = await sb.from('pressupostos_agrupacio').update({ pdf: path }).eq('id', id);
+  if (res.error) throw new Error(friendly(res.error));
+  await loadTable('pressupostos_agrupacio');
+  return path;
+}
+
 /* ---------- Factures de proveïdor des de PDF ---------- */
 const normNif = v => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 function trobaProveidor(dades) {
@@ -2108,7 +2536,10 @@ function trobaProveidor(dades) {
   if (nom.length >= 4) { const p = C.rows('proveidors').find(x => x.actiu && (norm(x.nom).startsWith(nom) || nom.startsWith(norm(x.nom).replace(/\(.*$/, '').trim()))); if (p) return p; }
   return null;
 }
+const faltaConformitat = 'Perquè quedi revisada li falta la conformitat: compte de despesa, qui la dona i la data (la línia manuscrita CXA · 6001001 · 21/04/2026).';
 async function marcaRevisada(id) {
+  const f = C.get('factures_proveidor', id);
+  if (!f || !(f.compte_despesa_id && f.conforme_treballador_id && f.conforme_data)) { showFormError(faltaConformitat); return; }
   const res = await sb.from('factures_proveidor').update({ estat: 'ok' }).eq('id', id);
   if (res.error) { showFormError(friendly(res.error)); return; }
   await loadTable('factures_proveidor'); toast('Revisada'); state.editing = null; renderMain();
@@ -2118,7 +2549,7 @@ function renderPujaFactures(main) {
   const pendents = C.rows('factures_proveidor').filter(r => r.actiu && r.estat === 'revisar').length;
   main.innerHTML = `
     <h1>Puja factures de proveïdor (PDF)</h1>
-    <p class="sub">Tria tots els PDF de la carpeta de cop. Per a cadascun: es desa el fitxer, s’hi llegeixen les dades, es troba el proveïdor pel NIF (o es crea) i es crea la factura amb estat "per revisar". Després, a Factures de proveïdor, les comproves contra el PDF i les marques com a revisades.</p>
+    <p class="sub">Tria tots els PDF de la carpeta de cop. Per a cadascun: es desa el fitxer, s’hi llegeixen les dades i la conformitat manuscrita del peu (CXA · 6001001 · 21/04/2026: qui la dona, compte de despesa i data), es troba el proveïdor pel NIF (o es crea) i es crea la factura amb estat "per revisar". Després, a Factures de proveïdor, les comproves contra el PDF i les marques com a revisades; per revisar-les han de tenir la conformitat completa.</p>
     <div class="bar">
       <input type="file" id="pf-fitxers" accept="application/pdf" multiple>
       <button class="btn" id="pf-puja">Puja i llegeix</button>
@@ -2126,6 +2557,60 @@ function renderPujaFactures(main) {
     </div>
     <div id="pf-resultats"></div>`;
   $('#pf-puja').addEventListener('click', () => pujaFactures([...$('#pf-fitxers').files]));
+}
+
+// Venciment que toca segons les condicions del proveïdor: termini en dies i, si en té, dia fix de pagament
+// (la mateixa regla que les factures de client: si el dia ja ha passat, el dia fix del mes següent).
+function vencimentEsperat(prov, dataFactura) {
+  if (!prov || !dataFactura) return null;
+  const d = new Date(String(dataFactura).slice(0, 10) + 'T00:00:00Z'); if (isNaN(d.getTime())) return null;
+  d.setUTCDate(d.getUTCDate() + (Number(prov.termini_dies) || 0));
+  const dia = Number(prov.dia_pagament) || 0;
+  if (dia) { if (d.getUTCDate() > dia) { d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + 1); } d.setUTCDate(dia); }
+  return d.toISOString().slice(0, 10);
+}
+const condicionsProveidor = p => (Number(p.termini_dies) || 0) + ' dies' + (p.dia_pagament ? ', dia ' + p.dia_pagament : '');
+// Estat del venciment d'una factura de proveïdor: coincideix amb les condicions (verd), no coincideix (taronja) o l'hem calculat nosaltres (gris).
+// r = la factura desada; vals = el formulari (si s'està editant), que preval.
+function estatVenciment(r, vals) {
+  const v = vals || r || {};
+  const prov = v.proveidor_id ? C.get('proveidors', v.proveidor_id) : null;
+  const venc = v.data_venciment ? String(v.data_venciment).slice(0, 10) : '';
+  const esperat = vencimentEsperat(prov, v.data_factura);
+  if (!prov || !esperat) return { classe: '', text: '' };
+  const cond = condicionsProveidor(prov);
+  if (!venc) return { classe: '', text: `segons les condicions del proveïdor (${cond}) tocaria el ${dmy(esperat)}` };
+  const calculat = r && r.venciment_origen === 'calculat' && venc === String(r.data_venciment || '').slice(0, 10);
+  if (venc === esperat) return calculat
+    ? { classe: 'v-calc', text: `la factura no diu venciment: calculat amb les condicions del proveïdor (${cond})` }
+    : { classe: 'v-ok', text: `coincideix amb les condicions del proveïdor (${cond})` };
+  return { classe: 'v-no', text: `no coincideix amb les condicions del proveïdor (${cond}): tocaria el ${dmy(esperat)}` };
+}
+
+// Interpreta l'anotació manuscrita "CXA · 6001001 · 21/04/2026" que ha llegit la IA: compte, persona i data.
+function conformitatLlegida(d) {
+  const text = d.conformitat ? String(d.conformitat).trim() : '';
+  const codi = (String(d.compte_despesa || '').match(/[0-9]{7}/) || [])[0] || (text.match(/[0-9]{7}/) || [])[0] || '';
+  const compte = codi ? C.rows('comptes_despesa').find(c => c.actiu && c.codi === codi) : null;
+  let inicials = senseAccents(String(d.conforme_inicials || '')).replace(/[^A-Za-z]/g, '').toUpperCase();
+  if (!inicials && text) { const m = senseAccents(text).match(/^\s*C\s*([A-Za-z]{1,4})\b/); if (m) inicials = m[1].toUpperCase(); }
+  const candidats = inicials ? C.rows('treballadors').filter(t => potConformar(t) && inicialsTreballador(t) === inicials) : [];
+  const treb = candidats.length === 1 ? candidats[0] : null;
+  let data = null;
+  if (d.conforme_data) { const v = String(d.conforme_data).trim(); let m;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) data = v;
+    else if ((m = v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/))) data = (m[3].length === 2 ? '20' + m[3] : m[3]) + '-' + m[2].padStart(2, '0') + '-' + m[1].padStart(2, '0'); }
+  if (!data && text) { const m = text.match(/(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/); if (m) data = (m[3].length === 2 ? '20' + m[3] : m[3]) + '-' + m[2].padStart(2, '0') + '-' + m[1].padStart(2, '0'); }
+  if (data && isNaN(new Date(data + 'T00:00:00Z').getTime())) data = null;
+  const avisos = [];
+  if (!text && !codi && !inicials) avisos.push('sense conformitat');
+  else {
+    if (!compte) avisos.push(codi ? 'compte ' + codi + ' desconegut' : 'sense compte');
+    if (!treb) avisos.push(inicials ? (candidats.length ? 'inicials ' + inicials + ' ambigües' : 'inicials ' + inicials + ' desconegudes') : 'sense inicials');
+    if (!data) avisos.push('sense data de conformitat');
+  }
+  const html = avisos.length ? `<b class="c-taronja">${h(avisos.join(', '))}</b>` : `conforme C${h(inicials)} · ${h(codi)} ${h(compte.nom)} · ${dmy(data)}`;
+  return { compte_id: compte ? compte.id : null, treballador_id: treb ? treb.id : null, data, text: text || null, html };
 }
 
 async function pujaFactures(fitxers) {
@@ -2141,7 +2626,7 @@ async function pujaFactures(fitxers) {
       const up = await sb.storage.from(BUCKET).upload(path, file, { contentType: 'application/pdf' });
       if (up.error) throw new Error('no s’ha pogut pujar: ' + friendly(up.error));
       fila.html = 'llegint…'; pinta();
-      const { data, error } = await sb.functions.invoke('llegeix-factura', { body: { path } });
+      const { data, error } = await sb.functions.invoke('llegeix-factura', { body: { path, comptes: C.rows('comptes_despesa').filter(c => c.actiu).map(c => c.codi + ' — ' + c.nom), persones: C.rows('treballadors').filter(potConformar).map(t => inicialsTreballador(t) + ' — ' + nomTreballador(t)) } });
       if (error) {
         let detall = error.message || String(error);
         try { if (error.context && error.context.json) { const j = await error.context.json(); if (j && j.error) detall = j.error; } } catch (e2) {}
@@ -2159,14 +2644,21 @@ async function pujaFactures(fitxers) {
         fila.html = `<span class="c-taronja xip">ja existia</span> ${h(prov.nom)} · ${h(data.numero)}`; pinta(); continue;
       }
       const total = data.total != null ? Number(data.total) : (data.base_imponible != null ? Number(data.base_imponible) + Number(data.quota_iva || 0) : 0);
+      const conf = conformitatLlegida(data);
+      const dataFactura = data.data_factura || avui();
+      const vencLlegit = /^\d{4}-\d{2}-\d{2}$/.test(String(data.data_venciment || '')) ? data.data_venciment : null;
+      const esperat = vencimentEsperat(prov, dataFactura);
       const fp = {
-        proveidor_id: prov.id, numero: data.numero || null, data_factura: data.data_factura || avui(), data_venciment: data.data_venciment || null,
+        proveidor_id: prov.id, numero: data.numero || null, data_factura: dataFactura, data_venciment: vencLlegit || esperat, venciment_origen: vencLlegit ? 'factura' : (esperat ? 'calculat' : null),
         concepte: data.concepte || null, base_imponible: data.base_imponible ?? null, iva_percent: data.iva_percent ?? null, quota_iva: data.quota_iva ?? null,
         total, forma_pagament: prov.forma_pagament || null, estat: 'revisar', pdf: path, extraccio: data,
+        compte_despesa_id: conf.compte_id, conforme_treballador_id: conf.treballador_id, conforme_data: conf.data, conformitat_llegida: conf.text,
       };
+      const ev = estatVenciment(fp);
+      const vencHtml = !fp.data_venciment ? '' : ev.classe === 'v-ok' ? `<span class="v-ok">venciment ${dmy(fp.data_venciment)} ✓</span>` : ev.classe === 'v-no' ? `<span class="v-no">venciment ${dmy(fp.data_venciment)}: tocaria el ${dmy(esperat)}</span>` : `<span class="v-calc">venciment calculat ${dmy(fp.data_venciment)}</span>`;
       const ins = await sb.from('factures_proveidor').insert(fp);
       if (ins.error) throw new Error('factura: ' + friendly(ins.error));
-      fila.html = `<span class="c-verd-suau xip">entrada</span> ${h(prov.nom)}${creat ? ' <i>(proveïdor nou)</i>' : ''} · ${h(data.numero || 'sense número')} · ${eur(total)}${data.confianca && data.confianca !== 'alta' ? ` · <b>confiança ${h(data.confianca)}</b>` : ''}`;
+      fila.html = `<span class="c-verd-suau xip">entrada</span> ${h(prov.nom)}${creat ? ' <i>(proveïdor nou)</i>' : ''} · ${h(data.numero || 'sense número')} · ${eur(total)}${data.confianca && data.confianca !== 'alta' ? ` · <b>confiança ${h(data.confianca)}</b>` : ''}${vencHtml ? ' · ' + vencHtml : ''} · ${conf.html}`;
     } catch (e) {
       fila.html = `<span class="c-vermell xip">error</span> ${h(e.message || String(e))}`;
     }
@@ -2393,6 +2885,173 @@ function renderInformeTasquesDates(main) {
   $('#td-desde').addEventListener('change', e => { st.desde = e.target.value; renderMain(); });
   $('#td-fins').addEventListener('change', e => { st.fins = e.target.value; renderMain(); });
   if ($('#td-print')) $('#td-print').addEventListener('click', imprimeixApaisat);
+}
+
+/* ---------- Calendari de facturació: cobraments i pagaments per data de venciment ---------- */
+const DIES_SETMANA = ['Diumenge', 'Dilluns', 'Dimarts', 'Dimecres', 'Dijous', 'Divendres', 'Dissabte'];
+const finalMesSeguent = () => { const d = new Date(); return new Date(Date.UTC(d.getFullYear(), d.getMonth() + 2, 0)).toISOString().slice(0, 10); };
+const nomDia = iso => { const d = new Date(iso + 'T00:00:00Z'); return DIES_SETMANA[d.getUTCDay()]; };
+
+function movimentsCalendari(st) {
+  const mov = [];
+  if (st.cobr) C.rows('factures').filter(f => f.actiu && f.data_venciment && (f.estat === 'emesa' || (st.fets && f.estat === 'cobrada')) && f.data_venciment >= st.desde && f.data_venciment <= st.fins)
+    .forEach(f => mov.push({ data: f.data_venciment, tipus: 'c', qui: f.client_nom || L('clients', f.client_id), num: f.numero_complet || '', concepte: f.concepte || '', forma: f.forma_pagament, import: Number(f.total || 0), fet: f.estat === 'cobrada', id: f.id, taula: 'factures' }));
+  if (st.pag) C.rows('factures_proveidor').filter(f => f.actiu && f.data_venciment && (st.fets || !f.pagada) && (st.dubtoses || !f.dubtosa) && f.data_venciment >= st.desde && f.data_venciment <= st.fins)
+    .forEach(f => mov.push({ data: f.data_venciment, tipus: 'p', qui: L('proveidors', f.proveidor_id), num: f.numero || '', concepte: f.concepte || '', forma: f.forma_pagament, import: -Number(f.total || 0), fet: !!f.pagada, dubtosa: !!f.dubtosa, id: f.id, taula: 'factures_proveidor' }));
+  mov.sort((a, b) => a.data.localeCompare(b.data) || (a.tipus === b.tipus ? 0 : a.tipus === 'c' ? -1 : 1) || a.qui.localeCompare(b.qui, 'ca'));
+  return mov;
+}
+
+function renderCalendariFacturacio(main) {
+  const st = state.cal; if (!st.desde) st.desde = avui(); if (!st.fins) st.fins = finalMesSeguent();
+  const mov = movimentsCalendari(st);
+  const formaCurta = { domiciliacio: 'rebut', transferencia: 'transf.', talo: 'taló', visa: 'targeta', altres: 'altres' };
+  const dies = [...new Set(mov.map(m => m.data))];
+  const totC = mov.filter(m => m.tipus === 'c').reduce((t, m) => t + m.import, 0);
+  const totP = mov.filter(m => m.tipus === 'p').reduce((t, m) => t + m.import, 0);
+  const senseData = (st.cobr ? C.rows('factures').filter(f => f.actiu && f.estat === 'emesa' && !f.data_venciment).length : 0)
+    + (st.pag ? C.rows('factures_proveidor').filter(f => f.actiu && !f.pagada && !f.data_venciment).length : 0);
+  let acum = 0;
+  const resumFiles = dies.map(d => {
+    const md = mov.filter(m => m.data === d); const c = md.filter(m => m.tipus === 'c').reduce((t, m) => t + m.import, 0), pg = md.filter(m => m.tipus === 'p').reduce((t, m) => t + m.import, 0);
+    acum += c + pg;
+    return `<tr><td>${h(nomDia(d))} ${dmy(d)}</td><td class="num">${md.length}</td><td class="num cobr">${c ? eur(c) : ''}</td><td class="num pag">${pg ? eur(pg) : ''}</td><td class="num"><b>${eur(c + pg)}</b></td><td class="num">${eur(acum)}</td></tr>`;
+  }).join('');
+  const detall = dies.map(d => {
+    const md = mov.filter(m => m.data === d); const c = md.filter(m => m.tipus === 'c').reduce((t, m) => t + m.import, 0), pg = md.filter(m => m.tipus === 'p').reduce((t, m) => t + m.import, 0);
+    return `<div class="dia"><h2>${dmy(d)}</h2><span class="setm">${h(nomDia(d))}</span><span class="net">${c ? `<span class="cobr">${eur(c)}</span>` : ''}${c && pg ? ' · ' : ''}${pg ? `<span class="pag">${eur(pg)}</span>` : ''} · net <b>${eur(c + pg)}</b></span></div>
+      <table class="tbl informe"><thead><tr><th></th><th>Qui</th><th>Número</th><th>Concepte</th><th>Forma</th><th class="num">Import</th></tr></thead><tbody>
+        ${md.map(m => `<tr class="row" data-taula="${m.taula}" data-id="${m.id}"><td><span class="tipus ${m.tipus}">${m.tipus === 'c' ? 'cobrament' : 'pagament'}${m.fet ? ' · fet' : ''}${m.dubtosa ? ' · dubtós' : ''}</span></td><td>${h(m.qui)}</td><td>${h(m.num)}</td><td class="obs">${h(m.concepte.length > 70 ? m.concepte.slice(0, 68) + '…' : m.concepte)}</td><td>${h(formaCurta[m.forma] || m.forma || '')}</td><td class="num ${m.tipus === 'c' ? 'cobr' : 'pag'}">${eur(m.import)}</td></tr>`).join('')}
+        <tr class="total"><td colspan="5">Subtotal ${dmy(d)}</td><td class="num">${eur(c + pg)}</td></tr>
+      </tbody></table>`;
+  }).join('');
+  main.innerHTML = `
+    <h1>Calendari de facturació</h1>
+    <p class="sub">Cobraments previstos (factures emeses, per data de venciment) i pagaments previstos (factures de proveïdor, per data de venciment) entre dues dates, amb subtotal per dia.</p>
+    <div class="bar">
+      <input type="date" id="cal-desde" value="${st.desde}" style="width:auto"> <input type="date" id="cal-fins" value="${st.fins}" style="width:auto">
+      <label class="chk" style="padding:0"><input type="checkbox" id="cal-cobr" ${st.cobr ? 'checked' : ''}> Cobraments</label>
+      <label class="chk" style="padding:0"><input type="checkbox" id="cal-pag" ${st.pag ? 'checked' : ''}> Pagaments</label>
+      <label class="chk" style="padding:0"><input type="checkbox" id="cal-fets" ${st.fets ? 'checked' : ''}> Inclou els ja cobrats/pagats</label>
+      <label class="chk" style="padding:0"><input type="checkbox" id="cal-dubtoses" ${st.dubtoses ? 'checked' : ''}> Inclou els dubtosos</label>
+      <label class="chk" style="padding:0"><input type="checkbox" id="cal-detall" ${st.detall ? 'checked' : ''}> Detall per dia</label>
+      <button class="btn ghost" id="cal-print">Imprimeix</button>
+    </div>
+    <div class="cal">
+      <div class="resum">
+        <div><div class="k">Cobraments</div><div class="v cobr">${eur(totC)}</div></div>
+        <div><div class="k">Pagaments</div><div class="v pag">${eur(totP)}</div></div>
+        <div><div class="k">Net del període</div><div class="v">${eur(totC + totP)}</div></div>
+        <div><div class="k">Moviments · dies</div><div class="v">${mov.length} · ${dies.length}</div></div>
+      </div>
+      ${senseData ? `<p class="sub">${senseData} factures pendents no tenen data de venciment i no surten al calendari.</p>` : ''}
+      ${dies.length ? `<h3>Resum per dies</h3><table class="tbl informe"><thead><tr><th>Dia</th><th class="num">Mov.</th><th class="num">Cobraments</th><th class="num">Pagaments</th><th class="num">Net</th><th class="num">Acumulat</th></tr></thead><tbody>${resumFiles}
+        <tr class="total"><td>Total</td><td class="num">${mov.length}</td><td class="num cobr">${eur(totC)}</td><td class="num pag">${eur(totP)}</td><td class="num">${eur(totC + totP)}</td><td></td></tr></tbody></table>` : '<div class="empty">Cap cobrament ni pagament amb venciment en aquest període.</div>'}
+      ${st.detall ? detall : ''}
+    </div>`;
+  const rerender = () => renderMain();
+  $('#cal-desde').addEventListener('change', e => { st.desde = e.target.value; rerender(); });
+  $('#cal-fins').addEventListener('change', e => { st.fins = e.target.value; rerender(); });
+  [['cal-cobr', 'cobr'], ['cal-pag', 'pag'], ['cal-fets', 'fets'], ['cal-dubtoses', 'dubtoses'], ['cal-detall', 'detall']].forEach(([id, k]) => $('#' + id).addEventListener('change', e => { st[k] = e.target.checked; rerender(); }));
+  $('#cal-print').addEventListener('click', () => window.print());
+  main.querySelectorAll('tr.row[data-taula]').forEach(tr => tr.addEventListener('click', () => {
+    state.mode = 'consulta'; state.table = tr.dataset.taula; state.editing = Number(tr.dataset.id); renderApp(); window.scrollTo({ top: 0 });
+  }));
+}
+
+/* ---------- Hores del sol: sortida i posta de cada dia de l'any en una població ---------- */
+function renderHoresSol(main) {
+  const st = state.sol;
+  const pobl = C.rows('poblacions_sol').filter(x => x.actiu).sort((a, b) => a.id - b.id);
+  if (!st.poblacio || !pobl.some(p => String(p.id) === st.poblacio)) st.poblacio = pobl.length ? String(pobl[0].id) : '';
+  const p = pobl.find(x => String(x.id) === st.poblacio);
+  const any = Number(st.any) || new Date().getFullYear(), avuiS = avui();
+  const mesos = [];
+  if (p) for (let m = 0; m < 12; m++) {
+    const dies = [];
+    for (let d = 1; d <= 31; d++) {
+      const iso = any + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+      const dt = new Date(iso + 'T00:00:00Z'); if (isNaN(dt.getTime()) || dt.getUTCMonth() !== m) break;
+      const sol = solEnDia(p.latitud, p.longitud, iso);
+      const [sh, sm] = sol.sortida.split(':').map(Number), [ph, pm] = sol.posta.split(':').map(Number);
+      const durada = (ph * 60 + pm) - (sh * 60 + sm);
+      dies.push({ iso, d, setm: ['dg', 'dl', 'dt', 'dc', 'dj', 'dv', 'ds'][dt.getUTCDay()], sortida: sol.sortida, posta: sol.posta, durada: Math.floor(durada / 60) + ' h ' + String(durada % 60).padStart(2, '0') });
+    }
+    mesos.push({ nom: MESOS_CAT[m], dies });
+  }
+  main.innerHTML = `
+    <h1>Hores del sol</h1>
+    <p class="sub noprint">Sortida i posta del sol de cada dia de l’any, calculades amb les coordenades de la població (precisió d’un minut). Són les hores que fan servir les línies de llum dels jardins i les piscines: un lloc va amb la seva població si és en aquesta llista, i si no, amb la primera (${h(pobl.length ? pobl[0].nom : '—')}).</p>
+    <div class="bar">
+      <select id="sol-pobl" style="width:auto; min-width:220px">${pobl.map(x => `<option value="${x.id}" ${String(x.id) === st.poblacio ? 'selected' : ''}>${h(x.nom)}</option>`).join('')}</select>
+      <input type="number" id="sol-any" value="${any}" min="2000" max="2100" style="width:110px">
+      <button class="btn ghost" id="sol-avui">Ves a avui</button>
+      <button class="btn ghost" id="sol-print">Imprimeix</button>
+    </div>
+    ${p ? `<div class="capsal"><span>Població <b>${h(p.nom)}</b></span><span>Coordenades <b>${h(p.latitud)}, ${h(p.longitud)}</b></span><span>Any <b>${any}</b></span></div>
+    <div class="sol-mesos">${mesos.map(m => `<div class="sol-mes"><h3>${h(m.nom)} ${any}</h3><table class="tbl informe"><thead><tr><th>Dia</th><th>Sortida</th><th>Posta</th><th>Llum</th></tr></thead><tbody>
+      ${m.dies.map(x => `<tr ${x.iso === avuiS ? 'class="avui" id="sol-dia-avui"' : ''}><td>${x.d} <span class="hint">${h(x.setm)}</span></td><td>${x.sortida}</td><td>${x.posta}</td><td>${x.durada}</td></tr>`).join('')}
+    </tbody></table></div>`).join('')}</div>` : '<div class="empty">Cap població. Afegeix-ne una a Poblacions (hora del sol).</div>'}`;
+  $('#sol-pobl').addEventListener('change', e => { st.poblacio = e.target.value; renderMain(); });
+  $('#sol-any').addEventListener('change', e => { st.any = e.target.value; renderMain(); });
+  $('#sol-avui').addEventListener('click', () => { const t = $('#sol-dia-avui'); if (t) t.scrollIntoView({ block: 'center', behavior: 'smooth' }); else { st.any = String(new Date().getFullYear()); renderMain(); } });
+  $('#sol-print').addEventListener('click', () => window.print());
+}
+
+/* ---------- Clients per administrador (l'antic "llistat de clients per assessoria") ---------- */
+function renderClientsPerAdministrador(main) {
+  const st = state.cpa, avuiS = avui();
+  const admins = C.rows('administradors').filter(a => a.actiu || st.baixes).sort((a, b) => a.nom.localeCompare(b.nom, 'ca'));
+  const contracteVigent = c => C.rows('agrupacions').some(a => a.actiu && Number(a.client_id) === c.id && a.data_inici <= avuiS && (!a.data_fi || a.data_fi >= avuiS));
+  const norm = s => String(s || '').toLowerCase();
+  const nomGestor = c => { const g = c.gestor_id ? C.get('contactes', c.gestor_id) : null; return g ? g.nom : ''; };
+  const contacteHTML = id => { const p = id ? C.get('contactes', id) : null; return p ? h(p.nom) + (p.telefon ? ` <span class="tel">${h(p.telefon)}</span>` : '') : ''; };
+  main.innerHTML = `
+    <h1>Clients per administrador</h1>
+    <p class="sub noprint">Els llocs de cada client agrupats per l’administrador que el porta, amb l’adreça, el gestor del despatx i el contacte a peu de finca. Clica una fila per obrir el lloc.</p>
+    <div class="bar">
+      <select id="cpa-admin" style="width:auto; min-width:260px"><option value="">Tots els administradors</option>${admins.map(a => `<option value="${a.id}" ${String(a.id) === st.admin ? 'selected' : ''}>${h(a.nom)}</option>`).join('')}</select>
+      <input type="text" id="cpa-q" placeholder="Filtra per client, lloc, adreça o població…" value="${h(st.q)}">
+      <label class="chk" style="padding:0"><input type="checkbox" id="cpa-vigent" ${st.vigent ? 'checked' : ''}> Només amb contracte vigent</label>
+      <label class="chk" style="padding:0"><input type="checkbox" id="cpa-baixes" ${st.baixes ? 'checked' : ''}> Inclou els donats de baixa</label>
+      <button class="btn ghost" id="cpa-print">Imprimeix (A4 apaïsat)</button>
+    </div>
+    <div id="cpa-cos" class="cpa"></div>`;
+  const cos = () => {
+    const q = norm(st.q).trim();
+    let nAdm = 0, nCli = 0, nLlocs = 0, blocs = '';
+    for (const a of admins) {
+      if (st.admin && String(a.id) !== st.admin) continue;
+      const clients = C.rows('clients').filter(c => Number(c.administrador_id) === a.id && (c.actiu || st.baixes) && (!st.vigent || contracteVigent(c)));
+      const files = [];
+      for (const c of clients) {
+        const llocs = C.rows('llocs').filter(l => Number(l.client_id) === c.id && (l.actiu || st.baixes));
+        if (!llocs.length) files.push({ c, l: null, pobl: c.poblacio, adr: c.adreca, nom: '', off: !c.actiu });
+        llocs.forEach(l => files.push({ c, l, pobl: l.poblacio, adr: l.adreca, nom: l.nom, off: !c.actiu || !l.actiu }));
+      }
+      const vis = files.filter(f => !q || [a.nom, f.c.nom, f.nom, f.adr, f.pobl].some(x => norm(x).includes(q)))
+        .sort((x, y) => (x.l ? 0 : 1) - (y.l ? 0 : 1) || (x.nom || '').localeCompare(y.nom || '', 'ca', { numeric: true }) || x.c.nom.localeCompare(y.c.nom, 'ca'));
+      if (!vis.length) continue;
+      const nc = new Set(vis.map(f => f.c.id)).size, nl = vis.filter(f => f.l).length;
+      nAdm++; nCli += nc; nLlocs += nl;
+      const meta = [a.telefon, a.email, a.poblacio].filter(Boolean).map(h).join(' · ');
+      blocs += `<div class="blk${a.actiu ? '' : ' off'}">
+        <div class="cap"><h2>${h(a.nom)}</h2>${meta ? `<span class="meta">${meta}</span>` : ''}<span class="n">${nc} ${nc === 1 ? 'client' : 'clients'} · ${nl} ${nl === 1 ? 'lloc' : 'llocs'}</span></div>
+        <table class="tbl informe"><colgroup><col style="width:17%"><col style="width:22%"><col style="width:12%"><col style="width:25%"><col style="width:11%"><col style="width:13%"></colgroup><thead><tr><th>Població</th><th>Adreça</th><th>Lloc</th><th>Client</th><th>Gestor</th><th>Contacte</th></tr></thead><tbody>
+          ${vis.map(f => `<tr class="row${f.off ? ' off' : ''}" data-taula="${f.l ? 'llocs' : 'clients'}" data-id="${f.l ? f.l.id : f.c.id}"><td class="pobl">${h(f.pobl || '')}</td><td>${h(f.adr || '')}</td><td class="lloc">${f.l ? h(f.nom) : '<i>sense lloc</i>'}</td><td>${h(f.c.nom)}${f.off ? ' <span class="tel">(baixa)</span>' : ''}</td><td>${h(nomGestor(f.c))}</td><td>${f.l ? contacteHTML(f.l.contacte_id) : ''}</td></tr>`).join('')}
+        </tbody></table></div>`;
+    }
+    $('#cpa-cos').innerHTML = `<div class="capsal"><span>Administradors <b>${nAdm}</b></span><span>Clients <b>${nCli}</b></span><span>Llocs <b>${nLlocs}</b></span><span>Data <b>${dmy(avuiS)}</b></span></div>` + (blocs || '<div class="empty">Cap client amb aquests filtres.</div>');
+    $('#cpa-cos').querySelectorAll('tr.row[data-taula]').forEach(tr => tr.addEventListener('click', () => {
+      state.mode = 'consulta'; state.table = tr.dataset.taula; state.editing = Number(tr.dataset.id); renderApp(); window.scrollTo({ top: 0 });
+    }));
+  };
+  cos();
+  $('#cpa-admin').addEventListener('change', e => { st.admin = e.target.value; cos(); });
+  $('#cpa-q').addEventListener('input', e => { st.q = e.target.value; cos(); });
+  $('#cpa-vigent').addEventListener('change', e => { st.vigent = e.target.checked; cos(); });
+  $('#cpa-baixes').addEventListener('change', e => { st.baixes = e.target.checked; renderMain(); });
+  $('#cpa-print').addEventListener('click', imprimeixApaisat);
 }
 
 /* ---------- Informe: adob per equips ---------- */
