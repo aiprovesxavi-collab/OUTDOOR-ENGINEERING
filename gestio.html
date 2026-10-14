@@ -75,8 +75,12 @@
   .chks .f.chk .l{ display:block; border:2px solid var(--line-2); border-radius:8px; padding:10px 12px; text-align:center; cursor:pointer; user-select:none; color:var(--ink); background:#fff; font-size:15px; line-height:1.3; }
   .chks .f.chk.on .l{ background:#2e7d32; border-color:#2e7d32; color:#fff; font-weight:600; }
   .chks .f.chk.on .l::before{ content:'✓ '; }
+  .chks .f.chk.tri .l{ width:100%; font:inherit; font-size:15px; }
+  .chks .f.chk.tri.on .l::before, .chks .f.chk.tri.no .l::before{ content:''; }
+  .chks .f.chk.no .l{ background:#c62828; border-color:#c62828; color:#fff; font-weight:600; }
   .operari .chks{ grid-template-columns:1fr; gap:10px; padding:10px; }
   .operari .chks .f.chk .l{ font-size:17px; padding:14px 10px; }
+  .operari .chks .f.chk.tri .l{ font-size:17px; }
   .targeta{ border:1px solid var(--line-2); border-radius:8px; padding:10px 12px; margin:0 0 10px; background:#fff; }
   .tcap{ font-size:14px; margin-bottom:6px; }
   .xips{ display:flex; flex-wrap:wrap; gap:6px; margin:4px 0; }
@@ -228,6 +232,7 @@
   .informe th.num{ text-align:right; }
   .sub{ color:var(--ink-2); font-size:14px; max-width:760px; }
   .nomes-print{ display:none; }
+  .graf-taula{ max-width:560px; margin-top:6px; }
   .mc td.mc-c, .mc th.mc-c{ text-align:center; white-space:nowrap; }
   .mc-box{ display:inline-flex; align-items:center; gap:8px; border:1.5px solid var(--line-2); border-radius:8px; padding:6px 12px; cursor:pointer; font-size:14px; user-select:none; }
   .mc-box input{ width:20px; height:20px; }
@@ -679,7 +684,7 @@ const campsBombes = [
 const SCHEMA = {
   groups: [
     { label: 'QUI · ON', color: '#e08a8a', tables: ['administradors', 'contactes', 'clients', 'llocs', 'clients_per_administrador'] },
-    { label: 'FACTURACIÓ', color: '#8a8a8a', tables: ['agrupacions', 'facturacio_recurrent', 'factures', 'marcat_cobrats', 'calendari_facturacio', 'vencudes', 'pressupostos_tasca', 'pressupostos_agrupacio', 'clausules_pressupost'] },
+    { label: 'FACTURACIÓ', color: '#8a8a8a', tables: ['agrupacions', 'facturacio_recurrent', 'factures', 'marcat_cobrats', 'calendari_facturacio', 'vencudes', 'grafiques_facturacio', 'pressupostos_tasca', 'pressupostos_agrupacio', 'clausules_pressupost'] },
     { label: 'ALBARANS I PRODUCTES', color: '#c9c9c9', tables: ['productes', 'albarans', 'albarans_pendents'] },
     { label: 'PROVEÏDORS', color: '#c0691e', tables: ['proveidors', 'factures_proveidor', 'puja_factures_proveidor', 'comptes_despesa'] },
     { label: 'TASQUES', color: '#8b5a2b', tables: ['tasques_piscina', 'informe_tasques_piscina', 'informe_tasques_dates'] },
@@ -701,6 +706,7 @@ const SCHEMA = {
     calendari_facturacio: { label: 'Calendari de facturació', render: main => renderCalendariFacturacio(main) },
     vencudes: { label: 'Vençudes i pendents', render: main => renderVencudes(main) },
     marcat_cobrats: { label: 'Marcat de cobrats/pagats', render: main => renderMarcatCobrats(main) },
+    grafiques_facturacio: { label: 'Gràfiques d’ingressos i despeses', render: main => renderGrafiquesFacturacio(main) },
     clients_per_administrador: { label: 'Clients per administrador', render: main => renderClientsPerAdministrador(main) },
     hores_sol: { label: 'Hores del sol (tot l’any)', render: main => renderHoresSol(main) },
     incidencies: { label: 'Incidències', render: main => renderIncidencies(main) },
@@ -1375,19 +1381,19 @@ const SCHEMA = {
         { key: 'temperatura', label: 'Temperatura (°C)', curt: 'Temp.', type: 'number', step: '0.1' },
         { key: 'comptador_aigua_nova', label: 'Comptador d’aigua nova', curt: 'Compt. aigua', type: 'number', step: '0.001' },
         { key: 'transparencia', label: 'Transparència', curt: 'Transp.', type: 'select', options: OPT.transparencia, color: colorTransparencia, avis: avisTransparencia },
-        { key: 'nivell_aigua_ok', label: 'Nivell d’aigua correcte', type: 'boolean', grup: 'A' },
-        { key: 'flux_retorns_ok', label: 'Flux retorns correcte', type: 'boolean', grup: 'A' },
-        { key: 'fons_parets_ok', label: 'Estat fons i parets correcte', type: 'boolean', grup: 'A' },
-        { key: 'netejafons', label: 'Netejafons', type: 'boolean', grup: 'B' },
-        { key: 'passat_xarxa', label: 'Xarxa', type: 'boolean', grup: 'B' },
-        { key: 'raspallat', label: 'Raspall', type: 'boolean', grup: 'B' },
-        { key: 'neteja_skimmers', label: 'Neteja skimmers', type: 'boolean', grup: 'C' },
-        { key: 'neteja_linia_flotacio', label: 'Neteja línia de flotació', type: 'boolean', grup: 'C' },
-        { key: 'motor_ok', label: 'Estat motor', type: 'boolean', grup: 'D' },
-        { key: 'cloracio_electrode_ok', label: 'Estat cloració salina', type: 'boolean', grup: 'D' },
-        { key: 'pressio_filtre_ok', label: 'Estat pressió filtre', type: 'boolean', grup: 'D' },
-        { key: 'neteja_aspes_prefiltre', label: 'Neteja aspes i prefiltre', type: 'boolean', grup: 'E' },
-        { key: 'neteja_filtre', label: 'Neteja filtre (BACKWASH)', type: 'boolean', grup: 'E' },
+        { key: 'nivell_aigua_ok', label: 'Nivell d’aigua correcte', type: 'tristat', negatiu: 'INCORRECTE', grup: 'A' },
+        { key: 'flux_retorns_ok', label: 'Flux retorns correcte', type: 'tristat', negatiu: 'INCORRECTE', grup: 'A' },
+        { key: 'fons_parets_ok', label: 'Estat fons i parets correcte', type: 'tristat', negatiu: 'INCORRECTE', grup: 'A' },
+        { key: 'netejafons', label: 'Netejafons', type: 'tristat', negatiu: 'NO FET', grup: 'B' },
+        { key: 'passat_xarxa', label: 'Xarxa', type: 'tristat', negatiu: 'NO FET', grup: 'B' },
+        { key: 'raspallat', label: 'Raspall', type: 'tristat', negatiu: 'NO FET', grup: 'B' },
+        { key: 'neteja_skimmers', label: 'Neteja skimmers', type: 'tristat', negatiu: 'NO FET', grup: 'C' },
+        { key: 'neteja_linia_flotacio', label: 'Neteja línia de flotació', type: 'tristat', negatiu: 'NO FET', grup: 'C' },
+        { key: 'motor_ok', label: 'Estat motor', type: 'tristat', negatiu: 'INCORRECTE', grup: 'D' },
+        { key: 'cloracio_electrode_ok', label: 'Estat cloració salina', type: 'tristat', negatiu: 'INCORRECTE', grup: 'D' },
+        { key: 'pressio_filtre_ok', label: 'Estat pressió filtre', type: 'tristat', negatiu: 'INCORRECTE', grup: 'D' },
+        { key: 'neteja_aspes_prefiltre', label: 'Neteja aspes i prefiltre', type: 'tristat', negatiu: 'NO FET', grup: 'E' },
+        { key: 'neteja_filtre', label: 'Neteja filtre (BACKWASH)', type: 'tristat', negatiu: 'NO FET', grup: 'E' },
         { key: 'observacions', label: 'Observacions', type: 'textarea' },
         { key: 'gps_lat', label: 'GPS lat', type: 'hidden' },
         { key: 'gps_lng', label: 'GPS lng', type: 'hidden' },
@@ -1569,7 +1575,7 @@ const C = {
   rows: t => cache[t] || [],
   get: (t, id) => { const pk = (SCHEMA.tables[t] || {}).pk; return pk ? (cache[t] || []).find(r => String(r[pk]) === String(id)) : (cache[t] || []).find(r => r.id === Number(id)); },
 };
-const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, qr: { lloc: '', base: '' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
+const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
 const L = (t, id) => { const r = C.get(t, id); return r ? SCHEMA.tables[t].display(r, L) : ''; };
 
 /* =====================================================================
@@ -1861,6 +1867,7 @@ function inputHTML(f, vals, row) {
     case 'ref': return `<select ${n} ${req} data-ref="${f.ref}">${optionsHTML(f, vals, v)}</select>`;
     case 'multi': return `<div class="multi" data-multi="${f.key}">${multiHTML(f, vals, new Set((Array.isArray(v) ? v : []).map(Number)))}</div>`;
     case 'boolean': return `<input type="checkbox" ${n} value="1" ${v === true || v === 'true' ? 'checked' : ''}>`;
+    case 'tristat': { const val = v === true || v === 'true' ? 'true' : v === false || v === 'false' ? 'false' : ''; return `<input type="hidden" ${n} value="${val}" data-tristat="1">`; }
     case 'number': return `<input type="number" ${n} ${req} step="${f.step || 'any'}" ${f.min != null ? `min="${f.min}"` : ''} ${f.max != null ? `max="${f.max}"` : ''} value="${h(v)}" class="${f.color ? f.color(v, row) : ''}" inputmode="decimal">`;
     case 'integer': return `<input type="number" ${n} ${req} step="1" ${f.min != null ? `min="${f.min}"` : ''} ${f.max != null ? `max="${f.max}"` : ''} value="${h(v)}">`;
     case 'date': return `<input type="date" ${n} ${req} value="${h(v ? String(v).slice(0, 10) : '')}">`;
@@ -1884,6 +1891,7 @@ function formHTML(td, row) {
     if (f.type === 'hidden') return inputHTML(f, vals, row);
     const dk = `data-fkey="${f.key}"`;
     if (f.type === 'boolean') return `<label class="f chk" ${dk}><span>${inputHTML(f, vals, row)}</span><span class="l">${h(f.label)}</span></label>`;
+    if (f.type === 'tristat') return `<div class="f chk tri" ${dk} data-negatiu="${h(f.negatiu || 'INCORRECTE')}">${inputHTML(f, vals, row)}<button type="button" class="l tri-btn">${h(f.label)}</button></div>`;
     return `<label class="f ${wide}" ${dk}><span class="l">${h(f.label)}${f.required ? ' <b>*</b>' : ''}${f.quan ? `<span class="toca" data-toca="${f.key}"></span>` : ''}</span>${inputHTML(f, vals, row)}${f.hint ? `<span class="hint">${h(f.hint)}</span>` : ''}${f.nota ? `<span class="hint nota" data-nota-for="${f.key}" hidden></span>` : ''}${f.dup ? `<span class="dup" data-dup="${f.key}"></span>` : ''}${f.avis ? `<div class="avis" data-avis-for="${f.key}" hidden></div>` : ''}</label>`;
   };
   // els camps amb el mateix "grup" (caselles) van junts en una fila de tres
@@ -1965,6 +1973,7 @@ function cellText(td, key, row) {
     case 'ref': return L(f.ref, v);
     case 'multi': return (Array.isArray(v) ? v : []).map(id => { const r = C.get(f.ref, id); return r ? (f.optionLabel ? f.optionLabel(r, C) : L(f.ref, id)) : ''; }).filter(Boolean).join(', ');
     case 'boolean': return v ? 'sí' : 'no';
+    case 'tristat': return v === true ? 'sí' : v === false ? 'no' : '';
     case 'select': { const o = f.options.find(o => o[0] === String(v)); return o ? o[1] : String(v); }
     case 'date': return dmy(v);
     case 'time': return String(v).slice(0, 5);
@@ -2087,6 +2096,13 @@ function bindMain(td) {
     });
     // caselles en grup (comprovacions i feines): el botó queda verd quan està marcat
     frm.querySelectorAll('.chks .f.chk').forEach(w => { const c = w.querySelector('input[type=checkbox]'); if (!c) return; const pinta = () => w.classList.toggle('on', c.checked); pinta(); c.addEventListener('change', pinta); });
+    // botons de tres estats: sense tocar (buit) -> correcte (verd) -> incorrecte (vermell) -> buit
+    frm.querySelectorAll('.f.chk.tri').forEach(w => {
+      const inp = w.querySelector('input[data-tristat]'), btn = w.querySelector('.tri-btn'), f = fieldDef(td, inp.name); if (!inp || !btn || !f) return;
+      const pinta = () => { const v = inp.value; w.classList.toggle('on', v === 'true'); w.classList.toggle('no', v === 'false'); btn.textContent = v === 'true' ? '✓ ' + f.label : v === 'false' ? '✗ ' + f.label + ' · ' + (f.negatiu || 'INCORRECTE') : f.label; };
+      pinta();
+      btn.addEventListener('click', () => { inp.value = inp.value === '' ? 'true' : inp.value === 'true' ? 'false' : ''; pinta(); inp.dispatchEvent(new Event('change', { bubbles: true })); });
+    });
     if (td.bindExtras) td.bindExtras(frm, td);
     main.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => obreFitxer(b.dataset.open)));
     const cancel = $('#cancel'); if (cancel) cancel.addEventListener('click', () => { state.editing = null; renderMain(); });
@@ -2302,6 +2318,7 @@ async function buildPayload(fields, raw) {
     const v = raw[f.key];
     switch (f.type) {
       case 'boolean': payload[f.key] = !!v; break;
+      case 'tristat': payload[f.key] = v === 'true' || v === true ? true : v === 'false' || v === false ? false : null; break;
       case 'multi': payload[f.key] = Array.isArray(v) ? v : []; break;
       case 'number': payload[f.key] = v === '' || v == null ? null : Number(v); break;
       case 'integer': payload[f.key] = v === '' || v == null ? null : parseInt(v, 10); break;
@@ -3114,8 +3131,8 @@ function taulaTasquesHTML(rows, opts) {
     if (opts.piscina) c.push(`<td>${h(L('piscines', r.piscina_id))}</td>`);
     c.push(`<td>${h(nomCurtTreballador(C.get('treballadors', r.treballador_id)))}</td>`);
     TASCA_MESURES.forEach(k => { const f = fieldDef(td, k); const col = f.color ? f.color(r[k], r) : ''; c.push(`<td class="num ${col ? 'cel ' + col : ''}">${h(cellText(td, k, r))}</td>`); });
-    TASCA_CHECKS.forEach(([k]) => c.push(r[k] === true ? '<td class="ok">✓</td>' : '<td></td>'));
-    TASCA_FEINES.forEach(([k]) => c.push(r[k] ? '<td class="fet">✓</td>' : '<td></td>'));
+    TASCA_CHECKS.forEach(([k]) => c.push(r[k] === true ? '<td class="ok">✓</td>' : r[k] === false ? '<td class="no">✗</td>' : '<td></td>'));
+    TASCA_FEINES.forEach(([k]) => c.push(r[k] === true ? '<td class="fet">✓</td>' : r[k] === false ? '<td class="no">✗</td>' : '<td></td>'));
     c.push(`<td class="obs">${h(r.observacions || '')}</td>`);
     return `<tr>${c.join('')}</tr>`;
   }).join('');
@@ -3129,8 +3146,8 @@ function targetesTasquesHTML(rows, opts) {
   const xip = (lab, k, r) => { const f = fieldDef(td, k); const v = r[k]; if (v == null || v === '') return ''; const c = f.color ? f.color(v, r) : ''; return `<span class="xip ${c}">${h(lab)} <b>${h(cellText(td, k, r))}</b></span>`; };
   const mesures = [['Cl1', 'clor_lliure_1'], ['Cl2', 'clor_lliure_2'], ['Cc1', 'clor_combinat_1'], ['Cc2', 'clor_combinat_2'], ['pH1', 'ph_1'], ['pH2', 'ph_2'], ['Iso', 'isocianuric'], ['Alc', 'alcalinitat'], ['Dur', 'duresa'], ['T', 'temperatura'], ['Sal', 'salinitat'], ['Compt', 'comptador_aigua_nova'], ['Transp', 'transparencia']];
   return rows.map(r => {
-    const ok = TASCA_CHECKS.filter(([k]) => r[k] === true).map(([k, l]) => `<span class="xip ok">✓ ${h(l)}</span>`);
-    const fe = TASCA_FEINES.filter(([k]) => r[k]).map(([k, l]) => `<span class="xip fet">✓ ${h(l)}</span>`);
+    const ok = TASCA_CHECKS.filter(([k]) => r[k] === true || r[k] === false).map(([k, l]) => r[k] ? `<span class="xip ok">✓ ${h(l)}</span>` : `<span class="xip fora">✗ ${h(l)} incorrecte</span>`);
+    const fe = TASCA_FEINES.filter(([k]) => r[k] === true || r[k] === false).map(([k, l]) => r[k] ? `<span class="xip fet">✓ ${h(l)}</span>` : `<span class="xip fora">✗ ${h(l)} no fet</span>`);
     return `<div class="targeta">
       <div class="tcap"><b>${dmy(r.data).slice(0, 5)}</b>${r.hora ? ' · ' + h(String(r.hora).slice(0, 5)) : ''}${opts.piscina ? ' · ' + h(L('piscines', r.piscina_id)) : ''} · ${h(nomCurtTreballador(C.get('treballadors', r.treballador_id)))}</div>
       <div class="xips">${mesures.map(([l, k]) => xip(l, k, r)).join('')}</div>
@@ -3262,6 +3279,68 @@ function renderCalendariFacturacio(main) {
   main.querySelectorAll('tr.row[data-taula]').forEach(tr => tr.addEventListener('click', () => {
     state.mode = 'consulta'; state.table = tr.dataset.taula; state.editing = Number(tr.dataset.id); renderApp(); window.scrollTo({ top: 0 });
   }));
+}
+
+/* ---------- Gràfiques d'ingressos (factures a clients) i de despeses (factures de proveïdor) per mes, amb l'any anterior ---------- */
+let graficsFacturacio = [];
+// import d'una factura de proveïdor sense IVA: la base si hi és; si no, el total menys la quota; si no, el total
+const baseProveidor = f => f.base_imponible != null ? Number(f.base_imponible) : (f.quota_iva != null ? Number(f.total || 0) - Number(f.quota_iva) : Number(f.total || 0));
+function mesosFacturacio(any, ambIva) {
+  const ing = Array(12).fill(0), des = Array(12).fill(0);
+  C.rows('factures').filter(f => f.actiu && (f.estat === 'emesa' || f.estat === 'cobrada') && String(f.data_factura || '').slice(0, 4) === String(any))
+    .forEach(f => { ing[Number(String(f.data_factura).slice(5, 7)) - 1] += ambIva ? Number(f.total || 0) : Number(f.base_imponible || 0); });
+  C.rows('factures_proveidor').filter(f => f.actiu && String(f.data_factura || '').slice(0, 4) === String(any))
+    .forEach(f => { des[Number(String(f.data_factura).slice(5, 7)) - 1] += ambIva ? Number(f.total || 0) : baseProveidor(f); });
+  return { ing: ing.map(v => Math.round(v * 100) / 100), des: des.map(v => Math.round(v * 100) / 100) };
+}
+function renderGrafiquesFacturacio(main) {
+  const st = state.graf;
+  const anys = [...new Set([...C.rows('factures').map(f => String(f.data_factura || '').slice(0, 4)), ...C.rows('factures_proveidor').map(f => String(f.data_factura || '').slice(0, 4)), String(new Date().getFullYear())].filter(a => /^\d{4}$/.test(a)))].sort();
+  if (!anys.includes(st.any)) st.any = anys[anys.length - 1];
+  const any = Number(st.any), ara = mesosFacturacio(any, st.ambIva), abans = mesosFacturacio(any - 1, st.ambIva);
+  const suma = a => a.reduce((t, v) => t + v, 0);
+  const totIng = suma(ara.ing), totIngA = suma(abans.ing), totDes = suma(ara.des), totDesA = suma(abans.des);
+  const dif = (a, b) => b ? ` <span class="hint">(${a >= b ? '+' : ''}${Math.round((a - b) / b * 100)} % respecte a ${any - 1})</span>` : '';
+  const taula = (a, b) => `<table class="tbl informe graf-taula"><thead><tr><th>Mes</th><th class="num">${any}</th><th class="num">${any - 1}</th><th class="num">Diferència</th></tr></thead><tbody>
+    ${MESOS.map((m, i) => `<tr><td>${m}</td><td class="num">${fmtEur(a[i])}</td><td class="num">${fmtEur(b[i])}</td><td class="num ${a[i] - b[i] < 0 ? 'v-no' : ''}">${b[i] || a[i] ? fmtEur(a[i] - b[i]) : ''}</td></tr>`).join('')}
+    <tr class="total"><td>Total</td><td class="num">${fmtEur(suma(a))}</td><td class="num">${fmtEur(suma(b))}</td><td class="num">${fmtEur(suma(a) - suma(b))}</td></tr></tbody></table>`;
+  main.innerHTML = `
+    <h1>Gràfiques d’ingressos i despeses</h1>
+    <p class="sub noprint">Facturació per mes (data de la factura), recurrent i puntual junta. Les columnes són l’any triat i la línia, l’any anterior. Ingressos: factures emeses i cobrades (sense esborranys ni anul·lades). Despeses: factures de proveïdor.</p>
+    <div class="bar">
+      <span class="nota">Any</span> <select id="graf-any" style="width:auto">${anys.map(a => `<option value="${a}" ${a === st.any ? 'selected' : ''}>${a}</option>`).join('')}</select>
+      <label class="chk" style="padding:0"><input type="checkbox" id="graf-iva" ${st.ambIva ? 'checked' : ''}> Imports amb IVA</label>
+      <button class="btn ghost" id="graf-print">Imprimeix</button>
+    </div>
+    <div class="resum">
+      <div><div class="k">Ingressos ${any}</div><div class="v cobr">${fmtEur(totIng)}</div><div class="k">${any - 1}: ${fmtEur(totIngA)}${dif(totIng, totIngA)}</div></div>
+      <div><div class="k">Despeses ${any}</div><div class="v pag">${fmtEur(totDes)}</div><div class="k">${any - 1}: ${fmtEur(totDesA)}${dif(totDes, totDesA)}</div></div>
+      <div><div class="k">Diferència ${any}</div><div class="v">${fmtEur(totIng - totDes)}</div><div class="k">${any - 1}: ${fmtEur(totIngA - totDesA)}</div></div>
+    </div>
+    <h2 class="grup">Gràfica d’ingressos</h2>
+    <div class="graf"><canvas id="g-ing"></canvas></div>
+    <details class="noprint"><summary class="hint">Taula de valors</summary>${taula(ara.ing, abans.ing)}</details>
+    <h2 class="grup">Gràfica de despeses</h2>
+    <div class="graf"><canvas id="g-des"></canvas></div>
+    <details class="noprint"><summary class="hint">Taula de valors</summary>${taula(ara.des, abans.des)}</details>`;
+  $('#graf-any').addEventListener('change', e => { st.any = e.target.value; renderMain(); });
+  $('#graf-iva').addEventListener('change', e => { st.ambIva = e.target.checked; renderMain(); });
+  $('#graf-print').addEventListener('click', () => window.print());
+  graficsFacturacio.forEach(g => g.destroy()); graficsFacturacio = [];
+  if (typeof Chart !== 'function') { main.insertAdjacentHTML('beforeend', '<div class="msg err">No s’ha pogut carregar la llibreria de gràfiques (cal connexió a Internet). Recarrega la pàgina.</div>'); return; }
+  const fes = (id, titol, barres, linia) => graficsFacturacio.push(new Chart($(id), {
+    data: { labels: MESOS, datasets: [
+      { type: 'bar', label: String(any), data: barres, backgroundColor: '#1f4e79', borderColor: '#1f4e79', borderWidth: 1, barPercentage: 0.55, order: 2 },
+      { type: 'line', label: String(any - 1), data: linia, borderColor: '#9dc3e6', backgroundColor: '#9dc3e6', borderWidth: 3, tension: 0, pointRadius: 4, pointBackgroundColor: '#9dc3e6', fill: false, order: 1 } ] },
+    options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false },
+      plugins: {
+        title: { display: true, text: titol + (st.ambIva ? ' (amb IVA)' : ' (sense IVA)'), color: '#1f4e79', font: { size: 19, weight: '600' }, padding: { top: 4, bottom: 10 } },
+        legend: { position: 'bottom', labels: { font: { weight: '600' } } },
+        tooltip: { callbacks: { label: c => ' ' + c.dataset.label + ': ' + fmtEur(c.parsed.y) } } },
+      scales: { y: { beginAtZero: true, title: { display: true, text: '€', font: { weight: '600' } }, ticks: { font: { weight: '600' }, callback: v => Number(v).toLocaleString('ca-ES') + ' €' } }, x: { ticks: { font: { weight: '600' } } } } }
+  }));
+  fes('#g-ing', 'Gràfica d’ingressos ' + any, ara.ing, abans.ing);
+  fes('#g-des', 'Gràfica de despeses ' + any, ara.des, abans.des);
 }
 
 /* ---------- Marcat de cobrats/pagats: llista per marcar amb una casella les factures que s'han cobrat (clients) o pagat (proveïdors) ---------- */
