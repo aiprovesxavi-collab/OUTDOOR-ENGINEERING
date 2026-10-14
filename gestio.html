@@ -61,7 +61,22 @@
   .operari .grid{ grid-template-columns:1fr; }
   .operari form .actions{ position:sticky; bottom:0; background:#fff; padding:12px 0; border-top:1px solid var(--line); z-index:5; }
   .operari .btn{ padding:12px 20px; font-size:16px; }
-  .operari h1{ font-size:22px; }
+  .operari h1{ font-size:24px; }
+  body.operari{ font-size:17px; }
+  .operari .f .l{ font-size:16px; color:var(--ink); }
+  .operari .f .hint{ font-size:14px; }
+  .operari input[type=text],.operari input[type=email],.operari input[type=number],.operari input[type=date],.operari input[type=time],.operari input[type=datetime-local],.operari select,.operari textarea{ font-size:18px; padding:11px 12px; }
+  .operari .ctx .v{ font-size:20px; }
+  .operari h3{ font-size:17px; }
+  .operari .targeta, .operari .xip{ font-size:15px; }
+  /* caselles de comprovacions i feines: botons que es posen en verd en prémer-los */
+  .chks .f.chk{ padding:0; display:block; }
+  .chks .f.chk > span:first-child{ display:none; }
+  .chks .f.chk .l{ display:block; border:2px solid var(--line-2); border-radius:8px; padding:10px 12px; text-align:center; cursor:pointer; user-select:none; color:var(--ink); background:#fff; font-size:15px; line-height:1.3; }
+  .chks .f.chk.on .l{ background:#2e7d32; border-color:#2e7d32; color:#fff; font-weight:600; }
+  .chks .f.chk.on .l::before{ content:'✓ '; }
+  .operari .chks{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; padding:10px; }
+  .operari .chks .f.chk .l{ font-size:17px; padding:14px 10px; }
   .targeta{ border:1px solid var(--line-2); border-radius:8px; padding:10px 12px; margin:0 0 10px; background:#fff; }
   .tcap{ font-size:14px; margin-bottom:6px; }
   .xips{ display:flex; flex-wrap:wrap; gap:6px; margin:4px 0; }
@@ -113,7 +128,7 @@
   .multi h4{ margin:6px 0 0; font-size:12.5px; color:var(--ink-2); font-weight:500; text-transform:uppercase; letter-spacing:.03em; }
   .multi label{ display:flex; align-items:flex-start; gap:8px; font-size:14px; } .multi label input{ margin-top:2px; }
   .multi .obl{ color:var(--ink-3); font-size:13px; }
-  @media (max-width:820px){ .chks{ grid-template-columns:1fr; } }
+  @media (max-width:820px){ .chks{ grid-template-columns:repeat(2, minmax(0,1fr)); } }
   .f .l .toca{ color:var(--red); font-weight:600; margin-left:6px; }
   .extres{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:0 0 16px; }
   .extres .nota{ font-size:13px; color:var(--ink-2); }
@@ -189,7 +204,7 @@
   .cal .tipus{ display:inline-block; font-size:12px; padding:1px 7px; border-radius:10px; border:1px solid var(--line-2); color:var(--ink-2); white-space:nowrap; }
   .cal .tipus.c{ border-color:#a5d6a7; color:#2e7d32; } .cal .tipus.p{ border-color:#f0b9ad; color:#b8432b; }
   .resum{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px; margin:0 0 18px; max-width:760px; }
-  .resum div{ border:1px solid var(--line-2); border-radius:8px; padding:10px 14px; }
+  .resum > div{ border:1px solid var(--line-2); border-radius:8px; padding:10px 14px; }
   .resum .k{ font-size:12.5px; color:var(--ink-2); } .resum .v{ font-size:20px; font-weight:600; }
   @media print{ .cal .dia{ page-break-after:avoid; } .resum{ gap:8px; } }
   .cpa .blk{ border:1px solid var(--line-2); border-radius:8px; padding:10px 16px 2px; margin:0 0 16px; }
@@ -212,6 +227,8 @@
   @media print{ .sol-mesos{ grid-template-columns:repeat(3, 1fr); gap:6px 16px; } .sol-mes{ break-inside:avoid; } .sol-mes .tbl{ font-size:9.5px; } .sol-mes .tbl td, .sol-mes .tbl th{ padding:1px 5px; } .sol-mes tr.avui td{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
   .informe th.num{ text-align:right; }
   .sub{ color:var(--ink-2); font-size:14px; max-width:760px; }
+  .nomes-print{ display:none; }
+  @media print{ .nomes-print{ display:block; font-size:12px; color:#333; } .venc .resum{ max-width:none; } }
   .capsal{ display:flex; flex-wrap:wrap; gap:6px 28px; margin:0 0 14px; }
   .capsal span{ font-size:14px; color:var(--ink-2); } .capsal b{ font-weight:600; color:var(--ink); }
   .tasques{ font-size:12.5px; border-collapse:separate; border-spacing:0 4px; }
@@ -429,6 +446,7 @@ const LLINDARS = {
   salinitat:     [[5.5, Infinity, 'verd-fort'], [5, 5.5, 'verd-suau'], [4, 5, 'taronja'], [0, 4, 'vermell']],
 };
 const colorLlindar = clau => v => { if (v == null || v === '') return ''; const x = Number(v); if (isNaN(x)) return ''; const hit = LLINDARS[clau].find(([a, b]) => x >= a && x <= b); return hit ? 'c-' + hit[2] : ''; };
+const esVermell = c => c === 'c-vermell' || c === 'c-negre'; // vermell o pitjor: cal una segona mostra
 const colorTransparencia = v => ({ optima: 'c-verd-fort', transparent_pero: 'c-verd-suau', un_punt_terbola: 'c-taronja', terbola_es_veu: 'c-vermell', no_es_veu: 'c-negre' })[v] || '';
 const AVIS_MAPA = {
   clor_lliure:   { 'verd-suau': ['1B', '1A'], taronja: ['2B', '2A'], vermell: ['3B', '3A'], negre: ['4', '4'] },
@@ -463,8 +481,20 @@ const totalLinies = (taula, fk) => (r, C) => eur(C.rows(taula).filter(l => l.act
    i al grup del menú que li toqui.
    ===================================================================== */
 const marcaModel = r => (r.marca + ' ' + (r.model || '')).trim();
+// bombes d'una piscina numerades B1, B2… (per ordre d'entrada; una fila amb quantitat 2 ocupa dos números). Només si n'hi ha més d'una.
+function etiquetaBomba(r) {
+  const files = C.rows('piscina_bombes').filter(x => x.actiu && Number(x.piscina_id) === Number(r.piscina_id)).sort((a, b) => a.id - b.id);
+  const total = files.reduce((t, x) => t + Math.max(1, Number(x.quantitat || 1)), 0);
+  if (total <= 1) return '';
+  let n = 1; for (const x of files) { const q = Math.max(1, Number(x.quantitat || 1)); if (x.id === r.id) return q > 1 ? `B${n}–B${n + q - 1}` : `B${n}`; n += q; }
+  return '';
+}
+const llistaBombes = (r, C) => C.rows('piscina_bombes').filter(x => x.actiu && Number(x.piscina_id) === r.id).sort((a, b) => a.id - b.id).map(x => (etiquetaBomba(x) ? etiquetaBomba(x) + ' ' : '') + L('bombes', x.bomba_id) + (x.quantitat > 1 ? ' ×' + x.quantitat : '')).join(', ');
 const llistaEnllacos = (taula, fk, ref, refKey) => (r, C) => C.rows(taula).filter(x => x.actiu && Number(x[fk]) === r.id).map(x => L(ref, x[refKey]) + (x.quantitat > 1 ? ' ×' + x.quantitat : '')).join(', ');
 const delClientDelLloc = (r, f, C) => { const l = C.get('llocs', f.lloc_id); return !!l && Number(r.client_id) === Number(l.client_id); };
+// estat d'una agrupació, deduït de les dates: futur (sense inici), actual (inici sense fi), finalitzat (inici i fi)
+const claAgrupacio = r => !r.data_inici ? 'futur' : !r.data_fi ? 'actual' : 'finalitzat';
+const estatAgrupacio = r => ({ futur: 'Futur', actual: 'Actual', finalitzat: 'Finalitzat' })[claAgrupacio(r)] + (claAgrupacio(r) === 'finalitzat' && r.data_fi >= avui() ? ' (fins al ' + dmy(r.data_fi) + ')' : '');
 const inclouText = r => [r.inclou_jardi && 'jardí', r.inclou_piscina && 'piscina', r.inclou_aigues_grises && 'aigües grises'].filter(Boolean).join(' i ') || 'sense tipus';
 const teJardi = f => { const a = f && f.agrupacio_id ? C.get('agrupacions', f.agrupacio_id) : null; return !!(a && a.inclou_jardi); };
 const cobreixMajuscules = r => { const it = [r.cobreix_jardi && 'JARDÍ', r.cobreix_piscina && 'PISCINA', r.cobreix_aigues_grises && 'AIGÜES GRISES'].filter(Boolean); return it.length <= 1 ? (it[0] || '') : it.slice(0, -1).join(', ') + ' I ' + it[it.length - 1]; };
@@ -643,7 +673,7 @@ const campsBombes = [
 const SCHEMA = {
   groups: [
     { label: 'QUI · ON', color: '#e08a8a', tables: ['administradors', 'contactes', 'clients', 'llocs', 'clients_per_administrador'] },
-    { label: 'FACTURACIÓ', color: '#8a8a8a', tables: ['agrupacions', 'facturacio_recurrent', 'factures', 'calendari_facturacio', 'pressupostos_tasca', 'pressupostos_agrupacio', 'clausules_pressupost'] },
+    { label: 'FACTURACIÓ', color: '#8a8a8a', tables: ['agrupacions', 'facturacio_recurrent', 'factures', 'calendari_facturacio', 'vencudes', 'pressupostos_tasca', 'pressupostos_agrupacio', 'clausules_pressupost'] },
     { label: 'ALBARANS I PRODUCTES', color: '#c9c9c9', tables: ['productes', 'albarans', 'albarans_pendents'] },
     { label: 'PROVEÏDORS', color: '#c0691e', tables: ['proveidors', 'factures_proveidor', 'puja_factures_proveidor', 'comptes_despesa'] },
     { label: 'TASQUES', color: '#8b5a2b', tables: ['tasques_piscina', 'informe_tasques_piscina', 'informe_tasques_dates'] },
@@ -663,6 +693,7 @@ const SCHEMA = {
     informe_tasques_dates: { label: 'Tasca per dates', render: main => renderInformeTasquesDates(main) },
     puja_factures_proveidor: { label: 'Puja factures (PDF)', render: main => renderPujaFactures(main) },
     calendari_facturacio: { label: 'Calendari de facturació', render: main => renderCalendariFacturacio(main) },
+    vencudes: { label: 'Vençudes i pendents', render: main => renderVencudes(main) },
     clients_per_administrador: { label: 'Clients per administrador', render: main => renderClientsPerAdministrador(main) },
     hores_sol: { label: 'Hores del sol (tot l’any)', render: main => renderHoresSol(main) },
     incidencies: { label: 'Incidències', render: main => renderIncidencies(main) },
@@ -766,9 +797,12 @@ const SCHEMA = {
     agrupacions: {
       label: 'Agrupacions de facturació', nou: 'Nova agrupació de facturació', order: 'nom',
       display: (r, L) => r.nom + ' — ' + L('clients', r.client_id),
-      list: ['nom', 'client_id', 'inclou', 'concepte_factura', 'preu', 'data_inici', 'data_fi'],
-      computed: { inclou: { label: 'Inclou', fn: r => inclouText(r) } },
-      validate: p => (p.inclou_jardi || p.inclou_piscina || p.inclou_aigues_grises) ? null : 'Marca almenys què inclou l’agrupació: jardí, piscina o aigües grises.',
+      list: ['estat', 'nom', 'client_id', 'inclou', 'concepte_factura', 'preu', 'data_inici', 'data_fi'],
+      computed: { inclou: { label: 'Inclou', fn: r => inclouText(r) }, estat: { label: 'Estat', fn: r => estatAgrupacio(r), color: r => ({ futur: 'c-taronja', actual: 'c-verd-suau', finalitzat: '' })[claAgrupacio(r)] } },
+      filtres: [{ key: '_estat', tipus: 'opcions', label: 'Estat', opcions: [['futur', 'Futur'], ['actual', 'Actual'], ['finalitzat', 'Finalitzat']], prova: (r, v) => claAgrupacio(r) === v }],
+      validate: p => !(p.inclou_jardi || p.inclou_piscina || p.inclou_aigues_grises) ? 'Marca almenys què inclou l’agrupació: jardí, piscina o aigües grises.'
+        : (p.data_fi && !p.data_inici) ? 'Una agrupació amb data de fi ha de tenir data d’inici.'
+        : (p.data_fi && p.data_inici && p.data_fi < p.data_inici) ? 'La data de fi no pot ser anterior a la d’inici.' : null,
       fields: [
         { key: 'client_id', label: 'Client', type: 'ref', ref: 'clients', required: true, optionLabel: clientAmbLlocs },
         { key: 'nom', label: 'Nom intern', type: 'text', required: true, hint: '"jardí", "piscina", "tot"', dup: 'exact', dupScope: 'client_id' },
@@ -777,8 +811,9 @@ const SCHEMA = {
         { key: 'inclou_aigues_grises', label: 'Inclou aigües grises', type: 'boolean' },
         { key: 'concepte_factura', label: 'Concepte a la factura', type: 'text', required: true },
         { key: 'preu', label: 'Preu mensual (sense IVA)', type: 'number', step: '0.01', required: true },
-        { key: 'data_inici', label: 'Data d’inici', type: 'date', required: true },
-        { key: 'data_fi', label: 'Data de fi', type: 'date', hint: 'buida mentre el contracte segueixi' },
+        { key: 'estat', label: 'Estat', type: 'info', fmt: r => r ? estatAgrupacio(r) : 'Futur (sense data d’inici) · Actual (amb inici, sense fi) · Finalitzat (amb inici i fi)' },
+        { key: 'data_inici', label: 'Data d’inici', type: 'date', hint: 'buida mentre el pressupost no estigui aprovat (estat Futur); en posar-la passa a Actual i entra a la facturació recurrent' },
+        { key: 'data_fi', label: 'Data de fi', type: 'date', hint: 'buida mentre el contracte segueixi; en posar-la passa a Finalitzat', nota: vals => ({ text: 'Amb aquestes dates l’agrupació és: ' + estatAgrupacio(vals), classe: claAgrupacio(vals) === 'actual' ? 'v-ok' : claAgrupacio(vals) === 'futur' ? 'v-calc' : '' }) },
         { key: 'facturat_fins', label: 'Facturat fins (abans del programa)', type: 'date', hint: 'el programa genera factures a partir del mes següent a aquesta data' },
         { key: 'pdf_pressupost', label: 'PDF del pressupost signat', type: 'file', folder: 'contractes' },
         { key: 'observacions', label: 'Observacions', type: 'textarea' },
@@ -907,8 +942,9 @@ const SCHEMA = {
     },
     piscina_bombes: {
       label: 'Bombes de la piscina', nou: '', order: 'id',
-      display: r => L('bombes', r.bomba_id),
-      list: ['bomba_id', 'quantitat', 'data_instal_lacio', 'observacions'],
+      display: r => (etiquetaBomba(r) ? etiquetaBomba(r) + ' · ' : '') + L('bombes', r.bomba_id),
+      list: ['etiqueta', 'bomba_id', 'quantitat', 'data_instal_lacio', 'observacions'],
+      computed: { etiqueta: { label: 'Bomba', fn: r => etiquetaBomba(r), hideIfEmpty: true } },
       fields: [
         { key: 'bomba_id', label: 'Model', type: 'ref', ref: 'bombes', required: true },
         { key: 'quantitat', label: 'Quantitat', type: 'integer', min: 1, required: true, default: 1 },
@@ -1320,11 +1356,11 @@ const SCHEMA = {
         { key: 'hora', label: 'Hora', type: 'time', default: () => new Date().toTimeString().slice(0, 5) },
         { key: 'treballador_id', label: 'Fet per', curt: 'Per', type: 'ref', ref: 'treballadors', wide: true, default: () => { const t = treballadorActual(); return t ? t.id : ''; }, hint: 's’omple sol amb qui ha entrat, si el seu correu d’accés és a Treballadors' },
         { key: 'clor_lliure_1', label: 'Clor lliure 1 (ppm)', curt: 'Cl lliure 1', type: 'number', step: '0.01', color: colorLlindar('clor_lliure'), avis: avisClau('clor_lliure') },
-        { key: 'clor_lliure_2', label: 'Clor lliure 2 (ppm)', curt: 'Cl lliure 2', type: 'number', step: '0.01', color: colorLlindar('clor_lliure'), avis: avisClau('clor_lliure') },
+        { key: 'clor_lliure_2', label: 'Segona mostra de clor (ppm)', curt: '2a mostra Cl', type: 'number', step: '0.01', color: colorLlindar('clor_lliure'), avis: avisClau('clor_lliure'), visible: vals => esVermell(colorLlindar('clor_lliure')(vals.clor_lliure_1)), neteja: true, hint: 'només quan la primera mostra surt vermella: torna a mesurar' },
         { key: 'clor_combinat_1', label: 'Clor combinat 1 (ppm)', curt: 'Cl comb. 1', type: 'number', step: '0.01', color: colorLlindar('clor_combinat'), avis: avisClau('clor_combinat'), visible: tocaCada(7, 'clor_combinat_1', true), quan: 'setmanal, del 15/06 al 15/09' },
         { key: 'clor_combinat_2', label: 'Clor combinat 2 (ppm)', curt: 'Cl comb. 2', type: 'number', step: '0.01', color: colorLlindar('clor_combinat'), avis: avisClau('clor_combinat'), visible: tocaCada(7, 'clor_combinat_1', true), quan: 'setmanal, del 15/06 al 15/09' },
         { key: 'ph_1', label: 'pH 1', type: 'number', step: '0.01', color: colorLlindar('ph'), avis: avisClau('ph') },
-        { key: 'ph_2', label: 'pH 2', type: 'number', step: '0.01', color: colorLlindar('ph'), avis: avisClau('ph') },
+        { key: 'ph_2', label: 'Segona mostra de pH', curt: '2a mostra pH', type: 'number', step: '0.01', color: colorLlindar('ph'), avis: avisClau('ph'), visible: vals => esVermell(colorLlindar('ph')(vals.ph_1)), neteja: true, hint: 'només quan la primera mostra surt vermella: torna a mesurar' },
         { key: 'isocianuric', label: 'Isocianúric (ppm)', curt: 'Isocian.', type: 'number', step: '0.1', color: colorLlindar('isocianuric'), avis: avisClau('isocianuric'), visible: tocaCada(30, 'isocianuric', true), quan: 'mensual, del 15/06 al 15/09' },
         { key: 'alcalinitat', label: 'Alcalinitat (ppm)', curt: 'Alcal.', type: 'number', step: '0.1', color: colorLlindar('alcalinitat'), avis: avisClau('alcalinitat'), visible: tocaCada(30, 'alcalinitat', false), quan: 'mensual' },
         { key: 'duresa', label: 'Duresa (ppm)', curt: 'Duresa', type: 'number', step: '0.1', color: colorLlindar('duresa'), avis: avisClau('duresa'), visible: tocaCada(30, 'duresa', false), quan: 'mensual' },
@@ -1436,7 +1472,7 @@ const SCHEMA = {
       computed: {
         focus_avui: { label: 'Focus avui', fn: r => liniaAvui(r, 'focus') },
         bombes_avui: { label: 'Bombes avui', fn: r => bombesAvuiCurt(r) },
-        bombes: { label: 'Bombes', fn: llistaEnllacos('piscina_bombes', 'piscina_id', 'bombes', 'bomba_id') },
+        bombes: { label: 'Bombes', fn: llistaBombes },
         filtres: { label: 'Filtres', fn: llistaEnllacos('piscina_filtres', 'piscina_id', 'filtres', 'filtre_id') },
         cloradors: { label: 'Cloradors', fn: llistaEnllacos('piscina_cloradors', 'piscina_id', 'cloradors_salins', 'clorador_id') },
       },
@@ -1526,7 +1562,7 @@ const C = {
   rows: t => cache[t] || [],
   get: (t, id) => { const pk = (SCHEMA.tables[t] || {}).pk; return pk ? (cache[t] || []).find(r => String(r[pk]) === String(id)) : (cache[t] || []).find(r => r.id === Number(id)); },
 };
-const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, qr: { lloc: '', base: '' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
+const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, qr: { lloc: '', base: '' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
 const L = (t, id) => { const r = C.get(t, id); return r ? SCHEMA.tables[t].display(r, L) : ''; };
 
 /* =====================================================================
@@ -1883,7 +1919,7 @@ function childrenHTML(td, row) {
     const ct = SCHEMA.tables[ch.table];
     const editable = !ch.editable || ch.editable(row);
     const rows = sortRows(ct, C.rows(ch.table).filter(r => r.actiu && Number(r[ch.fk]) === row.id));
-    const cols = ct.list.filter(k => { const f = fieldDef(ct, k); return !(f && f.hideIfEmpty) || rows.some(r => r[k] != null && r[k] !== ''); });
+    const cols = ct.list.filter(k => { const f = fieldDef(ct, k), cp = ct.computed && ct.computed[k]; if (cp && cp.hideIfEmpty) return rows.some(r => cellText(ct, k, r) !== ''); return !(f && f.hideIfEmpty) || rows.some(r => r[k] != null && r[k] !== ''); });
     const suma = ch.sum && rows.length ? `<tr class="total"><td colspan="${cols.length - 1}">${h(ch.sum.label)}</td><td class="num">${eur(rows.reduce((t, r) => t + Number(r[ch.sum.field] || 0), 0))}</td>${editable ? '<td></td>' : ''}</tr>` : '';
     const tbl = rows.length
       ? `<table class="tbl informe"><thead><tr>${cols.map(k => `<th class="${isNum(ct, k) || k === ch.sum?.field ? 'num' : ''}">${h(colLabel(ct, k))}</th>`).join('')}${editable ? '<th></th>' : ''}</tr></thead><tbody>
@@ -1970,6 +2006,8 @@ function aplicaFiltres(td, rows) {
       if (a) rows = rows.filter(r => String(r[ft.key] || '') <= a);
     } else if (ft.tipus === 'ref') {
       const v = f[ft.key]; if (v) rows = rows.filter(r => String(r[ft.key]) === String(v));
+    } else if (ft.tipus === 'opcions') {
+      const v = f[ft.key]; if (v) rows = rows.filter(r => ft.prova ? ft.prova(r, v) : String(r[ft.key]) === String(v));
     }
   });
   return rows;
@@ -1978,6 +2016,8 @@ function filtresHTML(td) {
   const f = filtresActius(td);
   return (td.filtres || []).map(ft => ft.tipus === 'dates'
     ? `<span class="nota">${h(ft.label)}</span> <input type="date" data-flt="${ft.key}_de" value="${h(f[ft.key + '_de'] || '')}" style="width:auto"> <input type="date" data-flt="${ft.key}_a" value="${h(f[ft.key + '_a'] || '')}" style="width:auto">`
+    : ft.tipus === 'opcions'
+    ? `<select data-flt="${ft.key}" style="width:auto"><option value="">${h(ft.label)}: tots</option>${ft.opcions.map(o => `<option value="${o[0]}" ${o[0] === String(f[ft.key] || '') ? 'selected' : ''}>${h(o[1])}</option>`).join('')}</select>`
     : `<select data-flt="${ft.key}" style="width:auto"><option value="">${h(ft.label)}: tots</option>${C.rows(ft.ref).filter(r => r.actiu).map(r => ({ id: r.id, l: L(ft.ref, r.id) })).sort((a, b) => a.l.localeCompare(b.l, 'ca')).map(o => `<option value="${o.id}" ${String(o.id) === String(f[ft.key] || '') ? 'selected' : ''}>${h(o.l)}</option>`).join('')}</select>`
   ).join(' ');
 }
@@ -2025,17 +2065,21 @@ function bindMain(td) {
       });
     });
     frm.addEventListener('submit', e => { e.preventDefault(); save(td, frm); });
+    // mentre s'escriu (input) només es refresquen el context, els duplicats i les notes; els colors, els avisos i la visibilitat
+    // s'avaluen quan el valor ja està entrat (change: en sortir del camp o prémer Enter), perquè "2" no surti verd abans d'acabar "2,9"
     const viu = () => { updateCtx(td, frm); checkDups(td, frm); pintaColors(td, frm); aplicaVisibilitat(td, frm); pintaAvisos(td, frm); pintaNotes(td, frm); };
-    frm.addEventListener('input', viu); frm.addEventListener('change', viu); viu();
-    // focs artificials quan un valor queda en verd (fort: grans; suau: petits), un cop per canvi de color
-    const darrerColor = {}, temps = {};
+    const escrivint = e => { updateCtx(td, frm); checkDups(td, frm); pintaNotes(td, frm); const el = e.target; const f = el && el.name ? fieldDef(td, el.name) : null; if (f && f.color && f.type === 'number') { el.classList.remove('c-verd-fort', 'c-verd-suau', 'c-taronja', 'c-vermell', 'c-negre'); const box = frm.querySelector(`[data-avis-for="${f.key}"]`); if (box) box.hidden = true; } };
+    frm.addEventListener('input', escrivint); frm.addEventListener('change', viu);
+    frm.dataset.inicial = '1'; viu(); delete frm.dataset.inicial; // en pintar, els camps amb valor no es buiden encara que ara no toquin
+    // focs artificials quan un valor queda en verd (fort: grans; suau: petits), un cop per canvi de color, i només amb el valor ja entrat
+    const darrerColor = {};
     td.fields.filter(f => f.color && (f.type === 'number' || f.type === 'select')).forEach(f => {
       const el = frm.querySelector(`[name="${f.key}"]`); if (!el) return;
       darrerColor[f.key] = f.color(el.value);
-      const avalua = () => { const c = f.color(el.value); if (c !== darrerColor[f.key]) { darrerColor[f.key] = c; if (c === 'c-verd-fort') focs(el, true); else if (c === 'c-verd-suau') focs(el, false); } };
-      el.addEventListener('input', () => { clearTimeout(temps[f.key]); temps[f.key] = setTimeout(avalua, 600); });
-      el.addEventListener('change', () => { clearTimeout(temps[f.key]); avalua(); });
+      el.addEventListener('change', () => { const c = f.color(el.value); if (c !== darrerColor[f.key]) { darrerColor[f.key] = c; if (c === 'c-verd-fort') focs(el, true); else if (c === 'c-verd-suau') focs(el, false); } });
     });
+    // caselles en grup (comprovacions i feines): el botó queda verd quan està marcat
+    frm.querySelectorAll('.chks .f.chk').forEach(w => { const c = w.querySelector('input[type=checkbox]'); if (!c) return; const pinta = () => w.classList.toggle('on', c.checked); pinta(); c.addEventListener('change', pinta); });
     if (td.bindExtras) td.bindExtras(frm, td);
     main.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => obreFitxer(b.dataset.open)));
     const cancel = $('#cancel'); if (cancel) cancel.addEventListener('click', () => { state.editing = null; renderMain(); });
@@ -2173,7 +2217,7 @@ function aplicaVisibilitat(td, frm) {
     const w = frm.querySelector(`[data-fkey="${f.key}"]`); if (!w) return;
     const toca = f.visible(vals, C);
     const el = frm.querySelector(`[name="${f.key}"]`);
-    if (f.neteja && !toca && el && el.value !== '') { el.value = ''; el.dataset.netejat = '1'; } // camp que no toca amb aquesta tria: es buida (p. ex. els minuts quan passes de "posta de sol" a "sensor")
+    if (f.neteja && !toca && el && el.value !== '' && !frm.dataset.inicial) { el.value = ''; el.dataset.netejat = '1'; } // camp que no toca amb aquesta tria: es buida (p. ex. els minuts quan passes de "posta de sol" a "sensor")
     if (f.neteja && toca && el && el.value === '' && el.dataset.netejat && !frm.dataset.id) { const d = defaultValue(f); if (d !== '' && d != null) el.value = String(d); delete el.dataset.netejat; } // i si torna a tocar, recupera el valor predeterminat
     const teValor = el && el.value !== '';
     w.hidden = !(toca || tot || teValor);
@@ -2525,6 +2569,7 @@ function renderFacturacio(main) {
   main.innerHTML = `
     <h1>Facturació recurrent</h1>
     <p>Genera els esborranys dels períodes que toquin, repassa'ls i emet. Un esborrany es pot obrir, corregir o donar de baixa; una factura emesa rep número i queda congelada.</p>
+    <p class="sub">${(() => { const ag = C.rows('agrupacions').filter(a => a.actiu); const n = k => ag.filter(a => claAgrupacio(a) === k).length; return `Agrupacions: <b>${n('actual')} actuals</b> (són les que facturen), ${n('futur')} futures (sense data d’inici: no facturen) i ${n('finalitzat')} finalitzades.`; })()}</p>
     <div class="bar">
       <button class="btn" id="genera">Genera els esborranys fins avui</button>
       <button class="btn ghost" id="emet-totes" ${drafts.length ? '' : 'disabled'}>Emet tots els esborranys (${drafts.length})</button>
@@ -3210,6 +3255,67 @@ function renderCalendariFacturacio(main) {
   main.querySelectorAll('tr.row[data-taula]').forEach(tr => tr.addEventListener('click', () => {
     state.mode = 'consulta'; state.table = tr.dataset.taula; state.editing = Number(tr.dataset.id); renderApp(); window.scrollTo({ top: 0 });
   }));
+}
+
+/* ---------- Vençudes i pendents: factures emeses no cobrades i factures de proveïdor no pagades amb el venciment passat ---------- */
+function renderVencudes(main) {
+  const st = state.venc; if (!st.ref) st.ref = avui();
+  const limit = st.ref, passada = d => st.avui ? d <= limit : d < limit;
+  const dies = d => Math.round((new Date(limit + 'T00:00:00') - new Date(String(d).slice(0, 10) + 'T00:00:00')) / 86400000);
+  const formaCurta = { domiciliacio: 'rebut', transferencia: 'transf.', talo: 'taló', visa: 'targeta', altres: 'altres' };
+  const cob = st.cobr ? C.rows('factures').filter(f => f.actiu && f.estat === 'emesa' && f.data_venciment && passada(f.data_venciment))
+    .sort((a, b) => String(a.data_venciment).localeCompare(String(b.data_venciment)) || String(a.numero_complet || '').localeCompare(String(b.numero_complet || ''))) : [];
+  const pag = st.pag ? C.rows('factures_proveidor').filter(f => f.actiu && !f.pagada && (st.dubtoses || !f.dubtosa) && f.data_venciment && passada(f.data_venciment))
+    .sort((a, b) => String(a.data_venciment).localeCompare(String(b.data_venciment)) || L('proveidors', a.proveidor_id).localeCompare(L('proveidors', b.proveidor_id), 'ca')) : [];
+  const senseC = C.rows('factures').filter(f => f.actiu && f.estat === 'emesa' && !f.data_venciment).length;
+  const senseP = C.rows('factures_proveidor').filter(f => f.actiu && !f.pagada && !f.data_venciment).length;
+  const totC = cob.reduce((t, f) => t + Number(f.total || 0), 0), totP = pag.reduce((t, f) => t + Number(f.total || 0), 0);
+  const mesAntiga = [...cob, ...pag].reduce((m, f) => Math.max(m, dies(f.data_venciment)), 0);
+  // resum per client (per reclamar): nombre, total i la més antiga
+  const perClient = {};
+  cob.forEach(f => { const k = f.client_id; const c = perClient[k] || (perClient[k] = { n: 0, total: 0, dies: 0, client_id: k }); c.n++; c.total += Number(f.total || 0); c.dies = Math.max(c.dies, dies(f.data_venciment)); });
+  const clientsOrd = Object.values(perClient).sort((a, b) => b.total - a.total);
+  const nomClient = f => f.client_nom || L('clients', f.client_id);
+  const admin = f => { const c = C.get('clients', f.client_id); return c ? L('administradors', c.administrador_id) : ''; };
+  const telClient = f => { const c = C.get('clients', f.client_id); if (!c) return ''; const g = C.get('contactes', c.gestor_id); return c.telefon || (g && g.telefon) || ''; };
+  main.innerHTML = `
+    <h1>Vençudes i pendents</h1>
+    <p class="sub noprint">Factures emeses que han vençut i encara no s’han cobrat, i factures de proveïdor vençudes que encara no s’han pagat, a data de referència. Clica una fila per obrir la factura.</p>
+    <div class="bar">
+      <span class="nota">A data</span> <input type="date" id="venc-ref" value="${st.ref}" style="width:auto">
+      <label class="chk" style="padding:0"><input type="checkbox" id="venc-avui" ${st.avui ? 'checked' : ''}> Inclou les que vencen aquest mateix dia</label>
+      <label class="chk" style="padding:0"><input type="checkbox" id="venc-cobr" ${st.cobr ? 'checked' : ''}> Cobraments</label>
+      <label class="chk" style="padding:0"><input type="checkbox" id="venc-pag" ${st.pag ? 'checked' : ''}> Pagaments</label>
+      <label class="chk" style="padding:0"><input type="checkbox" id="venc-dubtoses" ${st.dubtoses ? 'checked' : ''}> Inclou les dubtoses</label>
+      <label class="chk" style="padding:0"><input type="checkbox" id="venc-perclient" ${st.perClient ? 'checked' : ''}> Resum per client</label>
+      <button class="btn ghost" id="venc-print">Imprimeix</button>
+    </div>
+    <div class="cal venc">
+      <p class="nomes-print">A data ${dmy(limit)}${st.avui ? ' (inclou les que vencen aquest dia)' : ''}</p>
+      <div class="resum">
+        ${st.cobr ? `<div><div class="k">Pendents de cobrar, vençudes</div><div class="v cobr">${eur(totC)}</div><div class="k">${cob.length} ${cob.length === 1 ? 'factura' : 'factures'}</div></div>` : ''}
+        ${st.pag ? `<div><div class="k">Pendents de pagar, vençudes</div><div class="v pag">${eur(totP)}</div><div class="k">${pag.length} ${pag.length === 1 ? 'factura' : 'factures'}</div></div>` : ''}
+        <div><div class="k">Retard més gran</div><div class="v">${mesAntiga} ${mesAntiga === 1 ? 'dia' : 'dies'}</div></div>
+      </div>
+      ${senseC || senseP ? `<p class="sub">${senseC ? senseC + ' factures emeses' : ''}${senseC && senseP ? ' i ' : ''}${senseP ? senseP + ' factures de proveïdor' : ''} pendents no tenen data de venciment i no es poden avaluar.</p>` : ''}
+      ${st.cobr ? `<h2 class="grup">Factures emeses vençudes i no cobrades</h2>
+        ${cob.length ? `${st.perClient && clientsOrd.length > 1 ? `<h3>Per client</h3><table class="tbl informe"><thead><tr><th>Client</th><th>Administrador</th><th>Telèfon</th><th class="num">Factures</th><th class="num">Retard màx.</th><th class="num">Total</th></tr></thead><tbody>
+          ${clientsOrd.map(c => `<tr><td>${h(L('clients', c.client_id))}</td><td>${h(admin({ client_id: c.client_id }))}</td><td>${h(telClient({ client_id: c.client_id }))}</td><td class="num">${c.n}</td><td class="num">${c.dies} d</td><td class="num"><b>${eur(c.total)}</b></td></tr>`).join('')}
+          <tr class="total"><td colspan="3">Total</td><td class="num">${cob.length}</td><td></td><td class="num">${eur(totC)}</td></tr></tbody></table><h3>Detall</h3>` : ''}
+        <table class="tbl informe"><thead><tr><th>Venciment</th><th class="num">Retard</th><th>Número</th><th>Data</th><th>Client</th><th>Administrador</th><th>Concepte</th><th>Forma</th><th class="num">Total</th></tr></thead><tbody>
+          ${cob.map(f => `<tr class="row" data-taula="factures" data-id="${f.id}"><td>${dmy(f.data_venciment)}</td><td class="num ${dies(f.data_venciment) > 30 ? 'v-no' : ''}">${dies(f.data_venciment)} d</td><td>${h(f.numero_complet || '')}</td><td>${dmy(f.data_factura)}</td><td>${h(nomClient(f))}</td><td>${h(admin(f))}</td><td>${h(String(f.concepte || '').split('\n')[0].slice(0, 70))}</td><td>${h(formaCurta[f.forma_pagament] || f.forma_pagament || '')}</td><td class="num">${eur(f.total)}</td></tr>`).join('')}
+          <tr class="total"><td colspan="8">Total pendent de cobrar, vençut</td><td class="num">${eur(totC)}</td></tr>
+        </tbody></table>` : '<div class="empty">Cap factura emesa vençuda sense cobrar. Bona notícia.</div>'}` : ''}
+      ${st.pag ? `<h2 class="grup">Factures de proveïdor vençudes i no pagades</h2>
+        ${pag.length ? `<table class="tbl informe"><thead><tr><th>Venciment</th><th class="num">Retard</th><th>Proveïdor</th><th>Número</th><th>Data</th><th>Concepte</th><th>Forma</th><th class="num">Total</th></tr></thead><tbody>
+          ${pag.map(f => `<tr class="row" data-taula="factures_proveidor" data-id="${f.id}"><td>${dmy(f.data_venciment)}</td><td class="num ${dies(f.data_venciment) > 30 ? 'v-no' : ''}">${dies(f.data_venciment)} d</td><td>${h(L('proveidors', f.proveidor_id))}${f.dubtosa ? ' <span class="cal"><span class="tipus p">dubtosa</span></span>' : ''}</td><td>${h(f.numero || '')}</td><td>${dmy(f.data_factura)}</td><td>${h(String(f.concepte || '').split('\n')[0].slice(0, 70))}</td><td>${h(formaCurta[f.forma_pagament] || f.forma_pagament || '')}</td><td class="num">${eur(f.total)}</td></tr>`).join('')}
+          <tr class="total"><td colspan="7">Total pendent de pagar, vençut</td><td class="num">${eur(totP)}</td></tr>
+        </tbody></table>` : '<div class="empty">Cap factura de proveïdor vençuda sense pagar.</div>'}` : ''}
+    </div>`;
+  $('#venc-ref').addEventListener('change', e => { st.ref = e.target.value || avui(); renderMain(); });
+  [['venc-avui', 'avui'], ['venc-cobr', 'cobr'], ['venc-pag', 'pag'], ['venc-dubtoses', 'dubtoses'], ['venc-perclient', 'perClient']].forEach(([id, k]) => $('#' + id).addEventListener('change', e => { st[k] = e.target.checked; renderMain(); }));
+  $('#venc-print').addEventListener('click', () => window.print());
+  main.querySelectorAll('tr.row[data-taula]').forEach(tr => tr.addEventListener('click', () => { state.mode = 'consulta'; state.table = tr.dataset.taula; state.editing = Number(tr.dataset.id); renderApp(); window.scrollTo({ top: 0 }); }));
 }
 
 /* ---------- Hores del sol: sortida i posta de cada dia de l'any en una població ---------- */
