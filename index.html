@@ -1050,7 +1050,7 @@ const SCHEMA = {
         { key: 'numero_complet', label: 'Número', type: 'info', fmt: r => r.numero_complet || '(s’assigna en emetre)' },
         { key: 'estat', label: 'Estat', type: 'info', fmt: r => (OPT.estat_factura.find(o => o[0] === r.estat) || [])[1] || r.estat },
         { key: 'client_id', label: 'Client', type: 'ref', ref: 'clients', required: true, optionLabel: clientAmbLlocs, ro: esEmesa },
-        { key: 'agrupacio_id', label: 'Agrupació (només recurrents)', type: 'ref', ref: 'agrupacions', dependsOn: 'client_id', ro: esEmesa,
+        { key: 'agrupacio_id', label: 'Agrupació (només recurrents)', type: 'ref', ref: 'agrupacions', dependsOn: 'client_id', ro: esEmesa, autoUnic: false,
           filter: (r, f) => Number(r.client_id) === Number(f.client_id) },
         { key: 'amb_linies', label: 'Tipus', type: 'select', options: OPT.tipus_factura, bool: true, required: true, default: 'true', ro: r => esEmesa(r) || (!!r && r.origen === 'recurrent'), hint: 'la recurrent és sempre sense línies' },
         { key: 'tema', label: 'Caràtula', type: 'select', options: OPT.tema_factura, hint: 'buit = automàtica: verda si l’agrupació inclou jardí, blava si no; si la canvies en una factura emesa, el PDF es refà' },
@@ -1359,7 +1359,7 @@ const SCHEMA = {
         { key: 'lloc_id', label: 'Lloc', type: 'ref', ref: 'llocs', required: true, optionLabel: r => r.nom + ' — ' + ((C.get('clients', r.client_id) || {}).nom || '') },
         { key: 'qui_tipus', label: 'Qui ho comunica', type: 'select', options: OPT.qui_report, required: true, virtual: true, derive: r => r.treballador_comunica_id ? 'treballador' : 'client', default: () => { const t = treballadorActual(); return t && t.rol === 'tecnic' ? 'treballador' : 'client'; } },
         { key: 'treballador_comunica_id', label: 'Treballador que ho ha vist', type: 'ref', ref: 'treballadors', visible: v => v.qui_tipus === 'treballador', neteja: true, default: () => { const t = treballadorActual(); return t ? t.id : ''; } },
-        { key: 'contacte_id', label: 'Persona registrada (si ho és)', type: 'ref', ref: 'contactes', dependsOn: 'lloc_id', filter: (r, f) => !!f.lloc_id && contactesDelLloc(f.lloc_id).some(c => c.id === r.id), visible: v => v.qui_tipus === 'client', neteja: true, hint: 'president, administrador, conserge…; en triar-la s’omplen el nom i el correu' },
+        { key: 'contacte_id', label: 'Persona registrada (si ho és)', type: 'ref', ref: 'contactes', dependsOn: 'lloc_id', autoUnic: false, filter: (r, f) => !!f.lloc_id && contactesDelLloc(f.lloc_id).some(c => c.id === r.id), visible: v => v.qui_tipus === 'client', neteja: true, hint: 'president, administrador, conserge…; en triar-la s’omplen el nom i el correu' },
         { key: 'nom_comunica', label: 'Nom de qui ho comunica', type: 'text', visible: v => v.qui_tipus === 'client', neteja: true, hint: 'qualsevol persona de la comunitat' },
         { key: 'email_comunica', label: 'Correu de qui ho comunica', type: 'email', visible: v => v.qui_tipus === 'client', neteja: true, hint: 'per poder-la informar de com va la incidència' },
         { key: 'telefon_comunica', label: 'Telèfon', type: 'text', visible: v => v.qui_tipus === 'client', neteja: true },
@@ -1687,27 +1687,35 @@ function renderConfig(err) {
   });
 }
 
+// l'usuari que ha entrat en aquest aparell: a l'app de l'operari, l'aparell queda lligat a ell (només cal la contrasenya per tornar a entrar)
+const USUARI_KEY = 'gestio_manteniment_usuari';
+function usuariRecordat() { try { const u = JSON.parse(localStorage.getItem(USUARI_KEY) || 'null'); return u && u.email ? u : null; } catch (e) { return null; } }
+function recordaUsuari() { const t = treballadorActual(); if (!user) return; localStorage.setItem(USUARI_KEY, JSON.stringify({ email: user.email, nom: t ? nomTreballador(t) : '' })); }
 function renderLogin(err) {
   document.body.dataset.mode = 'entrada';
+  const rec = usuariRecordat(), lligat = !!rec && APP_NOMES_TASQUES;   // app de l'operari amb usuari lligat: només demana la contrasenya
   $('#app').innerHTML = `
     <div class="login">
-      <h1>Gestió de manteniment</h1>
+      <h1>${APP_NOMES_TASQUES ? 'Outdoor' : 'Gestió de manteniment'}</h1>
       ${err ? `<div class="msg err">${h(err)}</div>` : ''}
       <form id="lg">
-        <div class="f"><span class="l">Correu</span><input type="email" name="email" required autocomplete="username"></div>
-        <div class="f"><span class="l">Contrasenya</span><input type="password" name="password" required autocomplete="current-password"></div>
+        ${lligat ? `<div class="f"><span class="l">Aquest aparell és de</span><div class="info">${h(rec.nom || rec.email)}</div><span class="hint">${h(rec.email)}</span><input type="hidden" name="email" value="${h(rec.email)}"></div>`
+                 : `<div class="f"><span class="l">Correu</span><input type="email" name="email" required autocomplete="username" value="${h(rec ? rec.email : '')}"></div>`}
+        <div class="f"><span class="l">Contrasenya</span><input type="password" name="password" required autocomplete="current-password" ${lligat ? 'autofocus' : ''}></div>
         <div class="actions">
           <button class="btn" type="submit">Entra</button>
           ${configPredefinida() ? '' : '<button class="btn ghost" type="button" id="cfgbtn">Canvia la connexió</button>'}
         </div>
+        ${lligat ? '<p class="hint" style="margin-top:14px"><a href="#" id="canvia-usuari">No sóc jo: entra amb un altre usuari</a></p>' : ''}
       </form>
     </div>`;
   if ($('#cfgbtn')) $('#cfgbtn').addEventListener('click', () => { localStorage.removeItem(CONFIG_KEY); renderConfig(); });
+  if ($('#canvia-usuari')) $('#canvia-usuari').addEventListener('click', e => { e.preventDefault(); localStorage.removeItem(USUARI_KEY); renderLogin(); });
   $('#lg').addEventListener('submit', async e => {
     e.preventDefault();
     const fd = new FormData(e.target);
     const btn = e.target.querySelector('button[type=submit]'); btn.disabled = true;
-    const { data, error } = await sb.auth.signInWithPassword({ email: fd.get('email'), password: fd.get('password') });
+    const { data, error } = await sb.auth.signInWithPassword({ email: String(fd.get('email') || '').trim(), password: fd.get('password') });
     if (error) { renderLogin(/failed to fetch|networkerror|load failed/i.test(error.message || '') ? 'No s’ha pogut connectar amb la base de dades: revisa l’URL de la connexió (a config.js, si és la versió publicada: ha de ser https://xxxxxxxx.supabase.co).' : friendly(error)); return; }
     user = data.user;
     start();
@@ -1729,6 +1737,7 @@ async function start() {
   let faltes = [];
   try { faltes = await loadAll(); }
   catch (e) { renderLogin('No s’han pogut carregar les taules: ' + friendly(e)); return; }
+  recordaUsuari();
   renderApp();
   if (faltes.length) toastErr('Taules que la base de dades encara no té: ' + faltes.join(', ') + '. Executa el fitxer SQL que les crea (o «notify pgrst, \'reload schema\'» si acabes de fer-ho).');
 }
@@ -2096,8 +2105,9 @@ function bindMain(td) {
       td.fields.filter(f => f.dependsOn === changed).forEach(f => {
         const sel = frm.querySelector(`select[name="${f.key}"]`); if (!sel) return;
         const cur = sel.value;
-        sel.innerHTML = optionsHTML(f, vals, cur);
-        if (!sel.querySelector(`option[value="${cur}"]`)) sel.value = '';
+        sel.innerHTML = optionsHTML(f, vals, ''); // es refan les opcions segons el pare nou; la tria anterior només es manté si encara hi és
+        sel.value = cur && sel.querySelector(`option[value="${cur}"]`) ? cur : '';
+        if (triaUnica(f, sel)) sel.dispatchEvent(new Event('change', { bubbles: true })); // una sola opció possible: queda triada, i els que en depenen també s'actualitzen
       });
       td.fields.filter(f => f.type === 'multi' && changed !== f.key).forEach(f => {
         const box = frm.querySelector(`[data-multi="${f.key}"]`); if (!box) return;
@@ -2112,6 +2122,8 @@ function bindMain(td) {
     const escrivint = e => { updateCtx(td, frm); checkDups(td, frm); pintaNotes(td, frm); const el = e.target; const f = el && el.name ? fieldDef(td, el.name) : null; if (f && f.color && f.type === 'number') { el.classList.remove('c-verd-fort', 'c-verd-suau', 'c-taronja', 'c-vermell', 'c-negre'); const box = frm.querySelector(`[data-avis-for="${f.key}"]`); if (box) box.hidden = true; } };
     frm.addEventListener('input', escrivint); frm.addEventListener('change', viu);
     frm.dataset.inicial = '1'; viu(); delete frm.dataset.inicial; // en pintar, els camps amb valor no es buiden encara que ara no toquin
+    // registre nou: els desplegables que depenen d'un altre i només tenen una opció (l'únic lloc del client, l'única piscina del lloc…) queden triats
+    if (!frm.dataset.id) td.fields.filter(f => f.dependsOn).forEach(f => { const sel = frm.querySelector(`select[name="${f.key}"]`); if (triaUnica(f, sel)) sel.dispatchEvent(new Event('change', { bubbles: true })); });
     // focs artificials quan un valor queda en verd (fort: grans; suau: petits), un cop per canvi de color, i només amb el valor ja entrat
     const darrerColor = {};
     td.fields.filter(f => f.color && (f.type === 'number' || f.type === 'select')).forEach(f => {
@@ -2160,6 +2172,13 @@ function bindMain(td) {
   }));
   const inact = $('#inact'); if (inact) inact.addEventListener('change', () => { state.showInactive = inact.checked; refreshList(td); });
   bindRows(td);
+}
+// desplegable dependent amb una sola opció real i sense valor: es tria sola (llevat que el camp digui autoUnic: false)
+function triaUnica(f, sel) {
+  if (!sel || sel.disabled || f.autoUnic === false || sel.value !== '') return false;
+  const reals = [...sel.options].filter(o => o.value !== '');
+  if (reals.length !== 1) return false;
+  sel.value = reals[0].value; return true;
 }
 function bindRows(td) {
   document.querySelectorAll('#main tr.row:not([data-obre-taula])').forEach(tr => tr.addEventListener('click', () => {
