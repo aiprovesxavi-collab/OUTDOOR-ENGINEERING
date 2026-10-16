@@ -2877,41 +2877,100 @@ async function generaPdfPressupostAgrupacio(id, { obrir = true } = {}) {
 /* ---------- Informes per lloc: PDF amb logo, títol, concepte, text lliure, població i mes, i signatura ---------- */
 // signa per defecte en Xavier Amat (si hi és); si no, qui ha entrat
 function signantPerDefecte() { const x = C.rows('treballadors').find(t => t.actiu && /^xavier$/i.test(String(t.nom || '').trim()) && /^amat/i.test(String(t.cognoms || '').trim())); if (x) return x.id; const t = treballadorActual(); return t ? t.id : ''; }
+// maqueta un paràgraf (línies de paraules amb amplades, en Arial) sense dibuixar-lo; serveix per decidir els salts de pàgina abans d'escriure
+function maquetaParagraf(doc, par, w, size) {
+  const lh = size * 0.3528 * 1.38, ind = par.li ? 7 : 0, wx = w - ind;
+  doc.setFontSize(size);
+  const mida = t => doc.getStringUnitWidth(t, { doKerning: false }) * size / doc.internal.scaleFactor;
+  const sw = b => { doc.setFont('helvetica', b ? 'bold' : 'normal'); return mida(' '); };
+  const toks = tokensRics(par.runs).map(t => { doc.setFont('helvetica', t.b ? 'bold' : 'normal'); return { ...t, w: mida(t.t) }; });
+  const lines = []; let cur = [], curW = 0;
+  toks.forEach(t => { const gap = cur.length && !t.glue ? sw(t.b) : 0; if (cur.length && curW + gap + t.w > wx) { lines.push(cur); cur = [{ ...t, glue: false }]; curW = t.w; } else { cur.push(t); curW += gap + t.w; } });
+  if (cur.length) lines.push(cur);
+  const esTitol = lines.length === 1 && toks.length > 0 && toks.every(t => t.b);
+  return { par, lines, lh, ind, wx, esTitol, size, sw };
+}
+function dibuixaLiniaRica(doc, m, i, x, y, color) {
+  const ln = m.lines[i], last = i === m.lines.length - 1;
+  doc.setFontSize(m.size); doc.setTextColor(...color);
+  if (m.par.li && i === 0) { doc.setFont('helvetica', 'normal'); doc.text('•', x + 2, y); }
+  const gaps = ln.filter((t, j) => j > 0 && !t.glue).length;
+  const natural = ln.reduce((acc, t, j) => acc + t.w + (j > 0 && !t.glue ? m.sw(t.b) : 0), 0);
+  const extra = !last && gaps > 0 ? (m.wx - natural) / gaps : 0;
+  let cx = x + m.ind;
+  ln.forEach((t, j) => { if (j > 0 && !t.glue) cx += m.sw(t.b) + extra; doc.setFont('helvetica', t.b ? 'bold' : 'normal'); doc.text(t.t, cx, y); cx += t.w; });
+}
 function pdfInformeLloc(r) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const emp = C.rows('empresa').find(e => e.actiu) || {};
   const lloc = C.get('llocs', r.lloc_id) || {}, client = C.get('clients', lloc.client_id) || {};
   const tema = r.tema === 'blau' ? 'blau' : 'verd';
-  const ink = [40, 40, 40], grey = [125, 125, 125];
-  const M = 25, R = 210 - 15, W = R - M, LIMIT = 262;   // marges: 2,5 cm a l'esquerra i 1,5 cm a la dreta
+  const ink = [92, 92, 92], pale = [140, 140, 140];      // #5C5C5C a tot el document; el lloc i l'adreça, més pàl·lids
+  const M = 25, R = 210 - 15, W = R - M, LIMIT = 268, TOP = 50;   // marges: 2,5 cm a l'esquerra, 1,5 cm a la dreta; el text baixa fins a 268 mm
   const text = (t, x, y, size, style, color, opt) => { doc.setTextColor(...(color || ink)); doc.setFont('helvetica', style || 'normal'); doc.setFontSize(size || 10); doc.text(t, x, y, opt); };
   const wrap = (t, w, size, style) => { doc.setFont('helvetica', style || 'normal'); doc.setFontSize(size); return doc.splitTextToSize(String(t || ''), w); };
   const peu = () => {
     const l1 = [emp.nom, emp.nif ? 'NIF: ' + emp.nif : '', [emp.adreca, [emp.cp, emp.poblacio].filter(Boolean).join(' ')].filter(Boolean).join(' '), emp.telefon ? 'Tel: ' + emp.telefon : ''].filter(Boolean).join(' | ');
-    text(wrap(l1, W, 7.5), M + W / 2, 286, 7.5, 'normal', grey, { align: 'center' });
-    text(String(doc.internal.getNumberOfPages()), R, 286, 7.5, 'normal', grey, { align: 'right' });
+    text(wrap(l1, W, 7.5), M + W / 2, 286, 7.5, 'normal', pale, { align: 'center' });
+    text(String(doc.internal.getNumberOfPages()), R, 286, 7.5, 'normal', pale, { align: 'right' });
   };
   const logo = () => { const lw = 62, lh = lw * LOGO_RATIO; doc.addImage(LOGOS[tema], 'JPEG', (210 - lw) / 2, 12, lw, lh); return 12 + lh; };
-  const novaPagina = () => { peu(); doc.addPage(); logo(); return 50; };
-  const salta = (y, alt) => (y + alt > LIMIT ? novaPagina() : y);
+  const novaPagina = () => { peu(); doc.addPage(); logo(); return TOP; };
+  // capçalera: títol, lloc (pàl·lid) i concepte (sense cap rètol)
   let y = logo() + 16;
-  // títol i concepte
   const tL = wrap(String(r.titol || '').toUpperCase(), W, 15, 'bold'); text(tL, M, y, 15, 'bold'); y += tL.length * 7.5 + 2;
-  text(lloc.nom ? lloc.nom + (client.nom ? ' · ' + client.nom : '') + (lloc.adreca ? ' · ' + lloc.adreca : '') : '', M, y, 9.5, 'normal', grey); y += 9;
-  if (r.concepte) { text('Concepte', M, y, 11, 'bold'); y += 6; for (const par of paragrafsClausula(r.concepte)) { y = escriuParagraf(doc, par, M, y, W, 11, salta, ink); y += 2; } y += 4; }
-  // l'informe
-  for (const par of paragrafsClausula(r.text)) { y = escriuParagraf(doc, par, M, y, W, 11, salta, ink); y += 2.6; }
-  // població i mes, i signatura (nom en Times, titulació a sota)
+  text(lloc.nom ? lloc.nom + (client.nom ? ' · ' + client.nom : '') + (lloc.adreca ? ' · ' + lloc.adreca : '') : '', M, y, 9.5, 'normal', pale); y += 9;
+  const blocs = [];   // paràgrafs maquetats: primer el concepte (en negreta), després l'informe
+  if (r.concepte) paragrafsClausula(r.concepte).forEach(par => blocs.push({ m: maquetaParagraf(doc, { ...par, runs: par.runs.map(x => ({ ...x, b: true })) }, W, 11), despres: 2 }));
+  if (blocs.length) blocs[blocs.length - 1].despres = 6;
+  paragrafsClausula(r.text).forEach(par => blocs.push({ m: maquetaParagraf(doc, par, W, 11), despres: 2.6 }));
+  // tancament: població i mes, i signatura (Arial: nom a 13, titulació a 9,5)
   const signant = r.signant_id ? C.get('treballadors', r.signant_id) : null;
   const titols = signant && signant.titol_signatura ? String(signant.titol_signatura).split(/\r?\n/).map(t => t.trim()).filter(Boolean) : [];
-  y = salta(y, 40 + titols.length * 5); y += 10;
+  const ALT_TANCA = 8 + 20 + (signant ? 6 + titols.length * 4.5 : 0) + 4;
+  // flux de línies: on cau cada una (amb les mateixes regles de vídues que els pressupostos); si el tancament quedés sol en una pàgina,
+  // es força un salt abans de les tres últimes línies de text perquè l'acompanyin
+  const totalLinies = blocs.reduce((n, b) => n + b.m.lines.length, 0);
+  const simula = (forcaAbans) => {
+    let yy = y, pag = 1, idx = 0, liniesPag = 0; const pos = [];
+    for (const b of blocs) {
+      for (let i = 0; i < b.m.lines.length; i++, idx++) {
+        const need = i === 0 ? b.m.lh * (b.m.esTitol ? 4 : Math.min(2, b.m.lines.length)) : b.m.lh;
+        if (idx === forcaAbans || yy + need > LIMIT) { pag++; yy = TOP; liniesPag = 0; }
+        pos.push({ pag, y: yy }); yy += b.m.lh; liniesPag++;
+      }
+      yy += b.despres;
+    }
+    const tancaSol = yy + ALT_TANCA > LIMIT;   // el tancament passaria de pàgina i hi quedaria sol
+    return { pos, tancaSol, liniesPag };
+  };
+  let sim = simula(-1), forca = -1;
+  if (sim.tancaSol && totalLinies > 0) {
+    forca = Math.max(0, totalLinies - Math.min(3, Math.max(1, sim.liniesPag - 1)));
+    const dinsPar = []; blocs.forEach(b => b.m.lines.forEach((l, i) => dinsPar.push(i)));   // posició de cada línia dins del seu paràgraf
+    while (forca > 0 && dinsPar[forca] === 1) forca--;   // que no quedi la primera línia d'un paràgraf sola a baix de la pàgina anterior
+    sim = simula(forca);
+  }
+  // dibuix
+  let idx = 0, pagActual = 1;
+  for (const b of blocs) {
+    for (let i = 0; i < b.m.lines.length; i++, idx++) {
+      const p = sim.pos[idx];
+      while (pagActual < p.pag) { novaPagina(); pagActual++; }
+      dibuixaLiniaRica(doc, b.m, i, M, p.y, ink);
+      y = p.y + b.m.lh;
+    }
+    y += b.despres;
+  }
+  if (y + ALT_TANCA > LIMIT) { y = novaPagina(); }
+  y += 8;
   const d = new Date(String(r.data || avui()).slice(0, 10) + 'T00:00:00Z');
-  text((lloc.poblacio || client.poblacio || '') + ',  ' + MESOS_CAT[d.getUTCMonth()] + ' de ' + d.getUTCFullYear(), M, y, 11); y += 24;
+  text((lloc.poblacio || client.poblacio || '') + ',  ' + MESOS_CAT[d.getUTCMonth()] + ' de ' + d.getUTCFullYear(), M, y, 11); y += 20;
   if (signant) {
     const sx = M + W * 0.75;
-    doc.setFont('times', 'normal'); doc.setFontSize(15); doc.setTextColor(...ink); doc.text(nomTreballador(signant), sx, y, { align: 'center' }); y += 6;
-    doc.setFontSize(10.5); titols.forEach(t => { doc.text(t, sx, y, { align: 'center' }); y += 5; });
+    text(nomTreballador(signant), sx, y, 13, 'normal', ink, { align: 'center' }); y += 5.5;
+    titols.forEach(t => { text(t, sx, y, 9.5, 'normal', ink, { align: 'center' }); y += 4.5; });
   }
   peu();
   return doc;
