@@ -355,13 +355,11 @@
   .vac-d.baixa{ background:#2b6fd6; color:#fff; font-weight:600; }
   .vac-d.festiu{ background:#ffd9d9; color:#9b1c1c; }
   .vac-d.clic{ cursor:pointer; } .vac-d.clic:hover{ border-color:var(--ink-2); }
-  .vac-mes{ display:flex; gap:10px; overflow-x:auto; padding-bottom:8px; -webkit-overflow-scrolling:touch; }
-  .vac-mes .vac-mini{ flex:0 0 auto; width:190px; }
   .vac-llegenda{ display:inline-flex; gap:6px; align-items:center; font-size:12.5px; color:var(--ink-2); } .vac-llegenda i{ display:inline-block; width:14px; height:14px; border-radius:3px; vertical-align:-2px; }
   .vac-pinzell button.vacances.on{ background:#f3ff00; color:#222; } .vac-pinzell button.baixa.on{ background:#2b6fd6; color:#fff; }
   .vac-periode{ display:flex; flex-wrap:wrap; gap:8px 12px; align-items:end; margin:0 0 12px; padding:10px 12px; border:1px solid var(--line-2); border-radius:8px; }
   .vac-periode .f{ margin:0; }
-  body.operari .vac-mes .vac-mini{ width:176px; } body.operari .vac-d{ height:32px; font-size:13.5px; } body.operari .vac-d .vn{ font-size:9.5px; }
+  body.operari .vac-d{ height:32px; font-size:13.5px; } body.operari .vac-d .vn{ font-size:9.5px; }
   @media (max-width:820px){ .vac-any{ grid-template-columns:repeat(2, minmax(0,1fr)); } }
   .vac-graella{ border-collapse:collapse; table-layout:fixed; font-size:11.5px; }
   .vac-graella th, .vac-graella td{ padding:0; text-align:center; height:24px; border:1px solid var(--line); }
@@ -395,7 +393,7 @@
   .ca-llista{ margin-top:10px; } .ca-llista .ic-targeta{ border-left-width:8px; }
   body.operari .ca-bar{ font-size:12px; } body.operari .ca-set.setmana .ca-bar{ height:34px; line-height:34px; }
   @media print{ .ca-bar, .ca-dia, .ca-llegenda span{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
-  @media print{ .vac-mes{ overflow:visible; flex-wrap:wrap; } .vac-graella{ font-size:9px; } .vac-graella th, .vac-graella td{ height:18px; } .vac-taula th, .vac-taula td{ height:24px; } .vac-d, .vac-pinzell button, .vac-graella th, .vac-graella td{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
+  @media print{ .vac-graella{ font-size:9px; } .vac-graella th, .vac-graella td{ height:18px; } .vac-taula th, .vac-taula td{ height:24px; } .vac-d, .vac-pinzell button, .vac-graella th, .vac-graella td{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
   .ic-adjunts-rep{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
   .xip.fora{ color:#d32f2f; border-color:#f0b9ad; }
   .ic-zoomctl{ display:inline-flex; gap:4px; }
@@ -1887,8 +1885,8 @@ function renderAppOperari() {
         <button data-go="informe_tasques_piscina"><strong>Tasca per piscina</strong><span>Totes les tasques d’una piscina entre dues dates.</span></button>
         <button data-go="informe_tasques_dates"><strong>Tasca per dates</strong><span>Totes les piscines, per dia.</span></button>
         <button data-go="incidencia_reports"><strong>Report d’un problema</strong><span>Un problema que has vist tu o que t’ha dit algú de la comunitat: lloc, què passa i fotos. L’oficina decideix si és una incidència.</span></button>
-        <button data-go="vacances"><strong>Vacances i baixes</strong><span>Qui és fora cada dia del mes: tothom, per consultar.</span></button>
-        <button data-go="calendari_accions"><strong>Calendari d’accions</strong><span>Mes o setmana amb totes les accions pendents, de quan es van demanar fins al termini.</span></button>
+        <button data-go="vacances"><strong>Vacances i baixes</strong><span>El teu calendari de l’any: vacances, baixes i els dies que portes.</span></button>
+        <button data-go="calendari_accions"><strong>Calendari d’accions</strong><span>Les teves accions pendents, per setmana o per mes, de quan es van demanar fins al termini.</span></button>
         <button data-go="nomines"><strong>Les meves nòmines</strong><span>El calendari de l’any amb la teva nòmina de cada mes.</span></button>
         <button data-go="accions_meves"><strong>Les meves accions</strong><span>Feines d’incidències assignades a tu${(() => { const n = t ? C.rows('incidencia_accions').filter(a => a.actiu && a.estat !== 'finalitzada' && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id) && (C.get('incidencies', a.incidencia_id) || {}).estat === 'oberta').length : 0; return n ? ': <b>' + n + ' obertes</b>' : ''; })()}.</span></button>
       </div>`;
@@ -4735,7 +4733,7 @@ function accionsCalendari() {
     const inc = C.get('incidencies', a.incidencia_id); if (!inc || !inc.actiu) return null;
     const feta = a.estat === 'finalitzada' || inc.estat !== 'oberta';
     if (feta && !st.fetes) return null;
-    if (st.meves && !(t && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id || Number(a.creat_per) === t.id))) return null;
+    if ((st.meves || APP_NOMES_TASQUES) && !(t && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id || Number(a.creat_per) === t.id))) return null; // a l'app, sempre només les pròpies
     const inici = dataLocal(a.creat_el) || avuiS; let fi = a.venciment ? dataLocal(a.venciment) : (feta ? dataLocal(a.finalitzada_el) || inici : avuiS); if (fi < inici) fi = inici;
     return { a, inc, inici, fi, feta, sense: !a.venciment, vencuda: !feta && !!a.venciment && new Date() > new Date(a.venciment) };
   }).filter(Boolean);
@@ -4799,12 +4797,12 @@ function renderCalendariAccions(main) {
   }
   const llegenda = [1, 2, 3, 4, 5].map(f => `<span class="fase">F${f} ${h(INC.fases[f])}:</span>` + Object.keys(INC.tipus).filter(k => INC.tipus[k].fase === f && !['obrir', 'tancar', 'reobrir', 'visibilitat_client'].includes(k)).map(k => `<span style="background:${colorAccio(k)}; color:${textSobre(colorAccio(k))}">${h(INC.tipus[k].nom)}</span>`).join('')).join('<br>');
   main.innerHTML = `<h1>Calendari d’accions</h1>
-    <p class="sub">Cada franja és una acció, de quan es va demanar fins al termini; un color per tipus (una gamma per fase). Clica una franja per veure què es demana. Amb vora vermella, fora de termini; ratllades, sense termini (fins avui).</p>
+    <p class="sub">${APP_NOMES_TASQUES ? 'Les teves accions (les que tens assignades, gestiones o has demanat): cada franja va de quan es va demanar fins al termini; un color per tipus. Toca una franja per veure què es demana.' : 'Cada franja és una acció, de quan es va demanar fins al termini; un color per tipus (una gamma per fase). Clica una franja per veure què es demana.'} Amb vora vermella, fora de termini; ratllades, sense termini (fins avui).</p>
     <div class="bar">
       <span class="seg"><button class="${st.vista === 'mes' ? 'on' : ''}" data-vista="mes">Mes</button><button class="${st.vista === 'setmana' ? 'on' : ''}" data-vista="setmana">Setmana</button></span>
       <span class="nom-any"><button class="btn ghost small" data-salt="-1" title="Anterior">◀</button><b class="vac-titolmes" style="min-width:220px">${h(titol)}</b><button class="btn ghost small" data-salt="1" title="Següent">▶</button></span>
       <button class="btn ghost small" id="ca-avui">Avui</button>
-      <label class="chk" style="padding:0"><input type="checkbox" id="ca-meves" ${st.meves ? 'checked' : ''}> Només les meves</label>
+      ${APP_NOMES_TASQUES ? '' : `<label class="chk" style="padding:0"><input type="checkbox" id="ca-meves" ${st.meves ? 'checked' : ''}> Només les meves</label>`}
       <label class="chk" style="padding:0"><input type="checkbox" id="ca-fetes" ${st.fetes ? 'checked' : ''}> També les finalitzades</label>
       <span class="n">${items.length} ${items.length === 1 ? 'acció' : 'accions'}</span>
     </div>
@@ -4814,7 +4812,7 @@ function renderCalendariAccions(main) {
   main.querySelectorAll('[data-vista]').forEach(b => b.addEventListener('click', () => { st.vista = b.dataset.vista; renderMain(); }));
   main.querySelectorAll('[data-salt]').forEach(b => b.addEventListener('click', () => { const n = Number(b.dataset.salt); st.ref = st.vista === 'mes' ? ymd(new Date(ref.getFullYear(), ref.getMonth() + n, 1, 12)) : ymd(sumaDies(ref, 7 * n)); renderMain(); }));
   $('#ca-avui').addEventListener('click', () => { st.ref = avui(); renderMain(); });
-  $('#ca-meves').addEventListener('change', e => { st.meves = e.target.checked; renderMain(); });
+  if ($('#ca-meves')) $('#ca-meves').addEventListener('change', e => { st.meves = e.target.checked; renderMain(); });
   $('#ca-fetes').addEventListener('change', e => { st.fetes = e.target.checked; renderMain(); });
   main.querySelectorAll('[data-accio]').forEach(el => el.addEventListener('click', () => { st.sel = Number(el.dataset.accio); renderMain(); const d = $('#ca-detall'); if (d && d.scrollIntoView) d.scrollIntoView({ block: 'nearest' }); }));
   if ($('#ca-tanca')) $('#ca-tanca').addEventListener('click', () => { st.sel = null; renderMain(); });
@@ -4823,12 +4821,11 @@ function renderCalendariAccions(main) {
 
 /* =====================================================================
    VACANCES I BAIXES: un registre per treballador i dia (vacances en groc, baixa en blau).
-   L'oficina marca els dies al calendari anual d'una persona; l'app mostra el mes de tothom, una columna per persona, només per consultar.
+   L'oficina marca els dies al calendari anual d'una persona (o mira el mes de tothom); a l'app cada operari veu només el seu calendari anual.
    ===================================================================== */
-const APP_MOSTRA_BAIXES = true; // false = a l'app dels operaris només surten les vacances (les baixes queden a l'oficina)
 const TIPUS_ABS = { vacances: 'Vacances', baixa: 'Baixa' };
 const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-const absenciesActives = () => C.rows('absencies').filter(a => a.actiu && (APP_NOMES_TASQUES && !APP_MOSTRA_BAIXES ? a.tipus !== 'baixa' : true));
+const absenciesActives = () => C.rows('absencies').filter(a => a.actiu);
 const festiuDe = iso => { const f = C.rows('festius').find(x => x.actiu && x.dia === iso); return f ? f.nom : null; };
 const DIES_VACANCES_ANY = 26;  // dies laborables de vacances per any
 const MES_LIMIT_VACANCES = 4;  // la quota d'un any es pot gastar fins a l'abril de l'any següent
@@ -4861,35 +4858,35 @@ function miniMesHTML(any, mes, estat, opts) {
 }
 function renderVacances(main) {
   const st = state.vac, t = treballadorActual(), oficina = !APP_NOMES_TASQUES && esOficina(t);
-  if (!oficina) st.vista = 'mes'; else if (st.vista !== 'any' && st.vista !== 'taula') st.vista = 'taula';
+  if (!oficina) st.vista = 'any'; else if (st.vista !== 'any' && st.vista !== 'taula') st.vista = 'taula'; // operari: el seu calendari anual, només per consultar
   const treballadors = C.rows('treballadors').filter(x => x.actiu).sort((a, b) => nomTreballador(a).localeCompare(nomTreballador(b), 'ca'));
   const any = Number(st.any) || new Date().getFullYear(), mes = Math.min(12, Math.max(1, Number(st.mes) || new Date().getMonth() + 1));
   const tot = absenciesActives();
   const llegenda = `<span class="vac-llegenda"><i style="background:#f3ff00"></i> vacances <i style="background:#2b6fd6"></i> baixa <i style="background:#ffd9d9"></i> festiu</span>`;
   let cos = '';
   if (st.vista === 'any') {
-    if (!treballadors.some(x => String(x.id) === st.treb)) st.treb = String(t && treballadors.some(x => x.id === t.id) ? t.id : (treballadors[0] || {}).id || '');
-    const trebId = Number(st.treb);
+    if (oficina && !treballadors.some(x => String(x.id) === st.treb)) st.treb = String(t && treballadors.some(x => x.id === t.id) ? t.id : (treballadors[0] || {}).id || '');
+    const trebId = oficina ? Number(st.treb) : (t ? t.id : 0); if (!oficina) st.treb = String(trebId);
     const meves = tot.filter(a => Number(a.treballador_id) === trebId && a.dia.startsWith(any + '-'));
     const perDia = new Map(meves.map(a => [a.dia, a.tipus]));
     const nBaixa = meves.filter(a => a.tipus === 'baixa').length, numer = numeracioVacances(trebId);
     const quotes = [...new Set([any, ...[...numer.dies].filter(([dia]) => dia.startsWith(any + '-')).map(([, v]) => v.quota)])].sort();
     const resumVac = quotes.map(q => `vacances del ${q}: <b>${numer.perQuota.get(q) || 0}</b> de ${DIES_VACANCES_ANY}`).join(' · ');
     cos = `<div class="bar">
-        <select id="vac-treb" style="width:auto; min-width:220px">${treballadors.map(x => `<option value="${x.id}" ${x.id === trebId ? 'selected' : ''}>${h(nomTreballador(x))}</option>`).join('')}</select>
+        ${oficina ? `<select id="vac-treb" style="width:auto; min-width:220px">${treballadors.map(x => `<option value="${x.id}" ${x.id === trebId ? 'selected' : ''}>${h(nomTreballador(x))}</option>`).join('')}</select>` : ''}
         <span class="nom-any"><button class="btn ghost small" data-any="-1" title="Any anterior">◀</button><input type="number" id="vac-any" value="${any}" min="2000" max="2100"><button class="btn ghost small" data-any="1" title="Any següent">▶</button></span>
-        <span class="seg vac-pinzell" title="Amb què es pinta en clicar un dia"><button class="vacances ${st.pinzell === 'vacances' ? 'on' : ''}" data-pinzell="vacances">Vacances</button><button class="baixa ${st.pinzell === 'baixa' ? 'on' : ''}" data-pinzell="baixa">Baixa</button><button class="${st.pinzell === 'cap' ? 'on' : ''}" data-pinzell="cap">Esborra</button></span>
+        ${oficina ? `<span class="seg vac-pinzell" title="Amb què es pinta en clicar un dia"><button class="vacances ${st.pinzell === 'vacances' ? 'on' : ''}" data-pinzell="vacances">Vacances</button><button class="baixa ${st.pinzell === 'baixa' ? 'on' : ''}" data-pinzell="baixa">Baixa</button><button class="${st.pinzell === 'cap' ? 'on' : ''}" data-pinzell="cap">Esborra</button></span>` : ''}
         <span class="n">${resumVac} · baixa el ${any}: <b>${nBaixa}</b> ${nBaixa === 1 ? 'dia' : 'dies'}</span>
       </div>
-      <p class="sub">Clica un dia per pintar-lo amb el pinzell triat (tornar a clicar-lo l’esborra), o marca un període sencer. El número petit de cada dia de vacances és el dia que fa (1 a ${DIES_VACANCES_ANY}, només laborables); la quota d’un any es pot gastar fins a l’abril del següent, i en arribar a ${DIES_VACANCES_ANY} torna a començar a 1.</p>
-      <div class="vac-periode">
+      <p class="sub">${oficina ? 'Clica un dia per pintar-lo amb el pinzell triat (tornar a clicar-lo l’esborra), o marca un període sencer. ' : ''}El número petit de cada dia de vacances és el dia que fa (1 a ${DIES_VACANCES_ANY}, només laborables); la quota d’un any es pot gastar fins a l’abril del següent, i en arribar a ${DIES_VACANCES_ANY} torna a començar a 1.</p>
+      ${oficina ? `<div class="vac-periode">
         <div class="f"><span class="l">Del</span><input type="date" id="vac-de"></div><div class="f"><span class="l">al</span><input type="date" id="vac-a"></div>
         <div class="f"><span class="l">Com a</span><select id="vac-tipus"><option value="vacances">Vacances</option><option value="baixa">Baixa</option><option value="cap">Esborra</option></select></div>
         <label class="chk" style="padding:0 0 6px"><input type="checkbox" id="vac-feiners" checked> només de dilluns a divendres, sense festius</label>
         <button class="btn" id="vac-aplica">Aplica al període</button>
-      </div>
+      </div>` : ''}
       <div id="ferr"></div>
-      <div class="vac-any">${MESOS.map((_, i) => miniMesHTML(any, i + 1, iso => perDia.get(iso) || null, { clicable: true, num: iso => numer.dies.get(iso) || null, titol: (iso, e) => dmy(iso) + (e ? ' · ' + TIPUS_ABS[e] : '') })).join('')}</div>`;
+      <div class="vac-any">${MESOS.map((_, i) => miniMesHTML(any, i + 1, iso => perDia.get(iso) || null, { clicable: oficina, num: iso => numer.dies.get(iso) || null, titol: (iso, e) => dmy(iso) + (e ? ' · ' + TIPUS_ABS[e] : '') })).join('')}</div>`;
   } else if (st.vista === 'taula') {
     // un mes a pantalla sencera: una fila per treballador i una columna per dia (inicials dels dies en castellà, com al full de paper)
     document.body.classList.add('ic-full');
@@ -4911,21 +4908,9 @@ function renderVacances(main) {
         <span class="n">${persones.length} ${persones.length === 1 ? 'persona' : 'persones'} · ${totVac} ${totVac === 1 ? 'dia' : 'dies'} de vacances i ${totBaixa} de baixa aquest mes · en blanc, treballa; ratllat, cap de setmana. Clica un nom per marcar-li dies.</span>
       </div>
       <table class="vac-graella vac-taula"><thead><tr><th class="nom">Treballador</th>${cap}<th class="tot">Vac.</th><th class="tot">Baixa</th></tr></thead><tbody>${files}</tbody></table>`;
-  } else {
-    const persones = treballadors; // tothom actiu: operaris, tècnics i oficina
-    const delMes = tot.filter(a => a.dia.startsWith(any + '-' + String(mes).padStart(2, '0') + '-'));
-    cos = `<div class="bar">
-        <span class="nom-any"><button class="btn ghost small" data-mes="-1" title="Mes anterior">◀</button><b style="min-width:150px; text-align:center">${MESOS[mes - 1]} ${any}</b><button class="btn ghost small" data-mes="1" title="Mes següent">▶</button></span>
-        <button class="btn ghost small" id="vac-avui">Aquest mes</button>
-        <span class="n">${delMes.length ? delMes.length + (delMes.length === 1 ? ' dia marcat' : ' dies marcats') : 'cap absència aquest mes'}</span>
-      </div>
-      <div class="vac-mes">${persones.map(p => { const seus = delMes.filter(a => Number(a.treballador_id) === p.id), perDia = new Map(seus.map(a => [a.dia, a.tipus])), numer = numeracioVacances(p.id);
-        const nv = seus.filter(a => a.tipus === 'vacances').length, nb = seus.filter(a => a.tipus === 'baixa').length;
-        return miniMesHTML(any, mes, iso => perDia.get(iso) || null, { num: iso => numer.dies.get(iso) || null, titol2: nomCurtTreballador(p), sub: nv || nb ? [nv ? nv + ' vac.' : '', nb ? nb + ' baixa' : ''].filter(Boolean).join(' · ') : 'res aquest mes', titol: (iso, e) => nomTreballador(p) + ' · ' + dmy(iso) + (e ? ' · ' + TIPUS_ABS[e] : '') }); }).join('')}</div>
-      ${persones.length > 2 ? '<p class="hint">Llisca cap als costats per veure la resta de persones.</p>' : ''}`;
   }
   main.innerHTML = `<h1>Vacances i baixes</h1>
-    ${oficina ? `<div class="bar"><span class="seg"><button class="${st.vista === 'any' ? 'on' : ''}" data-vista="any">Any · una persona (per marcar)</button><button class="${st.vista === 'taula' ? 'on' : ''}" data-vista="taula">Mes · tothom</button></span>${llegenda}</div>` : `<p class="sub">Qui és fora cada dia: una columna per persona. ${llegenda}</p>`}
+    ${oficina ? `<div class="bar"><span class="seg"><button class="${st.vista === 'any' ? 'on' : ''}" data-vista="any">Any · una persona (per marcar)</button><button class="${st.vista === 'taula' ? 'on' : ''}" data-vista="taula">Mes · tothom</button></span>${llegenda}</div>` : `<p class="sub">Les teves vacances i baixes de l’any. ${llegenda}</p>`}
     ${cos}`;
   main.querySelectorAll('[data-vista]').forEach(b => b.addEventListener('click', () => { st.vista = b.dataset.vista; renderMain(); }));
   main.querySelectorAll('[data-any]').forEach(b => b.addEventListener('click', () => { st.any = String(Math.min(2100, Math.max(2000, any + Number(b.dataset.any)))); renderMain(); }));
