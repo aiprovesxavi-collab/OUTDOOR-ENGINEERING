@@ -376,6 +376,9 @@
   .vac-taula .nom{ width:170px; font-size:14px; } .vac-taula td.d{ width:auto; } .vac-taula td.d.vacances{ font-size:12.5px; } .vac-taula .tot{ width:52px; }
   .vac-taula .fs{ background:repeating-linear-gradient(135deg, #e3e3e3 0 3px, #f6f6f6 3px 7px) !important; }
   .vac-titolmes{ display:inline-block; min-width:190px; text-align:center; font-size:18px; }
+  .vac-scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  body.operari .vac-taula{ width:auto; min-width:100%; table-layout:auto; font-size:12px; } body.operari .vac-taula td.d{ min-width:26px; }
+  body.operari .vac-taula .nom{ position:sticky; left:0; z-index:1; width:auto; max-width:130px; font-size:13px; background:#fff; } body.operari .vac-taula th.nom{ background:#fafafa; }
   .ca-cap{ display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:0 2px; font-size:12px; color:var(--ink-3); text-align:center; margin-bottom:2px; }
   .ca-cap > div{ min-width:0; overflow:hidden; white-space:nowrap; } .ca-cap b{ color:var(--ink-2); font-size:13px; } .ca-cap small{ display:block; font-size:11px; }
   .ca-dia .n{ white-space:nowrap; overflow:hidden; } .ca-dia .mesabr{ font-size:11px; color:var(--ink-3); }
@@ -1885,7 +1888,7 @@ function renderAppOperari() {
         <button data-go="informe_tasques_piscina"><strong>Tasca per piscina</strong><span>Totes les tasques d’una piscina entre dues dates.</span></button>
         <button data-go="informe_tasques_dates"><strong>Tasca per dates</strong><span>Totes les piscines, per dia.</span></button>
         <button data-go="incidencia_reports"><strong>Report d’un problema</strong><span>Un problema que has vist tu o que t’ha dit algú de la comunitat: lloc, què passa i fotos. L’oficina decideix si és una incidència.</span></button>
-        <button data-go="vacances"><strong>Vacances i baixes</strong><span>El teu calendari de l’any: vacances, baixes i els dies que portes.</span></button>
+        <button data-go="vacances"><strong>Vacances i baixes</strong><span>El teu calendari de l’any: vacances, baixes i els dies que portes${t && (esOficina(t) || carrilDeTreballador(t) === 'tecnic') ? '; i el mes de tothom' : ''}.</span></button>
         <button data-go="calendari_accions"><strong>Calendari d’accions</strong><span>Les teves accions pendents, per setmana o per mes, de quan es van demanar fins al termini.</span></button>
         <button data-go="nomines"><strong>Les meves nòmines</strong><span>El calendari de l’any amb la teva nòmina de cada mes.</span></button>
         <button data-go="accions_meves"><strong>Les meves accions</strong><span>Feines d’incidències assignades a tu${(() => { const n = t ? C.rows('incidencia_accions').filter(a => a.actiu && a.estat !== 'finalitzada' && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id) && (C.get('incidencies', a.incidencia_id) || {}).estat === 'oberta').length : 0; return n ? ': <b>' + n + ' obertes</b>' : ''; })()}.</span></button>
@@ -4858,7 +4861,8 @@ function miniMesHTML(any, mes, estat, opts) {
 }
 function renderVacances(main) {
   const st = state.vac, t = treballadorActual(), oficina = !APP_NOMES_TASQUES && esOficina(t);
-  if (!oficina) st.vista = 'any'; else if (st.vista !== 'any' && st.vista !== 'taula') st.vista = 'taula'; // operari: el seu calendari anual, només per consultar
+  const tecnicApp = APP_NOMES_TASQUES && !!t && (esOficina(t) || carrilDeTreballador(t) === 'tecnic'); // a l'app, els tècnics també veuen el mes de tothom (només consulta)
+  if (!oficina && !tecnicApp) st.vista = 'any'; else if (st.vista !== 'any' && st.vista !== 'taula') st.vista = oficina ? 'taula' : 'any'; // operari: el seu calendari anual, només per consultar
   const treballadors = C.rows('treballadors').filter(x => x.actiu).sort((a, b) => nomTreballador(a).localeCompare(nomTreballador(b), 'ca'));
   const any = Number(st.any) || new Date().getFullYear(), mes = Math.min(12, Math.max(1, Number(st.mes) || new Date().getMonth() + 1));
   const tot = absenciesActives();
@@ -4900,17 +4904,17 @@ function renderVacances(main) {
         const titol = nomTreballador(p) + ' · ' + dmy(x.iso) + (e ? ' · ' + TIPUS_ABS[e] : x.fe ? ' · festiu' : x.fs ? '' : ' · treballa') + (x.fe ? ': ' + x.fe : '') + (num ? ' · dia ' + num.n + ' de ' + DIES_VACANCES_ANY + ' (vacances del ' + num.quota + ')' : '');
         return `<td class="d ${e || (x.fe ? 'festiu' : x.fs ? 'fs' : '')} ${x.iso === avuiS ? 'avui' : ''}" title="${h(titol)}">${num ? num.n : ''}</td>`; }).join('');
       totVac += nv; totBaixa += nb;
-      return `<tr><td class="nom"><a href="#" data-treb="${p.id}" title="Obre el calendari anual de ${h(nomTreballador(p))}">${h(nomTreballador(p))}</a></td>${cel}<td class="tot">${nv || ''}</td><td class="tot">${nb || ''}</td></tr>`; }).join('');
+      return `<tr><td class="nom">${oficina ? `<a href="#" data-treb="${p.id}" title="Obre el calendari anual de ${h(nomTreballador(p))}">${h(nomTreballador(p))}</a>` : h(nomTreballador(p))}</td>${cel}<td class="tot">${nv || ''}</td><td class="tot">${nb || ''}</td></tr>`; }).join('');
     cos = `<div class="bar">
         <span class="nom-any"><button class="btn ghost small" data-mes="-1" title="Mes anterior">◀</button><b class="vac-titolmes">${MESOS[mes - 1]} ${any}</b><button class="btn ghost small" data-mes="1" title="Mes següent">▶</button></span>
         <button class="btn ghost small" id="vac-avui">Aquest mes</button>
-        <button class="btn ghost small" id="vac-print">Imprimeix</button>
-        <span class="n">${persones.length} ${persones.length === 1 ? 'persona' : 'persones'} · ${totVac} ${totVac === 1 ? 'dia' : 'dies'} de vacances i ${totBaixa} de baixa aquest mes · en blanc, treballa; ratllat, cap de setmana. Clica un nom per marcar-li dies.</span>
+        ${oficina ? '<button class="btn ghost small" id="vac-print">Imprimeix</button>' : ''}
+        <span class="n">${persones.length} ${persones.length === 1 ? 'persona' : 'persones'} · ${totVac} ${totVac === 1 ? 'dia' : 'dies'} de vacances i ${totBaixa} de baixa aquest mes · en blanc, treballa; ratllat, cap de setmana.${oficina ? ' Clica un nom per marcar-li dies.' : ''}</span>
       </div>
-      <table class="vac-graella vac-taula"><thead><tr><th class="nom">Treballador</th>${cap}<th class="tot">Vac.</th><th class="tot">Baixa</th></tr></thead><tbody>${files}</tbody></table>`;
+      <div class="vac-scroll"><table class="vac-graella vac-taula"><thead><tr><th class="nom">Treballador</th>${cap}<th class="tot">Vac.</th><th class="tot">Baixa</th></tr></thead><tbody>${files}</tbody></table></div>`;
   }
   main.innerHTML = `<h1>Vacances i baixes</h1>
-    ${oficina ? `<div class="bar"><span class="seg"><button class="${st.vista === 'any' ? 'on' : ''}" data-vista="any">Any · una persona (per marcar)</button><button class="${st.vista === 'taula' ? 'on' : ''}" data-vista="taula">Mes · tothom</button></span>${llegenda}</div>` : `<p class="sub">Les teves vacances i baixes de l’any. ${llegenda}</p>`}
+    ${oficina ? `<div class="bar"><span class="seg"><button class="${st.vista === 'any' ? 'on' : ''}" data-vista="any">Any · una persona (per marcar)</button><button class="${st.vista === 'taula' ? 'on' : ''}" data-vista="taula">Mes · tothom</button></span>${llegenda}</div>` : tecnicApp ? `<div class="bar"><span class="seg"><button class="${st.vista === 'any' ? 'on' : ''}" data-vista="any">Les meves</button><button class="${st.vista === 'taula' ? 'on' : ''}" data-vista="taula">Tothom · mes</button></span>${llegenda}</div>` : `<p class="sub">Les teves vacances i baixes de l’any. ${llegenda}</p>`}
     ${cos}`;
   main.querySelectorAll('[data-vista]').forEach(b => b.addEventListener('click', () => { st.vista = b.dataset.vista; renderMain(); }));
   main.querySelectorAll('[data-any]').forEach(b => b.addEventListener('click', () => { st.any = String(Math.min(2100, Math.max(2000, any + Number(b.dataset.any)))); renderMain(); }));
