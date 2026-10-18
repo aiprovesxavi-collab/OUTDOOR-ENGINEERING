@@ -363,7 +363,6 @@
   .vac-periode .f{ margin:0; }
   body.operari .vac-mes .vac-mini{ width:176px; } body.operari .vac-d{ height:32px; font-size:13.5px; } body.operari .vac-d .vn{ font-size:9.5px; }
   @media (max-width:820px){ .vac-any{ grid-template-columns:repeat(2, minmax(0,1fr)); } }
-  .vac-gm{ margin:0 0 18px; } .vac-gm h3{ margin:0 0 6px; font-size:15px; }
   .vac-graella{ border-collapse:collapse; table-layout:fixed; font-size:11.5px; }
   .vac-graella th, .vac-graella td{ padding:0; text-align:center; height:24px; border:1px solid var(--line); }
   .vac-graella th{ font-weight:600; color:var(--ink-2); line-height:1; background:#fafafa; } .vac-graella th small{ display:block; font-size:8.5px; color:var(--ink-3); font-weight:400; margin-top:1px; }
@@ -375,7 +374,11 @@
   .vac-graella td.d.baixa{ background:#2b6fd6 !important; }
   .vac-graella .avui{ outline:2px solid var(--ink-2); outline-offset:-2px; }
   .vac-graella .tot{ width:40px; color:var(--ink-2); }
-  @media print{ .vac-mes{ overflow:visible; flex-wrap:wrap; } .vac-gm{ break-inside:avoid; page-break-inside:avoid; } .vac-graella{ font-size:9px; } .vac-graella th, .vac-graella td{ height:18px; } .vac-d, .vac-pinzell button, .vac-graella th, .vac-graella td{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
+  .vac-taula{ width:100%; font-size:13px; } .vac-taula th, .vac-taula td{ height:36px; } .vac-taula th{ font-size:13px; } .vac-taula th small{ font-size:10px; }
+  .vac-taula .nom{ width:170px; font-size:14px; } .vac-taula td.d{ width:auto; } .vac-taula td.d.vacances{ font-size:12.5px; } .vac-taula .tot{ width:52px; }
+  .vac-taula .fs{ background:repeating-linear-gradient(135deg, #e3e3e3 0 3px, #f6f6f6 3px 7px) !important; }
+  .vac-titolmes{ display:inline-block; min-width:190px; text-align:center; font-size:18px; }
+  @media print{ .vac-mes{ overflow:visible; flex-wrap:wrap; } .vac-graella{ font-size:9px; } .vac-graella th, .vac-graella td{ height:18px; } .vac-taula th, .vac-taula td{ height:24px; } .vac-d, .vac-pinzell button, .vac-graella th, .vac-graella td{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
   .ic-adjunts-rep{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
   .xip.fora{ color:#d32f2f; border-color:#f0b9ad; }
   .ic-zoomctl{ display:inline-flex; gap:4px; }
@@ -4727,7 +4730,7 @@ function miniMesHTML(any, mes, estat, opts) {
 }
 function renderVacances(main) {
   const st = state.vac, t = treballadorActual(), oficina = !APP_NOMES_TASQUES && esOficina(t);
-  if (!oficina) st.vista = 'mes';
+  if (!oficina) st.vista = 'mes'; else if (st.vista !== 'any' && st.vista !== 'taula') st.vista = 'taula';
   const treballadors = C.rows('treballadors').filter(x => x.actiu).sort((a, b) => nomTreballador(a).localeCompare(nomTreballador(b), 'ca'));
   const any = Number(st.any) || new Date().getFullYear(), mes = Math.min(12, Math.max(1, Number(st.mes) || new Date().getMonth() + 1));
   const tot = absenciesActives();
@@ -4756,28 +4759,27 @@ function renderVacances(main) {
       </div>
       <div id="ferr"></div>
       <div class="vac-any">${MESOS.map((_, i) => miniMesHTML(any, i + 1, iso => perDia.get(iso) || null, { clicable: true, num: iso => numer.dies.get(iso) || null, titol: (iso, e) => dmy(iso) + (e ? ' · ' + TIPUS_ABS[e] : '') })).join('')}</div>`;
-  } else if (st.vista === 'graella') {
-    // graella de l'any: una fila per treballador i una columna per dia, mes a mes
-    const persones = treballadors, avuiS = avui();
-    const numer = new Map(persones.map(p => [p.id, numeracioVacances(p.id)]));
-    const perDia = new Map(persones.map(p => [p.id, new Map(tot.filter(a => Number(a.treballador_id) === p.id && a.dia.startsWith(any + '-')).map(a => [a.dia, a.tipus]))]));
-    const DL = ['dg', 'dl', 'dt', 'dc', 'dj', 'dv', 'ds'];
-    const mesosHTML = MESOS.map((nomMes, i) => { const m = i + 1, nDies = new Date(any, m, 0).getDate();
-      const dies = Array.from({ length: nDies }, (_, k) => { const d = k + 1, iso = any + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0'), w = new Date(any, m - 1, d).getDay(); return { d, iso, fs: w === 0 || w === 6, fe: festiuDe(iso), dl: DL[w] }; });
-      const cap = dies.map(x => `<th class="${x.fe ? 'festiu' : x.fs ? 'fs' : ''} ${x.iso === avuiS ? 'avui' : ''}" title="${h(dmy(x.iso) + (x.fe ? ' · ' + x.fe : ''))}">${x.d}<small>${x.dl}</small></th>`).join('');
-      const files = persones.map(p => { const pd = perDia.get(p.id), nm = numer.get(p.id); let nv = 0, nb = 0;
-        const cel = dies.map(x => { const e = pd.get(x.iso) || null, num = e === 'vacances' ? nm.dies.get(x.iso) : null; if (e === 'vacances') nv++; if (e === 'baixa') nb++;
-          const titol = nomTreballador(p) + ' · ' + dmy(x.iso) + (e ? ' · ' + TIPUS_ABS[e] : x.fe ? ' · festiu' : x.fs ? '' : ' · treballa') + (x.fe ? ': ' + x.fe : '') + (num ? ' · dia ' + num.n + ' de ' + DIES_VACANCES_ANY + ' (vacances del ' + num.quota + ')' : '');
-          return `<td class="d ${e || (x.fe ? 'festiu' : x.fs ? 'fs' : '')} ${x.iso === avuiS ? 'avui' : ''}" title="${h(titol)}">${num ? num.n : ''}</td>`; }).join('');
-        return `<tr><td class="nom"><a href="#" data-treb="${p.id}" title="Obre el calendari anual de ${h(nomTreballador(p))}">${h(nomTreballador(p))}</a></td>${cel}<td class="tot">${nv || ''}</td><td class="tot">${nb || ''}</td></tr>`; }).join('');
-      return `<div class="vac-gm" id="vac-gm-${m}"><h3>${nomMes} ${any}</h3><table class="vac-graella"><thead><tr><th class="nom">Treballador</th>${cap}<th class="tot">Vac.</th><th class="tot">Baixa</th></tr></thead><tbody>${files}</tbody></table></div>`; }).join('');
+  } else if (st.vista === 'taula') {
+    // un mes a pantalla sencera: una fila per treballador i una columna per dia (inicials dels dies en castellà, com al full de paper)
+    document.body.classList.add('ic-full');
+    const persones = treballadors, avuiS = avui(), nDies = new Date(any, mes, 0).getDate();
+    const DL = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+    const dies = Array.from({ length: nDies }, (_, k) => { const d = k + 1, iso = any + '-' + String(mes).padStart(2, '0') + '-' + String(d).padStart(2, '0'), w = new Date(any, mes - 1, d).getDay(); return { d, iso, fs: w === 0 || w === 6, fe: festiuDe(iso), dl: DL[w] }; });
+    const cap = dies.map(x => `<th class="${x.fe ? 'festiu' : x.fs ? 'fs' : ''} ${x.iso === avuiS ? 'avui' : ''}" title="${h(dmy(x.iso) + (x.fe ? ' · ' + x.fe : ''))}">${x.d}<small>${x.dl}</small></th>`).join('');
+    let totVac = 0, totBaixa = 0;
+    const files = persones.map(p => { const pd = new Map(tot.filter(a => Number(a.treballador_id) === p.id && a.dia.startsWith(any + '-' + String(mes).padStart(2, '0') + '-')).map(a => [a.dia, a.tipus])), nm = numeracioVacances(p.id); let nv = 0, nb = 0;
+      const cel = dies.map(x => { const e = pd.get(x.iso) || null, num = e === 'vacances' ? nm.dies.get(x.iso) : null; if (e === 'vacances') nv++; if (e === 'baixa') nb++;
+        const titol = nomTreballador(p) + ' · ' + dmy(x.iso) + (e ? ' · ' + TIPUS_ABS[e] : x.fe ? ' · festiu' : x.fs ? '' : ' · treballa') + (x.fe ? ': ' + x.fe : '') + (num ? ' · dia ' + num.n + ' de ' + DIES_VACANCES_ANY + ' (vacances del ' + num.quota + ')' : '');
+        return `<td class="d ${e || (x.fe ? 'festiu' : x.fs ? 'fs' : '')} ${x.iso === avuiS ? 'avui' : ''}" title="${h(titol)}">${num ? num.n : ''}</td>`; }).join('');
+      totVac += nv; totBaixa += nb;
+      return `<tr><td class="nom"><a href="#" data-treb="${p.id}" title="Obre el calendari anual de ${h(nomTreballador(p))}">${h(nomTreballador(p))}</a></td>${cel}<td class="tot">${nv || ''}</td><td class="tot">${nb || ''}</td></tr>`; }).join('');
     cos = `<div class="bar">
-        <span class="nom-any"><button class="btn ghost small" data-any="-1" title="Any anterior">◀</button><input type="number" id="vac-any" value="${any}" min="2000" max="2100"><button class="btn ghost small" data-any="1" title="Any següent">▶</button></span>
-        <button class="btn ghost small" id="vac-mes-avui">Ves al mes actual</button>
+        <span class="nom-any"><button class="btn ghost small" data-mes="-1" title="Mes anterior">◀</button><b class="vac-titolmes">${MESOS[mes - 1]} ${any}</b><button class="btn ghost small" data-mes="1" title="Mes següent">▶</button></span>
+        <button class="btn ghost small" id="vac-avui">Aquest mes</button>
         <button class="btn ghost small" id="vac-print">Imprimeix</button>
-        <span class="n">${persones.length} ${persones.length === 1 ? 'persona' : 'persones'} · en blanc, treballa; en gris, cap de setmana. Clica un nom per obrir el seu calendari.</span>
+        <span class="n">${persones.length} ${persones.length === 1 ? 'persona' : 'persones'} · ${totVac} ${totVac === 1 ? 'dia' : 'dies'} de vacances i ${totBaixa} de baixa aquest mes · en blanc, treballa; ratllat, cap de setmana. Clica un nom per marcar-li dies.</span>
       </div>
-      ${mesosHTML}`;
+      <table class="vac-graella vac-taula"><thead><tr><th class="nom">Treballador</th>${cap}<th class="tot">Vac.</th><th class="tot">Baixa</th></tr></thead><tbody>${files}</tbody></table>`;
   } else {
     const persones = treballadors; // tothom actiu: operaris, tècnics i oficina
     const delMes = tot.filter(a => a.dia.startsWith(any + '-' + String(mes).padStart(2, '0') + '-'));
@@ -4792,7 +4794,7 @@ function renderVacances(main) {
       ${persones.length > 2 ? '<p class="hint">Llisca cap als costats per veure la resta de persones.</p>' : ''}`;
   }
   main.innerHTML = `<h1>Vacances i baixes</h1>
-    ${oficina ? `<div class="bar"><span class="seg"><button class="${st.vista === 'any' ? 'on' : ''}" data-vista="any">Any · una persona (per marcar)</button><button class="${st.vista === 'graella' ? 'on' : ''}" data-vista="graella">Any · tothom (graella)</button><button class="${st.vista === 'mes' ? 'on' : ''}" data-vista="mes">Mes · tothom (com a l’app)</button></span>${llegenda}</div>` : `<p class="sub">Qui és fora cada dia: una columna per persona. ${llegenda}</p>`}
+    ${oficina ? `<div class="bar"><span class="seg"><button class="${st.vista === 'any' ? 'on' : ''}" data-vista="any">Any · una persona (per marcar)</button><button class="${st.vista === 'taula' ? 'on' : ''}" data-vista="taula">Mes · tothom</button></span>${llegenda}</div>` : `<p class="sub">Qui és fora cada dia: una columna per persona. ${llegenda}</p>`}
     ${cos}`;
   main.querySelectorAll('[data-vista]').forEach(b => b.addEventListener('click', () => { st.vista = b.dataset.vista; renderMain(); }));
   main.querySelectorAll('[data-any]').forEach(b => b.addEventListener('click', () => { st.any = String(Math.min(2100, Math.max(2000, any + Number(b.dataset.any)))); renderMain(); }));
@@ -4801,7 +4803,6 @@ function renderVacances(main) {
   if ($('#vac-avui')) $('#vac-avui').addEventListener('click', () => { const d = new Date(); st.any = String(d.getFullYear()); st.mes = String(d.getMonth() + 1); renderMain(); });
   if ($('#vac-treb')) $('#vac-treb').addEventListener('change', e => { st.treb = e.target.value; renderMain(); });
   main.querySelectorAll('.vac-graella [data-treb]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); st.treb = a.dataset.treb; st.vista = 'any'; renderMain(); window.scrollTo({ top: 0 }); }));
-  if ($('#vac-mes-avui')) $('#vac-mes-avui').addEventListener('click', () => { const d = new Date(); if (String(d.getFullYear()) !== String(any)) { st.any = String(d.getFullYear()); renderMain(); } const el = $('#vac-gm-' + (d.getMonth() + 1)); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); });
   if ($('#vac-print')) $('#vac-print').addEventListener('click', () => window.print());
   main.querySelectorAll('[data-pinzell]').forEach(b => b.addEventListener('click', () => { st.pinzell = b.dataset.pinzell; renderMain(); }));
   main.querySelectorAll('.vac-d.clic').forEach(c => c.addEventListener('click', async () => {
