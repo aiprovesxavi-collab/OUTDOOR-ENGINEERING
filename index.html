@@ -326,6 +326,21 @@
   .ic-targeta{ border:1px solid var(--line-2); border-radius:8px; padding:10px 12px; margin:0 0 10px; background:#fff; cursor:pointer; }
   .ic-targeta.fora{ border-color:#d32f2f; }
   .ic-targeta:hover{ border-color:var(--ink-2); }
+  .ic-targeta .ic-int{ color:var(--ink-2); font-size:13px; }
+  .ic-capa{ flex-wrap:wrap; } .ic-capa button{ padding:6px 10px; font-size:13px; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ic-extern{ background:#fff6e5; color:#7a4e00; margin:0 0 8px; }
+  .nom-any{ display:inline-flex; align-items:center; gap:4px; } .nom-any input{ width:86px; text-align:center; font-weight:600; }
+  .nom-cal{ display:grid; grid-template-columns:repeat(6, minmax(0,1fr)); gap:10px; }
+  .nom-mes{ border:1px solid var(--line-2); border-radius:8px; padding:10px 12px; min-height:112px; background:#fff; display:flex; flex-direction:column; gap:6px; }
+  .nom-mes.te{ border-color:#2f7d4a; background:#f3faf5; }
+  .nom-mes.ara{ box-shadow:inset 0 0 0 2px var(--mode); }
+  .nom-mes-nom{ font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-2); }
+  .nom-doc{ display:block; font-weight:600; color:#1f5fbf; text-decoration:none; padding:6px 8px; border:1px solid #cfe0f7; border-radius:6px; background:#fff; overflow-wrap:anywhere; }
+  .nom-doc:hover{ border-color:#1f5fbf; }
+  .nom-buit{ color:var(--ink-3); }
+  .nom-puja{ margin-top:auto; cursor:pointer; text-align:center; }
+  body.operari .nom-doc{ padding:12px 10px; font-size:17px; } body.operari .nom-mes-nom{ font-size:14px; }
+  @media (max-width:820px){ .nom-cal{ grid-template-columns:repeat(2, minmax(0,1fr)); } }
   .ic-adjunts-rep{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
   .xip.fora{ color:#d32f2f; border-color:#f0b9ad; }
   .ic-zoomctl{ display:inline-flex; gap:4px; }
@@ -692,7 +707,7 @@ const SCHEMA = {
     { label: 'CONSUM', color: '#1f5fbf', tables: ['comptadors', 'lectures', 'consum_aigua'] },
     { label: 'INSTAL·LACIONS', color: '#8fcf9a', tables: ['jardins', 'piscines', 'informe_adob'] },
     { label: 'EQUIPAMENTS I INSTAL·LACIONS', color: '#e5b800', tables: ['programadors', 'bombes', 'filtres', 'cloradors_salins'] },
-    { label: 'PERSONAL', color: '#222222', tables: ['treballadors', 'equips'] },
+    { label: 'PERSONAL', color: '#222222', tables: ['treballadors', 'equips', 'nomines'] },
     { label: 'ALTRES', color: '#b48ede', tables: ['tipus_iva', 'empresa', 'aigua_parametres_mensuals', 'avisos_piscina', 'comptes_bancaris', 'poblacions_sol', 'hores_sol'] },
   ],
   pages: {
@@ -712,6 +727,7 @@ const SCHEMA = {
     incidencies: { label: 'Incidències', render: main => renderIncidencies(main) },
     accions_meves: { label: 'Les meves accions', render: main => renderAccionsMeves(main) },
     codis_qr: { label: 'Codis QR dels llocs', render: main => renderCodisQR(main) },
+    nomines: { label: 'Nòmines', render: main => renderNomines(main) },
   },
   tables: {
     administradors: {
@@ -1373,6 +1389,7 @@ const SCHEMA = {
     },
     // taules de les incidències: les gestiona la pàgina "Incidències" (no tenen formulari genèric)
     incidencies: { label: 'Incidències', nou: 'Nova incidència', order: 'id', display: r => (r.numero || '') + ' — ' + (r.titol || ''), list: ['numero', 'titol'], fields: [] },
+    nomines: { label: 'Nòmines', order: 'id', display: r => (r.concepte || 'Nòmina') + ' ' + MESOS[(r.mes || 1) - 1] + ' ' + r.exercici, list: ['treballador_id', 'exercici', 'mes', 'concepte'], fields: [] }, // es carrega per al calendari de nòmines (pàgina pròpia)
     incidencia_accions: { label: 'Accions d’incidència', nou: '', order: 'id', display: r => r.titol || '', list: ['titol'], fields: [] },
     incidencia_ampliacions: { label: 'Ampliacions de termini', nou: '', order: 'id', display: r => r.motiu || '', list: ['motiu'], fields: [] },
     incidencia_events: { label: 'Historial d’incidències', nou: '', order: 'id', display: r => r.tipus || '', list: ['tipus'], fields: [] },
@@ -1600,7 +1617,7 @@ const C = {
   rows: t => cache[t] || [],
   get: (t, id) => { const pk = (SCHEMA.tables[t] || {}).pk; return pk ? (cache[t] || []).find(r => String(r[pk]) === String(id)) : (cache[t] || []).find(r => r.id === Number(id)); },
 };
-const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
+const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
 const L = (t, id) => { const r = C.get(t, id); return r ? SCHEMA.tables[t].display(r, L) : ''; };
 
 /* =====================================================================
@@ -1799,6 +1816,7 @@ function renderAppOperari() {
         <button data-go="informe_tasques_piscina"><strong>Tasca per piscina</strong><span>Totes les tasques d’una piscina entre dues dates.</span></button>
         <button data-go="informe_tasques_dates"><strong>Tasca per dates</strong><span>Totes les piscines, per dia.</span></button>
         <button data-go="incidencia_reports"><strong>Report d’un problema</strong><span>Un problema que has vist tu o que t’ha dit algú de la comunitat: lloc, què passa i fotos. L’oficina decideix si és una incidència.</span></button>
+        <button data-go="nomines"><strong>Les meves nòmines</strong><span>El calendari de l’any amb la teva nòmina de cada mes.</span></button>
         <button data-go="accions_meves"><strong>Les meves accions</strong><span>Feines d’incidències assignades a tu${(() => { const n = t ? C.rows('incidencia_accions').filter(a => a.actiu && a.estat !== 'finalitzada' && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id) && (C.get('incidencies', a.incidencia_id) || {}).estat === 'oberta').length : 0; return n ? ': <b>' + n + ' obertes</b>' : ''; })()}.</span></button>
       </div>`;
     main.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { state.table = b.dataset.go; state.editing = null; renderApp(); }));
@@ -3862,7 +3880,7 @@ function vencimentPerGrup(grup, base) {
 }
 const accionsInc = inc => C.rows('incidencia_accions').filter(a => a.actiu && Number(a.incidencia_id) === inc.id);
 // peticions fetes des d'una acció que encara no s'han donat per resoltes (a la vista del client, només les que el client pot veure)
-const peticionsPendents = a => C.rows('incidencia_accions').filter(x => x.actiu && Number(x.origen_accio_id) === a.id && x.es_peticio && !x.resolta && (state.inc.capa !== 'client' || x.visible_client));
+const peticionsPendents = a => C.rows('incidencia_accions').filter(x => x.actiu && Number(x.origen_accio_id) === a.id && x.es_peticio && !x.resolta && accioVisibleCapa(x));
 const estatEfectiu = a => a.estat === 'finalitzada' ? 'finalitzada' : (peticionsPendents(a).length ? 'esperant' : a.estat);
 const foraTermini = a => !!a.venciment && (a.estat === 'finalitzada' ? !!a.finalitzada_el && new Date(a.finalitzada_el) > new Date(a.venciment) : new Date() > new Date(a.venciment));
 const nomResponsable = a => a.responsable_treballador_id ? nomTreballador(C.get('treballadors', a.responsable_treballador_id)) : a.responsable_proveidor_id ? (C.get('proveidors', a.responsable_proveidor_id) || {}).nom || '' : a.responsable_contacte_id ? (C.get('contactes', a.responsable_contacte_id) || {}).nom || '' : '';
@@ -4002,7 +4020,7 @@ function renderIncidencies(main) {
   const st = state.inc;
   if (st.vista === 'nova') return renderNovaIncidencia(main);
   if (st.vista === 'diagrama' && st.id && C.get('incidencies', st.id)) return renderDiagramaInc(main);
-  st.vista = 'llista';
+  st.vista = 'llista'; st.capa = 'interna';
   const t = trebInc();
   let llista = C.rows('incidencies').filter(i => i.actiu);
   if (st.filtre.estat === 'obertes') llista = llista.filter(i => i.estat === 'oberta'); else if (st.filtre.estat === 'tancades') llista = llista.filter(i => i.estat === 'tancada');
@@ -4063,7 +4081,7 @@ function renderNovaIncidencia(main) {
         <div class="f wide"><span class="l">Informació a disposició de (client, administrador, president…)</span>
           <div class="multi" id="inc-contactes">${contactes.length ? contactes.map(c => `<label><input type="checkbox" name="contactes" value="${c.id}" ${marcats.has(c.id) ? 'checked' : ''}><span>${h(c.nom)}${c.carrec ? ' (' + h(c.carrec) + ')' : ''}${c.administrador_id ? ' · ' + h(L('administradors', c.administrador_id)) : ''}</span></label>`).join('') : '<span class="hint">tria el lloc per veure’n les persones</span>'}</div>
           <span class="hint">només informa: al carril del client només hi haurà una caixa quan se li demani una autorització (econòmica o d’actuació)</span></div>
-        <label class="f wide"><span class="l">Observacions internes (no les veu el client)</span><textarea lang="ca" spellcheck="true" name="observacions_internes">${h(n.observacions_internes || '')}</textarea></label>
+        <label class="f wide"><span class="l">Observacions internes</span><textarea lang="ca" spellcheck="true" name="observacions_internes">${h(n.observacions_internes || '')}</textarea><span class="hint">${NOTA_INTERNES}</span></label>
       </div>
       <div class="actions"><button class="btn" id="inc-crea">Obre la incidència</button><button class="btn ghost" id="inc-cancel">Cancel·la</button></div>
     </div>`;
@@ -4151,18 +4169,50 @@ function enllacCorreuReport(inc) {
   return `<a class="btn ghost small" href="${enllacMailto(correuReporta(r), 'Incidència ' + inc.numero + ' · ' + inc.titol, cos)}" title="${h(correuReporta(r))}">Escriu a ${h(quiReporta(r))}</a>`;
 }
 
-/* ---------- el diagrama ---------- */
-function accionsVisibles(inc) {
-  const st = state.inc, tot = accionsInc(inc);
-  return st.capa === 'client' ? tot.filter(a => a.visible_client) : tot;
+/* ---------- qui veu què ----------
+   Tota l'organització (administradors, oficina, tècnics i operaris) ho veu tot, observacions internes incloses.
+   Els externs (el client, els subcontractistes i els proveïdors) només veuen les accions que els corresponen i mai les observacions internes.
+   La capa és com es mira la incidència: 'interna' (la normal), 'client' o 'prov:<id>' (un subcontractista o proveïdor concret). */
+const NOTA_INTERNES = 'les veu tota l’organització (també els operaris); mai el client, els subcontractistes ni els proveïdors';
+const CARRILS_EXTERNS = ['client', 'subcontractista', 'proveidor'];
+const vistaExterna = () => state.inc.capa !== 'interna';
+const proveidorDeCapa = () => { const m = /^prov:(\d+)$/.exec(String(state.inc.capa || '')); return m ? Number(m[1]) : null; };
+function accioVisibleCapa(a) {
+  const capa = state.inc.capa;
+  if (capa === 'interna') return true;
+  if (capa === 'client') return !!a.visible_client;
+  const p = proveidorDeCapa(); return p != null && Number(a.responsable_proveidor_id) === p;
 }
+// els externs que intervenen en una incidència: el client sempre, i cada subcontractista o proveïdor que hi té alguna acció
+function externsInc(inc) {
+  const out = [{ capa: 'client', carril: 'client', nom: clientInc(inc).nom || 'Client' }];
+  const vists = new Set();
+  accionsInc(inc).filter(a => a.responsable_proveidor_id).sort((a, b) => String(a.creat_el).localeCompare(String(b.creat_el))).forEach(a => {
+    const id = Number(a.responsable_proveidor_id); if (vists.has(id)) return; vists.add(id);
+    const p = C.get('proveidors', id) || {};
+    out.push({ capa: 'prov:' + id, carril: CARRILS_EXTERNS.includes(a.carril) ? a.carril : (p.subcontractista ? 'subcontractista' : 'proveidor'), nom: p.nom || ('proveïdor ' + id), proveidor: p });
+  });
+  return out;
+}
+const externDeCapa = inc => vistaExterna() ? externsInc(inc).find(e => e.capa === state.inc.capa) || null : null;
+const nomExtern = e => e.carril === 'client' ? 'el client' : (e.carril === 'subcontractista' ? 'el subcontractista ' : 'el proveïdor ') + e.nom;
+const etiquetaCapa = e => e.carril === 'client' ? 'Vista del client' : (e.carril === 'subcontractista' ? 'Subcontractista: ' : 'Proveïdor: ') + (e.nom.length > 24 ? e.nom.slice(0, 22) + '…' : e.nom);
+// correu a un subcontractista o proveïdor amb l'encàrrec: què, on i fins quan; cap observació interna (s'obre al programa de correu)
+function enllacCorreuProveidor(inc, a, p) {
+  const lloc = llocInc(inc), g = (a.gestor_id && C.get('treballadors', a.gestor_id)) || trebInc(), tipus = nomTipus(a.tipus);
+  const cos = `Hola ${p.contacte || p.nom},\n\n${a.es_peticio ? 'Us demanem' : 'Us encarreguem'}: ${tipus}${a.titol && a.titol !== tipus ? ' · ' + a.titol : ''}\n${a.descripcio ? a.descripcio + '\n' : ''}\nLloc: ${lloc.nom || ''}${lloc.adreca ? ' · ' + lloc.adreca : ''}${lloc.poblacio ? ', ' + lloc.poblacio : ''}\nIncidència ${inc.numero} · ${inc.titol}${inc.descripcio ? '\n' + inc.descripcio : ''}\n${a.venciment ? 'Termini: ' + dmyhm(a.venciment) + '\n' : ''}\nPer a qualsevol dubte: ${nomTreballador(g)}${g && (g.email_acces || g.email) ? ' · ' + (g.email_acces || g.email) : ''}\n\nSalutacions,\n${nomTreballador(trebInc())}\nOutdoor Engineering Solutions`;
+  return `<a class="btn ghost small" href="${enllacMailto(p.email, 'Incidència ' + inc.numero + ' · ' + tipus + ' · ' + (lloc.nom || ''), cos)}" title="${h(p.email)}">Prepara el correu per a ${h(p.nom)}</a> `;
+}
+
+/* ---------- el diagrama ---------- */
+function accionsVisibles(inc) { return accionsInc(inc).filter(accioVisibleCapa); }
 // files del diagrama: només per temps de creació, la més nova a dalt; així tota acció derivada queda per sobre de la d'origen i les fletxes sempre pugen
 function ordenaAccions(acc) {
   return [...acc].sort((a, b) => String(b.creat_el).localeCompare(String(a.creat_el)) || (b.id - a.id));
 }
 function caixaHTML(a, fila) {
   const ee = estatEfectiu(a), fora = foraTermini(a), pend = peticionsPendents(a).length, tp = INC.tipus[a.tipus] || { nom: a.tipus, fase: '' };
-  const client = state.inc.capa === 'client';
+  const client = vistaExterna(); // vista externa: sense qui ho gestiona ni ampliacions
   const amp = C.rows('incidencia_ampliacions').filter(x => x.actiu && Number(x.accio_id) === a.id && x.estat === 'pendent').length;
   const col = Math.max(1, INC.carrils.findIndex(c => c[0] === a.carril) + 1);
   return `<div class="ic-caixa e-${ee} ${fora ? 'fora' : ''} ${state.inc.sel === a.id ? 'sel' : ''}" data-accio="${a.id}" style="grid-row:${fila}; grid-column:${col}; --lc:${colorCarril(a.carril)}">
@@ -4194,6 +4244,9 @@ function araDepenHTML(inc, acc) {
 function renderDiagramaInc(main) {
   const st = state.inc, inc = C.get('incidencies', st.id), t = trebInc();
   document.body.classList.add('ic-full');
+  const externs = externsInc(inc);
+  if (st.capa !== 'interna' && !externs.some(e => e.capa === st.capa)) st.capa = 'interna'; // una capa d'una altra incidència
+  const ext = externDeCapa(inc), extern = !!ext;
   const acc = accionsVisibles(inc), files = ordenaAccions(acc);
   const lloc = llocInc(inc), client = clientInc(inc);
   const seguidora = C.get('treballadors', inc.seguidora_id);
@@ -4208,24 +4261,25 @@ function renderDiagramaInc(main) {
   main.innerHTML = `
     <div class="ic-capinc">
       <h1>${h(inc.numero)} · ${h(inc.titol)}</h1>
-      <div class="capsal"><span>Lloc <b>${h(lloc.nom || '')}</b></span><span>Client <b>${h(client.nom || '')}</b></span><span>Seguidora <b>${h(nomTreballador(seguidora))}</b></span><span>Oberta <b>${dmyhm(inc.data_obertura)}</b></span>${reports.length ? `<span>Reportat per <b>${h(reports.map(r => quiReporta(r)).join(', '))}</b>${st.capa !== 'client' && correuReporta(reports[0]) ? ` <span class="hint">${h(correuReporta(reports[0]))}${reports[0].telefon_comunica ? ' · ' + h(reports[0].telefon_comunica) : ''}</span>` : ''}</span>` : ''}${st.capa !== 'client' ? `<span>Informació a <b>${h(contactesNoms || 'ningú del client')}</b></span>` : ''}</div>
+      <div class="capsal"><span>Lloc <b>${h(lloc.nom || '')}</b></span><span>Client <b>${h(client.nom || '')}</b></span><span>Seguidora <b>${h(nomTreballador(seguidora))}</b></span><span>Oberta <b>${dmyhm(inc.data_obertura)}</b></span>${reports.length && (!extern || ext.carril === 'client') ? `<span>Reportat per <b>${h(reports.map(r => quiReporta(r)).join(', '))}</b>${!extern && correuReporta(reports[0]) ? ` <span class="hint">${h(correuReporta(reports[0]))}${reports[0].telefon_comunica ? ' · ' + h(reports[0].telefon_comunica) : ''}</span>` : ''}</span>` : ''}${!extern ? `<span>Informació a <b>${h(contactesNoms || 'ningú del client')}</b></span>` : ''}</div>
     </div>
-    ${inc.descripcio || (inc.observacions_internes && st.capa !== 'client') ? `<p class="sub" style="margin:0 0 6px; max-width:none">${h(inc.descripcio || '')}${inc.observacions_internes && st.capa !== 'client' ? ` <b>Internes:</b> ${h(inc.observacions_internes)}` : ''}</p>` : ''}
+    ${extern ? `<div class="msg ic-extern noprint">Vista externa: així ho veu <b>${h(nomExtern(ext))}</b>. No hi surten les observacions internes ni les accions que no li corresponen.</div>` : ''}
+    ${inc.descripcio || (inc.observacions_internes && !extern) ? `<p class="sub" style="margin:0 0 6px; max-width:none">${h(inc.descripcio || '')}${inc.observacions_internes && !extern ? ` <b>Internes:</b> ${h(inc.observacions_internes)}` : ''}</p>` : ''}
     ${araDepenHTML(inc, acc)}
     <div class="bar ic-bar">
       <button class="btn ghost" id="inc-torna">← Incidències</button>
-      ${inc.estat === 'oberta' && t && st.capa !== 'client' ? `<button class="btn" id="inc-accio">Nova acció</button>` : ''}
-      ${inc.estat === 'oberta' && esSeguidora(inc) && st.capa !== 'client' ? `<button class="btn danger" id="inc-tanca" style="margin-left:0">Tanca la incidència</button>` : ''}
-      ${inc.estat === 'tancada' && esSeguidora(inc) && st.capa !== 'client' ? `<button class="btn" id="inc-reobre">Reobre</button>` : ''}
-      ${inc.estat === 'oberta' && (esSeguidora(inc) || esOficina(t)) && st.capa !== 'client' ? `<button class="btn ghost" id="inc-edita">Edita la capçalera</button>` : ''}
-      <span class="seg ic-capa"><button class="${st.capa !== 'client' ? 'on' : ''}" data-capa="interna">Vista interna</button><button class="${st.capa === 'client' ? 'on' : ''}" data-capa="client">Vista del client</button></span>
+      ${inc.estat === 'oberta' && t && !extern ? `<button class="btn" id="inc-accio">Nova acció</button>` : ''}
+      ${inc.estat === 'oberta' && esSeguidora(inc) && !extern ? `<button class="btn danger" id="inc-tanca" style="margin-left:0">Tanca la incidència</button>` : ''}
+      ${inc.estat === 'tancada' && esSeguidora(inc) && !extern ? `<button class="btn" id="inc-reobre">Reobre</button>` : ''}
+      ${inc.estat === 'oberta' && (esSeguidora(inc) || esOficina(t)) && !extern ? `<button class="btn ghost" id="inc-edita">Edita la capçalera</button>` : ''}
+      <span class="seg ic-capa" title="Com ho veu cadascú: l’organització ho veu tot; el client, els subcontractistes i els proveïdors no veuen les observacions internes ni les accions que no els corresponen"><button class="${!extern ? 'on' : ''}" data-capa="interna">Vista interna</button>${externs.map(e => `<button class="${st.capa === e.capa ? 'on' : ''}" data-capa="${h(e.capa)}" title="${h(e.nom)}">${h(etiquetaCapa(e))}</button>`).join('')}</span>
       <span class="ic-zoomctl"><button class="btn ghost small" data-zoom="-" title="Redueix">−</button><button class="btn ghost small" data-zoom="0" title="Ajusta a l’amplada">Ajusta</button><button class="btn ghost small" data-zoom="+" title="Amplia">+</button></span>
       ${document.fullscreenEnabled ? `<button class="btn ghost small" id="inc-fs">${document.fullscreenElement ? 'Surt de pantalla completa' : 'Pantalla completa'}</button>` : ''}
       <button class="btn ghost small" id="inc-galeria">Fotos i documents (${nAdj})</button>
-      ${st.capa !== 'client' ? enllacCorreuReport(inc) : ''}
+      ${!extern ? enllacCorreuReport(inc) : ''}
       <button class="btn ghost small" id="inc-print">Imprimeix</button>
-      <details class="ic-hist noprint" style="margin:0"><summary>Historial (${events.length})</summary>
-        <table class="tbl informe" style="font-size:12.5px"><tbody>${events.map(e => `<tr><td>${dmyhm(e.data)}</td><td>${h(nomCurtTreballador(C.get('treballadors', e.treballador_id)))}</td><td>${h(e.tipus)}</td><td>${h(e.detall || '')}</td></tr>`).join('')}</tbody></table></details>
+      ${!extern ? `<details class="ic-hist noprint" style="margin:0"><summary>Historial (${events.length})</summary>
+        <table class="tbl informe" style="font-size:12.5px"><tbody>${events.map(e => `<tr><td>${dmyhm(e.data)}</td><td>${h(nomCurtTreballador(C.get('treballadors', e.treballador_id)))}</td><td>${h(e.tipus)}</td><td>${h(e.detall || '')}</td></tr>`).join('')}</tbody></table></details>` : ''}
     </div>
     <div id="ferr"></div>
     <div class="ic-diagrama" id="ic-diagrama"><div class="ic-zoomwrap" id="ic-zoomwrap"><div class="ic-zoom" id="ic-zoom"><div class="ic-grid" id="ic-grid">${capcaleres}${fons}${cossos}</div><svg class="ic-fletxes" id="ic-fletxes"></svg></div></div></div>
@@ -4304,14 +4358,15 @@ function panellHTML(inc) {
     <div class="f"><span class="l">Títol</span><input type="text" id="ed-titol" value="${h(inc.titol)}"></div>
     <div class="f"><span class="l">Descripció</span><textarea lang="ca" spellcheck="true" id="ed-desc">${h(inc.descripcio || '')}</textarea></div>
     <div class="f"><span class="l">Informació a disposició de</span><div class="multi">${contactes.length ? contactes.map(c => `<label><input type="checkbox" name="ed-contactes" value="${c.id}" ${marcats.has(c.id) ? 'checked' : ''}><span>${h(c.nom)}${c.carrec ? ' (' + h(c.carrec) + ')' : ''}</span></label>`).join('') : '<span class="hint">aquest lloc no té persones de contacte</span>'}</div><span class="hint">només informa; si canvia, queda a l’historial</span></div>
-    <div class="f"><span class="l">Observacions internes</span><textarea lang="ca" spellcheck="true" id="ed-int">${h(inc.observacions_internes || '')}</textarea></div>
+    <div class="f"><span class="l">Observacions internes</span><textarea lang="ca" spellcheck="true" id="ed-int">${h(inc.observacions_internes || '')}</textarea><span class="hint">${NOTA_INTERNES}</span></div>
     <div class="actions"><button class="btn" id="ed-ok">Desa</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div>`; }
   if (st.form && st.form.tipus === 'galeria') return `<h3>Fotos, vídeos i documents de la incidència</h3><p class="sub">Tot el que s’ha anat adjuntant, des del report inicial fins a l’última acció, per ordre de temps.</p>${galeriaHTML(inc, false)}`;
   if (st.form && st.form.tipus === 'reobre') return `<h3>Reobre la incidència</h3><p class="sub">Es manté el número i tot l’historial; el tancament anterior queda al diagrama.</p><div class="f"><span class="l">Motiu de la reobertura</span><textarea lang="ca" spellcheck="true" id="reobre-motiu"></textarea></div><div class="actions"><button class="btn" id="reobre-ok">Reobre</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div>`;
   const a = st.sel ? C.get('incidencia_accions', st.sel) : null;
-  if (!a) return `<h3>Detall</h3><p class="sub">${st.capa === 'client' ? 'Així veu el client aquesta incidència: sense observacions internes ni accions amagades. Clica una caixa per veure’n el detall.' : 'Clica una caixa del diagrama per veure’n el detall i actuar-hi (començar-la, finalitzar-la, derivar-ne una altra o fer una petició).' + (inc.estat === 'oberta' ? ' Amb «Nova acció» en crees una que no deriva de cap altra.' : '')}</p>
+  const ext = externDeCapa(inc);
+  if (!a) return `<h3>Detall</h3><p class="sub">${ext ? 'Així ho veu ' + h(nomExtern(ext)) + ': sense observacions internes ni accions que no li corresponen. Clica una caixa per veure’n el detall.' : 'Clica una caixa del diagrama per veure’n el detall i actuar-hi (començar-la, finalitzar-la, derivar-ne una altra o fer una petició).' + (inc.estat === 'oberta' ? ' Amb «Nova acció» en crees una que no deriva de cap altra.' : '')}</p>
     <h4>Llegenda</h4><div class="ic-llegenda"><span class="pill e-pendent">Pendent</span><span class="pill e-en_curs">En curs</span><span class="pill e-esperant">Esperant</span><span class="pill e-finalitzada">Finalitzada</span><span class="pill fora">Fora de termini</span><span class="pill dep">espera respostes</span></div><p class="sub">Fletxa contínua: derivació. Fletxa discontínua: petició que necessita resposta.</p>`;
-  const tp = INC.tipus[a.tipus] || { nom: a.tipus }, ee = estatEfectiu(a), client = st.capa === 'client', oberta = inc.estat === 'oberta';
+  const tp = INC.tipus[a.tipus] || { nom: a.tipus }, ee = estatEfectiu(a), client = !!ext, oberta = inc.estat === 'oberta'; // client = vista externa (client, subcontractista o proveïdor): només mira
   const pend = peticionsPendents(a), fills = C.rows('incidencia_accions').filter(x => x.actiu && Number(x.origen_accio_id) === a.id), origen = a.origen_accio_id ? C.get('incidencia_accions', a.origen_accio_id) : null;
   const amps = C.rows('incidencia_ampliacions').filter(x => x.actiu && Number(x.accio_id) === a.id).sort((x, y) => String(x.demanada_el).localeCompare(String(y.demanada_el)));
   const potActuar = !client && oberta && t && (socResponsable(a) || esSeguidora(inc) || esOficina(t));
@@ -4326,6 +4381,7 @@ function panellHTML(inc) {
   if (derivables.length) ops += `<button class="btn ghost small" data-op="deriva">${a.estat === 'finalitzada' ? 'Encarrega el pas següent…' : 'Deriva una acció / fes una petició…'}</button> `;
   if (potActuar && a.venciment && a.estat !== 'finalitzada' && !esSeguidora(inc)) ops += `<button class="btn ghost small" data-op="ampliacio">Demana ampliació de termini</button> `;
   if (!client && oberta && (esSeguidora(inc) || esOficina(t))) ops += `<button class="btn ghost small" data-op="visible">${a.visible_client ? 'Amaga al client' : 'Mostra al client'}</button> `;
+  if (!client && oberta && a.estat !== 'finalitzada' && a.responsable_proveidor_id && potActuar) { const p = C.get('proveidors', a.responsable_proveidor_id); if (p && p.email) ops += enllacCorreuProveidor(inc, a, p); }
   const formOp = st.form && st.form.accio === a.id ? st.form : null;
   let formHtml = '';
   if (formOp && formOp.tipus === 'finalitza') formHtml = `<div class="ic-form"><h4>${a.es_peticio && extern ? 'Registra la resposta de ' + h(nomResponsable(a)) : a.es_peticio ? 'Respon la petició' : 'Finalitza «' + h(tp.nom) + '»'}</h4>
@@ -4404,7 +4460,7 @@ function formAccioHTML(inc, origen) {
     <div class="f"><span class="l">Venciment</span><input type="datetime-local" id="na-venc" value="${h(venc || '')}">${origen && origen.venciment && peticio ? `<span class="hint">no pot passar del venciment de l’acció d’origen (${dmyhm(origen.venciment)})</span>` : ''}</div>` : '<p class="hint">Les accions del client no tenen termini.</p>'}
     ${origen ? `<label class="chk" style="padding:0"><input type="checkbox" id="na-peticio" ${peticio ? 'checked' : ''}> És una petició: «${h(nomTipus(origen.tipus))}» queda esperant la resposta</label>` : ''}
     <label class="chk" style="padding:0"><input type="checkbox" id="na-visible" ${visible ? 'checked' : ''}> Visible al client</label>
-    <div class="f"><span class="l">Observacions internes</span><textarea lang="ca" spellcheck="true" id="na-int">${h(f.int || '')}</textarea></div>
+    <div class="f"><span class="l">Observacions internes</span><textarea lang="ca" spellcheck="true" id="na-int">${h(f.int || '')}</textarea><span class="hint">${NOTA_INTERNES}</span></div>
     <div class="actions"><button class="btn" id="na-ok">${f.despres ? 'Encarrega' : 'Crea l’acció'}</button><button class="btn ghost" id="panell-cancel">${f.despres ? 'No cal res més' : 'Cancel·la'}</button></div>`;
 }
 // el pas que normalment ve després de cada tipus d'acció (preselecció; es pot canviar)
@@ -4566,18 +4622,80 @@ async function operacio(inc, fn, accioId, tipusEvent, detall) {
 
 /* ---------- les meves accions (operaris i tothom) ---------- */
 function renderAccionsMeves(main) {
-  const t = trebInc();
+  const t = trebInc(); state.inc.capa = 'interna';
   const meves = C.rows('incidencia_accions').filter(a => a.actiu && a.estat !== 'finalitzada' && t && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id))
     .filter(a => (C.get('incidencies', a.incidencia_id) || {}).estat === 'oberta')
     .sort((a, b) => String(a.venciment || '9').localeCompare(String(b.venciment || '9')));
   const peraAcceptar = C.rows('incidencia_accions').filter(a => a.actiu && a.es_peticio && a.estat === 'finalitzada' && !a.resolta && t && Number(a.creat_per) === t.id);
-  const targeta = a => { const inc = C.get('incidencies', a.incidencia_id) || {}, ee = estatEfectiu(a), nAdj = inc.id ? nAdjuntsInc(inc) : 0;
-    return `<div class="ic-targeta ${foraTermini(a) ? 'fora' : ''}" data-inc="${inc.id}" data-accio="${a.id}"><b>${h(nomTipus(a.tipus))}</b> · ${h(inc.numero || '')} ${h(inc.titol || '')}<br><span class="hint">${h(llocInc(inc).nom || '')}${nAdj ? ' · ' + nAdj + (nAdj === 1 ? ' foto o document' : ' fotos o documents') + ' a la incidència' : ''}</span><br><span class="pill e-${ee}">${INC.estats[ee]}</span> ${a.venciment ? '<span class="' + (foraTermini(a) ? 'v-no' : '') + '">venç ' + dmyhm(a.venciment) + '</span>' : ''}${a.descripcio ? '<br>' + h(a.descripcio.slice(0, 140)) : ''}</div>`; };
+  const targeta = a => { const inc = C.get('incidencies', a.incidencia_id) || {}, ee = estatEfectiu(a), nAdj = inc.id ? nAdjuntsInc(inc) : 0, internes = [inc.observacions_internes, a.observacions_internes].filter(Boolean).join(' · ');
+    return `<div class="ic-targeta ${foraTermini(a) ? 'fora' : ''}" data-inc="${inc.id}" data-accio="${a.id}"><b>${h(nomTipus(a.tipus))}</b> · ${h(inc.numero || '')} ${h(inc.titol || '')}<br><span class="hint">${h(llocInc(inc).nom || '')}${nAdj ? ' · ' + nAdj + (nAdj === 1 ? ' foto o document' : ' fotos o documents') + ' a la incidència' : ''}</span><br><span class="pill e-${ee}">${INC.estats[ee]}</span> ${a.venciment ? '<span class="' + (foraTermini(a) ? 'v-no' : '') + '">venç ' + dmyhm(a.venciment) + '</span>' : ''}${a.descripcio ? '<br>' + h(a.descripcio.slice(0, 140)) : ''}${internes ? '<br><span class="ic-int"><b>Internes:</b> ' + h(internes.length > 220 ? internes.slice(0, 218) + '…' : internes) + '</span>' : ''}</div>`; };
   main.innerHTML = `<h1>Les meves accions</h1>
     ${!t ? '<div class="msg err">El teu usuari no té fitxa de treballador.</div>' : ''}
     ${meves.length ? meves.map(targeta).join('') : '<div class="empty">Cap acció oberta assignada a tu.</div>'}
     ${peraAcceptar.length ? `<h3>Respostes rebudes per acceptar</h3>${peraAcceptar.map(targeta).join('')}` : ''}`;
   main.querySelectorAll('.ic-targeta').forEach(c => c.addEventListener('click', () => { state.inc.vista = 'diagrama'; state.inc.id = Number(c.dataset.inc); state.inc.sel = Number(c.dataset.accio); state.inc.form = null; state.mode = 'consulta'; state.table = 'incidencies'; renderApp(); window.scrollTo({ top: 0 }); }));
+}
+
+/* =====================================================================
+   NÒMINES: calendari mensual per treballador (dues files de sis mesos, any a dalt).
+   L'oficina puja el document de cada mes (i el treu); cada treballador només veu els seus (la base de dades ho fa complir).
+   ===================================================================== */
+const oficinaNomines = () => !APP_NOMES_TASQUES && esOficina(treballadorActual());
+function renderNomines(main) {
+  const st = state.nom, t = treballadorActual(), oficina = oficinaNomines();
+  const treballadors = C.rows('treballadors').filter(x => x.actiu).sort((a, b) => nomTreballador(a).localeCompare(nomTreballador(b), 'ca'));
+  if (oficina && !treballadors.some(x => String(x.id) === st.treb)) st.treb = String(t && treballadors.some(x => x.id === t.id) ? t.id : (treballadors[0] || {}).id || '');
+  const trebId = oficina ? Number(st.treb) : (t ? t.id : null);
+  const any = Number(st.any) || new Date().getFullYear(), ara = new Date(), anyAra = ara.getFullYear(), mesAra = ara.getMonth() + 1;
+  const totes = C.rows('nomines').filter(n => n.actiu && Number(n.treballador_id) === trebId);
+  const delAny = totes.filter(n => Number(n.exercici) === any);
+  const anys = [...new Set(totes.map(n => Number(n.exercici)))].sort();
+  const perMes = m => delAny.filter(n => Number(n.mes) === m).sort((a, b) => String(a.creat_el).localeCompare(String(b.creat_el)));
+  main.innerHTML = `<h1>${oficina ? 'Nòmines' : 'Les meves nòmines'}</h1>
+    <p class="sub">${oficina ? 'Un calendari per treballador: a cada mes, el document de la seva nòmina (PDF o foto). Només l’oficina els puja; cada treballador veu només els seus, des de l’app o des d’aquí.' : 'A cada mes, la teva nòmina. Toca-la per obrir-la.'}</p>
+    ${!t ? '<div class="msg err">El teu usuari no té fitxa de treballador amb aquest correu d’accés: demana a l’oficina que t’hi afegeixin.</div>' : ''}
+    <div class="bar">
+      ${oficina ? `<select id="nom-treb" style="width:auto; min-width:220px">${treballadors.map(x => `<option value="${x.id}" ${x.id === trebId ? 'selected' : ''}>${h(nomTreballador(x))}</option>`).join('')}</select>` : ''}
+      <span class="nom-any"><button class="btn ghost small" data-any="-1" title="Any anterior">◀</button><input type="number" id="nom-any" value="${any}" min="2000" max="2100"><button class="btn ghost small" data-any="1" title="Any següent">▶</button></span>
+      <span class="n">${delAny.length} ${delAny.length === 1 ? 'document' : 'documents'} el ${any}${anys.length && !anys.every(a => a === any) ? ' · anys amb nòmines: ' + anys.join(', ') : ''}</span>
+    </div>
+    <div id="ferr"></div>
+    <div class="nom-cal">${MESOS.map((nom, i) => { const m = i + 1, docs = perMes(m);
+      return `<div class="nom-mes ${docs.length ? 'te' : ''} ${m === mesAra && any === anyAra ? 'ara' : ''}"><div class="nom-mes-nom">${nom}</div>
+        ${docs.map(n => `<a href="#" class="nom-doc" data-obre="${h(n.pdf)}" title="${h(n.nom_fitxer || '')}">📄 ${h(n.concepte || 'Nòmina')}</a>${oficina ? `<span class="hint">pujada ${dmy(n.creat_el)}${n.pujada_per ? ' per ' + h(nomCurtTreballador(C.get('treballadors', n.pujada_per))) : ''} · <a href="#" data-treu="${n.id}">treu</a></span>` : ''}`).join('')}
+        ${!docs.length && !oficina ? '<span class="nom-buit">—</span>' : ''}
+        ${oficina ? `<label class="btn ghost small nom-puja">${docs.length ? 'Afegeix-hi un altre document' : 'Puja la nòmina'}<input type="file" accept="application/pdf,image/*" data-mes="${m}" hidden></label>` : ''}
+      </div>`; }).join('')}</div>`;
+  const canviaAny = v => { const n = Math.min(2100, Math.max(2000, Number(v) || anyAra)); st.any = String(n); renderMain(); };
+  main.querySelectorAll('[data-any]').forEach(b => b.addEventListener('click', () => canviaAny(any + Number(b.dataset.any))));
+  $('#nom-any').addEventListener('change', e => canviaAny(e.target.value));
+  if ($('#nom-treb')) $('#nom-treb').addEventListener('change', e => { st.treb = e.target.value; renderMain(); });
+  main.querySelectorAll('[data-obre]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); obreFitxer(a.dataset.obre); }));
+  main.querySelectorAll('[data-treu]').forEach(a => a.addEventListener('click', async e => { e.preventDefault(); try { await treuNomina(Number(a.dataset.treu)); renderMain(); } catch (err) { showFormError(friendly(err)); } }));
+  main.querySelectorAll('input[type=file][data-mes]').forEach(inp => inp.addEventListener('change', async () => {
+    const f = inp.files && inp.files[0]; if (!f) return;
+    try { await pujaNomina(trebId, any, Number(inp.dataset.mes), f); toast('Nòmina desada'); renderMain(); } catch (err) { inp.value = ''; showFormError(friendly(err)); }
+  }));
+}
+// puja el fitxer a nomines/<treballador>/ i en crea el registre; si el mes ja té un document, demana el concepte del nou (paga extra…)
+async function pujaNomina(trebId, any, mes, file) {
+  const t = treballadorActual(); if (!trebId) throw new Error('Tria el treballador.');
+  const existents = C.rows('nomines').filter(n => n.actiu && Number(n.treballador_id) === trebId && Number(n.exercici) === any && Number(n.mes) === mes);
+  let concepte = 'Nòmina';
+  if (existents.length) { const c = prompt(MESOS[mes - 1] + ' ' + any + ' ja té un document (' + existents.map(n => n.concepte).join(', ') + '). Concepte del nou:', 'Paga extra'); if (c == null) return; concepte = c.trim() || 'Nòmina'; }
+  const path = `nomines/${trebId}/${any}-${String(mes).padStart(2, '0')}_${Date.now()}_${file.name.replace(/[^\w.\-]+/g, '_')}`;
+  const up = await sb.storage.from(BUCKET).upload(path, file, { contentType: file.type || undefined });
+  if (up.error) throw new Error('No s’ha pogut pujar el fitxer: ' + friendly(up.error));
+  const ins = await sb.from('nomines').insert({ treballador_id: trebId, exercici: any, mes, concepte, pdf: path, nom_fitxer: file.name, pujada_per: t ? t.id : null });
+  if (ins.error) throw ins.error;
+  await loadTable('nomines');
+}
+async function treuNomina(id) {
+  const n = C.get('nomines', id); if (!n) return;
+  if (!confirm(`Treure «${n.concepte || 'Nòmina'}» de ${MESOS[n.mes - 1]} ${n.exercici} de ${nomTreballador(C.get('treballadors', n.treballador_id))}? El fitxer s’esborra del Storage.`)) return;
+  const r = await sb.from('nomines').update({ actiu: false }).eq('id', id); if (r.error) throw r.error;
+  await sb.storage.from(BUCKET).remove([n.pdf]); // si no es pot esborrar, el registre ja ha quedat de baixa igualment
+  await loadTable('nomines'); toast('Document tret');
 }
 
 init();
