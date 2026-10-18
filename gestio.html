@@ -378,6 +378,23 @@
   .vac-taula .nom{ width:170px; font-size:14px; } .vac-taula td.d{ width:auto; } .vac-taula td.d.vacances{ font-size:12.5px; } .vac-taula .tot{ width:52px; }
   .vac-taula .fs{ background:repeating-linear-gradient(135deg, #e3e3e3 0 3px, #f6f6f6 3px 7px) !important; }
   .vac-titolmes{ display:inline-block; min-width:190px; text-align:center; font-size:18px; }
+  .ca-cap{ display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:0 2px; font-size:12px; color:var(--ink-3); text-align:center; margin-bottom:2px; }
+  .ca-cap > div{ min-width:0; overflow:hidden; white-space:nowrap; } .ca-cap b{ color:var(--ink-2); font-size:13px; } .ca-cap small{ display:block; font-size:11px; }
+  .ca-dia .n{ white-space:nowrap; overflow:hidden; } .ca-dia .mesabr{ font-size:11px; color:var(--ink-3); }
+  @media (max-width:820px){ .ca-cap small, .ca-dia .mesabr{ display:none; } }
+  .ca-set{ display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:0 2px; margin-bottom:2px; }
+  .ca-dia{ border:1px solid var(--line); border-radius:4px; background:#fff; min-width:0; }
+  .ca-dia .n{ display:block; font-size:12px; padding:3px 6px; color:var(--ink-2); }
+  .ca-dia.fs{ background:#f6f6f6; } .ca-dia.fora{ background:#fcfcfc; } .ca-dia.fora .n{ color:#c4c9c2; } .ca-dia.avui{ border-color:var(--ink-2); } .ca-dia.avui .n{ font-weight:700; color:var(--ink); } .ca-dia.festiu{ background:#fff0f0; }
+  .ca-bar{ margin:1px 2px; padding:0 6px; border-radius:4px; font-size:11.5px; line-height:20px; height:20px; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer; }
+  .ca-bar.vencuda{ box-shadow:inset 0 0 0 2px #c0392b; } .ca-bar.feta{ opacity:.45; } .ca-bar.sel{ outline:2px solid #1d2a1b; outline-offset:1px; } .ca-bar.sense{ background-image:repeating-linear-gradient(135deg, rgba(255,255,255,.35) 0 4px, transparent 4px 8px); }
+  .ca-set.setmana .ca-bar{ height:30px; line-height:30px; font-size:12.5px; }
+  .ca-detall{ border:1px solid var(--line-2); border-left-width:8px; border-radius:8px; padding:10px 14px; margin:0 0 12px; background:#fff; }
+  .ca-detall h3{ margin:0 0 6px; } .ca-detall .capsal{ margin-bottom:6px; } .ca-detall p{ margin:4px 0; }
+  .ca-llegenda span{ display:inline-block; padding:2px 8px; border-radius:4px; font-size:11.5px; margin:2px 4px 2px 0; } .ca-llegenda .fase{ display:inline-block; font-size:11.5px; color:var(--ink-3); margin:2px 6px 2px 0; }
+  .ca-llista{ margin-top:10px; } .ca-llista .ic-targeta{ border-left-width:8px; }
+  body.operari .ca-bar{ font-size:12px; } body.operari .ca-set.setmana .ca-bar{ height:34px; line-height:34px; }
+  @media print{ .ca-bar, .ca-dia, .ca-llegenda span{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
   @media print{ .vac-mes{ overflow:visible; flex-wrap:wrap; } .vac-graella{ font-size:9px; } .vac-graella th, .vac-graella td{ height:18px; } .vac-taula th, .vac-taula td{ height:24px; } .vac-d, .vac-pinzell button, .vac-graella th, .vac-graella td{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
   .ic-adjunts-rep{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
   .xip.fora{ color:#d32f2f; border-color:#f0b9ad; }
@@ -742,7 +759,7 @@ const SCHEMA = {
     { label: 'ALBARANS I PRODUCTES', color: '#c9c9c9', tables: ['productes', 'albarans', 'albarans_pendents'] },
     { label: 'PROVEÏDORS', color: '#c0691e', tables: ['proveidors', 'factures_proveidor', 'puja_factures_proveidor', 'comptes_despesa'] },
     { label: 'TASQUES', color: '#8b5a2b', tables: ['tasques_piscina', 'informe_tasques_piscina', 'informe_tasques_dates'] },
-    { label: 'INCIDÈNCIES', color: '#d9534f', tables: ['incidencies', 'accions_meves', 'incidencia_reports', 'codis_qr'] },
+    { label: 'INCIDÈNCIES', color: '#d9534f', tables: ['incidencies', 'accions_meves', 'calendari_accions', 'incidencia_reports', 'codis_qr'] },
     { label: 'CONSUM', color: '#1f5fbf', tables: ['comptadors', 'lectures', 'consum_aigua'] },
     { label: 'INSTAL·LACIONS', color: '#8fcf9a', tables: ['jardins', 'piscines', 'informe_adob'] },
     { label: 'EQUIPAMENTS I INSTAL·LACIONS', color: '#e5b800', tables: ['programadors', 'bombes', 'filtres', 'cloradors_salins'] },
@@ -765,6 +782,7 @@ const SCHEMA = {
     hores_sol: { label: 'Hores del sol (tot l’any)', render: main => renderHoresSol(main) },
     incidencies: { label: 'Incidències', render: main => renderIncidencies(main) },
     accions_meves: { label: 'Les meves accions', render: main => renderAccionsMeves(main) },
+    calendari_accions: { label: 'Calendari d’accions', render: main => renderCalendariAccions(main) },
     codis_qr: { label: 'Codis QR dels llocs', render: main => renderCodisQR(main) },
     nomines: { label: 'Nòmines', render: main => renderNomines(main) },
     vacances: { label: 'Vacances i baixes', render: main => renderVacances(main) },
@@ -1670,7 +1688,7 @@ const C = {
   rows: t => cache[t] || [],
   get: (t, id) => { const pk = (SCHEMA.tables[t] || {}).pk; return pk ? (cache[t] || []).find(r => String(r[pk]) === String(id)) : (cache[t] || []).find(r => r.id === Number(id)); },
 };
-const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
+const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, calAcc: { vista: '', ref: '', meves: false, fetes: false, sel: null }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
 const L = (t, id) => { const r = C.get(t, id); return r ? SCHEMA.tables[t].display(r, L) : ''; };
 
 /* =====================================================================
@@ -1870,6 +1888,7 @@ function renderAppOperari() {
         <button data-go="informe_tasques_dates"><strong>Tasca per dates</strong><span>Totes les piscines, per dia.</span></button>
         <button data-go="incidencia_reports"><strong>Report d’un problema</strong><span>Un problema que has vist tu o que t’ha dit algú de la comunitat: lloc, què passa i fotos. L’oficina decideix si és una incidència.</span></button>
         <button data-go="vacances"><strong>Vacances i baixes</strong><span>Qui és fora cada dia del mes: tothom, per consultar.</span></button>
+        <button data-go="calendari_accions"><strong>Calendari d’accions</strong><span>Mes o setmana amb totes les accions pendents, de quan es van demanar fins al termini.</span></button>
         <button data-go="nomines"><strong>Les meves nòmines</strong><span>El calendari de l’any amb la teva nòmina de cada mes.</span></button>
         <button data-go="accions_meves"><strong>Les meves accions</strong><span>Feines d’incidències assignades a tu${(() => { const n = t ? C.rows('incidencia_accions').filter(a => a.actiu && a.estat !== 'finalitzada' && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id) && (C.get('incidencies', a.incidencia_id) || {}).estat === 'oberta').length : 0; return n ? ': <b>' + n + ' obertes</b>' : ''; })()}.</span></button>
       </div>`;
@@ -4683,11 +4702,123 @@ function renderAccionsMeves(main) {
   const peraAcceptar = C.rows('incidencia_accions').filter(a => a.actiu && a.es_peticio && a.estat === 'finalitzada' && !a.resolta && t && Number(a.creat_per) === t.id);
   const targeta = a => { const inc = C.get('incidencies', a.incidencia_id) || {}, ee = estatEfectiu(a), nAdj = inc.id ? nAdjuntsInc(inc) : 0, internes = [inc.observacions_internes, a.observacions_internes].filter(Boolean).join(' · ');
     return `<div class="ic-targeta ${foraTermini(a) ? 'fora' : ''}" data-inc="${inc.id}" data-accio="${a.id}"><b>${h(nomTipus(a.tipus))}</b> · ${h(inc.numero || '')} ${h(inc.titol || '')}<br><span class="hint">${h(llocInc(inc).nom || '')}${nAdj ? ' · ' + nAdj + (nAdj === 1 ? ' foto o document' : ' fotos o documents') + ' a la incidència' : ''}</span><br><span class="pill e-${ee}">${INC.estats[ee]}</span> ${a.venciment ? '<span class="' + (foraTermini(a) ? 'v-no' : '') + '">venç ' + dmyhm(a.venciment) + '</span>' : ''}${a.descripcio ? '<br>' + h(a.descripcio.slice(0, 140)) : ''}${internes ? '<br><span class="ic-int"><b>Internes:</b> ' + h(internes.length > 220 ? internes.slice(0, 218) + '…' : internes) + '</span>' : ''}</div>`; };
-  main.innerHTML = `<h1>Les meves accions</h1>
+  main.innerHTML = `<h1>Les meves accions <button class="btn ghost small" id="am-cal" style="vertical-align:middle; margin-left:8px">Calendari</button></h1>
     ${!t ? '<div class="msg err">El teu usuari no té fitxa de treballador.</div>' : ''}
     ${meves.length ? meves.map(targeta).join('') : '<div class="empty">Cap acció oberta assignada a tu.</div>'}
     ${peraAcceptar.length ? `<h3>Respostes rebudes per acceptar</h3>${peraAcceptar.map(targeta).join('')}` : ''}`;
   main.querySelectorAll('.ic-targeta').forEach(c => c.addEventListener('click', () => { state.inc.vista = 'diagrama'; state.inc.id = Number(c.dataset.inc); state.inc.sel = Number(c.dataset.accio); state.inc.form = null; state.mode = 'consulta'; state.table = 'incidencies'; renderApp(); window.scrollTo({ top: 0 }); }));
+  $('#am-cal').addEventListener('click', () => { state.table = 'calendari_accions'; renderApp(); });
+}
+
+/* =====================================================================
+   CALENDARI D'ACCIONS: mes o setmana amb una franja per acció, de quan es va demanar fins al termini.
+   Una gamma de color per fase i un to per tipus d'acció; clicant una franja es veu què es demana.
+   ===================================================================== */
+const COLORS_ACCIO = {
+  obrir: '#8d8d8d', assignar_seguidora: '#6f6f6f', visibilitat_client: '#b5b5b5',                                   // F1 grisos
+  diagnosticar: '#1f5fbf', planificar: '#3b7dd8', consultar: '#5e9ae6', demanar_preu: '#8fbcef', pressupost: '#0f3f8f', // F2 blaus
+  demanar_instruccions: '#7b4fb3', decisio_client: '#a07fd2', autoritzar_actuacio: '#5e3690',                     // F3 liles
+  programar: '#e08a2b', assignar: '#f0a64f', executar: '#c9671a', registrar_resultat: '#f6c88a',                   // F4 taronges
+  conclusio: '#2f7d4a', tancar: '#1e5c35', reobrir: '#6db585',                                                    // F5 verds
+};
+const colorAccio = tipus => COLORS_ACCIO[tipus] || '#8d8d8d';
+const textSobre = hex => { const n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; return (0.299 * r + 0.587 * g + 0.114 * b) > 160 ? '#1d2a1b' : '#fff'; };
+const dataLocal = ts => ts ? aLocalDT(ts).slice(0, 10) : '';
+const deYmd = s => new Date(Number(s.slice(0, 4)), Number(s.slice(5, 7)) - 1, Number(s.slice(8, 10)), 12);
+const dillunsDe = d => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+const sumaDies = (d, n) => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12); x.setDate(x.getDate() + n); return x; };
+const difDies = (a, b) => Math.round((deYmd(b) - deYmd(a)) / 86400000);
+// les accions que van al calendari, amb inici (quan es va demanar) i fi (termini; si no en té, fins avui)
+function accionsCalendari() {
+  const st = state.calAcc, t = trebInc(), avuiS = avui();
+  return C.rows('incidencia_accions').filter(a => a.actiu && !['obrir', 'tancar', 'reobrir', 'visibilitat_client'].includes(a.tipus)).map(a => {
+    const inc = C.get('incidencies', a.incidencia_id); if (!inc || !inc.actiu) return null;
+    const feta = a.estat === 'finalitzada' || inc.estat !== 'oberta';
+    if (feta && !st.fetes) return null;
+    if (st.meves && !(t && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id || Number(a.creat_per) === t.id))) return null;
+    const inici = dataLocal(a.creat_el) || avuiS; let fi = a.venciment ? dataLocal(a.venciment) : (feta ? dataLocal(a.finalitzada_el) || inici : avuiS); if (fi < inici) fi = inici;
+    return { a, inc, inici, fi, feta, sense: !a.venciment, vencuda: !feta && !!a.venciment && new Date() > new Date(a.venciment) };
+  }).filter(Boolean);
+}
+// reparteix les franges d'una setmana en carrils perquè no se solapin
+function franjesSetmana(items, dl) {
+  const dlS = ymd(dl), dgS = ymd(sumaDies(dl, 6));
+  const segs = items.filter(x => x.inici <= dgS && x.fi >= dlS).map(x => ({ x, c1: Math.max(0, difDies(dlS, x.inici)), c2: Math.min(6, difDies(dlS, x.fi)), continuaAbans: x.inici < dlS, continuaDespres: x.fi > dgS }));
+  segs.sort((p, q) => p.c1 - q.c1 || (q.c2 - q.c1) - (p.c2 - p.c1) || String(p.x.a.venciment || '').localeCompare(String(q.x.a.venciment || '')) || p.x.a.id - q.x.a.id);
+  const carrils = [];
+  segs.forEach(sg => { let l = carrils.findIndex(c => c.every(o => sg.c2 < o[0] || sg.c1 > o[1])); if (l < 0) { l = carrils.length; carrils.push([]); } carrils[l].push([sg.c1, sg.c2]); sg.carril = l; });
+  return { segs, n: carrils.length };
+}
+function etiquetaFranja(x, llarga) {
+  const a = x.a, tp = nomTipus(a.tipus), tit = a.titol && a.titol !== tp ? a.titol : '';
+  return (x.vencuda ? '⚠ ' : x.feta ? '✓ ' : '') + (llarga ? [tp, tit, nomResponsable(a), x.inc.numero].filter(Boolean).join(' · ') : [tp, nomResponsable(a)].filter(Boolean).join(' · '));
+}
+function setmanaHTML(items, dl, opts) {
+  const o = opts || {}, { segs, n } = franjesSetmana(items, dl), avuiS = avui(), st = state.calAcc;
+  let html = `<div class="ca-set ${o.setmana ? 'setmana' : ''}" style="grid-template-rows:${o.setmana ? 30 : 24}px repeat(${n}, ${o.setmana ? 34 : 22}px) ${n ? 6 : 10}px">`;
+  for (let i = 0; i < 7; i++) { const d = sumaDies(dl, i), iso = ymd(d), fe = festiuDe(iso);
+    html += `<div class="ca-dia ${i >= 5 ? 'fs' : ''} ${o.mes != null && d.getMonth() + 1 !== o.mes ? 'fora' : ''} ${iso === avuiS ? 'avui' : ''} ${fe ? 'festiu' : ''}" style="grid-column:${i + 1}; grid-row:1 / -1" title="${h(dmy(iso) + (fe ? ' · ' + fe : ''))}"><span class="n">${d.getDate()}${o.setmana ? '<small class="mesabr"> ' + MESOS[d.getMonth()].slice(0, 3).toLowerCase() + '</small>' : ''}</span></div>`; }
+  segs.forEach(sg => { const c = colorAccio(sg.x.a.tipus), a = sg.x.a;
+    const titol = `${sg.x.inc.numero} · ${sg.x.inc.titol} · ${llocInc(sg.x.inc).nom || ''}\n${nomTipus(a.tipus)}${a.titol && a.titol !== nomTipus(a.tipus) ? ' · ' + a.titol : ''} · ${nomResponsable(a)}\nDemanada el ${dmyhm(a.creat_el)} · ${a.venciment ? 'venç ' + dmyhm(a.venciment) : 'sense termini'}${sg.x.vencuda ? ' · FORA DE TERMINI' : ''}${sg.x.feta ? ' · finalitzada' : ''}`;
+    html += `<div class="ca-bar ${sg.x.vencuda ? 'vencuda' : ''} ${sg.x.feta ? 'feta' : ''} ${sg.x.sense ? 'sense' : ''} ${st.sel === a.id ? 'sel' : ''}" data-accio="${a.id}" style="grid-column:${sg.c1 + 1} / ${sg.c2 + 2}; grid-row:${sg.carril + 2}; background-color:${c}; color:${textSobre(c)}; ${sg.continuaAbans ? 'border-top-left-radius:0; border-bottom-left-radius:0;' : ''} ${sg.continuaDespres ? 'border-top-right-radius:0; border-bottom-right-radius:0;' : ''}" title="${h(titol)}">${sg.continuaAbans ? '… ' : ''}${h(etiquetaFranja(sg.x, o.setmana))}</div>`; });
+  return html + '</div>';
+}
+function detallAccioHTML(x) {
+  const a = x.a, inc = x.inc, c = colorAccio(a.tipus), tp = INC.tipus[a.tipus] || { nom: a.tipus, fase: '' };
+  return `<div class="ca-detall" id="ca-detall" style="border-left-color:${c}">
+    <h3>${h(tp.nom)}${a.titol && a.titol !== tp.nom ? ' · ' + h(a.titol) : ''} <span class="hint">F${tp.fase} · ${h(INC.fases[tp.fase] || '')}</span></h3>
+    <div class="capsal"><span>Incidència <b>${h(inc.numero)} · ${h(inc.titol)}</b></span><span>Lloc <b>${h(llocInc(inc).nom || '')}</b></span><span>Carril <b>${h(etiquetaOpt(INC.carrils, a.carril))}</b></span><span>Estat <b>${INC.estats[estatEfectiu(a)] || a.estat}</b>${x.vencuda ? ' <b class="v-no">· fora de termini</b>' : ''}</span></div>
+    <p><b>Responsable:</b> ${h(nomResponsable(a)) || '—'}${a.gestor_id ? ' · ho gestiona ' + h(nomTreballador(C.get('treballadors', a.gestor_id))) : ''}</p>
+    <p><b>Demanada</b> el ${dmyhm(a.creat_el)} per ${h(nomCurtTreballador(C.get('treballadors', a.creat_per)))} · <b>Termini:</b> ${a.venciment ? dmyhm(a.venciment) + (a.grup_termini ? ' · ' + h(etiquetaOpt(INC.grups, a.grup_termini)) : '') : (a.carril === 'client' ? 'sense termini (acció del client)' : 'sense termini')}${a.estat === 'finalitzada' ? ' · <b>Finalitzada</b> el ' + dmyhm(a.finalitzada_el) : ''}</p>
+    ${a.descripcio ? `<p><b>Què es demana:</b> ${h(a.descripcio)}</p>` : ''}
+    ${a.resultat ? `<p><b>${a.es_peticio ? 'Resposta' : 'Resultat'}:</b> ${h(a.resultat)}</p>` : ''}
+    ${a.observacions_internes ? `<p><b>Internes:</b> ${h(a.observacions_internes)}</p>` : ''}
+    <div class="actions" style="margin-top:8px"><button class="btn small" id="ca-obre">Obre la incidència</button><button class="btn ghost small" id="ca-tanca">Tanca</button></div>
+  </div>`;
+}
+function renderCalendariAccions(main) {
+  const st = state.calAcc, t = trebInc();
+  if (!st.vista) st.vista = APP_NOMES_TASQUES ? 'setmana' : 'mes';
+  if (!st.ref) st.ref = avui();
+  const ref = deYmd(st.ref), items = accionsCalendari();
+  const sel = st.sel ? items.find(x => x.a.id === st.sel) : null; if (st.sel && !sel) st.sel = null;
+  const DIES = ['Dilluns', 'Dimarts', 'Dimecres', 'Dijous', 'Divendres', 'Dissabte', 'Diumenge'], CURTS = ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg'];
+  const capDies = `<div class="ca-cap">${DIES.map((d, i) => `<div><b>${CURTS[i]}</b><small>${d}</small></div>`).join('')}</div>`;
+  let titol, cos;
+  if (st.vista === 'mes') {
+    const mes = ref.getMonth() + 1, any = ref.getFullYear(), primer = new Date(any, mes - 1, 1, 12), ultim = new Date(any, mes, 0, 12);
+    titol = MESOS[mes - 1] + ' ' + any;
+    let setmanes = ''; for (let dl = dillunsDe(primer); dl <= ultim; dl = sumaDies(dl, 7)) setmanes += setmanaHTML(items, dl, { mes });
+    cos = capDies + setmanes;
+  } else {
+    const dl = dillunsDe(ref), dg = sumaDies(dl, 6);
+    titol = 'Setmana del ' + dmy(ymd(dl)) + ' al ' + dmy(ymd(dg));
+    const dlS = ymd(dl), dgS = ymd(dg), delaSetmana = items.filter(x => x.inici <= dgS && x.fi >= dlS).sort((p, q) => String(p.a.venciment || '9').localeCompare(String(q.a.venciment || '9')));
+    cos = `${capDies}${setmanaHTML(items, dl, { setmana: true })}
+      <div class="ca-llista"><h3>${delaSetmana.length} ${delaSetmana.length === 1 ? 'acció' : 'accions'} aquesta setmana</h3>${delaSetmana.map(x => `<div class="ic-targeta ${x.vencuda ? 'fora' : ''}" data-accio="${x.a.id}" style="border-left-color:${colorAccio(x.a.tipus)}"><b>${h(nomTipus(x.a.tipus))}</b>${x.a.titol && x.a.titol !== nomTipus(x.a.tipus) ? ' · ' + h(x.a.titol) : ''} · ${h(x.inc.numero)} ${h(x.inc.titol)}<br><span class="hint">${h(llocInc(x.inc).nom || '')} · ${h(nomResponsable(x.a))} · del ${dmy(x.inici)} ${x.a.venciment ? 'al ' + dmyhm(x.a.venciment) : '(sense termini)'}${x.vencuda ? ' · <b class="v-no">fora de termini</b>' : ''}${x.feta ? ' · finalitzada' : ''}</span></div>`).join('') || '<div class="empty">Cap acció en aquesta setmana.</div>'}</div>`;
+  }
+  const llegenda = [1, 2, 3, 4, 5].map(f => `<span class="fase">F${f} ${h(INC.fases[f])}:</span>` + Object.keys(INC.tipus).filter(k => INC.tipus[k].fase === f && !['obrir', 'tancar', 'reobrir', 'visibilitat_client'].includes(k)).map(k => `<span style="background:${colorAccio(k)}; color:${textSobre(colorAccio(k))}">${h(INC.tipus[k].nom)}</span>`).join('')).join('<br>');
+  main.innerHTML = `<h1>Calendari d’accions</h1>
+    <p class="sub">Cada franja és una acció, de quan es va demanar fins al termini; un color per tipus (una gamma per fase). Clica una franja per veure què es demana. Amb vora vermella, fora de termini; ratllades, sense termini (fins avui).</p>
+    <div class="bar">
+      <span class="seg"><button class="${st.vista === 'mes' ? 'on' : ''}" data-vista="mes">Mes</button><button class="${st.vista === 'setmana' ? 'on' : ''}" data-vista="setmana">Setmana</button></span>
+      <span class="nom-any"><button class="btn ghost small" data-salt="-1" title="Anterior">◀</button><b class="vac-titolmes" style="min-width:220px">${h(titol)}</b><button class="btn ghost small" data-salt="1" title="Següent">▶</button></span>
+      <button class="btn ghost small" id="ca-avui">Avui</button>
+      <label class="chk" style="padding:0"><input type="checkbox" id="ca-meves" ${st.meves ? 'checked' : ''}> Només les meves</label>
+      <label class="chk" style="padding:0"><input type="checkbox" id="ca-fetes" ${st.fetes ? 'checked' : ''}> També les finalitzades</label>
+      <span class="n">${items.length} ${items.length === 1 ? 'acció' : 'accions'}</span>
+    </div>
+    ${sel ? detallAccioHTML(sel) : ''}
+    ${cos}
+    <details class="ca-llegenda"><summary class="hint">Colors per tipus d’acció</summary>${llegenda}</details>`;
+  main.querySelectorAll('[data-vista]').forEach(b => b.addEventListener('click', () => { st.vista = b.dataset.vista; renderMain(); }));
+  main.querySelectorAll('[data-salt]').forEach(b => b.addEventListener('click', () => { const n = Number(b.dataset.salt); st.ref = st.vista === 'mes' ? ymd(new Date(ref.getFullYear(), ref.getMonth() + n, 1, 12)) : ymd(sumaDies(ref, 7 * n)); renderMain(); }));
+  $('#ca-avui').addEventListener('click', () => { st.ref = avui(); renderMain(); });
+  $('#ca-meves').addEventListener('change', e => { st.meves = e.target.checked; renderMain(); });
+  $('#ca-fetes').addEventListener('change', e => { st.fetes = e.target.checked; renderMain(); });
+  main.querySelectorAll('[data-accio]').forEach(el => el.addEventListener('click', () => { st.sel = Number(el.dataset.accio); renderMain(); const d = $('#ca-detall'); if (d && d.scrollIntoView) d.scrollIntoView({ block: 'nearest' }); }));
+  if ($('#ca-tanca')) $('#ca-tanca').addEventListener('click', () => { st.sel = null; renderMain(); });
+  if ($('#ca-obre')) $('#ca-obre').addEventListener('click', () => { state.inc.vista = 'diagrama'; state.inc.id = sel.inc.id; state.inc.sel = sel.a.id; state.inc.form = null; state.inc.capa = 'interna'; state.mode = 'consulta'; state.table = 'incidencies'; renderApp(); window.scrollTo({ top: 0 }); });
 }
 
 /* =====================================================================
