@@ -386,7 +386,8 @@
   .fx-botons .btn:disabled{ opacity:.35; cursor:not-allowed; }
   .fx-parelles{ list-style:none; padding:0; margin:0 0 10px; } .fx-parelles li{ display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; }
   .fx-parelles li .en-curs{ color:#1e5c35; font-weight:600; } .fx-total{ font-weight:700; }
-  .fx-gps{ text-decoration:none; font-size:12px; margin-left:4px; } .fx-sense{ color:#c0392b; font-size:12px; margin-left:5px; }
+  .fx-gps{ text-decoration:none; margin-left:4px; vertical-align:-2px; } .fx-gps svg{ width:12px; height:16px; } .fx-gps.dins{ color:#2f7d4a; } .fx-gps.fora{ color:#c0392b; } .fx-gps.cap{ color:#888; } .fx-sense{ color:#c0392b; font-size:12px; margin-left:5px; }
+  .fx-pin{ border-radius:50%; color:#fff; font-weight:700; font-size:12px; line-height:22px; text-align:center; border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.35); } .fx-pin.dins{ background:#2f7d4a; } .fx-pin.fora{ background:#c0392b; }
   body.operari .fx-parelles li{ font-size:16px; } body.operari .fx-botons .btn{ height:110px; font-size:26px; }
   #fx-mapa{ height:520px; border:1px solid var(--line-2); border-radius:8px; margin:0 0 12px; background:#eef1ee; }
   .fx-lluny{ color:#c0392b; font-weight:600; } .fx-aprop{ color:#1e5c35; }
@@ -4868,7 +4869,15 @@ function estatFitxatgeText(t) {
   if (ultim && ymd(new Date(ultim.moment)) === ymd(new Date())) return 'Fora des de les ' + horaDe(ultim.moment) + '.';
   return 'Encara no has fitxat avui.';
 }
-const enllacGps = f => f && f.lat != null && f.lng != null ? `<a class="fx-gps" href="https://maps.google.com/?q=${f.lat},${f.lng}" target="_blank" rel="noopener" title="Posició en fitxar${f.precisio ? ' (±' + Math.round(f.precisio) + ' m)' : ''}">📍</a>` : (f && f.observacions && /sense GPS/i.test(f.observacions) ? `<span class="fx-sense" title="${h(f.observacions)}">sense GPS</span>` : '');
+const PIN_SVG = '<svg viewBox="0 0 12 16" aria-hidden="true"><path fill="currentColor" d="M6 0a6 6 0 0 0-6 6c0 4.2 6 10 6 10s6-5.8 6-10a6 6 0 0 0-6-6zm0 8.4A2.4 2.4 0 1 1 6 3.6a2.4 2.4 0 0 1 0 4.8z"/></svg>';
+// el pin obre la posició a Google Maps: verd si és dins dels 300 m d'un lloc nostre, vermell si és fora, gris si no hi ha cap lloc amb coordenades
+function enllacGps(f, llocs) {
+  if (!f) return '';
+  if (f.lat == null || f.lng == null) return f.observacions && /sense GPS/i.test(f.observacions) ? `<span class="fx-sense" title="${h(f.observacions)}">sense GPS</span>` : '';
+  const p = llocMesProper(Number(f.lat), Number(f.lng), llocs), cls = !p ? 'cap' : p.m <= RADI_LLOC_FEINA_M ? 'dins' : 'fora';
+  const titol = 'Posició en fitxar' + (f.precisio ? ' (±' + Math.round(f.precisio) + ' m)' : '') + (p ? ' · ' + (cls === 'dins' ? 'dins dels ' + RADI_LLOC_FEINA_M + ' m de ' : '⚠ a ' + distText(p.m) + ' de ') + p.nom : '');
+  return `<a class="fx-gps ${cls}" href="https://maps.google.com/?q=${f.lat},${f.lng}" target="_blank" rel="noopener" title="${h(titol)}">${PIN_SVG}</a>`;
+}
 function posicioActual() {
   return new Promise((res, rej) => {
     if (!navigator.geolocation) return rej(new Error('el navegador no té geolocalització'));
@@ -4950,7 +4959,7 @@ function renderMapaFitxatges(main) {
   const lluny = punts.filter(x => !x.p || x.p.m > RADI_LLOC_FEINA_M), senseGps = regs.length - ambGps.length;
   const llista = st.lluny ? regs.filter(f => f.lat == null || f.lng == null || (llocMesProper(Number(f.lat), Number(f.lng), llocs) || { m: Infinity }).m > RADI_LLOC_FEINA_M) : regs;
   main.innerHTML = `<h1>Mapa de fitxatges</h1>
-    <p class="sub">On s’ha fitxat cada persona (la posició del mòbil en prémer ENTRO o SURTO): verd, entrades; vermell, sortides; gris, els llocs que tenim amb coordenades. A sota, cada fitxatge amb el lloc més proper i la distància; a més de ${RADI_LLOC_FEINA_M} m d’un lloc, o sense GPS, en vermell.</p>
+    <p class="sub">On s’ha fitxat cada persona (la posició del mòbil en prémer ENTRO o SURTO). <b>E</b> entrada, <b>S</b> sortida: en <span class="fx-aprop">verd</span> si és dins dels ${RADI_LLOC_FEINA_M} m d’un lloc nostre, en <span class="fx-lluny">vermell</span> si és fora. En gris, els llocs amb coordenades i el seu radi de ${RADI_LLOC_FEINA_M} m. A sota, cada fitxatge amb el lloc més proper i la distància.</p>
     <div class="bar">
       <select id="fx-treb" style="width:auto; min-width:200px"><option value="">Tothom</option>${treballadors.map(x => `<option value="${x.id}" ${String(x.id) === st.treb ? 'selected' : ''}>${h(nomTreballador(x))}</option>`).join('')}</select>
       <span class="nom-any"><button class="btn ghost small" data-mes="-1" title="Mes anterior">◀</button><b class="vac-titolmes">${MESOS[mes - 1]} ${any}</b><button class="btn ghost small" data-mes="1" title="Mes següent">▶</button></span>
@@ -4960,7 +4969,7 @@ function renderMapaFitxatges(main) {
     </div>
     ${!llocs.length ? '<div class="msg err">Cap lloc amb coordenades: posa latitud i longitud a la fitxa de cada lloc perquè el mapa pugui dir si s’ha fitxat des d’un lloc nostre.</div>' : ''}
     <div id="fx-mapa"><div class="empty" style="padding-top:220px">Carregant el mapa…</div></div>
-    <table class="tbl"><thead><tr><th>Quan</th><th>Qui</th><th>Què</th><th>Precisió</th><th>Lloc més proper</th></tr></thead><tbody>${llista.map(f => `<tr data-fx="${f.id}"><td>${dmyhm(f.moment)}</td><td>${h(nomTreballador(C.get('treballadors', f.treballador_id)))}</td><td>${f.tipus === 'entrada' ? '<span class="xip ok">entrada</span>' : '<span class="xip">sortida</span>'}</td><td>${f.precisio ? '±' + Math.round(f.precisio) + ' m' : ''}</td><td>${proximitatHTML(f, llocs)}${f.lat != null ? ` ${enllacGps(f)}` : ''}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">Cap fitxatge.</td></tr>'}</tbody></table>`;
+    <table class="tbl"><thead><tr><th>Quan</th><th>Qui</th><th>Què</th><th>Precisió</th><th>Lloc més proper</th></tr></thead><tbody>${llista.map(f => `<tr data-fx="${f.id}"><td>${dmyhm(f.moment)}</td><td>${h(nomTreballador(C.get('treballadors', f.treballador_id)))}</td><td>${f.tipus === 'entrada' ? '<span class="xip ok">entrada</span>' : '<span class="xip">sortida</span>'}</td><td>${f.precisio ? '±' + Math.round(f.precisio) + ' m' : ''}</td><td>${proximitatHTML(f, llocs)}${f.lat != null ? ` ${enllacGps(f, llocs)}` : ''}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">Cap fitxatge.</td></tr>'}</tbody></table>`;
   $('#fx-treb').addEventListener('change', e => { st.treb = e.target.value; renderMain(); });
   main.querySelectorAll('[data-mes]').forEach(b => b.addEventListener('click', () => { const d = new Date(any, mes - 1 + Number(b.dataset.mes), 1); st.any = String(d.getFullYear()); st.mes = String(d.getMonth() + 1); st.dia = ''; renderMain(); }));
   $('#fx-dia').addEventListener('change', e => { st.dia = e.target.value; if (st.dia) { st.any = st.dia.slice(0, 4); st.mes = String(Number(st.dia.slice(5, 7))); } renderMain(); });
@@ -4970,9 +4979,9 @@ function renderMapaFitxatges(main) {
     const Lf = window.L, mapa = Lf.map(el, { scrollWheelZoom: false });
     Lf.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(mapa);
     const tot = [];
-    llocs.forEach(l => { Lf.circleMarker([l.lat, l.lng], { radius: 5, color: '#555', fillColor: '#bbb', fillOpacity: .9, weight: 1 }).addTo(mapa).bindPopup(`<b>${h(l.nom)}</b><br>lloc`); });
+    llocs.forEach(l => { Lf.circle([l.lat, l.lng], { radius: RADI_LLOC_FEINA_M, color: '#888', weight: 1, fillColor: '#888', fillOpacity: .07 }).addTo(mapa); Lf.circleMarker([l.lat, l.lng], { radius: 5, color: '#555', fillColor: '#bbb', fillOpacity: .9, weight: 1 }).addTo(mapa).bindPopup(`<b>${h(l.nom)}</b><br>lloc · radi de ${RADI_LLOC_FEINA_M} m`); });
     punts.forEach(({ f, p }) => { const lluny = !p || p.m > RADI_LLOC_FEINA_M, t = C.get('treballadors', f.treballador_id);
-      Lf.circleMarker([Number(f.lat), Number(f.lng)], { radius: 7, color: lluny ? '#7a1f14' : '#fff', weight: lluny ? 3 : 2, fillColor: f.tipus === 'entrada' ? '#2f7d4a' : '#c0392b', fillOpacity: .95 }).addTo(mapa)
+      Lf.marker([Number(f.lat), Number(f.lng)], { icon: Lf.divIcon({ className: 'fx-pin ' + (lluny ? 'fora' : 'dins'), html: f.tipus === 'entrada' ? 'E' : 'S', iconSize: [22, 22], iconAnchor: [11, 11], popupAnchor: [0, -10] }) }).addTo(mapa)
         .bindPopup(`<b>${h(nomTreballador(t))}</b> · ${f.tipus}<br>${dmyhm(f.moment)}${f.precisio ? ' · ±' + Math.round(f.precisio) + ' m' : ''}<br>${p ? (lluny ? '⚠ ' : '') + h(p.nom) + ' · ' + distText(p.m) : 'cap lloc amb coordenades'}`);
       tot.push([Number(f.lat), Number(f.lng)]); });
     if (tot.length) mapa.fitBounds(tot, { padding: [30, 30], maxZoom: 16 }); else if (llocs.length) mapa.fitBounds(llocs.map(l => [l.lat, l.lng]), { padding: [30, 30], maxZoom: 14 }); else mapa.setView([41.47, 2.08], 12);
@@ -5033,7 +5042,7 @@ function pdfRegistreJornada(persones, any, mes) {
 }
 // oficina: els fitxatges de tothom, per mes i per persona (resum diari) o com a llista completa; PDF del registre de jornada
 function renderFitxatges(main) {
-  const st = state.fx, t = treballadorActual();
+  const st = state.fx, t = treballadorActual(), llocs = llocsDeFeina();
   const any = Number(st.any) || new Date().getFullYear(), mes = Math.min(12, Math.max(1, Number(st.mes) || new Date().getMonth() + 1));
   const prefix = any + '-' + String(mes).padStart(2, '0') + '-';
   const treballadors = C.rows('treballadors').filter(x => x.actiu).sort((a, b) => nomTreballador(a).localeCompare(nomTreballador(b), 'ca'));
@@ -5046,11 +5055,10 @@ function renderFitxatges(main) {
     const total = parelles.reduce((a, x) => a + (x.fi ? x.minuts : 0), 0), obertes = parelles.filter(x => !x.fi).length; totMes += total;
     html += `<h3>${h(nomTreballador(p))} <span class="hint">· ${perDia.size} ${perDia.size === 1 ? 'dia' : 'dies'} · ${durText(total)}${obertes ? ' · <b class="v-no">' + obertes + (obertes === 1 ? ' entrada sense sortida' : ' entrades sense sortida') + '</b>' : ''}</span></h3>
       <div class="fx-dades">DNI ${h(p.nif || '—')} · Núm. Seguretat Social ${h(p.num_seguretat_social || '—')}</div>
-      <table class="tbl"><thead><tr><th>Dia</th><th>Entrades i sortides</th><th>Hores</th></tr></thead><tbody>${[...perDia.keys()].sort().map(d => { const ps = perDia.get(d); return `<tr><td>${dmy(d)} <span class="hint">${['dg', 'dl', 'dt', 'dc', 'dj', 'dv', 'ds'][new Date(d + 'T12:00:00').getDay()]}</span></td><td>${ps.map(x => horaDe(x.inici.moment) + enllacGps(x.inici) + ' – ' + (x.fi ? horaDe(x.fi.moment) + enllacGps(x.fi) : '<span class="v-no">sense sortida</span>')).join(' · ')}</td><td>${durText(ps.reduce((a, x) => a + (x.fi ? x.minuts : 0), 0))}</td></tr>`; }).join('')}</tbody></table>`;
+      <table class="tbl"><thead><tr><th>Dia</th><th>Entrades i sortides</th><th>Hores</th></tr></thead><tbody>${[...perDia.keys()].sort().map(d => { const ps = perDia.get(d); return `<tr><td>${dmy(d)} <span class="hint">${['dg', 'dl', 'dt', 'dc', 'dj', 'dv', 'ds'][new Date(d + 'T12:00:00').getDay()]}</span></td><td>${ps.map(x => horaDe(x.inici.moment) + enllacGps(x.inici, llocs) + ' – ' + (x.fi ? horaDe(x.fi.moment) + enllacGps(x.fi, llocs) : '<span class="v-no">sense sortida</span>')).join(' · ')}</td><td>${durText(ps.reduce((a, x) => a + (x.fi ? x.minuts : 0), 0))}</td></tr>`; }).join('')}</tbody></table>`;
   });
-  const llocs = llocsDeFeina();
   const complets = fitxatgesDelMes(any, mes).filter(f => !st.treb || String(f.treballador_id) === st.treb).sort((a, b) => String(a.moment).localeCompare(String(b.moment)));
-  const llistaHTML = `<table class="tbl"><thead><tr><th>Quan</th><th>Qui</th><th>Què</th><th>Lloc més proper</th><th>Observacions</th></tr></thead><tbody>${complets.map(f => `<tr><td>${dmyhm(f.moment)}</td><td>${h(nomTreballador(C.get('treballadors', f.treballador_id)))}</td><td>${f.tipus === 'entrada' ? '<span class="xip ok">entrada</span>' : '<span class="xip">sortida</span>'}</td><td>${proximitatHTML(f, llocs)}${f.lat != null ? ' ' + enllacGps(f) : ''}</td><td>${h(f.observacions || '')}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">Cap fitxatge aquest mes.</td></tr>'}</tbody></table>`;
+  const llistaHTML = `<table class="tbl"><thead><tr><th>Quan</th><th>Qui</th><th>Què</th><th>Lloc més proper</th><th>Observacions</th></tr></thead><tbody>${complets.map(f => `<tr><td>${dmyhm(f.moment)}</td><td>${h(nomTreballador(C.get('treballadors', f.treballador_id)))}</td><td>${f.tipus === 'entrada' ? '<span class="xip ok">entrada</span>' : '<span class="xip">sortida</span>'}</td><td>${proximitatHTML(f, llocs)}${f.lat != null ? ' ' + enllacGps(f, llocs) : ''}</td><td>${h(f.observacions || '')}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">Cap fitxatge aquest mes.</td></tr>'}</tbody></table>`;
   main.innerHTML = `<h1>Fitxatges</h1>
     <p class="sub">Entrades i sortides de jornada registrades des de l’app de cadascú, amb l’hora del servidor i la posició del mòbil (📍 obre el mapa). «Resum diari» és el registre de jornada per persona; «Llista completa», tots els fitxatges en ordre. Les correccions, de moment, des de l’editor de Supabase.</p>
     <div class="bar">
