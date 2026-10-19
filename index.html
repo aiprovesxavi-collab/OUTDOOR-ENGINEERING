@@ -390,6 +390,40 @@
   .fx-pin{ border-radius:50%; color:#fff; font-weight:700; font-size:12px; line-height:22px; text-align:center; border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.35); } .fx-pin.dins{ background:#2f7d4a; } .fx-pin.fora{ background:#c0392b; }
   body.operari .fx-parelles li{ font-size:16px; } body.operari .fx-botons .btn{ height:110px; font-size:26px; }
   #fx-mapa{ height:520px; border:1px solid var(--line-2); border-radius:8px; margin:0 0 12px; background:#eef1ee; }
+  .foto-prev{ width:72px; height:72px; border-radius:50%; object-fit:cover; border:1px solid var(--line-2); vertical-align:middle; margin-right:8px; cursor:pointer; }
+  .aniv{ position:fixed; inset:0; z-index:9000; display:flex; align-items:center; justify-content:center; padding:20px; background:radial-gradient(ellipse at 50% 30%, #fffdf5 0%, #f3f6ef 60%, #e6eee4 100%); overflow:hidden; animation:aniv-fons .6s ease-out; }
+  .aniv-card{ position:relative; max-width:460px; width:100%; text-align:center; background:#fff; border-radius:22px; padding:38px 28px 30px; box-shadow:0 30px 70px rgba(29,42,27,.18); animation:aniv-entra .9s cubic-bezier(.2,.8,.2,1) both; }
+  .aniv-foto{ width:160px; height:160px; border-radius:50%; object-fit:cover; display:block; margin:0 auto 18px; box-shadow:0 0 0 4px #fff, 0 0 0 7px #d9b64a, 0 10px 30px rgba(0,0,0,.15); background:#e6eee4; }
+  .aniv-inicials{ display:flex; align-items:center; justify-content:center; font-size:56px; font-weight:700; color:#2f7d4a; }
+  .aniv-sobre{ font-size:12px; letter-spacing:.28em; text-transform:uppercase; color:#b08d2a; margin:0 0 8px; }
+  .aniv h2{ font-size:34px; font-weight:300; letter-spacing:.01em; color:#1d2a1b; margin:0 0 6px; line-height:1.15; }
+  .aniv h2 b{ font-weight:700; }
+  .aniv p{ color:#5b6858; font-size:16px; margin:10px 0 0; line-height:1.5; }
+  .aniv .btn{ margin-top:22px; padding:12px 28px; font-size:16px; }
+  .aniv-conf{ position:absolute; top:-20px; width:10px; height:16px; border-radius:2px; opacity:.9; animation:aniv-cau linear infinite; }
+  @keyframes aniv-cau{ 0%{ transform:translateY(-20px) rotate(0deg); } 100%{ transform:translateY(110vh) rotate(720deg); } }
+  @keyframes aniv-entra{ from{ opacity:0; transform:translateY(24px) scale(.96); } to{ opacity:1; transform:none; } }
+  @keyframes aniv-fons{ from{ opacity:0; } to{ opacity:1; } }
+  /* aniversari a l'empresa: fons salvia, targeta verd fosc amb medalló daurat dels anys, i fulles que pugen */
+  .aniv.empresa{ background:radial-gradient(ellipse at 50% 20%, #f7f4e8 0%, #e3ead9 55%, #c9d8c4 100%); }
+  .aniv.empresa .aniv-card{ background:linear-gradient(160deg, #2f7d4a 0%, #1b4a2d 100%); color:#fff; border:1px solid rgba(232,207,122,.6); box-shadow:0 30px 70px rgba(20,40,25,.35); animation:aniv-obre 1s cubic-bezier(.2,.8,.2,1) both; padding-top:34px; }
+  .aniv.empresa .aniv-sobre{ color:#e8cf7a; }
+  .aniv.empresa h2{ color:#fff; }
+  .aniv.empresa p{ color:#dfeadf; }
+  .aniv.empresa .btn{ background:#e8cf7a; border-color:#e8cf7a; color:#1b2f1f; }
+  .aniv.empresa .btn:hover{ background:#f1dc90; border-color:#f1dc90; }
+  .aniv-fotowrap{ position:relative; display:inline-block; margin:0 12px 22px; vertical-align:top; }
+  .aniv.empresa .aniv-foto{ margin:0; box-shadow:0 0 0 4px #1b4a2d, 0 0 0 7px #e8cf7a, 0 10px 30px rgba(0,0,0,.35); background:#3b8f5b; }
+  .aniv.empresa .aniv-inicials{ color:#fff; }
+  .aniv-anys{ position:absolute; right:-10px; bottom:-6px; width:66px; height:66px; border-radius:50%; background:#e8cf7a; color:#1b2f1f; display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1; box-shadow:0 0 0 3px #1b4a2d, 0 6px 14px rgba(0,0,0,.35); animation:aniv-pop .7s .55s cubic-bezier(.3,1.6,.5,1) both; }
+  .aniv-anys b{ font-size:26px; font-weight:700; }
+  .aniv-anys span{ font-size:9px; letter-spacing:.14em; text-transform:uppercase; margin-top:3px; }
+  .aniv-fulla{ position:absolute; bottom:-30px; width:14px; height:14px; border-radius:0 100%; background:#5f9f70; opacity:0; animation:aniv-puja linear infinite; }
+  @keyframes aniv-puja{ 0%{ transform:translateY(0) rotate(0deg); opacity:0; } 12%{ opacity:.8; } 100%{ transform:translateY(-115vh) rotate(320deg); opacity:0; } }
+  @keyframes aniv-obre{ from{ opacity:0; transform:perspective(900px) rotateY(-24deg) scale(.94); } to{ opacity:1; transform:none; } }
+  @keyframes aniv-pop{ from{ transform:scale(0) rotate(-40deg); } to{ transform:scale(1) rotate(0deg); } }
+  @media (max-width:480px){ .aniv-fotowrap{ margin:0 8px 18px; } .aniv-fotowrap .aniv-foto{ width:130px; height:130px; } .aniv-fotowrap .aniv-inicials{ font-size:46px; } .aniv-anys{ width:58px; height:58px; right:-10px; } .aniv-anys b{ font-size:22px; } }
+  @media (prefers-reduced-motion: reduce){ .aniv-conf, .aniv-fulla{ display:none; } .aniv-card, .aniv, .aniv-anys{ animation:none; } }
   .fx-lluny{ color:#c0392b; font-weight:600; } .fx-aprop{ color:#1e5c35; }
   .fx-llegenda i{ display:inline-block; width:12px; height:12px; border-radius:50%; margin:0 4px 0 10px; vertical-align:-1px; border:2px solid #fff; box-shadow:0 0 0 1px #888; }
   .fx-dades{ color:var(--ink-2); font-size:13px; margin:-6px 0 8px; }
@@ -1245,6 +1279,8 @@ const SCHEMA = {
         { key: 'nom', label: 'Nom', type: 'text', required: true },
         { key: 'cognoms', label: 'Cognoms', type: 'text', dup: 'similar' },
         { key: 'nif', label: 'NIF', type: 'text' },
+        { key: 'data_naixement', label: 'Data de naixement', type: 'date', hint: 'el dia de l’aniversari, l’app felicita la persona en entrar-hi' },
+        { key: 'foto', label: 'Fotografia', type: 'file', folder: 'treballadors', imatge: 640, hint: 'es retalla quadrada i es redueix a 640×640 abans de desar-la' },
         { key: 'num_seguretat_social', label: 'Número de la Seguretat Social', type: 'text' },
         { key: 'telefon', label: 'Telèfon', type: 'text' },
         { key: 'email', label: 'Correu personal', type: 'email' },
@@ -1254,7 +1290,7 @@ const SCHEMA = {
         { key: 'titol_signatura', label: 'Titulació sota la signatura', type: 'textarea', hint: 'als pressupostos d’agrupació, sota el nom; una línia per títol' },
         { key: 'carril_incidencies', label: 'Carril a les incidències', type: 'select', options: OPT.carril_inc, hint: 'buit = segons el rol: tècnic → operari; oficina i administrador → tècnic' },
         { key: 'equip_id', label: 'Equip', type: 'ref', ref: 'equips' },
-        { key: 'data_alta', label: 'Data d’alta', type: 'date' },
+        { key: 'data_alta', label: 'Data d’alta', type: 'date', hint: 'entrada a l’empresa: cada any, aquest dia, l’app felicita la persona pels anys que hi porta' },
         { key: 'data_baixa', label: 'Data de baixa', type: 'date' },
         { key: 'adreca', label: 'Adreça', type: 'text' },
         { key: 'cp', label: 'CP', type: 'text' },
@@ -1848,6 +1884,7 @@ async function start() {
   catch (e) { renderLogin('No s’han pogut carregar les taules: ' + friendly(e)); return; }
   recordaUsuari();
   renderApp();
+  mostraFelicitacions();
   if (faltes.length) toastErr('Taules que la base de dades encara no té: ' + faltes.join(', ') + '. Executa el fitxer SQL que les crea (o «notify pgrst, \'reload schema\'» si acabes de fer-ho).');
 }
 
@@ -1962,6 +1999,7 @@ function renderMain() {
   }
   main.innerHTML = html;
   bindMain(td);
+  ompleMiniatures(main);
 }
 
 /* ---------- Formulari ---------- */
@@ -2022,8 +2060,8 @@ function inputHTML(f, vals, row) {
     case 'datetime': return `<input type="datetime-local" ${n} ${req} value="${h(v ? aLocalDT(v) : '')}">`;
     case 'email': return `<input type="email" ${n} ${req} value="${h(v)}">`;
     case 'file': return `<div class="file">
-        ${v ? `<span>${h(String(v).split('/').pop())}</span><button type="button" class="btn ghost small" data-open="${h(v)}">Obre</button>` : '<span class="hint">cap fitxer</span>'}
-        <input type="file" ${n} accept="application/pdf"><input type="hidden" name="${f.key}__actual" value="${h(v || '')}">
+        ${f.imatge ? (v ? `<img class="ic-mini foto-prev" data-adj="${h(v)}" alt="foto">` : '<span class="hint">cap foto</span>') : v ? `<span>${h(String(v).split('/').pop())}</span><button type="button" class="btn ghost small" data-open="${h(v)}">Obre</button>` : '<span class="hint">cap fitxer</span>'}
+        <input type="file" ${n} accept="${f.imatge ? 'image/*' : 'application/pdf'}"><input type="hidden" name="${f.key}__actual" value="${h(v || '')}">
       </div>`;
     default: return `<input type="text" ${n} ${req} lang="ca" value="${h(v)}">`;
   }
@@ -2485,9 +2523,11 @@ async function buildPayload(fields, raw) {
       case 'select': payload[f.key] = v === '' || v == null ? null : (f.bool ? v === 'true' : (f.num ? Number(v) : v)); break;
       case 'file': {
         if (v) {
-          const path = `${f.folder}/${Date.now()}_${v.name.replace(/[^\w.\-]+/g, '_')}`;
-          const { error } = await sb.storage.from(BUCKET).upload(path, v);
-          if (error) throw new Error('No s’ha pogut pujar el PDF: ' + friendly(error));
+          let fitxer = v, nom = v.name.replace(/[^\w.\-]+/g, '_');
+          if (f.imatge) { fitxer = await quadraImatge(v, f.imatge); nom = nom.replace(/\.[^.]+$/, '') + '.jpg'; }
+          const path = `${f.folder}/${Date.now()}_${nom}`;
+          const { error } = await sb.storage.from(BUCKET).upload(path, fitxer, f.imatge ? { contentType: 'image/jpeg' } : undefined);
+          if (error) throw new Error('No s’ha pogut pujar el fitxer: ' + friendly(error));
           payload[f.key] = path;
         } else payload[f.key] = raw[f.key + '__actual'] || null;
         break;
@@ -4841,6 +4881,101 @@ function renderCalendariAccions(main) {
   main.querySelectorAll('[data-accio]').forEach(el => el.addEventListener('click', () => { st.sel = Number(el.dataset.accio); renderMain(); const d = $('#ca-detall'); if (d && d.scrollIntoView) d.scrollIntoView({ block: 'nearest' }); }));
   if ($('#ca-tanca')) $('#ca-tanca').addEventListener('click', () => { st.sel = null; renderMain(); });
   if ($('#ca-obre')) $('#ca-obre').addEventListener('click', () => { state.inc.vista = 'diagrama'; state.inc.id = sel.inc.id; state.inc.sel = sel.a.id; state.inc.form = null; state.inc.capa = 'interna'; state.mode = 'consulta'; state.table = 'incidencies'; renderApp(); window.scrollTo({ top: 0 }); });
+}
+
+/* =====================================================================
+   ANIVERSARIS: foto quadrada del treballador i felicitació el dia de l'aniversari (el primer cop que s'entra a l'app aquell dia)
+   ===================================================================== */
+// retalla la imatge quadrada pel centre i la redueix a mida×mida (JPEG); si el navegador no pot, la deixa tal qual
+function quadraImatge(file, mida) {
+  return new Promise(res => {
+    try {
+      const canvas = document.createElement('canvas'); const ctx = canvas.getContext && canvas.getContext('2d');
+      if (!ctx || !window.URL || !window.Image) return res(file);
+      const img = new Image(); const url = URL.createObjectURL(file);
+      img.onload = () => { try {
+        const c = Math.min(img.naturalWidth, img.naturalHeight), sx = (img.naturalWidth - c) / 2, sy = (img.naturalHeight - c) / 2;
+        canvas.width = mida; canvas.height = mida; ctx.drawImage(img, sx, sy, c, c, 0, 0, mida, mida); URL.revokeObjectURL(url);
+        canvas.toBlob(b => res(b || file), 'image/jpeg', 0.88);
+      } catch (e) { res(file); } };
+      img.onerror = () => { URL.revokeObjectURL(url); res(file); };
+      img.src = url;
+    } catch (e) { res(file); }
+  });
+}
+// el dia i el mes d'una data coincideixen amb avui? (qui va néixer o va entrar un 29 de febrer, els anys no bixestos compta el 28)
+function esAvuiAniversari(iso) {
+  if (!iso) return false;
+  const d = new Date(), md = String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'), dies = [md];
+  const any = d.getFullYear(), traspas = (any % 4 === 0 && any % 100 !== 0) || any % 400 === 0;
+  if (md === '02-28' && !traspas) dies.push('02-29');
+  return dies.includes(String(iso).slice(5, 10));
+}
+const anysDes = iso => new Date().getFullYear() - Number(String(iso).slice(0, 4));   // anys sencers (el dia i el mes ja coincideixen)
+function aniversarisAvui() { return C.rows('treballadors').filter(t => t.actiu && esAvuiAniversari(t.data_naixement)); }
+// aniversari de l'entrada a l'empresa: data d'alta, com a mínim un any, i que la persona no sigui de baixa
+function aniversarisEmpresaAvui() {
+  const avuiISO = ymd(new Date());
+  return C.rows('treballadors').filter(t => t.actiu && (!t.data_baixa || String(t.data_baixa) > avuiISO) && esAvuiAniversari(t.data_alta) && anysDes(t.data_alta) >= 1);
+}
+const deNom = nom => (/^[aeiouàèéíòóúh]/i.test(nom) ? 'd’' : 'de ') + nom;
+const ANYS_LLETRES = ['', 'un', 'dos', 'tres', 'quatre', 'cinc', 'sis', 'set', 'vuit', 'nou', 'deu', 'onze', 'dotze', 'tretze', 'catorze', 'quinze', 'setze', 'disset', 'divuit', 'dinou', 'vint'];
+const anysText = n => (n >= 1 && n <= 20 ? ANYS_LLETRES[n] : String(n)) + (n === 1 ? ' any' : ' anys');
+const majInicial = s => s.charAt(0).toUpperCase() + s.slice(1);
+// caràtula a pantalla sencera; la promesa es resol quan es tanca (botó o clic fora de la targeta)
+function mostraCaratula(classe, fons, targeta) {
+  return new Promise(res => {
+    const el = document.createElement('div'); el.className = 'aniv' + (classe ? ' ' + classe : '');
+    el.innerHTML = `${fons}<div class="aniv-card">${targeta}</div>`;
+    document.body.appendChild(el);
+    const tanca = () => { el.remove(); res(); };
+    el.querySelector('#aniv-tanca').addEventListener('click', tanca);
+    el.addEventListener('click', e => { if (e.target === el) tanca(); });
+  });
+}
+async function mostraAniversaris() {
+  const qui = aniversarisAvui(); if (!qui.length || $('.aniv')) return;
+  const clau = 'gestio_aniversari_' + ymd(new Date()) + '_' + qui.map(t => t.id).join('-');
+  try { if (localStorage.getItem(clau)) return; localStorage.setItem(clau, '1'); } catch (e) {}
+  const jo = treballadorActual();
+  const fotos = await Promise.all(qui.map(t => t.foto ? urlAdjunt(t.foto) : Promise.resolve(null)));
+  const colors = ['#2f7d4a', '#1f5fbf', '#d9b64a', '#8fcf9a', '#e08a2b'];
+  const confeti = Array.from({ length: 36 }, (_, i) => `<i class="aniv-conf" style="left:${(i * 2.7 + (i % 3) * 1.1) % 100}%; background:${colors[i % colors.length]}; animation-duration:${6 + (i % 5) * 1.3}s; animation-delay:${-(i % 7) * 1.1}s; transform:rotate(${i * 37}deg)"></i>`).join('');
+  const persones = qui.map((t, i) => ({ t, foto: fotos[i], propi: !!jo && jo.id === t.id }));
+  const propi = persones.find(p => p.propi);
+  const titol = propi ? `<h2>Moltes felicitats, <b>${h(propi.t.nom)}</b>!</h2>` : `<h2>Moltes <b>felicitats</b>!</h2>`;
+  const text = propi
+    ? `Avui és el teu dia. Que el gaudeixis molt: una abraçada de part de tot l’equip d’Outdoor.${persones.length > 1 ? ' I avui també fa anys ' + persones.filter(p => !p.propi).map(p => nomTreballador(p.t)).join(' i ') + '.' : ''}`
+    : (persones.length === 1 ? `Avui és l’aniversari ${deNom(nomTreballador(persones[0].t))}. Que tingui un dia ben bonic!` : `Avui fan anys ${persones.map(p => nomTreballador(p.t)).join(' i ')}. Que tinguin un dia ben bonic!`);
+  const fotosHTML = persones.map(p => p.foto ? `<img class="aniv-foto" src="${h(p.foto)}" alt="${h(nomTreballador(p.t))}">` : `<div class="aniv-foto aniv-inicials">${h(inicialsTreballador(p.t))}</div>`).join('');
+  return mostraCaratula('', confeti, `<div class="aniv-sobre">Aniversari</div>${fotosHTML}${titol}<p>${text}</p><button class="btn" id="aniv-tanca">${propi ? 'Gràcies!' : 'Ja ho tinc present'}</button>`);
+}
+// aniversari a l'empresa: targeta verda amb el medalló dels anys; text propi o de la resta
+async function mostraAniversarisEmpresa() {
+  const qui = aniversarisEmpresaAvui(); if (!qui.length || $('.aniv')) return;
+  const clau = 'gestio_anivempresa_' + ymd(new Date()) + '_' + qui.map(t => t.id).join('-');
+  try { if (localStorage.getItem(clau)) return; localStorage.setItem(clau, '1'); } catch (e) {}
+  const jo = treballadorActual();
+  const fotos = await Promise.all(qui.map(t => t.foto ? urlAdjunt(t.foto) : Promise.resolve(null)));
+  const fulles = Array.from({ length: 28 }, (_, i) => `<i class="aniv-fulla" style="left:${(i * 3.6 + (i % 4) * 1.7) % 100}%; width:${10 + (i % 4) * 3}px; height:${10 + (i % 4) * 3}px; background:${['#5f9f70', '#8fc79b', '#3f8a55', '#b9d9a8'][i % 4]}; animation-duration:${8 + (i % 5) * 1.5}s; animation-delay:${-(i % 9) * 1.4}s"></i>`).join('');
+  const persones = qui.map((t, i) => ({ t, foto: fotos[i], anys: anysDes(t.data_alta), propi: !!jo && jo.id === t.id }));
+  const propi = persones.find(p => p.propi);
+  const fotosHTML = persones.map(p => `<div class="aniv-fotowrap">${p.foto ? `<img class="aniv-foto" src="${h(p.foto)}" alt="${h(nomTreballador(p.t))}">` : `<div class="aniv-foto aniv-inicials">${h(inicialsTreballador(p.t))}</div>`}<div class="aniv-anys"><b>${p.anys}</b><span>${p.anys === 1 ? 'any' : 'anys'}</span></div></div>`).join('');
+  const titol = persones.length === 1 || propi
+    ? `<h2><b>${h(majInicial(anysText((propi || persones[0]).anys)))}</b> a Outdoor</h2>`
+    : `<h2>Aniversaris <b>a l’empresa</b></h2>`;
+  const altres = persones.filter(p => !p.propi).map(p => `${nomTreballador(p.t)} (${anysText(p.anys)})`);
+  const text = propi
+    ? `Avui fa ${anysText(propi.anys)} que formes part de l’equip. Gràcies per tot aquest camí: és un orgull tenir-te a Outdoor.${altres.length ? ` Avui també ${altres.length > 1 ? 'celebren' : 'celebra'} l’aniversari a l’empresa ${altres.join(' i ')}.` : ''}`
+    : (persones.length === 1
+      ? `Avui fa ${anysText(persones[0].anys)} que ${nomTreballador(persones[0].t)} forma part de l’equip d’Outdoor. Un bon moment per donar-li l’enhorabona!`
+      : `Avui fan anys a l’empresa ${altres.join(' i ')}. Un bon moment per donar-los l’enhorabona!`);
+  return mostraCaratula('empresa', fulles, `<div class="aniv-sobre">Aniversari a l’empresa</div>${fotosHTML}${titol}<p>${text}</p><button class="btn" id="aniv-tanca">${propi ? 'Gràcies!' : 'Ja ho tinc present'}</button>`);
+}
+// en entrar: primer la felicitació d'aniversari i, quan es tanca, la dels anys a l'empresa (si coincideixen el mateix dia)
+async function mostraFelicitacions() {
+  try { await mostraAniversaris(); } catch (e) {}
+  try { await mostraAniversarisEmpresa(); } catch (e) {}
 }
 
 /* =====================================================================
