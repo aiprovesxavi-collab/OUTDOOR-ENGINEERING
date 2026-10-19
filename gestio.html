@@ -56,20 +56,24 @@
   .home button.consulta strong{ color:var(--blue); }
   .operari .home{ grid-template-columns:1fr; max-width:520px; }
   .operari .home button strong{ font-size:24px; }
-  /* menú d'entrada de l'app (croquis): Fitxar, Tasques piscina i Reports a tota amplada; la resta de dues en dues; títols en majúscules centrats */
+  /* menú d'entrada de l'app (croquis): Fitxar, Tasques piscina i Reports a tota amplada; la resta de dues en dues.
+     Cada casella té el seu color (--p clar → --pf fosc) i una escena dibuixada i difuminada al darrere del text. */
   .operari .home.menu-app{ grid-template-columns:repeat(2, minmax(0, 1fr)); gap:14px; max-width:560px; margin-top:6px; }
-  .menu-app button{ text-align:center; padding:18px 12px; border:2px solid var(--ink); border-radius:12px; min-height:98px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; box-shadow:0 2px 0 rgba(29,42,27,.12); }
-  .menu-app button:hover{ border-color:var(--green); box-shadow:0 3px 0 rgba(47,125,74,.25); }
-  .menu-app button:active{ transform:translateY(1px); box-shadow:none; }
-  .menu-app button.ample{ grid-column:1 / -1; min-height:112px; }
-  .operari .menu-app button strong{ font-size:18px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; line-height:1.2; margin:0; }
-  .operari .menu-app button.ample strong{ font-size:22px; }
-  .operari .menu-app button.ample.llarg strong{ font-size:19px; letter-spacing:.06em; }
-  .menu-app button em.sub{ font-style:normal; font-size:17px; font-weight:500; letter-spacing:.1em; text-transform:uppercase; color:var(--ink); }
-  .menu-app button span{ font-size:13px; color:var(--ink-2); line-height:1.3; }
-  .menu-app button span.pend{ display:inline-block; background:var(--green); color:#fff; border-radius:999px; padding:2px 11px; font-size:13px; font-weight:600; margin-top:2px; }
-  .menu-app button.fitxar{ border-color:var(--green); }
-  .menu-app button.fitxar strong{ color:var(--green); }
+  .menu-app button{ position:relative; overflow:hidden; text-align:left; padding:16px 16px; border:0; border-radius:14px; min-height:104px; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:4px; color:#fff; background:linear-gradient(180deg, var(--p) 0%, var(--pf) 100%); box-shadow:0 4px 12px rgba(0,0,0,.16); }
+  .menu-app button:hover{ filter:brightness(1.06); }
+  .menu-app button:active{ transform:translateY(1px); box-shadow:0 2px 6px rgba(0,0,0,.16); }
+  .menu-app button.ample{ grid-column:1 / -1; min-height:120px; }
+  .menu-app button svg.esc{ position:absolute; top:0; bottom:0; right:0; left:0; width:100%; height:100%; z-index:0; filter:blur(1.2px); pointer-events:none; }
+  .menu-app button.ample svg.esc{ left:auto; width:52%; }
+  .menu-app button::before{ content:""; position:absolute; inset:0; z-index:1; pointer-events:none; background:linear-gradient(90deg, rgba(0,0,0,.34) 0%, rgba(0,0,0,.14) 55%, rgba(0,0,0,0) 82%); }
+  .menu-app button.ample::before{ background:linear-gradient(90deg, rgba(0,0,0,.2) 0%, rgba(0,0,0,.06) 40%, rgba(0,0,0,0) 55%); }
+  .menu-app button > :not(svg){ position:relative; z-index:2; }
+  .operari .menu-app button strong{ font-size:16px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; line-height:1.15; margin:0; text-shadow:0 1px 3px rgba(0,0,0,.4); }
+  .operari .menu-app button.ample strong{ font-size:23px; }
+  .operari .menu-app button.ample.llarg strong{ font-size:20px; letter-spacing:.06em; }
+  .menu-app button em.sub{ font-style:normal; font-size:16px; font-weight:500; letter-spacing:.1em; text-transform:uppercase; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.4); }
+  .menu-app button span{ font-size:13px; color:#fff; opacity:.94; line-height:1.3; text-shadow:0 1px 2px rgba(0,0,0,.4); }
+  .menu-app button span.pend{ display:inline-block; background:#fff; color:var(--pf); border-radius:999px; padding:2px 11px; font-size:12px; font-weight:700; margin-top:3px; opacity:1; text-shadow:none; }
   .operari .main{ padding:14px 12px 90px; max-width:100%; }
   body.operari{ overflow-x:hidden; }
   .operari .grid{ grid-template-columns:1fr; }
@@ -400,6 +404,11 @@
   .fx-botons .btn:disabled{ opacity:.35; cursor:not-allowed; }
   .fx-parelles{ list-style:none; padding:0; margin:0 0 10px; } .fx-parelles li{ display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; }
   .fx-parelles li .en-curs{ color:#1e5c35; font-weight:600; } .fx-total{ font-weight:700; }
+  .fx-regs{ list-style:none; padding:0; margin:0 0 12px; }
+  .fx-regs li{ display:grid; grid-template-columns:78px 52px minmax(0,1fr); gap:8px; align-items:center; padding:9px 0; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; }
+  .fx-regs li b{ font-weight:600; } .fx-regs li.entrada b{ color:#1e5c35; } .fx-regs li.sortida b{ color:#7a4e00; }
+  .fx-regs .fx-hora{ font-size:17px; } .fx-regs .fx-lloc{ font-size:14px; overflow-wrap:anywhere; } .fx-regs .fx-lloc .fx-gps{ margin:0 4px 0 0; }
+  .fx-dia{ font-weight:600; color:var(--ink-2); margin:12px 0 0; font-size:14px; }
   .fx-gps{ text-decoration:none; margin-left:4px; vertical-align:-2px; } .fx-gps svg{ width:12px; height:16px; } .fx-gps.dins{ color:#2f7d4a; } .fx-gps.fora{ color:#c0392b; } .fx-gps.cap{ color:#888; } .fx-sense{ color:#c0392b; font-size:12px; margin-left:5px; }
   .fx-pin{ border-radius:50%; color:#fff; font-weight:700; font-size:12px; line-height:22px; text-align:center; border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.35); } .fx-pin.dins{ background:#2f7d4a; } .fx-pin.fora{ background:#c0392b; }
   body.operari .fx-parelles li{ font-size:16px; } body.operari .fx-botons .btn{ height:110px; font-size:26px; }
@@ -1938,6 +1947,34 @@ function renderApp() {
 }
 
 /* ---------- App d'operari: només tasques i informes ---------- */
+/* Menú de l'app: color de cada casella (--p clar, --pf fosc) i l'escena dibuixada que hi ha al darrere (vectorial, dins el fitxer).
+   Per posar-hi una foto en comptes del dibuix, n'hi ha prou de canviar l'escena per <image href="data:…"> amb la foto reduïda. */
+const COLORS_MENU = {
+  fitxar: '--p:#3a9a5c;--pf:#1e5c35', tasques_piscina: '--p:#3a9ad6;--pf:#0f4f73', informe_tasques_piscina: '--p:#2bb3a3;--pf:#0c5c54',
+  informe_tasques_dates: '--p:#6b7fd6;--pf:#2b3c8c', incidencia_reports: '--p:#ee8a3c;--pf:#9a4410', calendari_accions: '--p:#9a6fd4;--pf:#4f2a80',
+  accions_meves: '--p:#e2635f;--pf:#8c1f1f', nomines: '--p:#d4ad45;--pf:#7a5a10', vacances: '--p:#f0d23a;--pf:#8a7600',
+};
+const escenaMenu = (id, cos) => `<svg class="esc" viewBox="0 0 200 120" preserveAspectRatio="xMaxYMid slice" aria-hidden="true"><defs><linearGradient id="mg-${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--p)"/><stop offset="1" style="stop-color:var(--pf)"/></linearGradient></defs><rect width="200" height="120" fill="url(#mg-${id})"/>${cos}</svg>`;
+const ESCENES_MENU = {
+  // sol que és un rellotge (a les vuit del matí) sobre els turons
+  fitxar: escenaMenu('fitxar', `<g stroke="#ffe9a3" stroke-width="3.5" stroke-linecap="round" opacity=".6"><path d="M128 8v12M128 92v12M84 51h12M160 51h12M97 20l8 8M151 74l8 8M159 20l-8 8M105 74l-8 8"/></g><path d="M0 98c25-16 50-20 80-10s55 14 120-4v36H0z" fill="#000" opacity=".16"/><path d="M0 110c35-14 70-10 110 0s60 2 90-8v18H0z" fill="#000" opacity=".24"/><circle cx="128" cy="51" r="33" fill="#fff4c2"/><circle cx="128" cy="51" r="27" fill="none" stroke="#e8c76a" stroke-width="1.5"/><g stroke="#2a5a3a" stroke-width="2.5" stroke-linecap="round"><path d="M128 28v5M151 51h-5M128 74v-5M105 51h5"/></g><g stroke="#1e3f2a" stroke-width="4" stroke-linecap="round"><path d="M128 51V33M128 51l-13 8"/></g><circle cx="128" cy="51" r="3" fill="#1e3f2a"/>`),
+  // aigua de piscina amb la vorada de rajoles, reflexos i l'escala
+  tasques_piscina: escenaMenu('tp', `<rect x="0" y="0" width="200" height="13" fill="#eef3f6"/><g stroke="#cfd9e0" stroke-width="1.5"><path d="M20 0v13M45 0v13M70 0v13M95 0v13M120 0v13M145 0v13M170 0v13M195 0v13"/></g><rect x="0" y="13" width="200" height="5" fill="#fff" opacity=".35"/><g fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M8 44c12-8 24-8 36 0s24 8 36 0 24-8 36 0 24 8 36 0 24-8 36 0" opacity=".7"/><path d="M-12 68c12-8 24-8 36 0s24 8 36 0 24-8 36 0 24 8 36 0 24-8 36 0 24 8 36 0" opacity=".5"/><path d="M4 92c12-8 24-8 36 0s24 8 36 0 24-8 36 0 24 8 36 0 24-8 36 0" opacity=".35"/></g><g fill="#fff" opacity=".5"><circle cx="40" cy="80" r="2.5"/><circle cx="48" cy="70" r="1.6"/><circle cx="96" cy="100" r="2"/></g><g fill="none" stroke="#f6f8fa" stroke-width="5" stroke-linecap="round"><path d="M143 114V22c0-9 7-14 14-14M185 114V22c0-9-7-14-14-14M149 40h30M149 62h30M149 84h30"/></g><g fill="none" stroke="#8ea4b3" stroke-width="1.6" stroke-linecap="round" opacity=".8"><path d="M145 114V23c0-7 5-12 12-12M187 114V23c0-7-5-12-12-12"/></g>`),
+  // aigua turquesa i una carpeta amb la llista de feines
+  informe_tasques_piscina: escenaMenu('tpp', `<g fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M-10 30c12-8 24-8 36 0s24 8 36 0 24-8 36 0 24 8 36 0 24-8 36 0 24 8 36 0" opacity=".45"/><path d="M-10 64c12-8 24-8 36 0s24 8 36 0 24-8 36 0 24 8 36 0 24-8 36 0 24 8 36 0" opacity=".35"/><path d="M-10 98c12-8 24-8 36 0s24 8 36 0 24-8 36 0 24 8 36 0 24-8 36 0 24 8 36 0" opacity=".25"/></g><g transform="translate(132 20) rotate(5) scale(.88)"><rect x="3" y="4" width="66" height="92" rx="6" fill="#000" opacity=".2"/><rect x="0" y="0" width="66" height="92" rx="6" fill="#4a5a63"/><rect x="5" y="9" width="56" height="78" rx="3" fill="#fbfdfc"/><rect x="20" y="-5" width="26" height="12" rx="4" fill="#aeb9c2"/><rect x="26" y="-2" width="14" height="6" rx="2" fill="#e5ebef"/><g stroke="#b9c9c6" stroke-width="3" stroke-linecap="round"><path d="M24 26h30M24 42h30M24 58h22M24 74h28"/></g><g fill="none" stroke="#1f9c8f" stroke-width="2.2"><rect x="10" y="21" width="9" height="9" rx="2"/><rect x="10" y="37" width="9" height="9" rx="2"/><rect x="10" y="53" width="9" height="9" rx="2"/><rect x="10" y="69" width="9" height="9" rx="2"/><path d="M12 26l2.5 2.5 4-5M12 42l2.5 2.5 4-5" stroke-width="2.5"/></g></g>`),
+  // cel de capvespre amb estels, lluna i un calendari de taula
+  informe_tasques_dates: escenaMenu('td', `<g fill="#fff" opacity=".85"><circle cx="20" cy="18" r="1.4"/><circle cx="52" cy="10" r="1"/><circle cx="84" cy="24" r="1.3"/><circle cx="36" cy="42" r=".9"/><circle cx="178" cy="14" r="1.2"/><circle cx="150" cy="8" r="1"/><circle cx="12" cy="60" r="1"/></g><path d="M66 20a13 13 0 1 0 14 16 10 10 0 0 1-14-16z" fill="#fff4c2" opacity=".9"/><g transform="translate(124 22) scale(.9)"><rect x="3" y="6" width="80" height="90" rx="6" fill="#000" opacity=".22"/><rect x="0" y="2" width="80" height="90" rx="6" fill="#fbfbff"/><rect x="0" y="2" width="80" height="20" rx="6" fill="#4f63c7"/><rect x="0" y="14" width="80" height="8" fill="#4f63c7"/><g fill="none" stroke="#c3cbe8" stroke-width="3" stroke-linecap="round"><path d="M14 8V-2M34 8V-2M54 8V-2M74 8V-2"/></g><text x="40" y="64" text-anchor="middle" font-size="34" font-weight="700" fill="#2b3c8c" font-family="system-ui,sans-serif">15</text><g fill="#c3cbe8"><circle cx="16" cy="82" r="2"/><circle cx="28" cy="82" r="2"/><circle cx="40" cy="82" r="2"/><circle cx="52" cy="82" r="2"/><circle cx="64" cy="82" r="2"/></g></g>`),
+  // canonada que perd aigua, triangle d'avís i clau anglesa
+  incidencia_reports: escenaMenu('rep', `<g transform="translate(26 14) rotate(-35)"><rect x="0" y="8" width="46" height="11" rx="5.5" fill="#9aa7b1"/><path d="M42 1h16l-6 8 6 9H42z" fill="#9aa7b1"/><circle cx="4" cy="13.5" r="2.5" fill="#6b7780"/></g><rect x="0" y="54" width="200" height="22" rx="4" fill="#cfd6db"/><rect x="0" y="54" width="200" height="6" fill="#fff" opacity=".5"/><rect x="0" y="70" width="200" height="6" fill="#000" opacity=".15"/><rect x="140" y="48" width="22" height="34" rx="4" fill="#b8c1c8"/><rect x="142" y="48" width="4" height="34" fill="#fff" opacity=".4"/><path d="M96 60l5 6-4 5" fill="none" stroke="#5c6a74" stroke-width="2"/><g fill="#9fdcff"><path d="M99 82c-4 6-4 10 0 10s4-4 0-10z"/><path d="M107 94c-4 6-4 10 0 10s4-4 0-10z"/><path d="M92 98c-3 5-3 8 0 8s3-3 0-8z"/></g><ellipse cx="100" cy="114" rx="24" ry="4" fill="#9fdcff" opacity=".6"/><g transform="translate(148 4)"><path d="M22 4l22 38H0z" fill="#ffd54a" stroke="#8a3f0a" stroke-width="2.5" stroke-linejoin="round"/><path d="M22 16v12" stroke="#8a3f0a" stroke-width="4" stroke-linecap="round"/><circle cx="22" cy="35" r="2.5" fill="#8a3f0a"/></g>`),
+  // calendari de paret amb franges d'accions i una xinxeta
+  calendari_accions: escenaMenu('cal', `<g transform="translate(118 14) scale(.88)"><rect x="3" y="5" width="96" height="100" rx="5" fill="#000" opacity=".22"/><rect x="0" y="2" width="96" height="100" rx="5" fill="#fdfcff"/><rect x="0" y="2" width="96" height="16" rx="5" fill="#8656c4"/><rect x="0" y="10" width="96" height="8" fill="#8656c4"/><g stroke="#e7e2f3" stroke-width="1.2"><path d="M0 38h96M0 58h96M0 78h96M14 18v84M28 18v84M42 18v84M56 18v84M70 18v84M84 18v84"/></g><rect x="60" y="24" width="30" height="8" rx="4" fill="#e2635f"/><rect x="16" y="42" width="38" height="8" rx="4" fill="#3a9a5c"/><rect x="44" y="62" width="48" height="8" rx="4" fill="#ee8a3c"/><rect x="2" y="82" width="52" height="8" rx="4" fill="#3a9ad6"/><circle cx="48" cy="-1" r="6" fill="#e2635f"/><path d="M48 5v8" stroke="#8c1f1f" stroke-width="2"/></g>`),
+  // llibreta amb caselles (la primera feta), un bolígraf
+  accions_meves: escenaMenu('pend', `<g transform="translate(124 12) rotate(-4) scale(.9)"><rect x="4" y="6" width="84" height="104" rx="5" fill="#000" opacity=".22"/><rect x="0" y="2" width="84" height="104" rx="5" fill="#fffdf7"/><g fill="none" stroke="#9aa7b1" stroke-width="2.5" stroke-linecap="round"><path d="M14 -2v10M30 -2v10M46 -2v10M62 -2v10M78 -2v10"/></g><path d="M14 14v90" stroke="#f1b8b6" stroke-width="1.5"/><g fill="none" stroke="#d9534f" stroke-width="2.2"><rect x="20" y="21" width="10" height="10" rx="2"/><rect x="20" y="41" width="10" height="10" rx="2"/><rect x="20" y="61" width="10" height="10" rx="2"/><rect x="20" y="81" width="10" height="10" rx="2"/></g><path d="M22 26l3 3 5-6" fill="none" stroke="#3a9a5c" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><g stroke="#c9ccd2" stroke-width="3" stroke-linecap="round"><path d="M36 26h36M36 46h28M36 66h34M36 86h24"/></g></g><g transform="translate(84 108) rotate(-50)"><rect x="0" y="-4" width="70" height="8" rx="4" fill="#2b2f38"/><path d="M70 -4l10 4-10 4z" fill="#f0c36a"/><rect x="6" y="-4" width="10" height="8" fill="#d9534f"/></g>`),
+  // sobre amb la nòmina i una pila de monedes
+  nomines: escenaMenu('nom', `<g><ellipse cx="78" cy="104" rx="20" ry="6" fill="#8a6a10"/><ellipse cx="78" cy="98" rx="20" ry="6" fill="#f2d272"/><ellipse cx="78" cy="92" rx="20" ry="6" fill="#8a6a10"/><ellipse cx="78" cy="86" rx="20" ry="6" fill="#f6dc86"/><ellipse cx="78" cy="80" rx="20" ry="6" fill="#8a6a10"/><ellipse cx="78" cy="74" rx="20" ry="6" fill="#fae39a"/><text x="78" y="77.5" text-anchor="middle" font-size="9" font-weight="700" fill="#8a6a10" font-family="system-ui,sans-serif">€</text></g><g transform="translate(112 14) scale(.92)"><path d="M3 44l46-30 46 30v62H3z" fill="#000" opacity=".2"/><path d="M0 40l46-30 46 30v62H0z" fill="#e9d9a8"/><rect x="12" y="4" width="68" height="80" rx="3" fill="#fffdf5"/><text x="46" y="46" text-anchor="middle" font-size="26" font-weight="700" fill="#b08d2a" font-family="system-ui,sans-serif">€</text><g stroke="#cfc6a8" stroke-width="2.5" stroke-linecap="round"><path d="M22 16h48M22 58h48M22 68h30"/></g><path d="M0 40l46 32 46-32v62H0z" fill="#f3e4b5"/><path d="M0 102l46-34 46 34z" fill="#f8ecc4"/></g>`),
+  // platja: sol, mar, sorra, para-sol i gandula
+  vacances: escenaMenu('vac', `<circle cx="40" cy="30" r="16" fill="#fff6cc"/><g stroke="#fff6cc" stroke-width="2.5" stroke-linecap="round" opacity=".7"><path d="M40 6v6M40 48v6M16 30h6M58 30h6M23 13l4 4M53 43l4 4M57 13l-4 4M27 43l-4 4"/></g><rect x="0" y="62" width="200" height="28" fill="#3a9ad6"/><path d="M0 62c20-6 40-6 60 0s40 6 60 0 40-6 60 0 15 3 20 3v8H0z" fill="#7cc4ee"/><rect x="0" y="88" width="200" height="32" fill="#f3dfa0"/><g transform="translate(112 78)"><path d="M0 22L10 6h30l10 16" fill="none" stroke="#7a5a10" stroke-width="3" stroke-linejoin="round"/><rect x="8" y="8" width="34" height="16" rx="3" fill="#3a9ad6"/><path d="M6 24h38" stroke="#2b3c8c" stroke-width="3" stroke-linecap="round"/></g><g transform="translate(160 34) rotate(-12)"><path d="M-30 36a30 30 0 0 1 60 0z" fill="#e2635f"/><path d="M0 36L-24 18A30 30 0 0 1 -8 7z" fill="#fff"/><path d="M0 36L8 7a30 30 0 0 1 16 11z" fill="#fff"/><path d="M0 36v62" stroke="#7a5a10" stroke-width="3" stroke-linecap="round"/></g>`),
+};
 function renderAppOperari() {
   document.body.classList.add('operari'); document.body.classList.remove('ic-full');
   state.mode = 'entrada';
@@ -1955,15 +1992,15 @@ function renderAppOperari() {
     main.innerHTML = `
       ${t ? '' : '<div class="msg err">El teu usuari no té fitxa de treballador amb aquest correu d’accés: demana a l’oficina que t’hi afegeixin.</div>'}
       <div class="home menu-app">
-        <button class="ample fitxar" data-go="fitxar"><strong>Fitxar</strong><em class="sub">Entrada · Sortida</em><span>${h(estatFitxatgeText(t))}</span></button>
-        <button class="ample" data-go="tasques_piscina"><strong>Tasques piscina</strong><span>Nova tasca: mesures, comprovacions i feines</span></button>
-        <button data-go="informe_tasques_piscina"><strong>Tasques per piscina</strong></button>
-        <button data-go="informe_tasques_dates"><strong>Tasques per data</strong></button>
-        <button class="ample llarg" data-go="incidencia_reports"><strong>Reports d’incidències</strong></button>
-        <button data-go="calendari_accions"><strong>Calendari accions</strong></button>
-        <button data-go="accions_meves"><strong>Accions pendents</strong>${(() => { const n = t ? C.rows('incidencia_accions').filter(a => a.actiu && a.estat !== 'finalitzada' && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id) && (C.get('incidencies', a.incidencia_id) || {}).estat === 'oberta').length : 0; return n ? `<span class="pend">${n} ${n === 1 ? 'oberta' : 'obertes'}</span>` : ''; })()}</button>
-        <button data-go="nomines"><strong>Nòmines</strong></button>
-        <button data-go="vacances"><strong>Vacances</strong></button>
+        <button class="ample" data-go="fitxar" style="${COLORS_MENU.fitxar}"><strong>Fitxar</strong><em class="sub">Entrada · Sortida</em><span>${h(estatFitxatgeText(t))}</span>${ESCENES_MENU.fitxar}</button>
+        <button class="ample" data-go="tasques_piscina" style="${COLORS_MENU.tasques_piscina}"><strong>Tasques piscina</strong><span>Nova tasca: mesures, comprovacions i feines</span>${ESCENES_MENU.tasques_piscina}</button>
+        <button data-go="informe_tasques_piscina" style="${COLORS_MENU.informe_tasques_piscina}"><strong>Tasques per piscina</strong>${ESCENES_MENU.informe_tasques_piscina}</button>
+        <button data-go="informe_tasques_dates" style="${COLORS_MENU.informe_tasques_dates}"><strong>Tasques per data</strong>${ESCENES_MENU.informe_tasques_dates}</button>
+        <button class="ample llarg" data-go="incidencia_reports" style="${COLORS_MENU.incidencia_reports}"><strong>Reports d’incidències</strong>${ESCENES_MENU.incidencia_reports}</button>
+        <button data-go="calendari_accions" style="${COLORS_MENU.calendari_accions}"><strong>Calendari accions</strong>${ESCENES_MENU.calendari_accions}</button>
+        <button data-go="accions_meves" style="${COLORS_MENU.accions_meves}"><strong>Accions pendents</strong>${(() => { const n = t ? C.rows('incidencia_accions').filter(a => a.actiu && a.estat !== 'finalitzada' && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id) && (C.get('incidencies', a.incidencia_id) || {}).estat === 'oberta').length : 0; return n ? `<span class="pend">${n} ${n === 1 ? 'oberta' : 'obertes'}</span>` : ''; })()}${ESCENES_MENU.accions_meves}</button>
+        <button data-go="nomines" style="${COLORS_MENU.nomines}"><strong>Nòmines</strong>${ESCENES_MENU.nomines}</button>
+        <button data-go="vacances" style="${COLORS_MENU.vacances}"><strong>Vacances</strong>${ESCENES_MENU.vacances}</button>
       </div>`;
     main.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { state.table = b.dataset.go; state.editing = null; renderApp(); }));
     return;
@@ -5035,27 +5072,57 @@ function posicioActual() {
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 });
   });
 }
+// el lloc d'un fitxatge, per a l'app: el lloc nostre més proper si és a menys de 300 m; si no, a quina distància queda del més proper; o sense GPS
+function llocFitxatgeText(f, llocs) {
+  if (f.lat == null || f.lng == null) return '<span class="fx-lluny">sense GPS</span>';
+  const p = llocMesProper(Number(f.lat), Number(f.lng), llocs); if (!p) return '<span class="hint">posició desada</span>';
+  return p.m <= RADI_LLOC_FEINA_M ? `<span class="fx-aprop">${h(p.nom)}</span>` : `<span class="fx-lluny">a ${distText(p.m)} de ${h(p.nom)}</span>`;
+}
+// Fitxar (app): l'estat, els dos botons i la llista d'entrades i sortides amb el lloc de cada una. Sense hores treballades ni totals.
 function renderFitxar(main) {
-  const t = treballadorActual(), st = state.fx, avuiL = ymd(new Date());
+  const t = treballadorActual(), st = state.fx, avuiL = ymd(new Date()), llocs = llocsDeFeina();
   const regs = t ? fitxatgesDe(t.id) : [], ultim = regs[regs.length - 1], dins = !!ultim && ultim.tipus === 'entrada', abs = absenciaAvui(t);
-  const parelles = parellesFitxatge(regs), dAvui = parelles.filter(p => p.dia === avuiL), minAvui = dAvui.reduce((s, p) => s + p.minuts, 0);
-  const perDia = new Map(); parelles.forEach(p => { if (p.dia === avuiL) return; if (!perDia.has(p.dia)) perDia.set(p.dia, []); perDia.get(p.dia).push(p); });
-  const dies = [...perDia.keys()].sort().reverse().slice(0, 14);
+  const dAvui = regs.filter(f => ymd(new Date(f.moment)) === avuiL);
+  const perDia = new Map(); regs.forEach(f => { const d = ymd(new Date(f.moment)); if (d === avuiL) return; if (!perDia.has(d)) perDia.set(d, []); perDia.get(d).push(f); });
+  const dies = [...perDia.keys()].sort().reverse().slice(0, 7);
   const estat = !t ? '' : abs ? `<div class="fx-estat abs">Avui consta de <b>${h(TIPUS_ABS[abs.tipus].toLowerCase())}</b>: no es fitxa.</div>`
-    : dins ? `<div class="fx-estat dins"><span class="rellotge">${horaDe(new Date())}</span>Dins des de les <b>${horaDe(ultim.moment)}</b>${ymd(new Date(ultim.moment)) !== avuiL ? ' del ' + dmy(ymd(new Date(ultim.moment))) : ''} · ${durText((Date.now() - new Date(ultim.moment)) / 60000)}</div>`
+    : dins ? `<div class="fx-estat dins"><span class="rellotge">${horaDe(new Date())}</span>Dins des de les <b>${horaDe(ultim.moment)}</b>${ymd(new Date(ultim.moment)) !== avuiL ? ' del ' + dmy(ymd(new Date(ultim.moment))) : ''}</div>`
     : `<div class="fx-estat fora"><span class="rellotge">${horaDe(new Date())}</span>${ultim && ymd(new Date(ultim.moment)) === avuiL ? 'Fora des de les <b>' + horaDe(ultim.moment) + '</b>' : 'Encara no has fitxat avui'}</div>`;
-  const parellaHTML = p => `<li><span>${horaDe(p.inici.moment)}${enllacGps(p.inici)} – ${p.fi ? horaDe(p.fi.moment) + enllacGps(p.fi) : '<span class="en-curs">en curs</span>'}</span><span>${durText(p.minuts)}</span></li>`;
+  const filaHTML = f => `<li class="fx-reg ${f.tipus}"><b>${f.tipus === 'entrada' ? 'Entrada' : 'Sortida'}</b><span class="fx-hora">${horaDe(f.moment)}</span><span class="fx-lloc">${f.lat != null && f.lng != null ? enllacGps(f, llocs) : ''}${llocFitxatgeText(f, llocs)}</span></li>`;
   main.innerHTML = `<h1>Fitxar</h1>
     ${!t ? '<div class="msg err">El teu usuari no té fitxa de treballador amb aquest correu d’accés: demana a l’oficina que t’hi afegeixin.</div>' : `<p class="sub">${h(nomTreballador(t))} · ${dmy(avuiL)}</p>`}
     ${estat}
     <div id="ferr"></div>
     <div class="fx-botons"><button class="btn fx-entro" id="fx-entro" ${!t || dins || abs || st.ocupat ? 'disabled' : ''}>ENTRO</button><button class="btn fx-surto" id="fx-surto" ${!t || !dins || abs || st.ocupat ? 'disabled' : ''}>SURTO</button></div>
     <p class="hint">${st.ocupat ? 'Obtenint la posició del mòbil…' : 'L’hora la posa el servidor (no el rellotge del mòbil); es desa també la posició del mòbil.'}</p>
-    <h3>Avui${dAvui.length ? ` · <span class="fx-total">${durText(minAvui)}</span>` : ''}</h3>
-    ${dAvui.length ? `<ul class="fx-parelles">${dAvui.map(parellaHTML).join('')}</ul>` : '<p class="hint">Cap fitxatge avui.</p>'}
-    ${dies.length ? `<h3>Darrers dies</h3><table class="tbl"><thead><tr><th>Dia</th><th>Entrades i sortides</th><th>Total</th></tr></thead><tbody>${dies.map(d => { const ps = perDia.get(d); return `<tr><td>${dmy(d)}</td><td>${ps.map(p => horaDe(p.inici.moment) + '–' + (p.fi ? horaDe(p.fi.moment) : '<span class="v-no">sense sortida</span>')).join(', ')}</td><td>${durText(ps.reduce((a, p) => a + (p.fi ? p.minuts : 0), 0))}</td></tr>`; }).join('')}</tbody></table>` : ''}`;
+    <h3>Avui</h3>
+    ${dAvui.length ? `<ul class="fx-regs">${dAvui.map(filaHTML).join('')}</ul>` : '<p class="hint">Cap fitxatge avui.</p>'}
+    ${dies.length ? `<h3>Darrers dies</h3>${dies.map(d => `<div class="fx-dia">${nomDia(d)} ${dmy(d)}</div><ul class="fx-regs">${perDia.get(d).map(filaHTML).join('')}</ul>`).join('')}` : ''}`;
   if ($('#fx-entro')) $('#fx-entro').addEventListener('click', () => fitxa('entrada'));
   if ($('#fx-surto')) $('#fx-surto').addEventListener('click', () => fitxa('sortida'));
+}
+/* Sortida i posta del sol, per avisar quan es fitxa de nit (equació de la sortida del sol, precisió d'uns minuts).
+   Es calcula amb la posició del mòbil; si no n'hi ha, amb la de Sant Cugat (només per a aquest càlcul). */
+const POSICIO_SOL_PER_DEFECTE = { lat: 41.47, lng: 2.08 };
+const MARGE_NIT_MIN = 45;   // minuts abans de la sortida del sol i després de la posta a partir dels quals es considera de nit
+function solDelDia(d, lat, lng) {
+  const rad = Math.PI / 180, J2000 = 2451545;
+  const jDia = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 12) / 86400000 + 2440587.5;   // dia julià al migdia UTC del dia (local)
+  const n = Math.round(jDia - J2000 + 0.0008), Js = n - lng / 360;
+  const M = ((357.5291 + 0.98560028 * Js) % 360 + 360) % 360;
+  const Cc = 1.9148 * Math.sin(M * rad) + 0.02 * Math.sin(2 * M * rad) + 0.0003 * Math.sin(3 * M * rad);
+  const L = ((M + Cc + 180 + 102.9372) % 360 + 360) % 360;
+  const Jt = J2000 + Js + 0.0053 * Math.sin(M * rad) - 0.0069 * Math.sin(2 * L * rad);
+  const sinDec = Math.sin(L * rad) * Math.sin(23.4397 * rad), dec = Math.asin(sinDec);
+  const cosW = (Math.sin(-0.833 * rad) - Math.sin(lat * rad) * sinDec) / (Math.cos(lat * rad) * Math.cos(dec));
+  if (!(cosW >= -1 && cosW <= 1)) return null;   // sol de mitjanit o nit polar: no s'avisa
+  const w = Math.acos(cosW) / rad / 360, aMs = J => (J - 2440587.5) * 86400000;
+  return { sortida: aMs(Jt - w), posta: aMs(Jt + w) };
+}
+// és de nit en aquest moment? (més de 45 min abans de la sortida del sol o després de la posta del dia)
+function esDeNit(ara, lat, lng) {
+  const sol = solDelDia(new Date(ara), lat, lng); if (!sol) return null;
+  return { nit: +ara < sol.sortida - MARGE_NIT_MIN * 60000 || +ara > sol.posta + MARGE_NIT_MIN * 60000, sol };
 }
 async function fitxa(tipus) {
   const t = treballadorActual(), st = state.fx; if (!t || st.ocupat) return;
@@ -5063,6 +5130,9 @@ async function fitxa(tipus) {
   let pos = null, motiu = '';
   try { pos = await posicioActual(); } catch (e) { motiu = e && e.message ? e.message : 'sense GPS'; }
   if (!pos && !confirm('No s’ha pogut obtenir la posició del mòbil (' + motiu + '). Vols fitxar igualment? Quedarà anotat que és sense GPS.')) { st.ocupat = false; renderMain(); return; }
+  // avís de nit: de moment només és un avís, no es desa res
+  const nit = esDeNit(Date.now(), pos ? pos.lat : POSICIO_SOL_PER_DEFECTE.lat, pos ? pos.lng : POSICIO_SOL_PER_DEFECTE.lng);
+  if (nit && nit.nit && !confirm('És de nit: avui el sol ' + (+Date.now() < nit.sol.sortida ? 'surt a les ' + horaDe(nit.sol.sortida) : 's’ha post a les ' + horaDe(nit.sol.posta)) + ' i ara són les ' + horaDe(Date.now()) + '. Vols fitxar igualment?')) { st.ocupat = false; renderMain(); return; }
   const r = await sb.from('fitxatges').insert({ treballador_id: t.id, tipus, lat: pos ? pos.lat : null, lng: pos ? pos.lng : null, precisio: pos ? pos.prec : null, observacions: pos ? null : 'sense GPS: ' + motiu }).select('id, moment').single();
   st.ocupat = false;
   if (r.error) { renderMain(); showFormError(friendly(r.error)); return; }
