@@ -400,11 +400,6 @@
   .fx-botons .btn:disabled{ opacity:.35; cursor:not-allowed; }
   .fx-parelles{ list-style:none; padding:0; margin:0 0 10px; } .fx-parelles li{ display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; }
   .fx-parelles li .en-curs{ color:#1e5c35; font-weight:600; } .fx-total{ font-weight:700; }
-  .fx-regs{ list-style:none; padding:0; margin:0 0 12px; }
-  .fx-regs li{ display:grid; grid-template-columns:78px 52px minmax(0,1fr); gap:8px; align-items:center; padding:9px 0; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; }
-  .fx-regs li b{ font-weight:600; } .fx-regs li.entrada b{ color:#1e5c35; } .fx-regs li.sortida b{ color:#7a4e00; }
-  .fx-regs .fx-hora{ font-size:17px; } .fx-regs .fx-lloc{ font-size:14px; overflow-wrap:anywhere; } .fx-regs .fx-lloc .fx-gps{ margin:0 4px 0 0; }
-  .fx-dia{ font-weight:600; color:var(--ink-2); margin:12px 0 0; font-size:14px; }
   .fx-gps{ text-decoration:none; margin-left:4px; vertical-align:-2px; } .fx-gps svg{ width:12px; height:16px; } .fx-gps.dins{ color:#2f7d4a; } .fx-gps.fora{ color:#c0392b; } .fx-gps.cap{ color:#888; } .fx-sense{ color:#c0392b; font-size:12px; margin-left:5px; }
   .fx-pin{ border-radius:50%; color:#fff; font-weight:700; font-size:12px; line-height:22px; text-align:center; border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.35); } .fx-pin.dins{ background:#2f7d4a; } .fx-pin.fora{ background:#c0392b; }
   body.operari .fx-parelles li{ font-size:16px; } body.operari .fx-botons .btn{ height:110px; font-size:26px; }
@@ -5040,57 +5035,27 @@ function posicioActual() {
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 });
   });
 }
-// el lloc d'un fitxatge, per a l'app: el lloc nostre més proper si és a menys de 300 m; si no, a quina distància queda del més proper; o sense GPS
-function llocFitxatgeText(f, llocs) {
-  if (f.lat == null || f.lng == null) return '<span class="fx-lluny">sense GPS</span>';
-  const p = llocMesProper(Number(f.lat), Number(f.lng), llocs); if (!p) return '<span class="hint">posició desada</span>';
-  return p.m <= RADI_LLOC_FEINA_M ? `<span class="fx-aprop">${h(p.nom)}</span>` : `<span class="fx-lluny">a ${distText(p.m)} de ${h(p.nom)}</span>`;
-}
-// Fitxar (app): l'estat, els dos botons i la llista d'entrades i sortides amb el lloc de cada una. Sense hores treballades ni totals.
 function renderFitxar(main) {
-  const t = treballadorActual(), st = state.fx, avuiL = ymd(new Date()), llocs = llocsDeFeina();
+  const t = treballadorActual(), st = state.fx, avuiL = ymd(new Date());
   const regs = t ? fitxatgesDe(t.id) : [], ultim = regs[regs.length - 1], dins = !!ultim && ultim.tipus === 'entrada', abs = absenciaAvui(t);
-  const dAvui = regs.filter(f => ymd(new Date(f.moment)) === avuiL);
-  const perDia = new Map(); regs.forEach(f => { const d = ymd(new Date(f.moment)); if (d === avuiL) return; if (!perDia.has(d)) perDia.set(d, []); perDia.get(d).push(f); });
-  const dies = [...perDia.keys()].sort().reverse().slice(0, 7);
+  const parelles = parellesFitxatge(regs), dAvui = parelles.filter(p => p.dia === avuiL), minAvui = dAvui.reduce((s, p) => s + p.minuts, 0);
+  const perDia = new Map(); parelles.forEach(p => { if (p.dia === avuiL) return; if (!perDia.has(p.dia)) perDia.set(p.dia, []); perDia.get(p.dia).push(p); });
+  const dies = [...perDia.keys()].sort().reverse().slice(0, 14);
   const estat = !t ? '' : abs ? `<div class="fx-estat abs">Avui consta de <b>${h(TIPUS_ABS[abs.tipus].toLowerCase())}</b>: no es fitxa.</div>`
-    : dins ? `<div class="fx-estat dins"><span class="rellotge">${horaDe(new Date())}</span>Dins des de les <b>${horaDe(ultim.moment)}</b>${ymd(new Date(ultim.moment)) !== avuiL ? ' del ' + dmy(ymd(new Date(ultim.moment))) : ''}</div>`
+    : dins ? `<div class="fx-estat dins"><span class="rellotge">${horaDe(new Date())}</span>Dins des de les <b>${horaDe(ultim.moment)}</b>${ymd(new Date(ultim.moment)) !== avuiL ? ' del ' + dmy(ymd(new Date(ultim.moment))) : ''} · ${durText((Date.now() - new Date(ultim.moment)) / 60000)}</div>`
     : `<div class="fx-estat fora"><span class="rellotge">${horaDe(new Date())}</span>${ultim && ymd(new Date(ultim.moment)) === avuiL ? 'Fora des de les <b>' + horaDe(ultim.moment) + '</b>' : 'Encara no has fitxat avui'}</div>`;
-  const filaHTML = f => `<li class="fx-reg ${f.tipus}"><b>${f.tipus === 'entrada' ? 'Entrada' : 'Sortida'}</b><span class="fx-hora">${horaDe(f.moment)}</span><span class="fx-lloc">${f.lat != null && f.lng != null ? enllacGps(f, llocs) : ''}${llocFitxatgeText(f, llocs)}</span></li>`;
+  const parellaHTML = p => `<li><span>${horaDe(p.inici.moment)}${enllacGps(p.inici)} – ${p.fi ? horaDe(p.fi.moment) + enllacGps(p.fi) : '<span class="en-curs">en curs</span>'}</span><span>${durText(p.minuts)}</span></li>`;
   main.innerHTML = `<h1>Fitxar</h1>
     ${!t ? '<div class="msg err">El teu usuari no té fitxa de treballador amb aquest correu d’accés: demana a l’oficina que t’hi afegeixin.</div>' : `<p class="sub">${h(nomTreballador(t))} · ${dmy(avuiL)}</p>`}
     ${estat}
     <div id="ferr"></div>
     <div class="fx-botons"><button class="btn fx-entro" id="fx-entro" ${!t || dins || abs || st.ocupat ? 'disabled' : ''}>ENTRO</button><button class="btn fx-surto" id="fx-surto" ${!t || !dins || abs || st.ocupat ? 'disabled' : ''}>SURTO</button></div>
     <p class="hint">${st.ocupat ? 'Obtenint la posició del mòbil…' : 'L’hora la posa el servidor (no el rellotge del mòbil); es desa també la posició del mòbil.'}</p>
-    <h3>Avui</h3>
-    ${dAvui.length ? `<ul class="fx-regs">${dAvui.map(filaHTML).join('')}</ul>` : '<p class="hint">Cap fitxatge avui.</p>'}
-    ${dies.length ? `<h3>Darrers dies</h3>${dies.map(d => `<div class="fx-dia">${nomDia(d)} ${dmy(d)}</div><ul class="fx-regs">${perDia.get(d).map(filaHTML).join('')}</ul>`).join('')}` : ''}`;
+    <h3>Avui${dAvui.length ? ` · <span class="fx-total">${durText(minAvui)}</span>` : ''}</h3>
+    ${dAvui.length ? `<ul class="fx-parelles">${dAvui.map(parellaHTML).join('')}</ul>` : '<p class="hint">Cap fitxatge avui.</p>'}
+    ${dies.length ? `<h3>Darrers dies</h3><table class="tbl"><thead><tr><th>Dia</th><th>Entrades i sortides</th><th>Total</th></tr></thead><tbody>${dies.map(d => { const ps = perDia.get(d); return `<tr><td>${dmy(d)}</td><td>${ps.map(p => horaDe(p.inici.moment) + '–' + (p.fi ? horaDe(p.fi.moment) : '<span class="v-no">sense sortida</span>')).join(', ')}</td><td>${durText(ps.reduce((a, p) => a + (p.fi ? p.minuts : 0), 0))}</td></tr>`; }).join('')}</tbody></table>` : ''}`;
   if ($('#fx-entro')) $('#fx-entro').addEventListener('click', () => fitxa('entrada'));
   if ($('#fx-surto')) $('#fx-surto').addEventListener('click', () => fitxa('sortida'));
-}
-/* Sortida i posta del sol, per avisar quan es fitxa de nit (equació de la sortida del sol, precisió d'uns minuts).
-   Es calcula amb la posició del mòbil; si no n'hi ha, amb la de Sant Cugat (només per a aquest càlcul). */
-const POSICIO_SOL_PER_DEFECTE = { lat: 41.47, lng: 2.08 };
-const MARGE_NIT_MIN = 45;   // minuts abans de la sortida del sol i després de la posta a partir dels quals es considera de nit
-function solDelDia(d, lat, lng) {
-  const rad = Math.PI / 180, J2000 = 2451545;
-  const jDia = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 12) / 86400000 + 2440587.5;   // dia julià al migdia UTC del dia (local)
-  const n = Math.round(jDia - J2000 + 0.0008), Js = n - lng / 360;
-  const M = ((357.5291 + 0.98560028 * Js) % 360 + 360) % 360;
-  const Cc = 1.9148 * Math.sin(M * rad) + 0.02 * Math.sin(2 * M * rad) + 0.0003 * Math.sin(3 * M * rad);
-  const L = ((M + Cc + 180 + 102.9372) % 360 + 360) % 360;
-  const Jt = J2000 + Js + 0.0053 * Math.sin(M * rad) - 0.0069 * Math.sin(2 * L * rad);
-  const sinDec = Math.sin(L * rad) * Math.sin(23.4397 * rad), dec = Math.asin(sinDec);
-  const cosW = (Math.sin(-0.833 * rad) - Math.sin(lat * rad) * sinDec) / (Math.cos(lat * rad) * Math.cos(dec));
-  if (!(cosW >= -1 && cosW <= 1)) return null;   // sol de mitjanit o nit polar: no s'avisa
-  const w = Math.acos(cosW) / rad / 360, aMs = J => (J - 2440587.5) * 86400000;
-  return { sortida: aMs(Jt - w), posta: aMs(Jt + w) };
-}
-// és de nit en aquest moment? (més de 45 min abans de la sortida del sol o després de la posta del dia)
-function esDeNit(ara, lat, lng) {
-  const sol = solDelDia(new Date(ara), lat, lng); if (!sol) return null;
-  return { nit: +ara < sol.sortida - MARGE_NIT_MIN * 60000 || +ara > sol.posta + MARGE_NIT_MIN * 60000, sol };
 }
 async function fitxa(tipus) {
   const t = treballadorActual(), st = state.fx; if (!t || st.ocupat) return;
@@ -5098,9 +5063,6 @@ async function fitxa(tipus) {
   let pos = null, motiu = '';
   try { pos = await posicioActual(); } catch (e) { motiu = e && e.message ? e.message : 'sense GPS'; }
   if (!pos && !confirm('No s’ha pogut obtenir la posició del mòbil (' + motiu + '). Vols fitxar igualment? Quedarà anotat que és sense GPS.')) { st.ocupat = false; renderMain(); return; }
-  // avís de nit: de moment només és un avís, no es desa res
-  const nit = esDeNit(Date.now(), pos ? pos.lat : POSICIO_SOL_PER_DEFECTE.lat, pos ? pos.lng : POSICIO_SOL_PER_DEFECTE.lng);
-  if (nit && nit.nit && !confirm('És de nit: avui el sol ' + (+Date.now() < nit.sol.sortida ? 'surt a les ' + horaDe(nit.sol.sortida) : 's’ha post a les ' + horaDe(nit.sol.posta)) + ' i ara són les ' + horaDe(Date.now()) + '. Vols fitxar igualment?')) { st.ocupat = false; renderMain(); return; }
   const r = await sb.from('fitxatges').insert({ treballador_id: t.id, tipus, lat: pos ? pos.lat : null, lng: pos ? pos.lng : null, precisio: pos ? pos.prec : null, observacions: pos ? null : 'sense GPS: ' + motiu }).select('id, moment').single();
   st.ocupat = false;
   if (r.error) { renderMain(); showFormError(friendly(r.error)); return; }
