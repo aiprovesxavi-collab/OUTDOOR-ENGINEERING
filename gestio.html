@@ -377,6 +377,17 @@
   .vac-taula .fs{ background:repeating-linear-gradient(135deg, #e3e3e3 0 3px, #f6f6f6 3px 7px) !important; }
   .vac-titolmes{ display:inline-block; min-width:190px; text-align:center; font-size:18px; }
   .vac-scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .fx-estat{ border-radius:10px; padding:14px 16px; font-size:17px; margin:0 0 14px; background:#f3f4f2; color:var(--ink-2); }
+  .fx-estat.dins{ background:#e4f1e8; color:#1e5c35; } .fx-estat.fora{ background:#f3f4f2; } .fx-estat.abs{ background:#fff6e5; color:#7a4e00; }
+  .fx-estat .rellotge{ float:right; font-variant-numeric:tabular-nums; font-size:15px; color:var(--ink-3); }
+  .fx-botons{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:0 0 10px; }
+  .fx-botons .btn{ height:88px; font-size:22px; font-weight:700; letter-spacing:.04em; border-radius:12px; }
+  .fx-botons .fx-entro{ background:#2f7d4a; border-color:#2f7d4a; color:#fff; } .fx-botons .fx-surto{ background:#c0392b; border-color:#c0392b; color:#fff; }
+  .fx-botons .btn:disabled{ opacity:.35; cursor:not-allowed; }
+  .fx-parelles{ list-style:none; padding:0; margin:0 0 10px; } .fx-parelles li{ display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; }
+  .fx-parelles li .en-curs{ color:#1e5c35; font-weight:600; } .fx-total{ font-weight:700; }
+  .fx-gps{ text-decoration:none; font-size:12px; margin-left:4px; } .fx-sense{ color:#c0392b; font-size:12px; margin-left:5px; }
+  body.operari .fx-parelles li{ font-size:16px; } body.operari .fx-botons .btn{ height:110px; font-size:26px; }
   body.operari .vac-taula{ width:auto; min-width:100%; table-layout:auto; font-size:12px; } body.operari .vac-taula td.d{ min-width:26px; }
   body.operari .vac-taula .nom{ position:sticky; left:0; z-index:1; width:auto; max-width:130px; font-size:13px; background:#fff; } body.operari .vac-taula th.nom{ background:#fafafa; }
   .ca-cap{ display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:0 2px; font-size:12px; color:var(--ink-3); text-align:center; margin-bottom:2px; }
@@ -764,7 +775,7 @@ const SCHEMA = {
     { label: 'CONSUM', color: '#1f5fbf', tables: ['comptadors', 'lectures', 'consum_aigua'] },
     { label: 'INSTAL·LACIONS', color: '#8fcf9a', tables: ['jardins', 'piscines', 'informe_adob'] },
     { label: 'EQUIPAMENTS I INSTAL·LACIONS', color: '#e5b800', tables: ['programadors', 'bombes', 'filtres', 'cloradors_salins'] },
-    { label: 'PERSONAL', color: '#222222', tables: ['treballadors', 'equips', 'nomines', 'vacances', 'festius'] },
+    { label: 'PERSONAL', color: '#222222', tables: ['treballadors', 'equips', 'fitxar', 'fitxatges', 'nomines', 'vacances', 'festius'] },
     { label: 'ALTRES', color: '#b48ede', tables: ['tipus_iva', 'empresa', 'aigua_parametres_mensuals', 'avisos_piscina', 'comptes_bancaris', 'poblacions_sol', 'hores_sol'] },
   ],
   pages: {
@@ -787,6 +798,8 @@ const SCHEMA = {
     codis_qr: { label: 'Codis QR dels llocs', render: main => renderCodisQR(main) },
     nomines: { label: 'Nòmines', render: main => renderNomines(main) },
     vacances: { label: 'Vacances i baixes', render: main => renderVacances(main) },
+    fitxar: { label: 'Fitxar', render: main => renderFitxar(main) },
+    fitxatges: { label: 'Fitxatges', render: main => renderFitxatges(main) },
   },
   tables: {
     administradors: {
@@ -1450,6 +1463,7 @@ const SCHEMA = {
     incidencies: { label: 'Incidències', nou: 'Nova incidència', order: 'id', display: r => (r.numero || '') + ' — ' + (r.titol || ''), list: ['numero', 'titol'], fields: [] },
     nomines: { label: 'Nòmines', order: 'id', display: r => (r.concepte || 'Nòmina') + ' ' + MESOS[(r.mes || 1) - 1] + ' ' + r.exercici, list: ['treballador_id', 'exercici', 'mes', 'concepte'], fields: [] }, // es carrega per al calendari de nòmines (pàgina pròpia)
     absencies: { label: 'Vacances i baixes', order: 'id', display: r => (r.tipus || '') + ' ' + dmy(r.dia), list: ['treballador_id', 'dia', 'tipus'], fields: [] }, // un registre per treballador i dia; es carrega per al calendari (pàgina pròpia)
+    fitxatges: { label: 'Fitxatges', order: 'id', display: r => (r.tipus || '') + ' ' + dmyhm(r.moment), list: ['treballador_id', 'tipus', 'moment'], fields: [] }, // entrades i sortides; es carrega per a les pàgines Fitxar i Fitxatges
     festius: {
       label: 'Festius', nou: 'Nou festiu', order: 'dia', desc: true,
       display: r => dmy(r.dia) + ' — ' + (r.nom || ''),
@@ -1689,7 +1703,7 @@ const C = {
   rows: t => cache[t] || [],
   get: (t, id) => { const pk = (SCHEMA.tables[t] || {}).pk; return pk ? (cache[t] || []).find(r => String(r[pk]) === String(id)) : (cache[t] || []).find(r => r.id === Number(id)); },
 };
-const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, calAcc: { vista: '', ref: '', meves: false, fetes: false, sel: null }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
+const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, calAcc: { vista: '', ref: '', meves: false, fetes: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1) }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
 const L = (t, id) => { const r = C.get(t, id); return r ? SCHEMA.tables[t].display(r, L) : ''; };
 
 /* =====================================================================
@@ -1884,6 +1898,7 @@ function renderAppOperari() {
     main.innerHTML = `
       ${t ? '' : '<div class="msg err">El teu usuari no té fitxa de treballador amb aquest correu d’accés: demana a l’oficina que t’hi afegeixin.</div>'}
       <div class="home">
+        <button data-go="fitxar"><strong>Fitxar</strong><span>${h(estatFitxatgeText(t))}</span></button>
         <button data-go="tasques_piscina"><strong>Nova tasca de piscina</strong><span>Localitza’m, mesures, comprovacions i feines.</span></button>
         <button data-go="informe_tasques_piscina"><strong>Tasca per piscina</strong><span>Totes les tasques d’una piscina entre dues dates.</span></button>
         <button data-go="informe_tasques_dates"><strong>Tasca per dates</strong><span>Totes les piscines, per dia.</span></button>
@@ -4820,6 +4835,107 @@ function renderCalendariAccions(main) {
   main.querySelectorAll('[data-accio]').forEach(el => el.addEventListener('click', () => { st.sel = Number(el.dataset.accio); renderMain(); const d = $('#ca-detall'); if (d && d.scrollIntoView) d.scrollIntoView({ block: 'nearest' }); }));
   if ($('#ca-tanca')) $('#ca-tanca').addEventListener('click', () => { st.sel = null; renderMain(); });
   if ($('#ca-obre')) $('#ca-obre').addEventListener('click', () => { state.inc.vista = 'diagrama'; state.inc.id = sel.inc.id; state.inc.sel = sel.a.id; state.inc.form = null; state.inc.capa = 'interna'; state.mode = 'consulta'; state.table = 'incidencies'; renderApp(); window.scrollTo({ top: 0 }); });
+}
+
+/* =====================================================================
+   FITXATGE: entrada i sortida de jornada des de l'app de cadascú. L'hora la posa el servidor; el mòbil aporta la posició.
+   Només es pot sortir després d'entrar i a l'inrevés; cap fitxatge un dia de vacances o baixa (ho comprova també la base de dades).
+   ===================================================================== */
+const horaDe = ts => { const d = new Date(ts); if (isNaN(d.getTime())) return ''; return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+const durText = min => { const m = Math.max(0, Math.round(min)); return Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0') + ' min'; };
+const fitxatgesDe = trebId => C.rows('fitxatges').filter(f => Number(f.treballador_id) === Number(trebId)).sort((a, b) => String(a.moment).localeCompare(String(b.moment)) || a.id - b.id);
+// aparella entrades i sortides: [{ dia, inici, fi (o null si la jornada és oberta), minuts }]
+function parellesFitxatge(regs) {
+  const out = []; let oberta = null;
+  regs.forEach(f => {
+    if (f.tipus === 'entrada') { if (oberta) out.push(oberta); oberta = { dia: ymd(new Date(f.moment)), inici: f, fi: null, minuts: 0 }; }
+    else if (oberta) { oberta.fi = f; oberta.minuts = (new Date(f.moment) - new Date(oberta.inici.moment)) / 60000; out.push(oberta); oberta = null; }
+  });
+  if (oberta) { oberta.minuts = (Date.now() - new Date(oberta.inici.moment)) / 60000; out.push(oberta); }
+  return out;
+}
+const absenciaAvui = t => t ? absenciesActives().find(a => Number(a.treballador_id) === t.id && a.dia === ymd(new Date())) : null;
+function estatFitxatgeText(t) {
+  if (!t) return 'Entrada i sortida de la jornada.';
+  const abs = absenciaAvui(t); if (abs) return 'Avui consta de ' + TIPUS_ABS[abs.tipus].toLowerCase() + ': no es fitxa.';
+  const regs = fitxatgesDe(t.id), ultim = regs[regs.length - 1];
+  if (ultim && ultim.tipus === 'entrada') return 'Dins des de les ' + horaDe(ultim.moment) + (ymd(new Date(ultim.moment)) !== ymd(new Date()) ? ' del ' + dmy(ymd(new Date(ultim.moment))) : '') + '.';
+  if (ultim && ymd(new Date(ultim.moment)) === ymd(new Date())) return 'Fora des de les ' + horaDe(ultim.moment) + '.';
+  return 'Encara no has fitxat avui.';
+}
+const enllacGps = f => f && f.lat != null && f.lng != null ? `<a class="fx-gps" href="https://maps.google.com/?q=${f.lat},${f.lng}" target="_blank" rel="noopener" title="Posició en fitxar${f.precisio ? ' (±' + Math.round(f.precisio) + ' m)' : ''}">📍</a>` : (f && f.observacions && /sense GPS/i.test(f.observacions) ? `<span class="fx-sense" title="${h(f.observacions)}">sense GPS</span>` : '');
+function posicioActual() {
+  return new Promise((res, rej) => {
+    if (!navigator.geolocation) return rej(new Error('el navegador no té geolocalització'));
+    navigator.geolocation.getCurrentPosition(p => res({ lat: p.coords.latitude, lng: p.coords.longitude, prec: p.coords.accuracy }),
+      e => rej(new Error(e && e.code === 1 ? 'permís de localització denegat' : e && e.code === 2 ? 'posició no disponible' : 'temps d’espera esgotat')),
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 });
+  });
+}
+function renderFitxar(main) {
+  const t = treballadorActual(), st = state.fx, avuiL = ymd(new Date());
+  const regs = t ? fitxatgesDe(t.id) : [], ultim = regs[regs.length - 1], dins = !!ultim && ultim.tipus === 'entrada', abs = absenciaAvui(t);
+  const parelles = parellesFitxatge(regs), dAvui = parelles.filter(p => p.dia === avuiL), minAvui = dAvui.reduce((s, p) => s + p.minuts, 0);
+  const perDia = new Map(); parelles.forEach(p => { if (p.dia === avuiL) return; if (!perDia.has(p.dia)) perDia.set(p.dia, []); perDia.get(p.dia).push(p); });
+  const dies = [...perDia.keys()].sort().reverse().slice(0, 14);
+  const estat = !t ? '' : abs ? `<div class="fx-estat abs">Avui consta de <b>${h(TIPUS_ABS[abs.tipus].toLowerCase())}</b>: no es fitxa.</div>`
+    : dins ? `<div class="fx-estat dins"><span class="rellotge">${horaDe(new Date())}</span>Dins des de les <b>${horaDe(ultim.moment)}</b>${ymd(new Date(ultim.moment)) !== avuiL ? ' del ' + dmy(ymd(new Date(ultim.moment))) : ''} · ${durText((Date.now() - new Date(ultim.moment)) / 60000)}</div>`
+    : `<div class="fx-estat fora"><span class="rellotge">${horaDe(new Date())}</span>${ultim && ymd(new Date(ultim.moment)) === avuiL ? 'Fora des de les <b>' + horaDe(ultim.moment) + '</b>' : 'Encara no has fitxat avui'}</div>`;
+  const parellaHTML = p => `<li><span>${horaDe(p.inici.moment)}${enllacGps(p.inici)} – ${p.fi ? horaDe(p.fi.moment) + enllacGps(p.fi) : '<span class="en-curs">en curs</span>'}</span><span>${durText(p.minuts)}</span></li>`;
+  main.innerHTML = `<h1>Fitxar</h1>
+    ${!t ? '<div class="msg err">El teu usuari no té fitxa de treballador amb aquest correu d’accés: demana a l’oficina que t’hi afegeixin.</div>' : `<p class="sub">${h(nomTreballador(t))} · ${dmy(avuiL)}</p>`}
+    ${estat}
+    <div id="ferr"></div>
+    <div class="fx-botons"><button class="btn fx-entro" id="fx-entro" ${!t || dins || abs || st.ocupat ? 'disabled' : ''}>ENTRO</button><button class="btn fx-surto" id="fx-surto" ${!t || !dins || abs || st.ocupat ? 'disabled' : ''}>SURTO</button></div>
+    <p class="hint">${st.ocupat ? 'Obtenint la posició del mòbil…' : 'L’hora la posa el servidor (no el rellotge del mòbil); es desa també la posició del mòbil.'}</p>
+    <h3>Avui${dAvui.length ? ` · <span class="fx-total">${durText(minAvui)}</span>` : ''}</h3>
+    ${dAvui.length ? `<ul class="fx-parelles">${dAvui.map(parellaHTML).join('')}</ul>` : '<p class="hint">Cap fitxatge avui.</p>'}
+    ${dies.length ? `<h3>Darrers dies</h3><table class="tbl"><thead><tr><th>Dia</th><th>Entrades i sortides</th><th>Total</th></tr></thead><tbody>${dies.map(d => { const ps = perDia.get(d); return `<tr><td>${dmy(d)}</td><td>${ps.map(p => horaDe(p.inici.moment) + '–' + (p.fi ? horaDe(p.fi.moment) : '<span class="v-no">sense sortida</span>')).join(', ')}</td><td>${durText(ps.reduce((a, p) => a + (p.fi ? p.minuts : 0), 0))}</td></tr>`; }).join('')}</tbody></table>` : ''}`;
+  if ($('#fx-entro')) $('#fx-entro').addEventListener('click', () => fitxa('entrada'));
+  if ($('#fx-surto')) $('#fx-surto').addEventListener('click', () => fitxa('sortida'));
+}
+async function fitxa(tipus) {
+  const t = treballadorActual(), st = state.fx; if (!t || st.ocupat) return;
+  st.ocupat = true; renderMain();
+  let pos = null, motiu = '';
+  try { pos = await posicioActual(); } catch (e) { motiu = e && e.message ? e.message : 'sense GPS'; }
+  if (!pos && !confirm('No s’ha pogut obtenir la posició del mòbil (' + motiu + '). Vols fitxar igualment? Quedarà anotat que és sense GPS.')) { st.ocupat = false; renderMain(); return; }
+  const r = await sb.from('fitxatges').insert({ treballador_id: t.id, tipus, lat: pos ? pos.lat : null, lng: pos ? pos.lng : null, precisio: pos ? pos.prec : null, observacions: pos ? null : 'sense GPS: ' + motiu }).select('id, moment').single();
+  st.ocupat = false;
+  if (r.error) { renderMain(); showFormError(friendly(r.error)); return; }
+  await loadTable('fitxatges'); renderMain();
+  toast((tipus === 'entrada' ? 'Entrada' : 'Sortida') + ' registrada a les ' + horaDe(r.data && r.data.moment ? r.data.moment : new Date()));
+}
+// oficina: els fitxatges de tothom, per mes i per persona
+function renderFitxatges(main) {
+  const st = state.fx, t = treballadorActual();
+  const any = Number(st.any) || new Date().getFullYear(), mes = Math.min(12, Math.max(1, Number(st.mes) || new Date().getMonth() + 1));
+  const prefix = any + '-' + String(mes).padStart(2, '0') + '-';
+  const treballadors = C.rows('treballadors').filter(x => x.actiu).sort((a, b) => nomTreballador(a).localeCompare(nomTreballador(b), 'ca'));
+  const persones = st.treb ? treballadors.filter(x => String(x.id) === st.treb) : treballadors;
+  let totMes = 0, html = '';
+  persones.forEach(p => {
+    const parelles = parellesFitxatge(fitxatgesDe(p.id)).filter(x => x.dia.startsWith(prefix));
+    if (!parelles.length) { if (st.treb) html += `<div class="empty">Cap fitxatge de ${h(nomTreballador(p))} el ${MESOS[mes - 1].toLowerCase()} de ${any}.</div>`; return; }
+    const perDia = new Map(); parelles.forEach(x => { if (!perDia.has(x.dia)) perDia.set(x.dia, []); perDia.get(x.dia).push(x); });
+    const total = parelles.reduce((a, x) => a + (x.fi ? x.minuts : 0), 0), obertes = parelles.filter(x => !x.fi).length; totMes += total;
+    html += `<h3>${h(nomTreballador(p))} <span class="hint">· ${perDia.size} ${perDia.size === 1 ? 'dia' : 'dies'} · ${durText(total)}${obertes ? ' · <b class="v-no">' + obertes + (obertes === 1 ? ' entrada sense sortida' : ' entrades sense sortida') + '</b>' : ''}</span></h3>
+      <table class="tbl"><thead><tr><th>Dia</th><th>Entrades i sortides</th><th>Hores</th></tr></thead><tbody>${[...perDia.keys()].sort().map(d => { const ps = perDia.get(d); return `<tr><td>${dmy(d)} <span class="hint">${['dg', 'dl', 'dt', 'dc', 'dj', 'dv', 'ds'][new Date(d + 'T12:00:00').getDay()]}</span></td><td>${ps.map(x => horaDe(x.inici.moment) + enllacGps(x.inici) + ' – ' + (x.fi ? horaDe(x.fi.moment) + enllacGps(x.fi) : '<span class="v-no">sense sortida</span>')).join(' · ')}</td><td>${durText(ps.reduce((a, x) => a + (x.fi ? x.minuts : 0), 0))}</td></tr>`; }).join('')}</tbody></table>`;
+  });
+  main.innerHTML = `<h1>Fitxatges</h1>
+    <p class="sub">Entrades i sortides de jornada registrades des de l’app de cadascú, amb l’hora del servidor i la posició del mòbil (📍 obre el mapa). Les correccions, de moment, des de l’editor de Supabase.</p>
+    <div class="bar">
+      <select id="fx-treb" style="width:auto; min-width:220px"><option value="">Tothom</option>${treballadors.map(x => `<option value="${x.id}" ${String(x.id) === st.treb ? 'selected' : ''}>${h(nomTreballador(x))}</option>`).join('')}</select>
+      <span class="nom-any"><button class="btn ghost small" data-mes="-1" title="Mes anterior">◀</button><b class="vac-titolmes">${MESOS[mes - 1]} ${any}</b><button class="btn ghost small" data-mes="1" title="Mes següent">▶</button></span>
+      <button class="btn ghost small" id="fx-avui">Aquest mes</button>
+      <button class="btn ghost small" id="fx-print">Imprimeix</button>
+      <span class="n">${durText(totMes)} en total</span>
+    </div>
+    ${html || '<div class="empty">Cap fitxatge aquest mes.</div>'}`;
+  $('#fx-treb').addEventListener('change', e => { st.treb = e.target.value; renderMain(); });
+  main.querySelectorAll('[data-mes]').forEach(b => b.addEventListener('click', () => { const d = new Date(any, mes - 1 + Number(b.dataset.mes), 1); st.any = String(d.getFullYear()); st.mes = String(d.getMonth() + 1); renderMain(); }));
+  $('#fx-avui').addEventListener('click', () => { const d = new Date(); st.any = String(d.getFullYear()); st.mes = String(d.getMonth() + 1); renderMain(); });
+  $('#fx-print').addEventListener('click', () => window.print());
 }
 
 /* =====================================================================
