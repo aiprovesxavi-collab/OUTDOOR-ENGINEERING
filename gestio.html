@@ -388,6 +388,10 @@
   .fx-parelles li .en-curs{ color:#1e5c35; font-weight:600; } .fx-total{ font-weight:700; }
   .fx-gps{ text-decoration:none; font-size:12px; margin-left:4px; } .fx-sense{ color:#c0392b; font-size:12px; margin-left:5px; }
   body.operari .fx-parelles li{ font-size:16px; } body.operari .fx-botons .btn{ height:110px; font-size:26px; }
+  #fx-mapa{ height:520px; border:1px solid var(--line-2); border-radius:8px; margin:0 0 12px; background:#eef1ee; }
+  .fx-lluny{ color:#c0392b; font-weight:600; } .fx-aprop{ color:#1e5c35; }
+  .fx-llegenda i{ display:inline-block; width:12px; height:12px; border-radius:50%; margin:0 4px 0 10px; vertical-align:-1px; border:2px solid #fff; box-shadow:0 0 0 1px #888; }
+  .fx-dades{ color:var(--ink-2); font-size:13px; margin:-6px 0 8px; }
   body.operari .vac-taula{ width:auto; min-width:100%; table-layout:auto; font-size:12px; } body.operari .vac-taula td.d{ min-width:26px; }
   body.operari .vac-taula .nom{ position:sticky; left:0; z-index:1; width:auto; max-width:130px; font-size:13px; background:#fff; } body.operari .vac-taula th.nom{ background:#fafafa; }
   .ca-cap{ display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:0 2px; font-size:12px; color:var(--ink-3); text-align:center; margin-bottom:2px; }
@@ -775,7 +779,7 @@ const SCHEMA = {
     { label: 'CONSUM', color: '#1f5fbf', tables: ['comptadors', 'lectures', 'consum_aigua'] },
     { label: 'INSTAL·LACIONS', color: '#8fcf9a', tables: ['jardins', 'piscines', 'informe_adob'] },
     { label: 'EQUIPAMENTS I INSTAL·LACIONS', color: '#e5b800', tables: ['programadors', 'bombes', 'filtres', 'cloradors_salins'] },
-    { label: 'PERSONAL', color: '#222222', tables: ['treballadors', 'equips', 'fitxar', 'fitxatges', 'nomines', 'vacances', 'festius'] },
+    { label: 'PERSONAL', color: '#222222', tables: ['treballadors', 'equips', 'fitxar', 'fitxatges', 'mapa_fitxatges', 'nomines', 'vacances', 'festius'] },
     { label: 'ALTRES', color: '#b48ede', tables: ['tipus_iva', 'empresa', 'aigua_parametres_mensuals', 'avisos_piscina', 'comptes_bancaris', 'poblacions_sol', 'hores_sol'] },
   ],
   pages: {
@@ -800,6 +804,7 @@ const SCHEMA = {
     vacances: { label: 'Vacances i baixes', render: main => renderVacances(main) },
     fitxar: { label: 'Fitxar', render: main => renderFitxar(main) },
     fitxatges: { label: 'Fitxatges', render: main => renderFitxatges(main) },
+    mapa_fitxatges: { label: 'Mapa de fitxatges', render: main => renderMapaFitxatges(main) },
   },
   tables: {
     administradors: {
@@ -1703,7 +1708,7 @@ const C = {
   rows: t => cache[t] || [],
   get: (t, id) => { const pk = (SCHEMA.tables[t] || {}).pk; return pk ? (cache[t] || []).find(r => String(r[pk]) === String(id)) : (cache[t] || []).find(r => r.id === Number(id)); },
 };
-const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, calAcc: { vista: '', ref: '', meves: false, fetes: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1) }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
+const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, calAcc: { vista: '', ref: '', meves: false, fetes: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
 const L = (t, id) => { const r = C.get(t, id); return r ? SCHEMA.tables[t].display(r, L) : ''; };
 
 /* =====================================================================
@@ -4906,7 +4911,127 @@ async function fitxa(tipus) {
   await loadTable('fitxatges'); renderMain();
   toast((tipus === 'entrada' ? 'Entrada' : 'Sortida') + ' registrada a les ' + horaDe(r.data && r.data.moment ? r.data.moment : new Date()));
 }
-// oficina: els fitxatges de tothom, per mes i per persona
+// llocs de feina: els llocs (dels clients) amb coordenades; es fitxa sempre a peu de lloc, mai des de l'oficina
+const RADI_LLOC_FEINA_M = 300;  // a partir d'aquesta distància, un fitxatge es considera lluny de tot lloc
+function llocsDeFeina() {
+  return C.rows('llocs').filter(l => l.actiu && l.latitud != null && l.longitud != null).map(l => ({ nom: l.nom, lat: Number(l.latitud), lng: Number(l.longitud), tipus: 'lloc' }));
+}
+function llocMesProper(lat, lng, llocs) {
+  let millor = null; (llocs || llocsDeFeina()).forEach(l => { const m = distKm(lat, lng, l.lat, l.lng) * 1000; if (!millor || m < millor.m) millor = { nom: l.nom, m, tipus: l.tipus }; });
+  return millor;
+}
+const distText = m => m < 1000 ? Math.round(m) + ' m' : (m / 1000).toFixed(1).replace('.', ',') + ' km';
+function proximitatHTML(f, llocs) {
+  if (f.lat == null || f.lng == null) return '<span class="fx-lluny">sense GPS</span>';
+  const p = llocMesProper(Number(f.lat), Number(f.lng), llocs); if (!p) return '<span class="hint">cap lloc amb coordenades</span>';
+  return `<span class="${p.m <= RADI_LLOC_FEINA_M ? 'fx-aprop' : 'fx-lluny'}">${p.m <= RADI_LLOC_FEINA_M ? '' : '⚠ '}${h(p.nom)} · ${distText(p.m)}</span>`;
+}
+const fitxatgesDelMes = (any, mes) => { const pre = any + '-' + String(mes).padStart(2, '0') + '-'; return C.rows('fitxatges').filter(f => ymd(new Date(f.moment)).startsWith(pre)); };
+// Leaflet (mapa) es carrega només quan cal, no a l'arrencada
+let _leaflet = null;
+function carregaLeaflet() {
+  if (window.L && window.L.map) return Promise.resolve(); // (L, dins del programa, és la funció d'etiquetes; Leaflet només per window.L)
+  if (_leaflet) return _leaflet;
+  _leaflet = new Promise((res, rej) => {
+    const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'; document.head.appendChild(css);
+    const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'; sc.onload = () => res(); sc.onerror = () => { _leaflet = null; rej(new Error('No s’ha pogut carregar el mapa (cal connexió a Internet).')); }; document.head.appendChild(sc);
+  });
+  return _leaflet;
+}
+function renderMapaFitxatges(main) {
+  const st = state.fx;
+  const any = Number(st.any) || new Date().getFullYear(), mes = Math.min(12, Math.max(1, Number(st.mes) || new Date().getMonth() + 1));
+  const treballadors = C.rows('treballadors').filter(x => x.actiu).sort((a, b) => nomTreballador(a).localeCompare(nomTreballador(b), 'ca'));
+  const llocs = llocsDeFeina();
+  let regs = fitxatgesDelMes(any, mes).filter(f => !st.treb || String(f.treballador_id) === st.treb).sort((a, b) => String(a.moment).localeCompare(String(b.moment)));
+  if (st.dia) regs = regs.filter(f => ymd(new Date(f.moment)) === st.dia);
+  const ambGps = regs.filter(f => f.lat != null && f.lng != null);
+  const punts = ambGps.map(f => ({ f, p: llocMesProper(Number(f.lat), Number(f.lng), llocs) }));
+  const lluny = punts.filter(x => !x.p || x.p.m > RADI_LLOC_FEINA_M), senseGps = regs.length - ambGps.length;
+  const llista = st.lluny ? regs.filter(f => f.lat == null || f.lng == null || (llocMesProper(Number(f.lat), Number(f.lng), llocs) || { m: Infinity }).m > RADI_LLOC_FEINA_M) : regs;
+  main.innerHTML = `<h1>Mapa de fitxatges</h1>
+    <p class="sub">On s’ha fitxat cada persona (la posició del mòbil en prémer ENTRO o SURTO): verd, entrades; vermell, sortides; gris, els llocs que tenim amb coordenades. A sota, cada fitxatge amb el lloc més proper i la distància; a més de ${RADI_LLOC_FEINA_M} m d’un lloc, o sense GPS, en vermell.</p>
+    <div class="bar">
+      <select id="fx-treb" style="width:auto; min-width:200px"><option value="">Tothom</option>${treballadors.map(x => `<option value="${x.id}" ${String(x.id) === st.treb ? 'selected' : ''}>${h(nomTreballador(x))}</option>`).join('')}</select>
+      <span class="nom-any"><button class="btn ghost small" data-mes="-1" title="Mes anterior">◀</button><b class="vac-titolmes">${MESOS[mes - 1]} ${any}</b><button class="btn ghost small" data-mes="1" title="Mes següent">▶</button></span>
+      <label class="f" style="flex-direction:row; align-items:center; gap:6px; margin:0"><span class="l" style="white-space:nowrap">Un dia</span><input type="date" id="fx-dia" value="${h(st.dia)}"></label>
+      <label class="chk" style="padding:0"><input type="checkbox" id="fx-lluny" ${st.lluny ? 'checked' : ''}> Només els llunyans o sense GPS</label>
+      <span class="n">${regs.length} fitxatges · <b class="${lluny.length || senseGps ? 'v-no' : ''}">${lluny.length} lluny de tot lloc${senseGps ? ', ' + senseGps + ' sense GPS' : ''}</b></span>
+    </div>
+    ${!llocs.length ? '<div class="msg err">Cap lloc amb coordenades: posa latitud i longitud a la fitxa de cada lloc perquè el mapa pugui dir si s’ha fitxat des d’un lloc nostre.</div>' : ''}
+    <div id="fx-mapa"><div class="empty" style="padding-top:220px">Carregant el mapa…</div></div>
+    <table class="tbl"><thead><tr><th>Quan</th><th>Qui</th><th>Què</th><th>Precisió</th><th>Lloc més proper</th></tr></thead><tbody>${llista.map(f => `<tr data-fx="${f.id}"><td>${dmyhm(f.moment)}</td><td>${h(nomTreballador(C.get('treballadors', f.treballador_id)))}</td><td>${f.tipus === 'entrada' ? '<span class="xip ok">entrada</span>' : '<span class="xip">sortida</span>'}</td><td>${f.precisio ? '±' + Math.round(f.precisio) + ' m' : ''}</td><td>${proximitatHTML(f, llocs)}${f.lat != null ? ` ${enllacGps(f)}` : ''}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">Cap fitxatge.</td></tr>'}</tbody></table>`;
+  $('#fx-treb').addEventListener('change', e => { st.treb = e.target.value; renderMain(); });
+  main.querySelectorAll('[data-mes]').forEach(b => b.addEventListener('click', () => { const d = new Date(any, mes - 1 + Number(b.dataset.mes), 1); st.any = String(d.getFullYear()); st.mes = String(d.getMonth() + 1); st.dia = ''; renderMain(); }));
+  $('#fx-dia').addEventListener('change', e => { st.dia = e.target.value; if (st.dia) { st.any = st.dia.slice(0, 4); st.mes = String(Number(st.dia.slice(5, 7))); } renderMain(); });
+  $('#fx-lluny').addEventListener('change', e => { st.lluny = e.target.checked; renderMain(); });
+  carregaLeaflet().then(() => {
+    const el = $('#fx-mapa'); if (!el) return; el.innerHTML = '';
+    const Lf = window.L, mapa = Lf.map(el, { scrollWheelZoom: false });
+    Lf.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(mapa);
+    const tot = [];
+    llocs.forEach(l => { Lf.circleMarker([l.lat, l.lng], { radius: 5, color: '#555', fillColor: '#bbb', fillOpacity: .9, weight: 1 }).addTo(mapa).bindPopup(`<b>${h(l.nom)}</b><br>lloc`); });
+    punts.forEach(({ f, p }) => { const lluny = !p || p.m > RADI_LLOC_FEINA_M, t = C.get('treballadors', f.treballador_id);
+      Lf.circleMarker([Number(f.lat), Number(f.lng)], { radius: 7, color: lluny ? '#7a1f14' : '#fff', weight: lluny ? 3 : 2, fillColor: f.tipus === 'entrada' ? '#2f7d4a' : '#c0392b', fillOpacity: .95 }).addTo(mapa)
+        .bindPopup(`<b>${h(nomTreballador(t))}</b> · ${f.tipus}<br>${dmyhm(f.moment)}${f.precisio ? ' · ±' + Math.round(f.precisio) + ' m' : ''}<br>${p ? (lluny ? '⚠ ' : '') + h(p.nom) + ' · ' + distText(p.m) : 'cap lloc amb coordenades'}`);
+      tot.push([Number(f.lat), Number(f.lng)]); });
+    if (tot.length) mapa.fitBounds(tot, { padding: [30, 30], maxZoom: 16 }); else if (llocs.length) mapa.fitBounds(llocs.map(l => [l.lat, l.lng]), { padding: [30, 30], maxZoom: 14 }); else mapa.setView([41.47, 2.08], 12);
+    setTimeout(() => mapa.invalidateSize(), 200);
+  }).catch(e => { const el = $('#fx-mapa'); if (el) el.innerHTML = `<div class="msg err" style="margin:12px">${h(e.message)}</div>`; });
+}
+// PDF «Registre de jornada» (el que demana la Inspecció de Treball / Seguretat Social): una pàgina per treballador i mes,
+// amb empresa, treballador (nom, cognoms, DNI, núm. de la Seguretat Social), un dia per fila amb entrades, sortides i hores, total i signatures
+function pdfRegistreJornada(persones, any, mes) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const emp = C.rows('empresa').find(e => e.actiu) || {};
+  const ink = [60, 60, 60], pale = [130, 130, 130], M = 18, R = 192, W = R - M;
+  const text = (t, x, y, size, style, color, opt) => { doc.setTextColor(...(color || ink)); doc.setFont('helvetica', style || 'normal'); doc.setFontSize(size || 10); doc.text(t, x, y, opt); };
+  const nDies = new Date(any, mes, 0).getDate();
+  persones.forEach((p, idx) => {
+    if (idx) doc.addPage();
+    const lw = 46, lh = lw * LOGO_RATIO; doc.addImage(LOGOS.blau, 'JPEG', M, 10, lw, lh);
+    text('REGISTRE DE JORNADA', R, 16, 15, 'bold', ink, { align: 'right' });
+    text(MESOS[mes - 1] + ' ' + any, R, 23, 11, 'normal', pale, { align: 'right' });
+    let y = 10 + lh + 10;
+    const wrapA = t => { doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); return doc.splitTextToSize(t, W - 24); };
+    const lE = wrapA([emp.nom, emp.nif ? 'NIF ' + emp.nif : '', [emp.adreca, [emp.cp, emp.poblacio].filter(Boolean).join(' ')].filter(Boolean).join(', ')].filter(Boolean).join('  ·  '));
+    text('Empresa', M, y, 8, 'bold', pale); text(lE, M + 24, y, 9.5); y += 5 * lE.length + 0.5;
+    const lT = wrapA([nomTreballador(p), p.nif ? 'DNI ' + p.nif : 'DNI —', p.num_seguretat_social ? 'Núm. Seguretat Social ' + p.num_seguretat_social : 'Núm. Seguretat Social —'].join('  ·  '));
+    text('Treballador/a', M, y, 8, 'bold', pale); text(lT, M + 24, y, 9.5); y += 5 * lT.length + 4;
+    // taula: dia | entrades i sortides (fins a tres parelles) | hores
+    const parelles = parellesFitxatge(fitxatgesDe(p.id)).filter(x => x.dia.startsWith(any + '-' + String(mes).padStart(2, '0') + '-'));
+    const perDia = new Map(); parelles.forEach(x => { if (!perDia.has(x.dia)) perDia.set(x.dia, []); perDia.get(x.dia).push(x); });
+    const absDies = new Map(absenciesActives().filter(a => Number(a.treballador_id) === p.id && a.dia.startsWith(any + '-' + String(mes).padStart(2, '0') + '-')).map(a => [a.dia, a.tipus]));
+    const cols = [M, M + 22, M + 47, M + 72, M + 97, M + 122, M + 147, R], alt = 5.6;
+    const capcalera = () => { doc.setFillColor(240, 240, 240); doc.rect(M, y - 4.3, W, alt, 'F'); ['Dia', 'Entrada', 'Sortida', 'Entrada', 'Sortida', 'Entrada', 'Sortida'].forEach((c, i) => text(c, cols[i] + 1.5, y, 8, 'bold', pale)); text('Hores', R - 1.5, y, 8, 'bold', pale, { align: 'right' }); y += alt; };
+    capcalera();
+    let totalMin = 0;
+    for (let d = 1; d <= nDies; d++) {
+      const iso = any + '-' + String(mes).padStart(2, '0') + '-' + String(d).padStart(2, '0'), w = new Date(any, mes - 1, d).getDay(), fs = w === 0 || w === 6, fe = festiuDe(iso), ps = perDia.get(iso) || [], abs = absDies.get(iso);
+      if (y > 262) { doc.addPage(); y = 20; capcalera(); }
+      if (fs) { doc.setFillColor(248, 248, 248); doc.rect(M, y - 4.3, W, alt, 'F'); }
+      text(String(d).padStart(2, '0') + '/' + String(mes).padStart(2, '0') + '  ' + ['dg', 'dl', 'dt', 'dc', 'dj', 'dv', 'ds'][w], cols[0] + 1.5, y, 8.5, 'normal', fs ? pale : ink);
+      if (abs) text(TIPUS_ABS[abs] || abs, cols[1] + 1.5, y, 8.5, 'italic', pale);
+      else if (fe && !ps.length) text('Festiu · ' + fe, cols[1] + 1.5, y, 8.5, 'italic', pale);
+      ps.slice(0, 3).forEach((x, i) => { text(horaDe(x.inici.moment), cols[1 + i * 2] + 1.5, y, 8.5); text(x.fi ? horaDe(x.fi.moment) : '—', cols[2 + i * 2] + 1.5, y, 8.5, 'normal', x.fi ? ink : [192, 57, 43]); });
+      const min = ps.reduce((a, x) => a + (x.fi ? x.minuts : 0), 0); totalMin += min;
+      if (ps.length) text(Math.floor(min / 60) + ':' + String(Math.round(min % 60)).padStart(2, '0'), R - 1.5, y, 8.5, 'normal', ink, { align: 'right' });
+      doc.setDrawColor(225); doc.setLineWidth(0.15); doc.line(M, y + 1.6, R, y + 1.6);
+      y += alt;
+      if (ps.length > 3) { ps.slice(3).forEach((x, i) => { text('(cont.)', cols[0] + 1.5, y, 7.5, 'italic', pale); text(horaDe(x.inici.moment), cols[1 + (i % 3) * 2] + 1.5, y, 8.5); text(x.fi ? horaDe(x.fi.moment) : '—', cols[2 + (i % 3) * 2] + 1.5, y, 8.5); if (i % 3 === 2) y += alt; }); if (((ps.length - 3) % 3) !== 0) y += alt; }
+    }
+    y += 2; text('Total d’hores del mes', cols[0] + 1.5, y, 9.5, 'bold'); text(Math.floor(totalMin / 60) + ':' + String(Math.round(totalMin % 60)).padStart(2, '0'), R - 1.5, y, 9.5, 'bold', ink, { align: 'right' });
+    y += 6; text('Dies amb fitxatge: ' + perDia.size + '. Les hores les registra el servidor en el moment de fitxar; el treballador fitxa des de la seva pròpia app amb la posició del mòbil.', M, y, 7.5, 'normal', pale);
+    if (y > 262) { doc.addPage(); y = 30; } else y = Math.max(y + 16, 252);
+    doc.setDrawColor(150); doc.setLineWidth(0.3); doc.line(M, y + 14, M + 70, y + 14); doc.line(R - 70, y + 14, R, y + 14);
+    text('Signatura de l’empresa', M, y + 19, 8, 'normal', pale); text('Signatura del treballador/a', R - 70, y + 19, 8, 'normal', pale);
+    text('Data: ____ / ____ / ________', M, y + 27, 8, 'normal', pale);
+    text(String(doc.internal.getNumberOfPages()), R, 286, 7.5, 'normal', pale, { align: 'right' });
+  });
+  return doc;
+}
+// oficina: els fitxatges de tothom, per mes i per persona (resum diari) o com a llista completa; PDF del registre de jornada
 function renderFitxatges(main) {
   const st = state.fx, t = treballadorActual();
   const any = Number(st.any) || new Date().getFullYear(), mes = Math.min(12, Math.max(1, Number(st.mes) || new Date().getMonth() + 1));
@@ -4920,18 +5045,26 @@ function renderFitxatges(main) {
     const perDia = new Map(); parelles.forEach(x => { if (!perDia.has(x.dia)) perDia.set(x.dia, []); perDia.get(x.dia).push(x); });
     const total = parelles.reduce((a, x) => a + (x.fi ? x.minuts : 0), 0), obertes = parelles.filter(x => !x.fi).length; totMes += total;
     html += `<h3>${h(nomTreballador(p))} <span class="hint">· ${perDia.size} ${perDia.size === 1 ? 'dia' : 'dies'} · ${durText(total)}${obertes ? ' · <b class="v-no">' + obertes + (obertes === 1 ? ' entrada sense sortida' : ' entrades sense sortida') + '</b>' : ''}</span></h3>
+      <div class="fx-dades">DNI ${h(p.nif || '—')} · Núm. Seguretat Social ${h(p.num_seguretat_social || '—')}</div>
       <table class="tbl"><thead><tr><th>Dia</th><th>Entrades i sortides</th><th>Hores</th></tr></thead><tbody>${[...perDia.keys()].sort().map(d => { const ps = perDia.get(d); return `<tr><td>${dmy(d)} <span class="hint">${['dg', 'dl', 'dt', 'dc', 'dj', 'dv', 'ds'][new Date(d + 'T12:00:00').getDay()]}</span></td><td>${ps.map(x => horaDe(x.inici.moment) + enllacGps(x.inici) + ' – ' + (x.fi ? horaDe(x.fi.moment) + enllacGps(x.fi) : '<span class="v-no">sense sortida</span>')).join(' · ')}</td><td>${durText(ps.reduce((a, x) => a + (x.fi ? x.minuts : 0), 0))}</td></tr>`; }).join('')}</tbody></table>`;
   });
+  const llocs = llocsDeFeina();
+  const complets = fitxatgesDelMes(any, mes).filter(f => !st.treb || String(f.treballador_id) === st.treb).sort((a, b) => String(a.moment).localeCompare(String(b.moment)));
+  const llistaHTML = `<table class="tbl"><thead><tr><th>Quan</th><th>Qui</th><th>Què</th><th>Lloc més proper</th><th>Observacions</th></tr></thead><tbody>${complets.map(f => `<tr><td>${dmyhm(f.moment)}</td><td>${h(nomTreballador(C.get('treballadors', f.treballador_id)))}</td><td>${f.tipus === 'entrada' ? '<span class="xip ok">entrada</span>' : '<span class="xip">sortida</span>'}</td><td>${proximitatHTML(f, llocs)}${f.lat != null ? ' ' + enllacGps(f) : ''}</td><td>${h(f.observacions || '')}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">Cap fitxatge aquest mes.</td></tr>'}</tbody></table>`;
   main.innerHTML = `<h1>Fitxatges</h1>
-    <p class="sub">Entrades i sortides de jornada registrades des de l’app de cadascú, amb l’hora del servidor i la posició del mòbil (📍 obre el mapa). Les correccions, de moment, des de l’editor de Supabase.</p>
+    <p class="sub">Entrades i sortides de jornada registrades des de l’app de cadascú, amb l’hora del servidor i la posició del mòbil (📍 obre el mapa). «Resum diari» és el registre de jornada per persona; «Llista completa», tots els fitxatges en ordre. Les correccions, de moment, des de l’editor de Supabase.</p>
     <div class="bar">
-      <select id="fx-treb" style="width:auto; min-width:220px"><option value="">Tothom</option>${treballadors.map(x => `<option value="${x.id}" ${String(x.id) === st.treb ? 'selected' : ''}>${h(nomTreballador(x))}</option>`).join('')}</select>
+      <span class="seg"><button class="${st.vista !== 'llista' ? 'on' : ''}" data-vista="persona">Resum diari per persona</button><button class="${st.vista === 'llista' ? 'on' : ''}" data-vista="llista">Llista completa</button></span>
+      <select id="fx-treb" style="width:auto; min-width:200px"><option value="">Tothom</option>${treballadors.map(x => `<option value="${x.id}" ${String(x.id) === st.treb ? 'selected' : ''}>${h(nomTreballador(x))}</option>`).join('')}</select>
       <span class="nom-any"><button class="btn ghost small" data-mes="-1" title="Mes anterior">◀</button><b class="vac-titolmes">${MESOS[mes - 1]} ${any}</b><button class="btn ghost small" data-mes="1" title="Mes següent">▶</button></span>
       <button class="btn ghost small" id="fx-avui">Aquest mes</button>
+      <button class="btn" id="fx-pdf" title="Una pàgina per treballador: empresa, nom i cognoms, DNI, núm. de la Seguretat Social, un dia per fila i signatures">PDF registre de jornada${st.treb ? '' : ' (tothom)'}</button>
       <button class="btn ghost small" id="fx-print">Imprimeix</button>
-      <span class="n">${durText(totMes)} en total</span>
+      <span class="n">${complets.length} fitxatges · ${durText(totMes)} en total</span>
     </div>
-    ${html || '<div class="empty">Cap fitxatge aquest mes.</div>'}`;
+    ${st.vista === 'llista' ? llistaHTML : (html || '<div class="empty">Cap fitxatge aquest mes.</div>')}`;
+  main.querySelectorAll('[data-vista]').forEach(b => b.addEventListener('click', () => { st.vista = b.dataset.vista; renderMain(); }));
+  $('#fx-pdf').addEventListener('click', () => { try { const doc = pdfRegistreJornada(persones, any, mes); window.open(URL.createObjectURL(doc.output('blob')), '_blank'); } catch (e) { showFormError(friendly(e)); } });
   $('#fx-treb').addEventListener('change', e => { st.treb = e.target.value; renderMain(); });
   main.querySelectorAll('[data-mes]').forEach(b => b.addEventListener('click', () => { const d = new Date(any, mes - 1 + Number(b.dataset.mes), 1); st.any = String(d.getFullYear()); st.mes = String(d.getMonth() + 1); renderMain(); }));
   $('#fx-avui').addEventListener('click', () => { const d = new Date(); st.any = String(d.getFullYear()); st.mes = String(d.getMonth() + 1); renderMain(); });
