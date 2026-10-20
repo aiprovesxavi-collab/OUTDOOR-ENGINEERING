@@ -655,15 +655,16 @@ const DOSIS = {
   'oxigen':        { q: 1,   ref: 0.2, unitat: 'vasets', ca: 'd’oxigen', es: 'de oxígeno', per: 'per treure {d} ppm de cloramines', per_es: 'para quitar {d} ppm de cloraminas' },   // 2 vasets per 0,2 ppm en 200 m³
   'estabilitzant': { q: 10,  ref: 15,  unitat: 'vasets', ca: 'd’estabilitzant', es: 'de estabilizante', per: 'per pujar {d} ppm l’isocianúric', per_es: 'para subir {d} ppm el isocianúrico' },
   'bicarbonat':    { q: 6,   ref: 40,  unitat: 'kg', pot: 6, ca: 'de bicarbonat sòdic', es: 'de bicarbonato sódico', per: 'per pujar {d} ppm l’alcalinitat', per_es: 'para subir {d} ppm la alcalinidad' },
-  'carbonat':      { q: 6,   ref: 50,  unitat: 'kg', pot: 6, ca: 'de carbonat càlcic', es: 'de carbonato cálcico', per: 'per pujar {d} ppm la duresa càlcica', per_es: 'para subir {d} ppm la dureza cálcica' },
+  'clorur':        { q: 6,   ref: 50,  unitat: 'kg', pot: 6, ca: 'de clorur càlcic', es: 'de cloruro cálcico', per: 'per pujar {d} ppm la duresa càlcica', per_es: 'para subir {d} ppm la dureza cálcica' },
   'segrestant':    { q: 2,   ref: 100, unitat: 'litres', ca: 'de segrestant de calci', es: 'de secuestrante de calcio', per: 'per baixar {d} ppm el calci', per_es: 'para bajar {d} ppm el calcio' },
   'sal':           { q: 100, ref: 1,   unitat: 'kg', ca: 'de sal', es: 'de sal', per: 'per pujar {d} g/l la sal', per_es: 'para subir {d} g/l la sal' },   // 1 g/l = 1 kg per m³
 };
+DOSIS.carbonat = DOSIS.clorur;   // sinònim antic
 const numCat = (x, dec) => { const t = Number(x).toFixed(dec); return (t.includes('.') ? t.replace(/0+$/, '').replace(/\.$/, '') : t).replace('.', ','); };
 const mitjos = n => { const m = Math.max(0.5, Math.round(n * 2) / 2), e = Math.floor(m); return (m - e ? (e ? e + '½' : '½') : String(e)); };   // 0,5 → ½ · 1,5 → 1½
 const volumPiscina = p => p && p.llargada && p.amplada && p.profunditat ? Number(p.llargada) * Number(p.amplada) * Number(p.profunditat) : null;
 // text de la dosi: quantitat, producte i entre parèntesis per a què serveix i el volum de la piscina
-function textDosi(producte, variacio, V, lang) {
+function textDosi(producte, variacio, V, lang, curt) {
   const d = DOSIS[producte]; if (!d) return `{dosi ${producte} ${variacio}}`;
   const es = lang === 'es', delta = Number(String(variacio).replace(',', '.')) || d.ref;
   const per100 = d.q * delta / d.ref, n = V ? per100 * V / 100 : per100;
@@ -673,14 +674,53 @@ function textDosi(producte, variacio, V, lang) {
   else { quant = numCat(n, 1); unitat = 'kg'; }
   const np = d.pot && V ? n / d.pot : 0, pots = np ? `${numCat(np, 1)} ${es ? (np === 1 ? 'bote' : 'botes') : (np === 1 ? 'pot' : 'pots')} de ${d.pot} kg; ` : '';
   const perque = (es ? d.per_es : d.per).replace('{d}', numCat(delta, 2));
+  if (curt) return `${quant} ${unitat} ${es ? d.es : d.ca}` + (V ? '' : (es ? ' por cada 100 m³' : ' per cada 100 m³'));
   return V
     ? `${quant} ${unitat} ${es ? d.es : d.ca} (${pots}${perque}; ${es ? 'la piscina tiene' : 'la piscina té'} ${Math.round(V)} m³)`
     : `${quant} ${unitat} ${es ? d.es : d.ca} ${es ? 'por cada' : 'per cada'} 100 m³ (${perque}; ${es ? 'faltan las medidas de la piscina' : 'falten les mides de la piscina'})`;
 }
-const textAvis = (clau, piscina, lang) => {
+/* Després de posar certs productes cal esperar abans de tornar-ne a posar (ho diuen els mateixos avisos): pH una setmana,
+   clorur càlcic dues setmanes, segrestant de calci 15 dies. Si una tasca anterior de la mateixa piscina (dins el termini) ja va
+   donar un avís amb dosi d'un producte de la mateixa família, es dona per fet que es va posar i l'avís d'ara no en demana més. */
+const ESPERA_PRODUCTE = { 'ph+': 7, 'ph-': 7, 'clorur': 14, 'carbonat': 14, 'segrestant': 15 };
+const FAMILIA_PRODUCTE = { 'ph+': 'ph', 'ph-': 'ph', 'clorur': 'duresa', 'carbonat': 'duresa', 'segrestant': 'duresa' };
+const isoMesDies = (iso, n) => ymd(sumaDies(deYmd(iso), n));
+const valorMesura = (t, param) => [t[param + '_2'], t[param + '_1'], t[param]].find(v => v != null && v !== '');
+// { dia, fins, producte, variacio } si encara s'ha d'esperar; si no, null. vals: valors del formulari (piscina, data, hora); idActual: tasca que s'edita
+function esperaProducte(param, vals, idActual) {
+  if (!vals || !vals.piscina_id) return null;
+  const dies = Object.entries(ESPERA_PRODUCTE).filter(([p]) => FAMILIA_PRODUCTE[p] === param).map(([, d]) => d);
+  if (!dies.length) return null;
+  const dataAct = dataDe(vals), desDe = isoMesDies(dataAct, -Math.max(...dies));
+  const previes = C.rows('tasques_piscina')
+    .filter(t => t.actiu && Number(t.piscina_id) === Number(vals.piscina_id) && Number(t.id) !== Number(idActual || 0) && t.data >= desDe && (t.data < dataAct || (t.data === dataAct && (t.hora || '') < (vals.hora || ''))))
+    .sort((a, b) => (b.data + (b.hora || '')).localeCompare(a.data + (a.hora || '')));
+  for (const t of previes) {
+    const v = valorMesura(t, param); if (v == null) continue;
+    const k = avisClau(param)(v, t); if (!k) continue;
+    const a = C.rows('avisos_piscina').find(x => x.clau === k && x.actiu); if (!a) continue;
+    const m = /\{dosi ([^\s}]+)\s+([^\s}]+)\}/.exec(a.text || ''); if (!m || FAMILIA_PRODUCTE[m[1]] !== param) continue;
+    const fins = isoMesDies(t.data, ESPERA_PRODUCTE[m[1]]);
+    return fins > dataAct ? { dia: t.data, fins, producte: m[1], variacio: m[2] } : null;   // la darrera dosi: o encara s'espera, o el termini ja ha passat
+  }
+  return null;
+}
+const textAvis = (clau, piscina, lang, espera) => {
   const a = C.rows('avisos_piscina').find(x => x.clau === clau && x.actiu); if (!a) return '';
   const src = lang === 'es' ? (a.text_es || '') : a.text; if (!src) return '';
   const V = volumPiscina(piscina);
+  if (espera) {
+    const m = /\{dosi ([^\s}]+)\s+[^\s}]+\}/.exec(src);
+    if (m && FAMILIA_PRODUCTE[m[1]] === FAMILIA_PRODUCTE[espera.producte]) {
+      // es queda el començament de l'avís (Atenció. / COMPTE!! Truca al Xavi. / Valors correctes.) i, en lloc de la dosi, el recordatori
+      const idx = src.search(/\b(afegeix|cal afegir|caldrà afegir|posa|añade|hay que añadir|habrá que añadir|pon)\b/i);
+      let prefix = (idx > 0 ? src.slice(0, idx) : '').trim().replace(/[,;]?\s*(però|pero|o|y|i)$/i, '').trim();
+      if (prefix && !/[.!?]$/.test(prefix)) prefix += '.';
+      const dosi = textDosi(espera.producte, espera.variacio, V, lang, true);
+      const cos = lang === 'es' ? `El ${dmy(espera.dia)} ya se añadió producto (${dosi}): no pongas más hasta el ${dmy(espera.fins)}.` : `El ${dmy(espera.dia)} ja s’hi va afegir producte (${dosi}): no n’hi posis més fins al ${dmy(espera.fins)}.`;
+      return (prefix ? prefix + ' ' : '') + cos;
+    }
+  }
   return src
     .replace(/\{dosi ([^\s}]+)\s+([^\s}]+)\}/g, (_, prod, variacio) => textDosi(prod, variacio, V, lang))
     .replace(/\{vasets (\d+)\}/g, (_, n) => lang === 'es'
@@ -1662,7 +1702,7 @@ const SCHEMA = {
       list: ['clau', 'text', 'text_es', 'observacions'],
       fields: [
         { key: 'clau', label: 'Codi', type: 'text', required: true, ro: r => !!r, hint: 'el del full: 1B, 2A, 12B…' },
-        { key: 'text', label: 'Text de l’avís (català)', type: 'textarea', required: true, hint: '{dosi producte variació} es converteix en la quantitat segons el volum de la piscina: {dosi clor+ 1}, {dosi clor- 1,5}, {dosi ph+ 0,2}, {dosi ph- 0,1}, {dosi oxigen 0,5}, {dosi estabilitzant 15}, {dosi bicarbonat 40}, {dosi carbonat 50}, {dosi segrestant 100}, {dosi sal 1}' },
+        { key: 'text', label: 'Text de l’avís (català)', type: 'textarea', required: true, hint: '{dosi producte variació} es converteix en la quantitat segons el volum de la piscina: {dosi clor+ 1}, {dosi clor- 1,5}, {dosi ph+ 0,2}, {dosi ph- 0,1}, {dosi oxigen 0,5}, {dosi estabilitzant 15}, {dosi bicarbonat 40}, {dosi clorur 50}, {dosi segrestant 100}, {dosi sal 1}' },
         { key: 'text_es', label: 'Text en castellà', type: 'textarea' },
         { key: 'observacions', label: 'Quan surt', type: 'text' },
       ],
@@ -2394,6 +2434,14 @@ function bindMain(td) {
       });
     });
     frm.addEventListener('submit', e => { e.preventDefault(); save(td, frm); });
+    // Enter en un camp no desa el registre: passa al camp següent (com el tabulador). Desar és el botó Desa.
+    frm.addEventListener('keydown', e => {
+      const el = e.target; if (e.key !== 'Enter' || !el || el.tagName === 'TEXTAREA' || el.tagName === 'BUTTON' || el.type === 'submit') return;
+      e.preventDefault();
+      const camps = [...frm.querySelectorAll('input, select, textarea')].filter(x => !x.disabled && x.type !== 'hidden' && !x.closest('[hidden]'));
+      const seg = camps[camps.indexOf(el) + 1];
+      if (seg) { seg.focus(); if (seg.select && /^(text|number|email|tel|search|url)$/.test(seg.type || '')) seg.select(); } else el.blur();
+    });
     // mentre s'escriu (input) només es refresquen el context, els duplicats i les notes; els colors, els avisos i la visibilitat
     // s'avaluen quan el valor ja està entrat (change: en sortir del camp o prémer Enter), perquè "2" no surti verd abans d'acabar "2,9"
     const viu = () => { updateCtx(td, frm); checkDups(td, frm); pintaColors(td, frm); aplicaVisibilitat(td, frm); pintaAvisos(td, frm); pintaNotes(td, frm); };
@@ -2528,7 +2576,8 @@ function pintaAvisos(td, frm) {
   td.fields.filter(f => f.avis).forEach(f => {
     const box = frm.querySelector(`[data-avis-for="${f.key}"]`), el = frm.querySelector(`[name="${f.key}"]`); if (!box || !el) return;
     const clau = el.value === '' ? null : f.avis(el.value, vals);
-    const txt = clau ? textAvis(clau, piscina, 'ca') : '', es = clau ? textAvis(clau, piscina, 'es') : '';
+    const espera = clau ? esperaProducte(f.key.replace(/_\d$/, ''), vals, frm.dataset.id) : null;
+    const txt = clau ? textAvis(clau, piscina, 'ca', espera) : '', es = clau ? textAvis(clau, piscina, 'es', espera) : '';
     box.className = 'avis' + (txt ? ' b-' + (f.color(el.value, vals) || '').replace('c-', '') : '');
     box.innerHTML = txt ? `<div class="ca">${h(txt)}</div>${es ? `<div class="es">${h(es)}</div>` : ''}` : ''; box.hidden = !txt;
   });
