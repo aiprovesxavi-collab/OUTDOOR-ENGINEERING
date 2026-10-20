@@ -140,7 +140,7 @@
   .avis{ margin-top:7px; padding:10px 13px; border:3px solid var(--line-2); border-radius:7px; line-height:1.35; background:#fff; text-align:center; }
   .avis .ca{ text-transform:uppercase; font-size:15.5px; font-weight:600; }
   .avis .es{ font-size:13px; color:var(--ink-2); margin-top:4px; }
-  .avis.b-verd-suau{ border-color:#66bb6a; } .avis.b-taronja{ border-color:#fb8c00; } .avis.b-vermell{ border-color:#d32f2f; } .avis.b-negre{ border-color:#222; }
+  .avis.b-verd-fort{ border-color:#2e7d32; } .avis.b-verd-suau{ border-color:#66bb6a; } .avis.b-taronja{ border-color:#fb8c00; } .avis.b-vermell{ border-color:#d32f2f; } .avis.b-negre{ border-color:#222; }
   .focs{ position:fixed; left:0; top:0; width:0; height:0; pointer-events:none; z-index:9999; }
   .focs i{ position:fixed; left:0; top:0; border-radius:50%; will-change:transform, opacity; }
   .f[hidden]{ display:none; }
@@ -591,39 +591,101 @@ function ompleClaudators(txt, pr) {
 const preuMensualPressupost = r => ['jardi', 'piscina', 'aigues_grises'].reduce((t, k) => t + (r['inclou_' + k] && r['preu_' + k] != null ? Number(r['preu_' + k]) : 0), 0);
 const nomCurtTreballador = t => t ? (t.nom || '') + (t.cognoms ? ' ' + t.cognoms.trim()[0].toUpperCase() + '.' : '') : '';
 const MESOS = ['Gener', 'Febrer', 'Març', 'Abril', 'Maig', 'Juny', 'Juliol', 'Agost', 'Setembre', 'Octubre', 'Novembre', 'Desembre'];
-/* Colors de les mesures de piscina: intervals [mín, màx, color], del millor al pitjor; als límits mana el millor */
+/* Colors de les mesures de piscina: intervals [mín, màx, color], del millor al pitjor; als límits mana el millor.
+   Alguns paràmetres tenen intervals diferents segons l'època de l'any (pel dia i mes de la data de la mesura). */
+const dinsPeriode = (iso, desDe, finsA) => { const md = String(iso).slice(5, 10); return desDe <= finsA ? (md >= desDe && md <= finsA) : (md >= desDe || md <= finsA); };
+const TEMPORADES = {
+  clor_lliure: d => dinsPeriode(d, '06-15', '09-14') ? 'estiu' : 'resta',     // del 15/06 al 14/09
+  ph:          d => dinsPeriode(d, '03-01', '10-31') ? 'calid' : 'fred',      // de l'01/03 al 31/10 · de l'01/11 al 28/02
+  isocianuric: d => dinsPeriode(d, '06-15', '12-14') ? 'segona' : 'resta',    // del 15/06 al 14/12
+};
 const LLINDARS = {
-  clor_lliure:   [[1.5, 2, 'verd-fort'], [0.8, 1.5, 'verd-suau'], [2, 2.3, 'verd-suau'], [0.2, 0.8, 'taronja'], [2.3, 3, 'taronja'], [0, 0.2, 'vermell'], [3, 6, 'vermell'], [6, Infinity, 'negre']],
-  clor_combinat: [[0, 0.1, 'verd-fort'], [0.1, 0.6, 'verd-suau'], [0.6, 1.2, 'taronja'], [1.2, 3, 'vermell'], [3, Infinity, 'negre']],
-  ph:            [[7.2, 7.3, 'verd-fort'], [7.1, 7.2, 'verd-suau'], [7.3, 7.5, 'verd-suau'], [6.9, 7.1, 'taronja'], [7.5, 7.8, 'taronja'], [6, 6.9, 'vermell'], [7.8, 9, 'vermell'], [-Infinity, 6, 'negre'], [9, Infinity, 'negre']],
-  isocianuric:   [[30, 60, 'verd-fort'], [15, 30, 'verd-suau'], [60, 75, 'verd-suau'], [5, 15, 'taronja'], [75, 90, 'taronja'], [0, 5, 'vermell'], [90, 150, 'vermell'], [150, Infinity, 'negre']],
-  alcalinitat:   [[80, 100, 'verd-fort'], [70, 80, 'verd-suau'], [100, 120, 'verd-suau'], [60, 70, 'taronja'], [120, 180, 'taronja'], [-Infinity, 60, 'vermell'], [180, Infinity, 'vermell']],
-  duresa:        [[200, 400, 'verd-fort'], [170, 200, 'verd-suau'], [400, 450, 'verd-suau'], [150, 170, 'taronja'], [450, 500, 'taronja'], [-Infinity, 150, 'vermell'], [500, Infinity, 'vermell']],
+  clor_lliure: {
+    estiu: [[1.5, 2, 'verd-fort'], [0.8, 1.5, 'verd-suau'], [2, 2.3, 'verd-suau'], [0.2, 0.8, 'taronja'], [2.3, 3, 'taronja'], [0, 0.2, 'vermell'], [3, 6, 'vermell'], [6, Infinity, 'negre']],
+    resta: [[1, 2, 'verd-fort'], [0.5, 1, 'verd-suau'], [2, 2.5, 'verd-suau'], [0.2, 0.5, 'taronja'], [2.5, 4, 'taronja'], [0, 0.2, 'vermell'], [4, 6, 'vermell'], [6, Infinity, 'negre']],
+  },
+  clor_combinat: [[0, 0.3, 'verd-fort'], [0.3, 0.6, 'verd-suau'], [0.6, 1.2, 'taronja'], [1.2, 3, 'vermell'], [3, Infinity, 'negre']],
+  ph: {
+    calid: [[7.2, 7.3, 'verd-fort'], [7.1, 7.2, 'verd-suau'], [7.3, 7.5, 'verd-suau'], [6.9, 7.1, 'taronja'], [7.5, 7.8, 'taronja'], [6, 6.9, 'vermell'], [7.8, 9, 'vermell'], [-Infinity, 6, 'negre'], [9, Infinity, 'negre']],
+    fred:  [[6.9, 7, 'verd-fort'], [6.8, 6.9, 'verd-suau'], [7, 7.1, 'verd-suau'], [6.7, 6.8, 'taronja'], [7.1, 7.2, 'taronja'], [6, 6.7, 'vermell'], [7.2, 9, 'vermell'], [-Infinity, 6, 'negre'], [9, Infinity, 'negre']],
+  },
+  isocianuric: {
+    segona: [[30, 60, 'verd-fort'], [15, 30, 'verd-suau'], [60, 75, 'verd-suau'], [5, 15, 'taronja'], [75, 90, 'taronja'], [0, 5, 'vermell'], [90, 150, 'vermell'], [150, Infinity, 'negre']],
+    resta:  [[30, 60, 'verd-fort'], [15, 30, 'verd-suau'], [60, 80, 'verd-suau'], [5, 15, 'taronja'], [80, 100, 'taronja'], [0, 5, 'vermell'], [100, 150, 'vermell'], [150, Infinity, 'negre']],
+  },
+  alcalinitat:   [[80, 130, 'verd-fort'], [60, 80, 'verd-suau'], [130, 180, 'verd-suau'], [40, 60, 'taronja'], [180, 250, 'taronja'], [-Infinity, 40, 'vermell'], [250, Infinity, 'vermell']],
+  duresa:        [[200, 300, 'verd-fort'], [150, 200, 'verd-suau'], [300, 400, 'verd-suau'], [100, 150, 'taronja'], [400, 500, 'taronja'], [-Infinity, 100, 'vermell'], [500, Infinity, 'vermell']],
   salinitat:     [[5.5, Infinity, 'verd-fort'], [5, 5.5, 'verd-suau'], [4, 5, 'taronja'], [0, 4, 'vermell']],
 };
-const colorLlindar = clau => v => { if (v == null || v === '') return ''; const x = Number(v); if (isNaN(x)) return ''; const hit = LLINDARS[clau].find(([a, b]) => x >= a && x <= b); return hit ? 'c-' + hit[2] : ''; };
+const dataDe = row => (row && row.data) ? String(row.data).slice(0, 10) : avui();
+const temporadaDe = (clau, row) => TEMPORADES[clau] ? TEMPORADES[clau](dataDe(row)) : null;
+const llindars = (clau, row) => { const l = LLINDARS[clau]; return Array.isArray(l) ? l : l[temporadaDe(clau, row)]; };
+// row: el registre o els valors del formulari (en surt la data de la mesura); sense data, avui
+const colorLlindar = clau => (v, row) => { if (v == null || v === '') return ''; const x = Number(v); if (isNaN(x)) return ''; const hit = llindars(clau, row).find(([a, b]) => x >= a && x <= b); return hit ? 'c-' + hit[2] : ''; };
 const esVermell = c => c === 'c-vermell' || c === 'c-negre'; // vermell o pitjor: cal una segona mostra
 const colorTransparencia = v => ({ optima: 'c-verd-fort', transparent_pero: 'c-verd-suau', un_punt_terbola: 'c-taronja', terbola_es_veu: 'c-vermell', no_es_veu: 'c-negre' })[v] || '';
+// codi de l'avís (taula Avisos de piscina) segons color i costat: [per sota del verd fort, per sobre]
 const AVIS_MAPA = {
-  clor_lliure:   { 'verd-suau': ['1B', '1A'], taronja: ['2B', '2A'], vermell: ['3B', '3A'], negre: ['4', '4'] },
-  clor_combinat: { 'verd-suau': ['5', '5'], taronja: ['6', '6'], vermell: ['7', '7'], negre: ['8', '8'] },
-  ph:            { 'verd-suau': ['9B', '9A'], taronja: ['10B', '10A'], vermell: ['11B', '11A'], negre: ['12B', '12A'] },
-  isocianuric:   { 'verd-suau': ['13', '13'], taronja: ['14B', '14A'], vermell: ['15B', '15A'], negre: ['16', '16'] },
-  alcalinitat:   { taronja: ['21', '21'], vermell: ['21', '21'] },
-  duresa:        { taronja: ['21', '21'], vermell: ['21', '21'] },
-  salinitat:     { taronja: ['22', '22'], vermell: ['22', '22'] },
+  clor_lliure:   { 'verd-fort': ['0', '0'], 'verd-suau': ['1B', '1A'], taronja: ['2B', '2A'], vermell: ['3B', '3A'], negre: ['4', '4'] },
+  clor_combinat: { 'verd-fort': ['0', '0'], 'verd-suau': ['5', '5'], taronja: ['6', '6'], vermell: ['7', '7'], negre: ['8', '8'] },
+  ph:            { 'verd-fort': ['0', '0'], 'verd-suau': ['9B', '9A'], taronja: ['10B', '10A'], vermell: ['11B', '11A'], negre: ['12B', '12A'] },
+  isocianuric:   { 'verd-fort': ['0', '0'], 'verd-suau': ['13B', '13A'], taronja: ['14B', '14A'], vermell: ['15B', '15A'], negre: ['16', '16'] },
+  alcalinitat:   { 'verd-fort': ['0', '0'], 'verd-suau': ['23B', '23A'], taronja: ['24B', '24A'], vermell: ['25B', '25A'] },
+  duresa:        { 'verd-fort': ['0', '0'], 'verd-suau': ['26B', '26A'], taronja: ['27B', '27A'], vermell: ['28B', '28A'] },
+  salinitat:     { 'verd-fort': ['0S', '0S'], 'verd-suau': ['29', '29'], taronja: ['30', '30'], vermell: ['31', '31'] },
 };
+// l'avís canvia segons l'època: pH a l'hivern (9B → 9Bh), isocianúric la resta de l'any (13B → 13Br)
+const AVIS_TEMPORADA = { ph: { fred: { '9B': '9Bh' } }, isocianuric: { resta: { '13B': '13Br' } } };
 const AVIS_TRANSP = { 'verd-suau': '17', taronja: '18', vermell: '19', negre: '20' };
-// clau de l'avís segons color i costat (B = per sota del verd fort, A = per sobre)
-const avisClau = clau => v => { const c = colorLlindar(clau)(v); if (!c || c === 'c-verd-fort') return null; const m = AVIS_MAPA[clau][c.slice(2)]; if (!m) return null; return Number(v) < LLINDARS[clau][0][0] ? m[0] : m[1]; };
+const avisClau = clau => (v, row) => {
+  const c = colorLlindar(clau)(v, row); if (!c) return null;
+  const m = AVIS_MAPA[clau][c.slice(2)]; if (!m) return null;
+  let k = Number(v) < llindars(clau, row)[0][0] ? m[0] : m[1];
+  const t = temporadaDe(clau, row), variant = t && AVIS_TEMPORADA[clau] && AVIS_TEMPORADA[clau][t]; if (variant && variant[k]) k = variant[k];
+  return k;
+};
 const avisTransparencia = v => { const c = colorTransparencia(v); return c ? AVIS_TRANSP[c.slice(2)] || null : null; };
+/* Dosis de producte (full de dosis de l'empresa): quantitat per a 100 m³ i per a la variació de referència.
+   Als avisos s'escriu {dosi producte variació}, p. ex. {dosi clor+ 1} o {dosi ph- 0,2}, i surt la quantitat segons el volum de la piscina. */
+const DOSIS = {
+  'clor+':         { q: 1,   ref: 1,   unitat: 'vasets', ca: 'de clor granulat', es: 'de cloro granulado', per: 'per pujar {d} ppm el clor', per_es: 'para subir {d} ppm el cloro' },
+  'clor-':         { q: 1,   ref: 1,   unitat: 'vasets', ca: 'de neutralitzador de clor', es: 'de neutralizador de cloro', per: 'per baixar {d} ppm el clor', per_es: 'para bajar {d} ppm el cloro' },
+  'ph+':           { q: 8,   ref: 0.2, unitat: 'vasets', ca: 'de pH+', es: 'de pH+', per: 'per pujar {d} el pH', per_es: 'para subir {d} el pH' },
+  'ph-':           { q: 8,   ref: 0.2, unitat: 'vasets', ca: 'de pH−', es: 'de pH−', per: 'per baixar {d} el pH', per_es: 'para bajar {d} el pH' },
+  'oxigen':        { q: 1,   ref: 0.2, unitat: 'vasets', ca: 'd’oxigen', es: 'de oxígeno', per: 'per treure {d} ppm de cloramines', per_es: 'para quitar {d} ppm de cloraminas' },   // 2 vasets per 0,2 ppm en 200 m³
+  'estabilitzant': { q: 10,  ref: 15,  unitat: 'vasets', ca: 'd’estabilitzant', es: 'de estabilizante', per: 'per pujar {d} ppm l’isocianúric', per_es: 'para subir {d} ppm el isocianúrico' },
+  'bicarbonat':    { q: 6,   ref: 40,  unitat: 'kg', pot: 6, ca: 'de bicarbonat sòdic', es: 'de bicarbonato sódico', per: 'per pujar {d} ppm l’alcalinitat', per_es: 'para subir {d} ppm la alcalinidad' },
+  'carbonat':      { q: 6,   ref: 50,  unitat: 'kg', pot: 6, ca: 'de carbonat càlcic', es: 'de carbonato cálcico', per: 'per pujar {d} ppm la duresa càlcica', per_es: 'para subir {d} ppm la dureza cálcica' },
+  'segrestant':    { q: 2,   ref: 100, unitat: 'litres', ca: 'de segrestant de calci', es: 'de secuestrante de calcio', per: 'per baixar {d} ppm el calci', per_es: 'para bajar {d} ppm el calcio' },
+  'sal':           { q: 100, ref: 1,   unitat: 'kg', ca: 'de sal', es: 'de sal', per: 'per pujar {d} g/l la sal', per_es: 'para subir {d} g/l la sal' },   // 1 g/l = 1 kg per m³
+};
+const numCat = (x, dec) => { const t = Number(x).toFixed(dec); return (t.includes('.') ? t.replace(/0+$/, '').replace(/\.$/, '') : t).replace('.', ','); };
+const mitjos = n => { const m = Math.max(0.5, Math.round(n * 2) / 2), e = Math.floor(m); return (m - e ? (e ? e + '½' : '½') : String(e)); };   // 0,5 → ½ · 1,5 → 1½
+const volumPiscina = p => p && p.llargada && p.amplada && p.profunditat ? Number(p.llargada) * Number(p.amplada) * Number(p.profunditat) : null;
+// text de la dosi: quantitat, producte i entre parèntesis per a què serveix i el volum de la piscina
+function textDosi(producte, variacio, V, lang) {
+  const d = DOSIS[producte]; if (!d) return `{dosi ${producte} ${variacio}}`;
+  const es = lang === 'es', delta = Number(String(variacio).replace(',', '.')) || d.ref;
+  const per100 = d.q * delta / d.ref, n = V ? per100 * V / 100 : per100;
+  let quant, unitat;
+  if (d.unitat === 'vasets') { quant = mitjos(n); unitat = (n <= 1 ? (es ? 'vasito' : 'vaset') : (es ? 'vasitos' : 'vasets')); }
+  else if (d.unitat === 'litres') { quant = numCat(n, 1); unitat = n === 1 ? (es ? 'litro' : 'litre') : (es ? 'litros' : 'litres'); }
+  else { quant = numCat(n, 1); unitat = 'kg'; }
+  const np = d.pot && V ? n / d.pot : 0, pots = np ? `${numCat(np, 1)} ${es ? (np === 1 ? 'bote' : 'botes') : (np === 1 ? 'pot' : 'pots')} de ${d.pot} kg; ` : '';
+  const perque = (es ? d.per_es : d.per).replace('{d}', numCat(delta, 2));
+  return V
+    ? `${quant} ${unitat} ${es ? d.es : d.ca} (${pots}${perque}; ${es ? 'la piscina tiene' : 'la piscina té'} ${Math.round(V)} m³)`
+    : `${quant} ${unitat} ${es ? d.es : d.ca} ${es ? 'por cada' : 'per cada'} 100 m³ (${perque}; ${es ? 'faltan las medidas de la piscina' : 'falten les mides de la piscina'})`;
+}
 const textAvis = (clau, piscina, lang) => {
   const a = C.rows('avisos_piscina').find(x => x.clau === clau && x.actiu); if (!a) return '';
   const src = lang === 'es' ? (a.text_es || '') : a.text; if (!src) return '';
-  const V = piscina && piscina.llargada && piscina.amplada && piscina.profunditat ? Number(piscina.llargada) * Number(piscina.amplada) * Number(piscina.profunditat) : null;
-  return src.replace(/\{vasets (\d+)\}/g, (_, n) => lang === 'es'
-    ? (V ? `${Math.ceil(V / 100) * Number(n)} vasitos de oxígeno (${n} por cada 100 m³; la piscina tiene ${Math.round(V)} m³)` : `${n} vasitos de oxígeno por cada 100 m³ (faltan las medidas de la piscina)`)
-    : (V ? `${Math.ceil(V / 100) * Number(n)} vasets d’oxigen (${n} per cada 100 m³; la piscina té ${Math.round(V)} m³)` : `${n} vasets d’oxigen per cada 100 m³ (falten les mides de la piscina)`));
+  const V = volumPiscina(piscina);
+  return src
+    .replace(/\{dosi ([^\s}]+)\s+([^\s}]+)\}/g, (_, prod, variacio) => textDosi(prod, variacio, V, lang))
+    .replace(/\{vasets (\d+)\}/g, (_, n) => lang === 'es'
+      ? (V ? `${Math.ceil(V / 100) * Number(n)} vasitos de oxígeno (${n} por cada 100 m³; la piscina tiene ${Math.round(V)} m³)` : `${n} vasitos de oxígeno por cada 100 m³ (faltan las medidas de la piscina)`)
+      : (V ? `${Math.ceil(V / 100) * Number(n)} vasets d’oxigen (${n} per cada 100 m³; la piscina té ${Math.round(V)} m³)` : `${n} vasets d’oxigen per cada 100 m³ (falten les mides de la piscina)`));
 };
 const colorSiNo = v => v === true || v === 'true' ? 'c-verd-suau' : (v === false || v === 'false' ? 'c-vermell' : '');
 const eur = v => v == null || v === '' ? '' : Number(v).toFixed(2).replace('.', ',') + ' €';
@@ -1562,11 +1624,11 @@ const SCHEMA = {
         { key: 'hora', label: 'Hora', type: 'time', default: () => new Date().toTimeString().slice(0, 5) },
         { key: 'treballador_id', label: 'Fet per', curt: 'Per', type: 'ref', ref: 'treballadors', wide: true, default: () => { const t = treballadorActual(); return t ? t.id : ''; }, hint: 's’omple sol amb qui ha entrat, si el seu correu d’accés és a Treballadors' },
         { key: 'clor_lliure_1', label: 'Clor lliure 1 (ppm)', curt: 'Cl lliure 1', type: 'number', step: '0.01', color: colorLlindar('clor_lliure'), avis: avisClau('clor_lliure') },
-        { key: 'clor_lliure_2', label: 'Segona mostra de clor (ppm)', curt: '2a mostra Cl', type: 'number', step: '0.01', color: colorLlindar('clor_lliure'), avis: avisClau('clor_lliure'), visible: vals => esVermell(colorLlindar('clor_lliure')(vals.clor_lliure_1)), neteja: true, hint: 'només quan la primera mostra surt vermella: torna a mesurar' },
+        { key: 'clor_lliure_2', label: 'Segona mostra de clor (ppm)', curt: '2a mostra Cl', type: 'number', step: '0.01', color: colorLlindar('clor_lliure'), avis: avisClau('clor_lliure'), visible: vals => esVermell(colorLlindar('clor_lliure')(vals.clor_lliure_1, vals)), neteja: true, hint: 'només quan la primera mostra surt vermella: torna a mesurar' },
         { key: 'clor_combinat_1', label: 'Clor combinat 1 (ppm)', curt: 'Cl comb. 1', type: 'number', step: '0.01', color: colorLlindar('clor_combinat'), avis: avisClau('clor_combinat'), visible: tocaCada(7, 'clor_combinat_1', true), quan: 'setmanal, del 15/06 al 15/09' },
         { key: 'clor_combinat_2', label: 'Clor combinat 2 (ppm)', curt: 'Cl comb. 2', type: 'number', step: '0.01', color: colorLlindar('clor_combinat'), avis: avisClau('clor_combinat'), visible: tocaCada(7, 'clor_combinat_1', true), quan: 'setmanal, del 15/06 al 15/09' },
         { key: 'ph_1', label: 'pH 1', type: 'number', step: '0.01', color: colorLlindar('ph'), avis: avisClau('ph') },
-        { key: 'ph_2', label: 'Segona mostra de pH', curt: '2a mostra pH', type: 'number', step: '0.01', color: colorLlindar('ph'), avis: avisClau('ph'), visible: vals => esVermell(colorLlindar('ph')(vals.ph_1)), neteja: true, hint: 'només quan la primera mostra surt vermella: torna a mesurar' },
+        { key: 'ph_2', label: 'Segona mostra de pH', curt: '2a mostra pH', type: 'number', step: '0.01', color: colorLlindar('ph'), avis: avisClau('ph'), visible: vals => esVermell(colorLlindar('ph')(vals.ph_1, vals)), neteja: true, hint: 'només quan la primera mostra surt vermella: torna a mesurar' },
         { key: 'isocianuric', label: 'Isocianúric (ppm)', curt: 'Isocian.', type: 'number', step: '0.1', color: colorLlindar('isocianuric'), avis: avisClau('isocianuric'), visible: tocaCada(30, 'isocianuric', true), quan: 'mensual, del 15/06 al 15/09' },
         { key: 'alcalinitat', label: 'Alcalinitat (ppm)', curt: 'Alcal.', type: 'number', step: '0.1', color: colorLlindar('alcalinitat'), avis: avisClau('alcalinitat'), visible: tocaCada(30, 'alcalinitat', false), quan: 'mensual' },
         { key: 'duresa', label: 'Duresa (ppm)', curt: 'Duresa', type: 'number', step: '0.1', color: colorLlindar('duresa'), avis: avisClau('duresa'), visible: tocaCada(30, 'duresa', false), quan: 'mensual' },
@@ -1600,7 +1662,7 @@ const SCHEMA = {
       list: ['clau', 'text', 'text_es', 'observacions'],
       fields: [
         { key: 'clau', label: 'Codi', type: 'text', required: true, ro: r => !!r, hint: 'el del full: 1B, 2A, 12B…' },
-        { key: 'text', label: 'Text de l’avís (català)', type: 'textarea', required: true, hint: '{vasets N} es converteix en el nombre de vasets segons el volum (N per cada 100 m³)' },
+        { key: 'text', label: 'Text de l’avís (català)', type: 'textarea', required: true, hint: '{dosi producte variació} es converteix en la quantitat segons el volum de la piscina: {dosi clor+ 1}, {dosi clor- 1,5}, {dosi ph+ 0,2}, {dosi ph- 0,1}, {dosi oxigen 0,5}, {dosi estabilitzant 15}, {dosi bicarbonat 40}, {dosi carbonat 50}, {dosi segrestant 100}, {dosi sal 1}' },
         { key: 'text_es', label: 'Text en castellà', type: 'textarea' },
         { key: 'observacions', label: 'Quan surt', type: 'text' },
       ],
@@ -2344,8 +2406,8 @@ function bindMain(td) {
     const darrerColor = {};
     td.fields.filter(f => f.color && (f.type === 'number' || f.type === 'select')).forEach(f => {
       const el = frm.querySelector(`[name="${f.key}"]`); if (!el) return;
-      darrerColor[f.key] = f.color(el.value);
-      el.addEventListener('change', () => { const c = f.color(el.value); if (c !== darrerColor[f.key]) { darrerColor[f.key] = c; if (c === 'c-verd-fort') focs(el, true); else if (c === 'c-verd-suau') focs(el, false); } });
+      darrerColor[f.key] = f.color(el.value, formValues(frm));
+      el.addEventListener('change', () => { const c = f.color(el.value, formValues(frm)); if (c !== darrerColor[f.key]) { darrerColor[f.key] = c; if (c === 'c-verd-fort') focs(el, true); else if (c === 'c-verd-suau') focs(el, false); } });
     });
     // caselles en grup (comprovacions i feines): el botó queda verd quan està marcat
     frm.querySelectorAll('.chks .f.chk').forEach(w => { const c = w.querySelector('input[type=checkbox]'); if (!c) return; const pinta = () => w.classList.toggle('on', c.checked); pinta(); c.addEventListener('change', pinta); });
@@ -2439,10 +2501,11 @@ function updateCtx(td, frm) {
 }
 
 function pintaColors(td, frm) {
+  const vals = formValues(frm);
   td.fields.filter(f => f.color).forEach(f => {
     const el = frm.querySelector(`[name="${f.key}"]`); if (!el) return;
     el.classList.remove('c-verd-fort', 'c-verd-suau', 'c-taronja', 'c-vermell', 'c-negre');
-    const c = f.color(el.value); if (c) el.classList.add(c);
+    const c = f.color(el.value, vals); if (c) el.classList.add(c);
   });
 }
 // notes vives sota un camp (text i color calculats amb tot el formulari), p. ex. si el venciment coincideix amb les condicions del proveïdor
@@ -2464,9 +2527,9 @@ function pintaAvisos(td, frm) {
   const piscina = vals.piscina_id ? C.get('piscines', vals.piscina_id) : null;
   td.fields.filter(f => f.avis).forEach(f => {
     const box = frm.querySelector(`[data-avis-for="${f.key}"]`), el = frm.querySelector(`[name="${f.key}"]`); if (!box || !el) return;
-    const clau = el.value === '' ? null : f.avis(el.value);
+    const clau = el.value === '' ? null : f.avis(el.value, vals);
     const txt = clau ? textAvis(clau, piscina, 'ca') : '', es = clau ? textAvis(clau, piscina, 'es') : '';
-    box.className = 'avis' + (txt ? ' b-' + (f.color(el.value) || '').replace('c-', '') : '');
+    box.className = 'avis' + (txt ? ' b-' + (f.color(el.value, vals) || '').replace('c-', '') : '');
     box.innerHTML = txt ? `<div class="ca">${h(txt)}</div>${es ? `<div class="es">${h(es)}</div>` : ''}` : ''; box.hidden = !txt;
   });
 }
