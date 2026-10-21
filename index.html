@@ -200,6 +200,13 @@
   .tbl td.num{ text-align:right; white-space:nowrap; }
   .empty{ color:var(--ink-3); padding:24px 0; }
   .children{ margin-top:26px; }
+  .fpl{ margin:0 0 18px; padding:14px 16px; border:1px solid var(--line-2); border-radius:8px; background:#fafbf9; }
+  .fpl h3{ margin:0 0 4px; font-size:17px; } .fpl .sub{ margin:0 0 10px; }
+  .fpl table{ width:100%; } .fpl td{ vertical-align:middle; } .fpl input, .fpl select{ padding:5px 7px; font-size:14px; }
+  .fpl td.q input{ width:64px; } .fpl td.c input{ width:84px; } .fpl td.d select{ min-width:180px; max-width:260px; } .fpl td.desc{ width:30%; } .fpl td.desc input{ width:100%; min-width:160px; }
+  .fpl .pvp{ font-weight:600; white-space:nowrap; } .fpl .fet{ color:#2e7d32; font-weight:600; white-space:nowrap; }
+  .fpl .llegit{ font-family:ui-monospace, monospace; font-size:13px; color:var(--ink-2); }
+  .fpl .bar{ margin-top:10px; }
   .children h3{ font-size:17px; font-weight:600; color:var(--ink); margin:22px 0 10px; }
   .toast.err{ background:var(--red); }
   .addrow{ display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-top:10px; }
@@ -1424,6 +1431,7 @@ const SCHEMA = {
         { key: 'data', label: 'Data', type: 'date', required: true, default: 'avui', ro: r => !!r && r.estat !== 'obert' },
         { key: 'descripcio', label: 'Descripció', type: 'text', hint: 'surt com a concepte si es factura sol', ro: r => !!r && r.estat !== 'obert' },
         { key: 'factura_id', label: 'Factura', type: 'info', fmt: r => r.factura_id ? ((C.get('factures', r.factura_id) || {}).numero_complet || 'esborrany') : '—' },
+        { key: 'factura_proveidor_id', label: 'Fet des de la factura de proveïdor', type: 'info', fmt: r => { const f = r.factura_proveidor_id ? C.get('factures_proveidor', r.factura_proveidor_id) : null; return f ? (f.numero || 'sense número') + ' — ' + L('proveidors', f.proveidor_id) : '—'; } },
         { key: 'observacions', label: 'Observacions', type: 'textarea' },
       ],
     },
@@ -1570,7 +1578,7 @@ const SCHEMA = {
     proveidors: {
       label: 'Proveïdors', nou: 'Nou proveïdor', order: 'nom',
       display: r => r.nom,
-      list: ['nom', 'nif', 'poblacio', 'telefon', 'contacte', 'forma_pagament', 'dia_pagament', 'termini_dies'],
+      list: ['nom', 'nif', 'poblacio', 'telefon', 'contacte', 'forma_pagament', 'dia_pagament', 'termini_dies', 'percentatge_venda'],
       fields: [
         { key: 'nom', label: 'Nom o raó social', type: 'text', required: true, dup: 'similar' },
         { key: 'nif', label: 'NIF', type: 'text', dup: 'exact' },
@@ -1585,6 +1593,7 @@ const SCHEMA = {
         { key: 'termini_dies', label: 'Termini (dies)', type: 'integer', min: 0, required: true, default: 30 },
         { key: 'compte_bancari', label: 'Compte del proveïdor', type: 'text' },
         { key: 'codi', label: 'El nostre codi al proveïdor', type: 'text' },
+        { key: 'percentatge_venda', label: '% de venda sobre el cost', type: 'number', step: '1', min: 0, hint: 'per als albarans que surten de les seves factures: 200 = cobrem el doble del que paguem (PVP = cost × 2); buit = al mateix preu' },
         { key: 'pactat_en_quotes', label: 'Pactat en quotes', type: 'boolean' },
         { key: 'subcontractista', label: 'Subcontractista (surt al carril de subcontractista de les incidències)', type: 'boolean' },
         { key: 'observacions', label: 'Observacions', type: 'textarea' },
@@ -1601,8 +1610,10 @@ const SCHEMA = {
       filtres: [{ key: 'data_factura', tipus: 'dates', label: 'Data' }, { key: 'proveidor_id', tipus: 'ref', ref: 'proveidors', label: 'Proveïdor' }, { key: 'compte_despesa_id', tipus: 'ref', ref: 'comptes_despesa', label: 'Compte' }],
       validate: (p, id) => !id && p.estat === 'ok' && !(p.compte_despesa_id && p.conforme_treballador_id && p.conforme_data) ? faltaConformitat : null,
       abansDesar: (p, id) => { const r = id ? C.get('factures_proveidor', id) : null; const abans = r ? String(r.data_venciment || '').slice(0, 10) : ''; if ((p.data_venciment || '') !== abans) p.venciment_origen = p.data_venciment ? 'manual' : null; },
+      extras: liniesProveidorHTML, bindExtras: liniesProveidorBind,
       actions: r => [
         ...(r.pdf ? [{ label: 'Obre el PDF', noDesa: true, run: () => obreFitxer(r.pdf) }] : []),
+        ...(r.pdf ? [{ label: liniesDeFactura(r.id).length ? 'Torna a llegir les línies del PDF' : 'Llegeix les línies del PDF', run: () => llegeixLiniesPdf(r.id) }] : []),
         ...(r.estat === 'revisar' ? [{ label: 'Marca com a revisada', run: () => marcaRevisada(r.id) }] : []),
       ],
       fields: [
@@ -1626,6 +1637,24 @@ const SCHEMA = {
         { key: 'estat', label: 'Estat', type: 'select', options: OPT.estat_fp, required: true, default: 'ok' },
         { key: 'pdf', label: 'PDF', type: 'file', folder: 'proveidors' },
         { key: 'observacions', label: 'Observacions', type: 'textarea' },
+      ],
+    },
+    factura_proveidor_linies: {
+      label: 'Línies de factura de proveïdor', nou: '', order: 'ordre',
+      display: r => r.descripcio,
+      list: ['ordre', 'descripcio', 'quantitat', 'preu_unitari', 'import', 'desti_llegit', 'lloc_id', 'albara_id'],
+      fields: [
+        { key: 'factura_proveidor_id', label: 'Factura', type: 'ref', ref: 'factures_proveidor', required: true },
+        { key: 'ordre', label: 'Ordre', type: 'integer' },
+        { key: 'descripcio', label: 'Descripció', type: 'text', required: true },
+        { key: 'quantitat', label: 'Quantitat', type: 'number', step: '0.01', required: true, default: 1 },
+        { key: 'preu_unitari', label: 'Cost unitari', type: 'number', step: '0.0001' },
+        { key: 'import', label: 'Import net', type: 'number', step: '0.01' },
+        { key: 'iva_percent', label: 'IVA %', type: 'number', step: '0.01' },
+        { key: 'desti_llegit', label: 'Destinació llegida', type: 'text' },
+        { key: 'desti_tipus', label: 'Tipus de destinació', type: 'select', options: [['lloc', 'Lloc'], ['stock', 'Stock'], ['grup', 'Grup / oficina']] },
+        { key: 'lloc_id', label: 'Lloc', type: 'ref', ref: 'llocs' },
+        { key: 'albara_id', label: 'Albarà', type: 'ref', ref: 'albarans' },
       ],
     },
     comptes_despesa: {
@@ -3491,7 +3520,7 @@ async function pujaFactures(fitxers) {
       const up = await sb.storage.from(BUCKET).upload(path, file, { contentType: 'application/pdf' });
       if (up.error) throw new Error('no s’ha pogut pujar: ' + friendly(up.error));
       fila.html = 'llegint…'; pinta();
-      const { data, error } = await sb.functions.invoke('llegeix-factura', { body: { path, comptes: C.rows('comptes_despesa').filter(c => c.actiu).map(c => c.codi + ' — ' + c.nom), persones: C.rows('treballadors').filter(potConformar).map(t => inicialsTreballador(t) + ' — ' + nomTreballador(t)) } });
+      const { data, error } = await sb.functions.invoke('llegeix-factura', { body: cosLecturaFactura(path) });
       if (error) {
         let detall = error.message || String(error);
         try { if (error.context && error.context.json) { const j = await error.context.json(); if (j && j.error) detall = j.error; } } catch (e2) {}
@@ -3521,17 +3550,169 @@ async function pujaFactures(fitxers) {
       };
       const ev = estatVenciment(fp);
       const vencHtml = !fp.data_venciment ? '' : ev.classe === 'v-ok' ? `<span class="v-ok">venciment ${dmy(fp.data_venciment)} ✓</span>` : ev.classe === 'v-no' ? `<span class="v-no">venciment ${dmy(fp.data_venciment)}: tocaria el ${dmy(esperat)}</span>` : `<span class="v-calc">venciment calculat ${dmy(fp.data_venciment)}</span>`;
-      const ins = await sb.from('factures_proveidor').insert(fp);
+      const ins = await sb.from('factures_proveidor').insert(fp).select('id').single();
       if (ins.error) throw new Error('factura: ' + friendly(ins.error));
-      fila.html = `<span class="c-verd-suau xip">entrada</span> ${h(prov.nom)}${creat ? ' <i>(proveïdor nou)</i>' : ''} · ${h(data.numero || 'sense número')} · ${eur(total)}${data.confianca && data.confianca !== 'alta' ? ` · <b>confiança ${h(data.confianca)}</b>` : ''}${vencHtml ? ' · ' + vencHtml : ''} · ${conf.html}`;
+      let liniesHtml = '';
+      try { const n = await desaLiniesLlegides(ins.data.id, data.linies); liniesHtml = n ? ` · ${n} líni${n === 1 ? 'a' : 'es'} (${liniesPendentsText(ins.data.id)})` : ' · <i>sense línies</i>'; }
+      catch (e2) { liniesHtml = ` · <b class="c-taronja">línies: ${h(e2.message || String(e2))}</b>`; }
+      fila.html = `<span class="c-verd-suau xip">entrada</span> ${h(prov.nom)}${creat ? ' <i>(proveïdor nou)</i>' : ''} · ${h(data.numero || 'sense número')} · ${eur(total)}${data.confianca && data.confianca !== 'alta' ? ` · <b>confiança ${h(data.confianca)}</b>` : ''}${vencHtml ? ' · ' + vencHtml : ''} · ${conf.html}${liniesHtml}`;
     } catch (e) {
       fila.html = `<span class="c-vermell xip">error</span> ${h(e.message || String(e))}`;
     }
     pinta();
   }
-  await loadTable('factures_proveidor');
+  await Promise.all([loadTable('factures_proveidor'), loadTable('factura_proveidor_linies')]);
   btn.disabled = false;
   toast('Fet. Revisa-les a Factures de proveïdor.');
+}
+
+/* ---------- Línies de les factures de proveïdor i albarans que en surten ----------
+   La IA llegeix cada línia i l'anotació manuscrita del costat (M1, D7, STOCK, OFICINA…). Les que van a un lloc fan un albarà
+   per lloc amb la data de la factura i preu de venda = cost × % del proveïdor; stock i grup/oficina no en fan. Sempre amb l'OK de l'oficina. */
+const cosLecturaFactura = path => ({ path, comptes: C.rows('comptes_despesa').filter(c => c.actiu).map(c => c.codi + ' — ' + c.nom), persones: C.rows('treballadors').filter(potConformar).map(t => inicialsTreballador(t) + ' — ' + nomTreballador(t)), llocs: C.rows('llocs').filter(l => l.actiu).map(l => l.nom) });
+const DESTI_ESPECIALS = { STOCK: 'stock', ESTOC: 'stock', MAGATZEM: 'stock', GRUP: 'grup', GRUPO: 'grup', OFICINA: 'grup', OFI: 'grup' };
+const normCodi = x => senseAccents(String(x || '')).toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim();
+// de l'anotació manuscrita a la destinació: { tipus, lloc_id } o null si no se sap (llavors ho tria l'oficina)
+function destiDesDeText(text) {
+  const c = normCodi(text); if (!c) return null;
+  if (DESTI_ESPECIALS[c]) return { tipus: DESTI_ESPECIALS[c], lloc_id: null };
+  const llocs = C.rows('llocs').filter(l => l.actiu);
+  const un = cands => cands.length === 1 ? { tipus: 'lloc', lloc_id: cands[0].id } : null;
+  return un(llocs.filter(l => normCodi(l.nom) === c)) || un(llocs.filter(l => normCodi(l.nom).split(' ').includes(c))) || un(llocs.filter(l => normCodi(l.nom).startsWith(c + ' '))) || null;
+}
+const factorVenda = prov => prov && prov.percentatge_venda != null && prov.percentatge_venda !== '' ? Number(prov.percentatge_venda) / 100 : 1;
+const costLinia = l => l.import != null && l.import !== '' && Number(l.quantitat) ? Number(l.import) / Number(l.quantitat) : Number(l.preu_unitari || 0);
+const pvpLinia = (l, prov) => Math.round(costLinia(l) * factorVenda(prov) * 100) / 100;
+const liniesDeFactura = fpId => C.rows('factura_proveidor_linies').filter(l => l.actiu && Number(l.factura_proveidor_id) === Number(fpId)).sort((a, b) => (a.ordre || 0) - (b.ordre || 0) || a.id - b.id);
+function liniesPendentsText(fpId) {
+  const ls = liniesDeFactura(fpId), aLloc = ls.filter(l => l.desti_tipus === 'lloc' && l.lloc_id).length, sense = ls.filter(l => !l.desti_tipus).length;
+  return `${aLloc} per a albarà, ${ls.length - aLloc - sense} de stock o grup${sense ? `, <b class="c-taronja">${sense} sense destinació</b>` : ''}`;
+}
+async function desaLiniesLlegides(fpId, linies) {
+  const files = (Array.isArray(linies) ? linies : []).filter(l => l && l.descripcio).map((l, i) => {
+    const d = destiDesDeText(l.desti);
+    return { factura_proveidor_id: fpId, ordre: i + 1, descripcio: String(l.descripcio).trim(), quantitat: Number(l.quantitat) || 1,
+      preu_unitari: l.preu_unitari != null && l.preu_unitari !== '' ? Number(l.preu_unitari) : null, import: l.import != null && l.import !== '' ? Number(l.import) : null,
+      iva_percent: l.iva_percent != null && l.iva_percent !== '' ? Number(l.iva_percent) : null,
+      desti_llegit: l.desti ? String(l.desti).trim() : null, desti_tipus: d ? d.tipus : null, lloc_id: d ? d.lloc_id : null };
+  });
+  if (!files.length) return 0;
+  const r = await sb.from('factura_proveidor_linies').insert(files); if (r.error) throw new Error(friendly(r.error));
+  return files.length;
+}
+// torna a llegir el PDF d'una factura ja entrada i en refà les línies (les que ja tenen albarà no es toquen)
+async function llegeixLiniesPdf(fpId) {
+  const f = C.get('factures_proveidor', fpId); if (!f || !f.pdf) { toastErr('Aquesta factura no té PDF'); return; }
+  const fetes = liniesDeFactura(fpId).filter(l => l.albara_id).length;
+  if (fetes && !confirm(`Hi ha ${fetes} líni${fetes === 1 ? 'a' : 'es'} que ja tenen albarà: es mantenen. La resta es tornen a llegir del PDF. Continuo?`)) return;
+  toast('Llegint el PDF…');
+  const { data, error } = await sb.functions.invoke('llegeix-factura', { body: cosLecturaFactura(f.pdf) });
+  if (error || !data || data.error) { showFormError('Lectura: ' + ((data && data.error) || (error && error.message) || 'error')); return; }
+  const aTreure = liniesDeFactura(fpId).filter(l => !l.albara_id).map(l => l.id);
+  if (aTreure.length) { const r = await sb.from('factura_proveidor_linies').delete().in('id', aTreure); if (r.error) { showFormError(friendly(r.error)); return; } }
+  try { const n = await desaLiniesLlegides(fpId, data.linies); toast(n ? `${n} líni${n === 1 ? 'a' : 'es'} llegid${n === 1 ? 'a' : 'es'}` : 'El PDF no té línies llegibles'); } catch (e) { showFormError(e.message); }
+  await loadTable('factura_proveidor_linies'); renderMain();
+}
+const opcionsDesti = (l) => {
+  const perClient = new Map();
+  C.rows('llocs').filter(x => x.actiu).sort((a, b) => a.nom.localeCompare(b.nom, 'ca')).forEach(x => { const c = L('clients', x.client_id) || '(sense client)'; if (!perClient.has(c)) perClient.set(c, []); perClient.get(c).push(x); });
+  const sel = (t, id) => l.desti_tipus === t && (t !== 'lloc' || Number(l.lloc_id) === Number(id)) ? 'selected' : '';
+  return `<option value="" ${!l.desti_tipus ? 'selected' : ''}>— tria on va —</option><option value="stock" ${sel('stock')}>Stock (sense albarà)</option><option value="grup" ${sel('grup')}>Grup / oficina (sense albarà)</option>`
+    + [...perClient.entries()].sort((a, b) => a[0].localeCompare(b[0], 'ca')).map(([c, xs]) => `<optgroup label="${h(c)}">${xs.map(x => `<option value="lloc:${x.id}" ${sel('lloc', x.id)}>${h(x.nom)}</option>`).join('')}</optgroup>`).join('');
+};
+function liniesProveidorHTML(row) {
+  if (!row) return '';
+  const ls = liniesDeFactura(row.id), prov = C.get('proveidors', row.proveidor_id), pct = prov && prov.percentatge_venda != null && prov.percentatge_venda !== '' ? Number(prov.percentatge_venda) : null;
+  const pend = ls.filter(l => !l.albara_id && l.desti_tipus === 'lloc' && l.lloc_id);
+  const nota = pct == null
+    ? `<b class="c-taronja">El proveïdor no té «% de venda sobre el cost»: els preus de venda sortirien iguals al cost.</b> Posa-l'hi a la fitxa del proveïdor.`
+    : `Preu de venda = cost × ${h(String(pct).replace('.', ','))} % (fitxa del proveïdor).`;
+  const files = ls.map(l => `<tr data-linia="${l.id}">
+      <td class="num">${l.ordre || ''}</td>
+      <td class="desc"><input type="text" data-camp="descripcio" value="${h(l.descripcio)}" ${l.albara_id ? 'disabled' : ''}></td>
+      <td class="q num"><input type="number" step="0.01" data-camp="quantitat" value="${h(l.quantitat)}" ${l.albara_id ? 'disabled' : ''}></td>
+      <td class="c num"><input type="number" step="0.0001" data-camp="cost" value="${h(costLinia(l).toFixed(4).replace(/0+$/, '').replace(/\.$/, ''))}" ${l.albara_id ? 'disabled' : ''}></td>
+      <td class="num pvp" data-pvp>${eur(pvpLinia(l, prov))}</td>
+      <td class="llegit">${h(l.desti_llegit || '')}</td>
+      <td class="d">${l.albara_id ? h(l.desti_tipus === 'lloc' ? L('llocs', l.lloc_id) : '') : `<select data-camp="desti">${opcionsDesti(l)}</select>`}</td>
+      <td>${l.albara_id ? `<a href="#" class="fet" data-obre-taula="albarans" data-obre-id="${l.albara_id}">${h((C.get('albarans', l.albara_id) || {}).numero_complet || 'albarà')}</a>` : (l.desti_tipus === 'lloc' && l.lloc_id ? '<span class="hint">pendent</span>' : l.desti_tipus ? '<span class="hint">sense albarà</span>' : '<b class="c-taronja">?</b>')}</td>
+      <td>${l.albara_id ? '' : `<button type="button" class="btn ghost small" data-treu-linia="${l.id}">Treu</button>`}</td>
+    </tr>`).join('');
+  return `<div class="fpl" id="fpl">
+    <h3>Línies de la factura i on va cada cosa</h3>
+    <p class="sub">${ls.length ? 'Les ha llegit la IA del PDF: comprova la descripció, la quantitat, el cost i la destinació manuscrita. ' : (row.pdf ? 'Encara no s’han llegit les línies: fes «Llegeix les línies del PDF» (a baix) o afegeix-les a mà. ' : 'Afegeix les línies a mà. ')}${nota}</p>
+    ${ls.length ? `<table class="tbl informe"><thead><tr><th>#</th><th>Descripció</th><th class="num">Quant.</th><th class="num">Cost unit.</th><th class="num">PVP unit.</th><th>Llegit</th><th>Destinació</th><th>Albarà</th><th></th></tr></thead><tbody>${files}</tbody></table>` : ''}
+    <div class="addrow" id="fpl-nova">
+      <label class="f" style="flex:4 1 0"><span class="l">Descripció</span><input type="text" data-nou="descripcio"></label>
+      <label class="f" style="flex:.7 1 0"><span class="l">Quant.</span><input type="number" step="0.01" data-nou="quantitat" value="1"></label>
+      <label class="f" style="flex:.9 1 0"><span class="l">Cost unit.</span><input type="number" step="0.0001" data-nou="cost"></label>
+      <label class="f" style="flex:2 1 0"><span class="l">Destinació</span><select data-nou="desti">${opcionsDesti({})}</select></label>
+      <button type="button" class="btn small" id="fpl-afegeix">Afegeix línia</button>
+    </div>
+    <div class="bar"><button type="button" class="btn" id="fpl-crea" ${pend.length ? '' : 'disabled'}>Crea els albarans (${pend.length} líni${pend.length === 1 ? 'a' : 'es'} pendent${pend.length === 1 ? '' : 's'})</button><span class="nota">Un albarà per lloc, amb la data de la factura (${dmy(row.data_factura)}). Et demanarà confirmació.</span></div>
+  </div>`;
+}
+function liniesProveidorBind(frm, td) {
+  const box = $('#fpl'); if (!box) return;
+  const fpId = Number(frm.dataset.id), prov = C.get('proveidors', (C.get('factures_proveidor', fpId) || {}).proveidor_id);
+  const llegeixDesti = v => !v ? { desti_tipus: null, lloc_id: null } : v.startsWith('lloc:') ? { desti_tipus: 'lloc', lloc_id: Number(v.slice(5)) } : { desti_tipus: v, lloc_id: null };
+  box.querySelectorAll('tr[data-linia]').forEach(tr => {
+    const id = Number(tr.dataset.linia);
+    tr.querySelectorAll('[data-camp]').forEach(el => el.addEventListener('change', async () => {
+      const l = C.get('factura_proveidor_linies', id); if (!l) return;
+      const camp = el.dataset.camp; let p;
+      if (camp === 'desti') p = llegeixDesti(el.value);
+      else if (camp === 'cost') p = { preu_unitari: el.value === '' ? null : Number(el.value), import: el.value === '' ? null : Math.round(Number(el.value) * Number(l.quantitat || 1) * 100) / 100 };
+      else if (camp === 'quantitat') p = { quantitat: Number(el.value) || 1, import: l.preu_unitari != null ? Math.round(Number(l.preu_unitari) * (Number(el.value) || 1) * 100) / 100 : l.import };
+      else p = { descripcio: el.value.trim() || l.descripcio };
+      const r = await sb.from('factura_proveidor_linies').update(p).eq('id', id);
+      if (r.error) { showFormError(friendly(r.error)); return; }
+      await loadTable('factura_proveidor_linies'); renderMain();
+    }));
+  });
+  box.querySelectorAll('[data-treu-linia]').forEach(b => b.addEventListener('click', async () => {
+    const r = await sb.from('factura_proveidor_linies').update({ actiu: false }).eq('id', Number(b.dataset.treuLinia));
+    if (r.error) { showFormError(friendly(r.error)); return; }
+    await loadTable('factura_proveidor_linies'); renderMain();
+  }));
+  const af = $('#fpl-afegeix'); if (af) af.addEventListener('click', async () => {
+    const v = k => (box.querySelector(`[data-nou="${k}"]`) || {}).value;
+    const desc = String(v('descripcio') || '').trim(); if (!desc) { showFormError('La línia necessita una descripció'); return; }
+    const q = Number(v('quantitat')) || 1, cost = v('cost') === '' || v('cost') == null ? null : Number(v('cost'));
+    const ordre = Math.max(0, ...liniesDeFactura(fpId).map(l => Number(l.ordre) || 0)) + 1;
+    const r = await sb.from('factura_proveidor_linies').insert({ factura_proveidor_id: fpId, ordre, descripcio: desc, quantitat: q, preu_unitari: cost, import: cost != null ? Math.round(cost * q * 100) / 100 : null, desti_llegit: null, ...llegeixDesti(v('desti')) });
+    if (r.error) { showFormError(friendly(r.error)); return; }
+    await loadTable('factura_proveidor_linies'); renderMain();
+  });
+  const crea = $('#fpl-crea'); if (crea) crea.addEventListener('click', () => creaAlbaransProveidor(fpId));
+  box.querySelectorAll('a[data-obre-taula]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); state.mode = 'consulta'; state.table = a.dataset.obreTaula; state.editing = Number(a.dataset.obreId); renderApp(); window.scrollTo({ top: 0 }); }));
+  void prov;
+}
+// crea un albarà per cada lloc amb les línies pendents (amb l'OK de qui ho fa)
+async function creaAlbaransProveidor(fpId) {
+  const fp = C.get('factures_proveidor', fpId); if (!fp) return;
+  const prov = C.get('proveidors', fp.proveidor_id), pct = prov && prov.percentatge_venda != null && prov.percentatge_venda !== '' ? Number(prov.percentatge_venda) : null;
+  const pend = liniesDeFactura(fpId).filter(l => !l.albara_id && l.desti_tipus === 'lloc' && l.lloc_id);
+  if (!pend.length) { toastErr('Cap línia pendent amb lloc'); return; }
+  const sense = liniesDeFactura(fpId).filter(l => !l.albara_id && !l.desti_tipus).length;
+  const grups = new Map(); pend.forEach(l => { const k = Number(l.lloc_id); if (!grups.has(k)) grups.set(k, []); grups.get(k).push(l); });
+  const resum = [...grups.entries()].map(([llocId, ls]) => { const lloc = C.get('llocs', llocId) || {}; return `• ${lloc.nom || 'lloc ' + llocId} (${L('clients', lloc.client_id)}): ` + ls.map(l => `${String(l.quantitat).replace('.', ',')} × ${l.descripcio} a ${eur(pvpLinia(l, prov))}`).join('; ') + ` = ${eur(ls.reduce((t, l) => t + Math.round(Number(l.quantitat) * pvpLinia(l, prov) * 100) / 100, 0))}`; });
+  const text = `Es crearan ${grups.size} albar${grups.size === 1 ? 'à' : 'ans'} amb data ${dmy(fp.data_factura)} (preu de venda = cost × ${pct == null ? '100' : String(pct).replace('.', ',')} %, sense IVA):\n\n${resum.join('\n')}${sense ? `\n\n(${sense} líni${sense === 1 ? 'a' : 'es'} sense destinació queden pendents.)` : ''}\n\nD’acord?`;
+  if (!confirm(text)) return;
+  let fets = 0;
+  for (const [llocId, ls] of grups) {
+    const lloc = C.get('llocs', llocId); if (!lloc || !lloc.client_id) { showFormError(`El lloc ${(lloc || {}).nom || llocId} no té client`); continue; }
+    const alb = await sb.from('albarans').insert({ client_id: lloc.client_id, lloc_id: lloc.id, data: fp.data_factura || avui(), descripcio: `${prov ? prov.nom : 'Proveïdor'} · factura ${fp.numero || 'sense número'}`, factura_proveidor_id: fp.id, observacions: `Creat des de la factura de proveïdor ${fp.numero || ''} (${prov ? prov.nom : ''}), preu de venda = cost × ${pct == null ? 100 : pct} %` }).select('id').single();
+    if (alb.error) { showFormError('Albarà: ' + friendly(alb.error)); break; }
+    const lin = await sb.from('albara_linies').insert(ls.map((l, i) => ({ albara_id: alb.data.id, ordre: i + 1, descripcio: l.descripcio, quantitat: Number(l.quantitat), preu_unitari: pvpLinia(l, prov), preu_cost: Math.round(costLinia(l) * 100) / 100 })));
+    if (lin.error) { showFormError('Línies de l’albarà: ' + friendly(lin.error)); break; }
+    const upd = await sb.from('factura_proveidor_linies').update({ albara_id: alb.data.id }).in('id', ls.map(l => l.id));
+    if (upd.error) { showFormError(friendly(upd.error)); break; }
+    fets++;
+  }
+  await Promise.all([loadTable('albarans'), loadTable('albara_linies'), loadTable('factura_proveidor_linies')]);
+  if (fets) toast(`${fets} albar${fets === 1 ? 'à creat' : 'ans creats'}`);
+  renderMain();
 }
 
 /* ---------- Albarans ---------- */
