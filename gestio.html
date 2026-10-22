@@ -280,6 +280,11 @@
   .mc-box.on{ background:#2e7d32; border-color:#2e7d32; color:#fff; }
   .mc tr.fet td{ color:var(--ink-3); }
   .mc tr.fet td a{ color:var(--ink-3); }
+  .pp h2.grup{ display:block; margin:26px 0 6px; } .pp h2.grup small{ font-weight:400; color:var(--ink-2); font-size:14px; margin-left:8px; }
+  .pp tr.data td{ padding-top:22px; font-size:17px; border-bottom:2px solid var(--line-2); } .pp tr.data small{ font-weight:400; color:var(--ink-2); font-size:13px; margin-left:8px; }
+  .pp tr.forma td{ background:#f3f4f2; font-weight:600; color:var(--ink-2); font-size:12.5px; letter-spacing:.04em; text-transform:uppercase; padding:6px 8px; }
+  .pp tr.subtotal td{ color:var(--ink-2); font-style:italic; border-bottom:2px solid var(--line-2); }
+  .pp .venc-passat{ color:#b8432b; font-weight:600; }
   @media print{ .nomes-print{ display:block; font-size:12px; color:#333; } .venc .resum{ max-width:none; } }
   .capsal{ display:flex; flex-wrap:wrap; gap:6px 28px; margin:0 0 14px; }
   .capsal span{ font-size:14px; color:var(--ink-2); } .capsal b{ font-weight:600; color:var(--ink); }
@@ -987,7 +992,7 @@ const SCHEMA = {
     { label: 'QUI · ON', color: '#e08a8a', tables: ['administradors', 'contactes', 'clients', 'llocs', 'informes_lloc', 'clients_per_administrador'] },
     { label: 'FACTURACIÓ', color: '#8a8a8a', tables: ['agrupacions', 'facturacio_recurrent', 'factures', 'marcat_cobrats', 'calendari_facturacio', 'vencudes', 'grafiques_facturacio', 'pressupostos_tasca', 'pressupostos_agrupacio', 'clausules_pressupost'] },
     { label: 'ALBARANS I PRODUCTES', color: '#c9c9c9', tables: ['productes', 'albarans', 'albarans_pendents'] },
-    { label: 'PROVEÏDORS', color: '#c0691e', tables: ['proveidors', 'factures_proveidor', 'puja_factures_proveidor', 'comptes_despesa'] },
+    { label: 'PROVEÏDORS', color: '#c0691e', tables: ['proveidors', 'factures_proveidor', 'puja_factures_proveidor', 'pagaments_proveidor', 'comptes_despesa'] },
     { label: 'TASQUES', color: '#8b5a2b', tables: ['tasques_piscina', 'informe_tasques_piscina', 'informe_tasques_dates'] },
     { label: 'INCIDÈNCIES', color: '#d9534f', tables: ['incidencies', 'accions_meves', 'calendari_accions', 'incidencia_reports', 'codis_qr'] },
     { label: 'CONSUM', color: '#1f5fbf', tables: ['comptadors', 'lectures', 'consum_aigua'] },
@@ -1007,6 +1012,7 @@ const SCHEMA = {
     calendari_facturacio: { label: 'Calendari de facturació', render: main => renderCalendariFacturacio(main) },
     vencudes: { label: 'Vençudes i pendents', render: main => renderVencudes(main) },
     marcat_cobrats: { label: 'Marcat de cobrats/pagats', render: main => renderMarcatCobrats(main) },
+    pagaments_proveidor: { label: 'Pagaments a proveïdors', render: main => renderPagamentsProveidor(main) },
     grafiques_facturacio: { label: 'Gràfiques d’ingressos i despeses', render: main => renderGrafiquesFacturacio(main) },
     clients_per_administrador: { label: 'Clients per administrador', render: main => renderClientsPerAdministrador(main) },
     hores_sol: { label: 'Hores del sol (tot l’any)', render: main => renderHoresSol(main) },
@@ -1946,7 +1952,7 @@ const C = {
   rows: t => cache[t] || [],
   get: (t, id) => { const pk = (SCHEMA.tables[t] || {}).pk; return pk ? (cache[t] || []).find(r => String(r[pk]) === String(id)) : (cache[t] || []).find(r => r.id === Number(id)); },
 };
-const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, calAcc: { vista: '', ref: '', meves: false, fetes: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
+const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, pagProv: { vista: 'marca', data: '', q: '', fets: {}, pagades: false }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, calAcc: { vista: '', ref: '', meves: false, fetes: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
 const L = (t, id) => { const r = C.get(t, id); return r ? SCHEMA.tables[t].display(r, L) : ''; };
 
 /* =====================================================================
@@ -4117,6 +4123,74 @@ function renderMarcatCobrats(main) {
     await loadTable(taula);
     st.fets[taula + ':' + id] = marcat;
     toast(marcat ? (taula === 'factures' ? 'Cobrada el ' + dmy(data) : 'Pagada el ' + dmy(data)) : 'Desmarcada: torna a estar pendent');
+    renderMain();
+  }));
+}
+
+/* ---------- Pagaments a proveïdors: llista per marcar les pagades (casella al final) i calendari de pagaments per data i forma ---------- */
+const ORDRE_FORMES = ['domiciliacio', 'transferencia', 'talo', 'visa', 'altres', ''];
+const nomFormaProv = v => (OPT.forma_pagament_prov.find(o => o[0] === v) || [])[1] || (v ? String(v) : 'Sense forma de pagament');
+const formaFacturaProv = f => f.forma_pagament || (C.get('proveidors', f.proveidor_id) || {}).forma_pagament || '';
+function renderPagamentsProveidor(main) {
+  const st = state.pagProv; if (!st.data) st.data = avui();
+  const q = (st.q || '').trim().toLowerCase(), fet = id => !!st.fets[id], limit = avui();
+  const totes = C.rows('factures_proveidor').filter(f => f.actiu).map(f => ({ f, prov: L('proveidors', f.proveidor_id), forma: formaFacturaProv(f) }));
+  const coincideix = x => !q || [x.f.numero, x.prov, x.f.concepte, nomFormaProv(x.forma)].some(v => String(v || '').toLowerCase().includes(q));
+  const perVenc = (a, b) => String(a.f.data_venciment || '9999').localeCompare(String(b.f.data_venciment || '9999')) || a.prov.localeCompare(b.prov, 'ca') || String(a.f.data_factura || '').localeCompare(String(b.f.data_factura || ''));
+  const casella = f => `<td class="mc-c"><label class="mc-box ${f.pagada ? 'on' : ''}"><input type="checkbox" data-marca="${f.id}" ${f.pagada ? 'checked' : ''}> ${f.pagada ? 'pagada ' + dmy(f.data_pagament) : 'pagat'}</label></td>`;
+  const numFra = f => `<a href="#" data-obre-taula="factures_proveidor" data-obre-id="${f.id}">${h(f.numero || '(sense número)')}</a>`;
+  const vencHtml = f => f.data_venciment ? (f.data_venciment < limit && !f.pagada ? `<span class="venc-passat">${dmy(f.data_venciment)}</span>` : dmy(f.data_venciment)) : '<span class="hint">sense data</span>';
+  const nFets = Object.values(st.fets).filter(Boolean).length;
+  let cos;
+  if (st.vista === 'calendari') {
+    // calendari: per data de pagament (venciment), de la més propera a la més llunyana; dins de cada data, per forma de pagament
+    const llista = totes.filter(x => (st.pagades || !x.f.pagada || fet(x.f.id)) && coincideix(x)).sort(perVenc);
+    const dates = new Map(); llista.forEach(x => { const k = x.f.data_venciment || ''; if (!dates.has(k)) dates.set(k, []); dates.get(k).push(x); });
+    const totPend = llista.filter(x => !x.f.pagada).reduce((t, x) => t + Number(x.f.total || 0), 0);
+    const blocs = [...dates.entries()].sort((a, b) => (a[0] || '9999').localeCompare(b[0] || '9999')).map(([data, xs]) => {
+      const formes = new Map(); xs.forEach(x => { if (!formes.has(x.forma)) formes.set(x.forma, []); formes.get(x.forma).push(x); });
+      const files = [...formes.entries()].sort((a, b) => ORDRE_FORMES.indexOf(a[0]) - ORDRE_FORMES.indexOf(b[0])).map(([forma, ys]) => {
+        const sub = ys.reduce((t, y) => t + Number(y.f.total || 0), 0);
+        return `<tr class="forma"><td colspan="5">${h(nomFormaProv(forma))} · ${ys.length} factur${ys.length === 1 ? 'a' : 'es'}${ys.length > 1 ? ' · ' + eur(sub) : ''}</td></tr>`
+          + ys.map(y => `<tr class="${y.f.pagada ? 'fet' : ''}"><td>${h(y.prov)}${y.f.dubtosa ? ' <span class="cal"><span class="tipus p">dubtosa</span></span>' : ''}</td><td>${numFra(y.f)}</td><td>${dmy(y.f.data_factura)}</td><td class="num">${eur(y.f.total)}</td>${casella(y.f)}</tr>`).join('');
+      }).join('');
+      const totData = xs.reduce((t, x) => t + Number(x.f.total || 0), 0), passat = data && data < limit;
+      return `<tr class="data"><td colspan="3"><b class="${passat ? 'venc-passat' : ''}">${data ? dmy(data) + (data === limit ? ' · avui' : passat ? ' · vençut' : '') : 'Sense data de pagament'}</b> <small>${xs.length} factur${xs.length === 1 ? 'a' : 'es'}</small></td><td class="num"><b>${eur(totData)}</b></td><td></td></tr>${files}`;
+    }).join('');
+    cos = `${blocs ? `<table class="tbl informe mc"><thead><tr><th>Proveïdor</th><th>Núm. factura</th><th>Data factura</th><th class="num">Import</th><th class="mc-c">Pagat</th></tr></thead><tbody>${blocs}</tbody></table>` : '<div class="empty">Cap pagament pendent.</div>'}${llista.length ? `<p class="sub" style="margin-top:14px"><b>Total pendent: ${eur(totPend)}</b> en ${llista.filter(x => !x.f.pagada).length} factures.</p>` : ''}`;
+  } else {
+    // llista per marcar: les pendents (i les marcades en aquesta sessió), amb la casella al final
+    const llista = totes.filter(x => (st.pagades || !x.f.pagada || fet(x.f.id)) && coincideix(x)).sort(perVenc);
+    const totPend = llista.filter(x => !x.f.pagada).reduce((t, x) => t + Number(x.f.total || 0), 0);
+    cos = llista.length ? `<table class="tbl informe mc"><thead><tr><th>Proveïdor</th><th>Núm. factura</th><th>Data factura</th><th>Data de pagament</th><th>Forma</th><th class="num">Import</th><th class="mc-c">Pagat</th></tr></thead><tbody>
+      ${llista.map(x => `<tr class="${x.f.pagada ? 'fet' : ''}"><td>${h(x.prov)}${x.f.dubtosa ? ' <span class="cal"><span class="tipus p">dubtosa</span></span>' : ''}</td><td>${numFra(x.f)}</td><td>${dmy(x.f.data_factura)}</td><td>${vencHtml(x.f)}</td><td>${h(nomFormaProv(x.forma))}</td><td class="num">${eur(x.f.total)}</td>${casella(x.f)}</tr>`).join('')}
+      <tr class="total"><td colspan="5">Pendent de pagar</td><td class="num">${eur(totPend)}</td><td></td></tr></tbody></table>` : '<div class="empty">Cap factura de proveïdor pendent de pagar.</div>';
+  }
+  main.innerHTML = `<div class="pp">
+    <h1>Pagaments a proveïdors</h1>
+    <p class="sub noprint">${st.vista === 'calendari' ? 'Els pagaments pendents per data de pagament, de la més propera a la més llunyana, i dins de cada data per forma de pagament. ' : 'Les factures de proveïdor pendents de pagar: marca la casella del final quan n’hagis pagat una. '}Es desa a l’instant amb la data de sota; si t’equivoques, desmarca-la.</p>
+    <div class="bar noprint">
+      <span class="seg"><button class="${st.vista !== 'calendari' ? 'on' : ''}" data-vista="marca">Marca les pagades</button><button class="${st.vista === 'calendari' ? 'on' : ''}" data-vista="calendari">Calendari de pagaments</button></span>
+      <span class="nota">Data de pagament</span> <input type="date" id="pp-data" value="${st.data}" style="width:auto">
+      <input type="text" id="pp-q" placeholder="Filtra per proveïdor, número, concepte o forma…" value="${h(st.q || '')}">
+      <label class="chk" style="padding:0"><input type="checkbox" id="pp-pagades" ${st.pagades ? 'checked' : ''}> Mostra també les pagades</label>
+      <span class="n">${nFets ? nFets + ' marcades en aquesta sessió' : ''}</span>
+    </div>
+    ${cos}
+  </div>`;
+  main.querySelectorAll('[data-vista]').forEach(b => b.addEventListener('click', () => { st.vista = b.dataset.vista; renderMain(); }));
+  $('#pp-data').addEventListener('change', e => { st.data = e.target.value || avui(); renderMain(); });
+  $('#pp-pagades').addEventListener('change', e => { st.pagades = e.target.checked; renderMain(); });
+  $('#pp-q').addEventListener('input', e => { st.q = e.target.value; renderMain(); const el = $('#pp-q'); el.focus(); el.setSelectionRange(el.value.length, el.value.length); });
+  main.querySelectorAll('a[data-obre-taula]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); state.mode = 'consulta'; state.table = a.dataset.obreTaula; state.editing = Number(a.dataset.obreId); renderApp(); window.scrollTo({ top: 0 }); }));
+  main.querySelectorAll('input[data-marca]').forEach(c => c.addEventListener('change', async () => {
+    const id = Number(c.dataset.marca), data = st.data || avui(), marcat = c.checked;
+    c.disabled = true;
+    const res = await sb.from('factures_proveidor').update(marcat ? { pagada: true, data_pagament: data } : { pagada: false, data_pagament: null }).eq('id', id);
+    if (res.error) { c.checked = !marcat; c.disabled = false; toastErr(friendly(res.error)); return; }
+    await loadTable('factures_proveidor');
+    st.fets[id] = marcat;
+    toast(marcat ? 'Pagada el ' + dmy(data) : 'Desmarcada: torna a estar pendent');
     renderMain();
   }));
 }
