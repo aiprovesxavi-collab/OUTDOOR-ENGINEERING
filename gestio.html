@@ -384,6 +384,19 @@
   .ao-panell{ position:static; width:auto; max-width:none; margin-top:16px; padding:0; border:0; box-shadow:none; background:transparent; font-size:17px; }
   .ao-panell .ic-ops{ display:flex; flex-wrap:wrap; gap:10px; } .ao-panell .ic-ops .btn{ font-size:17px; padding:13px 18px; }
   .ao-panell .ic-form{ background:#fff; border:1px solid var(--line-2); border-radius:12px; padding:14px 16px; margin-top:12px; } .ao-panell .ic-form h4{ margin:0 0 8px; font-size:18px; } .ao-panell textarea{ min-height:110px; font-size:18px; }
+  /* full de treball (a l'app i a l'oficina) */
+  .ft{ border:2px solid var(--line-2); border-radius:14px; padding:14px 16px; margin:4px 0 16px; background:#fff; }
+  .ft-cap{ display:flex; flex-wrap:wrap; gap:6px 12px; align-items:center; margin:0 0 10px; font-size:15px; color:var(--ink-2); } .ft-cap b{ color:var(--ink); font-size:17px; }
+  .ft h4{ font-size:14px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-2); margin:16px 0 6px; }
+  .ft-taula{ width:100%; border-collapse:collapse; margin:0 0 8px; } .ft-taula td{ padding:7px 6px; border-bottom:1px solid var(--line); vertical-align:top; font-size:16px; } .ft-taula td.num{ text-align:right; white-space:nowrap; }
+  .ft-taula td .hint{ display:block; font-size:13px; }
+  .ft-nova{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px 10px; background:#f6f8f5; border-radius:10px; padding:10px 12px; margin:4px 0 2px; }
+  .ft-nova .f{ gap:3px; } .ft-nova .f .l{ font-size:12.5px; } .ft-nova .wide{ grid-column:1 / -1; } .ft-nova textarea{ min-height:64px; } .ft-nova .actions{ grid-column:1 / -1; margin:2px 0 0; }
+  .ft-fotos{ display:flex; flex-wrap:wrap; gap:8px; } .ft-fotos figure{ margin:0; text-align:center; font-size:12px; color:var(--ink-2); } .ft-fotos .ic-mini{ width:120px; height:120px; border-radius:10px; }
+  .ft-puja{ display:inline-block; margin-top:6px; }
+  .ft-resum{ display:flex; flex-wrap:wrap; gap:6px 16px; font-size:14px; color:var(--ink-2); margin:6px 0 0; }
+  .operari .ft-taula td{ font-size:17px; }
+  @media (max-width:520px){ .ft-nova{ grid-template-columns:1fr 1fr; } }
   .ic-galeria{ margin-top:14px; border-top:1px solid var(--line); padding-top:8px; } .ic-galeria summary{ cursor:pointer; color:var(--ink-2); font-size:13.5px; }
   .ic-gal-grup{ margin:8px 0 4px; } .ic-gal-cap{ font-size:13px; font-weight:600; }
   .ic-hist{ margin-top:10px; } .ic-hist summary{ cursor:pointer; color:var(--ink-2); font-size:13.5px; }
@@ -1011,7 +1024,7 @@ const SCHEMA = {
     { label: 'FACTURACIÓ', color: '#8a8a8a', tables: ['agrupacions', 'facturacio_recurrent', 'factures', 'marcat_cobrats', 'calendari_facturacio', 'vencudes', 'grafiques_facturacio', 'pressupostos_tasca', 'pressupostos_agrupacio', 'clausules_pressupost'] },
     { label: 'ALBARANS I PRODUCTES', color: '#c9c9c9', tables: ['productes', 'albarans', 'albarans_pendents'] },
     { label: 'PROVEÏDORS', color: '#c0691e', tables: ['proveidors', 'factures_proveidor', 'puja_factures_proveidor', 'pagaments_proveidor', 'comptes_despesa'] },
-    { label: 'TASQUES', color: '#8b5a2b', tables: ['tasques_piscina', 'informe_tasques_piscina', 'informe_tasques_dates'] },
+    { label: 'TASQUES', color: '#8b5a2b', tables: ['fulls_treball', 'tasques_piscina', 'informe_tasques_piscina', 'informe_tasques_dates'] },
     { label: 'INCIDÈNCIES', color: '#d9534f', tables: ['incidencies', 'accions_meves', 'calendari_accions', 'incidencia_reports', 'codis_qr'] },
     { label: 'CONSUM', color: '#1f5fbf', tables: ['comptadors', 'lectures', 'consum_aigua'] },
     { label: 'INSTAL·LACIONS', color: '#8fcf9a', tables: ['jardins', 'piscines', 'informe_adob'] },
@@ -1036,6 +1049,7 @@ const SCHEMA = {
     hores_sol: { label: 'Hores del sol (tot l’any)', render: main => renderHoresSol(main) },
     incidencies: { label: 'Incidències', render: main => renderIncidencies(main) },
     accions_meves: { label: 'Les meves accions', render: main => renderAccionsMeves(main) },
+    fulls_treball_app: { label: 'Fulls de treball', render: main => renderFullsOperari(main) },
     calendari_accions: { label: 'Calendari d’accions', render: main => renderCalendariAccions(main) },
     codis_qr: { label: 'Codis QR dels llocs', render: main => renderCodisQR(main) },
     nomines: { label: 'Nòmines', render: main => renderNomines(main) },
@@ -1357,6 +1371,7 @@ const SCHEMA = {
         { key: 'poblacio', label: 'Població', type: 'text' },
         { key: 'telefon', label: 'Telèfon', type: 'text' },
         { key: 'email', label: 'Email', type: 'email' },
+        { key: 'preu_hora', label: 'Preu de l’hora de feina (PVP, sense IVA)', type: 'number', step: '0.01', hint: 'per a les línies de mà d’obra dels albarans fets des dels fulls de treball' },
         { key: 'observacions', label: 'Observacions', type: 'textarea' },
       ],
     },
@@ -1661,6 +1676,66 @@ const SCHEMA = {
         { key: 'estat', label: 'Estat', type: 'select', options: OPT.estat_fp, required: true, default: 'ok' },
         { key: 'pdf', label: 'PDF', type: 'file', folder: 'proveidors' },
         { key: 'observacions', label: 'Observacions', type: 'textarea' },
+      ],
+    },
+    fulls_treball: {
+      label: 'Fulls de treball', nou: 'Nou full de treball', order: 'termini', desc: true,
+      display: r => (r.numero || 'full') + ' — ' + r.nom,
+      list: ['numero', 'nom', 'lloc_id', 'encarregat_id', 'termini', 'estat', 'hores', 'incidencia', 'albara'],
+      computed: {
+        hores: { label: 'Hores', num: true, fn: r => horesFull(r.id) },
+        albara: { label: 'Albarà', fn: r => r.albara_id ? ((C.get('albarans', r.albara_id) || {}).numero_complet || 'sí') : '' },
+        incidencia: { label: 'Incidència', fn: r => r.incidencia_id ? ((C.get('incidencies', r.incidencia_id) || {}).numero || '') : '' },
+      },
+      filtres: [{ key: 'lloc_id', tipus: 'ref', ref: 'llocs', label: 'Lloc' }, { key: 'encarregat_id', tipus: 'ref', ref: 'treballadors', label: 'Encarregat' }, { key: 'estat', tipus: 'opcions', opcions: [['pendent', 'Pendent'], ['en_curs', 'En curs'], ['finalitzat', 'Finalitzat'], ['albara', 'Amb albarà'], ['anul_lat', 'Anul·lat']], label: 'Estat' }],
+      canBaixa: r => r.estat !== 'albara',
+      extras: fullExtresHTML, bindExtras: fullExtresBind,
+      children: [
+        { table: 'full_treball_jornades', fk: 'full_id', label: 'Jornades de feina (data, hores, persones i què s’ha fet)', editable: r => r.estat !== 'albara' },
+        { table: 'full_treball_material', fk: 'full_id', label: 'Material de magatzem utilitzat', editable: r => r.estat !== 'albara' },
+      ],
+      actions: r => [
+        ...(!r.finalitzat && r.estat !== 'albara' && r.estat !== 'anul_lat' ? [{ label: 'Marca’l com a totalment finalitzat', run: () => finalitzaFull(r.id, { desDeOficina: true }) }] : []),
+        ...(r.finalitzat && !r.albara_id ? [{ label: 'Crea l’albarà', run: () => creaAlbaraDeFull(r.id) }] : []),
+        ...(r.albara_id ? [{ label: 'Obre l’albarà', noDesa: true, run: () => { state.mode = 'consulta'; state.table = 'albarans'; state.editing = r.albara_id; renderApp(); } }] : []),
+        ...(r.incidencia_id ? [{ label: 'Obre la incidència', noDesa: true, run: () => { state.inc.vista = 'diagrama'; state.inc.id = r.incidencia_id; state.inc.sel = r.accio_id; state.inc.form = null; state.mode = 'consulta'; state.table = 'incidencies'; renderApp(); } }] : []),
+      ],
+      fields: [
+        { key: 'numero', label: 'Número', type: 'info', fmt: r => r.numero || '(s’assigna en desar)' },
+        { key: 'estat', label: 'Estat', type: 'info', fmt: r => ESTATS_FULL[r.estat] || r.estat || 'Pendent' },
+        { key: 'nom', label: 'Nom de la tasca', type: 'text', required: true, wide: true },
+        { key: 'termini', label: 'Termini', type: 'datetime', required: true, default: () => vencimentPerGrup('mig_termini').toISOString() },
+        { key: 'lloc_id', label: 'Lloc', type: 'ref', ref: 'llocs', required: true, optionLabel: r => r.nom + (r.poblacio ? ' — ' + r.poblacio : ''), ro: r => !!r && !!r.incidencia_id },
+        { key: 'encarregat_id', label: 'A qui s’encomana la feina', type: 'ref', ref: 'treballadors', required: true, filter: r => r.actiu, optionLabel: r => nomTreballador(r) },
+        { key: 'demanat_per', label: 'Qui ho demana', type: 'ref', ref: 'treballadors', filter: r => r.actiu, optionLabel: r => nomTreballador(r), default: () => { const t = treballadorActual(); return t ? t.id : ''; } },
+        { key: 'observacions_previes', label: 'Observacions preliminars per fer la feina', type: 'textarea' },
+        { key: 'incidencia_id', label: 'Incidència', type: 'info', fmt: r => r.incidencia_id ? ((C.get('incidencies', r.incidencia_id) || {}).numero || '') + ' · ' + ((C.get('incidencies', r.incidencia_id) || {}).titol || '') + (r.accio_id ? ' · ' + nomTipus((C.get('incidencia_accions', r.accio_id) || {}).tipus) : '') : 'cap (full sense incidència)' },
+        { key: 'finalitzat', label: 'Totalment finalitzat', type: 'info', fmt: r => r.finalitzat ? 'sí, el ' + dmyhm(r.finalitzat_el) + (r.finalitzat_per ? ' per ' + nomCurtTreballador(C.get('treballadors', r.finalitzat_per)) : '') : 'no' },
+        { key: 'resum', label: 'Resum del que s’ha fet', type: 'textarea' },
+        { key: 'albara_id', label: 'Albarà', type: 'info', fmt: r => r.albara_id ? ((C.get('albarans', r.albara_id) || {}).numero_complet || 'albarà') : '— (es crea quan el full és totalment finalitzat)' },
+      ],
+    },
+    full_treball_jornades: {
+      label: 'Jornades de feina', nou: '', order: 'data',
+      display: r => dmy(r.data),
+      list: ['data', 'hora_inici', 'hora_fi', 'persones', 'hores_persona', 'feina'],
+      computed: { hores_persona: { label: 'Hores × persones', num: true, fn: r => horesJornada(r) * Number(r.persones || 1) } },
+      fields: [
+        { key: 'data', label: 'Data', type: 'date', required: true, default: 'avui', ample: 0.8 },
+        { key: 'hora_inici', label: 'Hora inici', type: 'time', required: true, ample: 0.6 },
+        { key: 'hora_fi', label: 'Hora final', type: 'time', required: true, ample: 0.6 },
+        { key: 'persones', label: 'Persones', type: 'integer', min: 1, required: true, default: 1, ample: 0.5 },
+        { key: 'feina', label: 'Què s’ha fet', type: 'text', required: true, ample: 3 },
+      ],
+    },
+    full_treball_material: {
+      label: 'Material de magatzem', nou: '', order: 'data',
+      display: r => r.nom,
+      list: ['data', 'nom', 'quantitat'],
+      fields: [
+        { key: 'data', label: 'Data', type: 'date', required: true, default: 'avui', ample: 0.8 },
+        { key: 'nom', label: 'Material', type: 'text', required: true, ample: 3 },
+        { key: 'quantitat', label: 'Quants', type: 'number', step: '0.01', required: true, default: 1, ample: 0.6 },
       ],
     },
     factura_proveidor_linies: {
@@ -1970,7 +2045,7 @@ const C = {
   rows: t => cache[t] || [],
   get: (t, id) => { const pk = (SCHEMA.tables[t] || {}).pk; return pk ? (cache[t] || []).find(r => String(r[pk]) === String(id)) : (cache[t] || []).find(r => r.id === Number(id)); },
 };
-const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, pagProv: { vista: 'marca', data: '', q: '', fets: {}, pagades: false }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, calAcc: { vista: '', ref: '', meves: false, fetes: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
+const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, pagProv: { vista: 'marca', data: '', q: '', fets: {}, pagades: false }, ft: { id: null, form: null, vista: 'llista', nou: null, fets: false }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, calAcc: { vista: '', ref: '', meves: false, fetes: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
 const L = (t, id) => { const r = C.get(t, id); return r ? SCHEMA.tables[t].display(r, L) : ''; };
 
 /* =====================================================================
@@ -2161,12 +2236,13 @@ const FOTOS_MENU = {
   calendari_accions: 'data:image/jpeg;base64,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',
   accions_meves: 'data:image/jpeg;base64,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',
   nomines: 'data:image/jpeg;base64,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',
+  fulls_treball_app: 'data:image/jpeg;base64,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',
   vacances: 'data:image/jpeg;base64,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',
 };
 const COLORS_MENU = {
   fitxar: '--p:#3a9a5c;--pf:#1e5c35', tasques_piscina: '--p:#3a9ad6;--pf:#0f4f73', informe_tasques_piscina: '--p:#2bb3a3;--pf:#0c5c54',
   informe_tasques_dates: '--p:#6b7fd6;--pf:#2b3c8c', incidencia_reports: '--p:#ee8a3c;--pf:#9a4410', calendari_accions: '--p:#9a6fd4;--pf:#4f2a80',
-  accions_meves: '--p:#e2635f;--pf:#8c1f1f', nomines: '--p:#d4ad45;--pf:#7a5a10', vacances: '--p:#f0d23a;--pf:#8a7600',
+  accions_meves: '--p:#e2635f;--pf:#8c1f1f', fulls_treball_app: '--p:#6b8f9a;--pf:#2f4f5a', nomines: '--p:#d4ad45;--pf:#7a5a10', vacances: '--p:#f0d23a;--pf:#8a7600',
 };
 const estilMenu = id => COLORS_MENU[id] + (FOTOS_MENU[id] ? ';background-image:url(' + FOTOS_MENU[id] + ')' : '');
 const fonsMenu = id => FOTOS_MENU[id] ? '' : ESCENES_MENU[id];
@@ -2188,6 +2264,8 @@ const ESCENES_MENU = {
   accions_meves: escenaMenu('pend', `<g transform="translate(124 12) rotate(-4) scale(.9)"><rect x="4" y="6" width="84" height="104" rx="5" fill="#000" opacity=".22"/><rect x="0" y="2" width="84" height="104" rx="5" fill="#fffdf7"/><g fill="none" stroke="#9aa7b1" stroke-width="2.5" stroke-linecap="round"><path d="M14 -2v10M30 -2v10M46 -2v10M62 -2v10M78 -2v10"/></g><path d="M14 14v90" stroke="#f1b8b6" stroke-width="1.5"/><g fill="none" stroke="#d9534f" stroke-width="2.2"><rect x="20" y="21" width="10" height="10" rx="2"/><rect x="20" y="41" width="10" height="10" rx="2"/><rect x="20" y="61" width="10" height="10" rx="2"/><rect x="20" y="81" width="10" height="10" rx="2"/></g><path d="M22 26l3 3 5-6" fill="none" stroke="#3a9a5c" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><g stroke="#c9ccd2" stroke-width="3" stroke-linecap="round"><path d="M36 26h36M36 46h28M36 66h34M36 86h24"/></g></g><g transform="translate(84 108) rotate(-50)"><rect x="0" y="-4" width="70" height="8" rx="4" fill="#2b2f38"/><path d="M70 -4l10 4-10 4z" fill="#f0c36a"/><rect x="6" y="-4" width="10" height="8" fill="#d9534f"/></g>`),
   // sobre amb la nòmina i una pila de monedes
   nomines: escenaMenu('nom', `<g><ellipse cx="78" cy="104" rx="20" ry="6" fill="#8a6a10"/><ellipse cx="78" cy="98" rx="20" ry="6" fill="#f2d272"/><ellipse cx="78" cy="92" rx="20" ry="6" fill="#8a6a10"/><ellipse cx="78" cy="86" rx="20" ry="6" fill="#f6dc86"/><ellipse cx="78" cy="80" rx="20" ry="6" fill="#8a6a10"/><ellipse cx="78" cy="74" rx="20" ry="6" fill="#fae39a"/><text x="78" y="77.5" text-anchor="middle" font-size="9" font-weight="700" fill="#8a6a10" font-family="system-ui,sans-serif">€</text></g><g transform="translate(112 14) scale(.92)"><path d="M3 44l46-30 46 30v62H3z" fill="#000" opacity=".2"/><path d="M0 40l46-30 46 30v62H0z" fill="#e9d9a8"/><rect x="12" y="4" width="68" height="80" rx="3" fill="#fffdf5"/><text x="46" y="46" text-anchor="middle" font-size="26" font-weight="700" fill="#b08d2a" font-family="system-ui,sans-serif">€</text><g stroke="#cfc6a8" stroke-width="2.5" stroke-linecap="round"><path d="M22 16h48M22 58h48M22 68h30"/></g><path d="M0 40l46 32 46-32v62H0z" fill="#f3e4b5"/><path d="M0 102l46-34 46 34z" fill="#f8ecc4"/></g>`),
+  // full de treball: carpeta amb el full, línies, caselles marcades i un llapis
+  fulls_treball_app: escenaMenu('ft', `<g transform="translate(108 10)"><rect x="4" y="8" width="80" height="100" rx="6" fill="#000" opacity=".2"/><rect x="0" y="4" width="80" height="100" rx="6" fill="#dfe7ea"/><rect x="6" y="12" width="68" height="86" rx="3" fill="#fbfdfd"/><rect x="26" y="-2" width="28" height="12" rx="4" fill="#9aa7b1"/><g stroke="#b9c9c6" stroke-width="3" stroke-linecap="round"><path d="M28 30h36M28 46h36M28 62h28M28 78h32"/></g><g fill="none" stroke="#2f7d4a" stroke-width="2.4"><rect x="12" y="25" width="10" height="10" rx="2"/><rect x="12" y="41" width="10" height="10" rx="2"/><rect x="12" y="57" width="10" height="10" rx="2"/><rect x="12" y="73" width="10" height="10" rx="2"/><path d="M14 30l3 3 5-6M14 46l3 3 5-6M14 62l3 3 5-6" stroke-width="2.6"/></g></g><g transform="translate(60 100) rotate(-50)"><rect x="0" y="-4" width="64" height="8" rx="4" fill="#2b2f38"/><path d="M64 -4l10 4-10 4z" fill="#f0c36a"/><rect x="6" y="-4" width="10" height="8" fill="#e2635f"/></g>`),
   // platja: sol, mar, sorra, para-sol i gandula
   vacances: escenaMenu('vac', `<circle cx="40" cy="30" r="16" fill="#fff6cc"/><g stroke="#fff6cc" stroke-width="2.5" stroke-linecap="round" opacity=".7"><path d="M40 6v6M40 48v6M16 30h6M58 30h6M23 13l4 4M53 43l4 4M57 13l-4 4M27 43l-4 4"/></g><rect x="0" y="62" width="200" height="28" fill="#3a9ad6"/><path d="M0 62c20-6 40-6 60 0s40 6 60 0 40-6 60 0 15 3 20 3v8H0z" fill="#7cc4ee"/><rect x="0" y="88" width="200" height="32" fill="#f3dfa0"/><g transform="translate(112 78)"><path d="M0 22L10 6h30l10 16" fill="none" stroke="#7a5a10" stroke-width="3" stroke-linejoin="round"/><rect x="8" y="8" width="34" height="16" rx="3" fill="#3a9ad6"/><path d="M6 24h38" stroke="#2b3c8c" stroke-width="3" stroke-linecap="round"/></g><g transform="translate(160 34) rotate(-12)"><path d="M-30 36a30 30 0 0 1 60 0z" fill="#e2635f"/><path d="M0 36L-24 18A30 30 0 0 1 -8 7z" fill="#fff"/><path d="M0 36L8 7a30 30 0 0 1 16 11z" fill="#fff"/><path d="M0 36v62" stroke="#7a5a10" stroke-width="3" stroke-linecap="round"/></g>`),
 };
@@ -2213,12 +2291,13 @@ function renderAppOperari() {
         <button data-go="informe_tasques_piscina" style="${estilMenu('informe_tasques_piscina')}"><strong>Tasques per piscina</strong>${fonsMenu('informe_tasques_piscina')}</button>
         <button data-go="informe_tasques_dates" style="${estilMenu('informe_tasques_dates')}"><strong>Tasques per data</strong>${fonsMenu('informe_tasques_dates')}</button>
         <button class="ample llarg" data-go="incidencia_reports" style="${estilMenu('incidencia_reports')}"><strong>Reports d’incidències</strong>${fonsMenu('incidencia_reports')}</button>
+        <button class="ample" data-go="fulls_treball_app" style="${estilMenu('fulls_treball_app')}"><strong>Fulls de treball</strong>${(() => { const t = treballadorActual(); const n = t ? C.rows('fulls_treball').filter(f => f.actiu && Number(f.encarregat_id) === t.id && !f.finalitzat && f.estat !== 'anul_lat').length : 0; return n ? `<span class="pend">${n} pendent${n === 1 ? '' : 's'}</span>` : ''; })()}${fonsMenu('fulls_treball_app')}</button>
         <button data-go="calendari_accions" style="${estilMenu('calendari_accions')}"><strong>Calendari accions</strong>${fonsMenu('calendari_accions')}</button>
         <button data-go="accions_meves" style="${estilMenu('accions_meves')}"><strong>Accions pendents</strong>${(() => { const n = t ? C.rows('incidencia_accions').filter(a => a.actiu && a.estat !== 'finalitzada' && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id) && (C.get('incidencies', a.incidencia_id) || {}).estat === 'oberta').length : 0; return n ? `<span class="pend">${n} ${n === 1 ? 'oberta' : 'obertes'}</span>` : ''; })()}${fonsMenu('accions_meves')}</button>
         <button data-go="nomines" style="${estilMenu('nomines')}"><strong>Nòmines</strong>${fonsMenu('nomines')}</button>
         <button data-go="vacances" style="${estilMenu('vacances')}"><strong>Vacances</strong>${fonsMenu('vacances')}</button>
       </div>`;
-    main.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { state.table = b.dataset.go; state.editing = null; renderApp(); }));
+    main.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { state.table = b.dataset.go; state.editing = null; if (b.dataset.go === 'fulls_treball_app') Object.assign(state.ft, { id: null, form: null, nou: null }); renderApp(); }));
     return;
   }
   if (SCHEMA.pages[state.table]) { SCHEMA.pages[state.table].render(main); return; }
@@ -4145,6 +4224,221 @@ function renderMarcatCobrats(main) {
   }));
 }
 
+/* =====================================================================
+   FULLS DE TREBALL: un per acció d'operari (es crea sol) o sense incidència. La demanda la posa qui demana la feina;
+   l'operari hi apunta jornades, material i fotos, i el marca com a totalment finalitzat; l'oficina en fa l'albarà.
+   ===================================================================== */
+const ESTATS_FULL = { pendent: 'Pendent', en_curs: 'En curs', finalitzat: 'Totalment finalitzat', albara: 'Amb albarà', anul_lat: 'Anul·lat' };
+const GRUPS_FOTO_FULL = [['compra', 'Fotos dels albarans de compra'], ['abans', 'Fotos de la feina · abans'], ['despres', 'Fotos de la feina · després']];
+const TIPUS_SENSE_FULL = ['obrir', 'tancar', 'reobrir', 'assignar_seguidora', 'visibilitat_client', 'consultar', 'demanar_preu', 'demanar_instruccions', 'decisio_client', 'autoritzar_actuacio'];
+// quines accions porten full de treball: les del carril d'operari que són feina (no peticions)
+const accioAmbFull = a => !!a && a.carril === 'operari' && !a.es_peticio && !!a.responsable_treballador_id && !TIPUS_SENSE_FULL.includes(a.tipus);
+const fullDeAccio = a => a ? C.rows('fulls_treball').find(f => f.actiu && Number(f.accio_id) === Number(a.id)) : null;
+// qui pot crear el full d'una acció (és el que permet la base de dades): l'oficina, l'encarregat de l'acció o qui la va crear
+const potCrearFullDe = a => { const t = treballadorActual(); return !!t && (esOficina(t) || Number(a.responsable_treballador_id) === t.id || Number(a.creat_per) === t.id); };
+const jornadesFull = id => C.rows('full_treball_jornades').filter(j => j.actiu && Number(j.full_id) === Number(id)).sort((a, b) => String(a.data).localeCompare(String(b.data)) || String(a.hora_inici || '').localeCompare(String(b.hora_inici || '')) || a.id - b.id);
+const materialFull = id => C.rows('full_treball_material').filter(m => m.actiu && Number(m.full_id) === Number(id)).sort((a, b) => String(a.data).localeCompare(String(b.data)) || a.id - b.id);
+const horesJornada = j => { if (!j || !j.hora_inici || !j.hora_fi) return 0; const [h1, m1] = String(j.hora_inici).split(':').map(Number), [h2, m2] = String(j.hora_fi).split(':').map(Number); let min = (h2 * 60 + (m2 || 0)) - (h1 * 60 + (m1 || 0)); if (min < 0) min += 24 * 60; return Math.round(min / 60 * 100) / 100; };
+const horesFull = id => Math.round(jornadesFull(id).reduce((t, j) => t + horesJornada(j) * Number(j.persones || 1), 0) * 100) / 100;
+const resumJornades = id => jornadesFull(id).map(j => dmy(j.data) + ': ' + (j.feina || '')).filter(x => !/: $/.test(x)).join('\n');
+const fotosFull = (f, grup) => (Array.isArray(f.adjunts) ? f.adjunts : []).filter(x => (x.grup || 'abans') === grup);
+const potEditarFull = f => { const t = treballadorActual(); return !!f && !f.finalitzat && f.estat !== 'albara' && f.estat !== 'anul_lat' && !!t && (esOficina(t) || Number(f.encarregat_id) === t.id || Number(f.demanat_per) === t.id); };
+async function recarregaFulls() { await Promise.all(['fulls_treball', 'full_treball_jornades', 'full_treball_material'].map(loadTable)); }
+// el full d'una acció d'operari: la demanda surt de l'acció (nom = títol, termini = venciment, lloc = el de la incidència…)
+async function creaFullPerAccio(inc, a) {
+  const ja = fullDeAccio(a); if (ja) return ja.id;
+  const termini = a.venciment || vencimentPerGrup(a.grup_termini || 'mig_termini').toISOString();
+  const dades = { nom: a.titol || nomTipus(a.tipus), termini, lloc_id: inc.lloc_id, observacions_previes: a.descripcio || null, encarregat_id: a.responsable_treballador_id, demanat_per: a.creat_per || null,
+    incidencia_id: inc.id, accio_id: a.id, estat: a.estat === 'en_curs' ? 'en_curs' : 'pendent' };
+  const r = await sb.from('fulls_treball').insert(dades).select('id').single(); if (r.error) throw r.error;
+  await loadTable('fulls_treball'); return r.data.id;
+}
+async function marcaFullEnCurs(a) {
+  const f = fullDeAccio(a); if (!f || f.estat !== 'pendent') return;
+  const r = await sb.from('fulls_treball').update({ estat: 'en_curs' }).eq('id', f.id); if (!r.error) await loadTable('fulls_treball');
+}
+// totalment finalitzat (des del full sol, o des de l'oficina)
+async function finalitzaFull(id, opts) {
+  const f = C.get('fulls_treball', id), t = treballadorActual(); if (!f) return;
+  if (!jornadesFull(id).length) { showFormError('Abans de finalitzar el full cal almenys una jornada (data, hores, persones i què s’ha fet).'); return; }
+  const resum = opts && opts.resum != null ? opts.resum : (f.resum || resumJornades(id));
+  if (opts && opts.desDeOficina && !confirm(`Marcar ${f.numero || 'el full'} com a totalment finalitzat?`)) return;
+  const r = await sb.from('fulls_treball').update({ finalitzat: true, finalitzat_el: new Date().toISOString(), finalitzat_per: t ? t.id : null, estat: 'finalitzat', resum: resum || null }).eq('id', id);
+  if (r.error) { showFormError(friendly(r.error)); return; }
+  await loadTable('fulls_treball'); toast('Full de treball totalment finalitzat');
+  if (opts && opts.despres) opts.despres(); else renderMain();
+}
+// ---- seccions del full (jornades, material, fotos): a l'app sota l'acció, i al full sol ----
+function seccionsFullHTML(f) {
+  const edit = potEditarFull(f), jorn = jornadesFull(f.id), mat = materialFull(f.id), hores = horesFull(f.id), avuiL = ymd(new Date());
+  const filaJ = j => `<tr><td>${dmy(j.data)}<span class="hint">${String(j.hora_inici || '').slice(0, 5)}–${String(j.hora_fi || '').slice(0, 5)} · ${j.persones} ${Number(j.persones) === 1 ? 'persona' : 'persones'} · ${String(horesJornada(j) * Number(j.persones || 1)).replace('.', ',')} h</span></td><td>${h(j.feina || '')}</td>${edit ? `<td class="num"><button type="button" class="btn ghost small" data-treu-jornada="${j.id}">Treu</button></td>` : ''}</tr>`;
+  const filaM = m => `<tr><td>${dmy(m.data)}</td><td>${h(m.nom)}</td><td class="num">${String(m.quantitat).replace('.', ',')}</td>${edit ? `<td class="num"><button type="button" class="btn ghost small" data-treu-material="${m.id}">Treu</button></td>` : ''}</tr>`;
+  const fotos = grup => { const ll = fotosFull(f, grup); return `<div class="ft-fotos">${ll.map(x => `<figure>${x.tipus === 'foto' ? `<img class="ic-mini" data-adj="${h(x.path)}" alt="${h(x.nom)}">` : x.tipus === 'video' ? `<video class="ic-mini" data-adj="${h(x.path)}" muted preload="metadata"></video>` : `<a class="ic-doc" data-adj="${h(x.path)}" href="#">📄 ${h(x.nom.slice(0, 16))}</a>`}<figcaption>${h(nomCurtTreballador(C.get('treballadors', x.per)) || '')}</figcaption></figure>`).join('')}</div>${edit ? `<label class="btn ghost small ft-puja">Afegeix fotos <input type="file" data-foto-full="${grup}" multiple accept="image/*,video/*,.pdf" style="display:none"></label>` : (ll.length ? '' : '<span class="hint">cap</span>')}`; };
+  return `<div class="ft" id="ft" data-full="${f.id}">
+    <div class="ft-cap"><span>Full de treball</span><b>${h(f.numero || '')}</b><span class="pill e-${f.estat === 'finalitzat' || f.estat === 'albara' ? 'finalitzada' : f.estat === 'en_curs' ? 'en_curs' : 'pendent'}">${h(ESTATS_FULL[f.estat] || f.estat)}</span>${f.finalitzat ? `<span class="hint">totalment finalitzat el ${dmyhm(f.finalitzat_el)}</span>` : ''}</div>
+    <h4>Jornades de feina ${jorn.length ? `· ${jorn.length} · ${String(hores).replace('.', ',')} h × persones` : ''}</h4>
+    ${jorn.length ? `<table class="ft-taula">${jorn.map(filaJ).join('')}</table>` : '<p class="hint">Encara cap. Apunta cada dia que hi treballis: data, hora d’inici i final, persones i què s’ha fet.</p>'}
+    ${edit ? `<div class="ft-nova" id="ft-nova-jornada">
+      <label class="f"><span class="l">Data</span><input type="date" data-nj="data" value="${avuiL}"></label>
+      <label class="f"><span class="l">Persones</span><input type="number" min="1" step="1" data-nj="persones" value="1" inputmode="numeric"></label>
+      <label class="f"><span class="l">Hora inici</span><input type="time" data-nj="hora_inici"></label>
+      <label class="f"><span class="l">Hora final</span><input type="time" data-nj="hora_fi"></label>
+      <label class="f wide"><span class="l">Què s’ha fet</span><textarea lang="ca" spellcheck="true" data-nj="feina"></textarea></label>
+      <div class="actions"><button type="button" class="btn small" id="ft-afegeix-jornada">Afegeix la jornada</button></div></div>` : ''}
+    <h4>Material de magatzem utilitzat${mat.length ? ' · ' + mat.length : ''}</h4>
+    ${mat.length ? `<table class="ft-taula">${mat.map(filaM).join('')}</table>` : '<p class="hint">Cap, de moment.</p>'}
+    ${edit ? `<div class="ft-nova" id="ft-nova-material">
+      <label class="f wide"><span class="l">Material</span><input type="text" data-nm="nom" placeholder="p. ex. Rodet bomba 1 CV"></label>
+      <label class="f"><span class="l">Quants n’has agafat</span><input type="number" min="0" step="0.01" data-nm="quantitat" value="1" inputmode="decimal"></label>
+      <label class="f"><span class="l">Data</span><input type="date" data-nm="data" value="${avuiL}"></label>
+      <div class="actions"><button type="button" class="btn small" id="ft-afegeix-material">Afegeix el material</button></div></div>` : ''}
+    ${GRUPS_FOTO_FULL.map(([g, nom]) => `<h4>${h(nom)}</h4>${fotos(g)}`).join('')}
+  </div>`;
+}
+function bindFull(f, cont) {
+  const box = cont.querySelector('#ft'); if (!box) return;
+  const t = treballadorActual();
+  const despres = async () => { await recarregaFulls(); renderMain(); };
+  // l'error surt dins del full, just sobre el botó que s'ha pitjat (a l'app no hi ha #ferr)
+  const err = (m, on) => { box.querySelectorAll('.msg.err').forEach(e => e.remove()); const e = document.createElement('div'); e.className = 'msg err'; e.textContent = m; const acts = on && on.querySelector('.actions'); if (acts) acts.parentNode.insertBefore(e, acts); else box.insertBefore(e, box.firstChild); if (e.scrollIntoView) e.scrollIntoView({ block: 'nearest' }); };
+  const aj = $('#ft-afegeix-jornada'); if (aj) aj.addEventListener('click', async () => {
+    const v = k => (box.querySelector(`[data-nj="${k}"]`) || {}).value || '', on = $('#ft-nova-jornada');
+    if (!v('data') || !v('hora_inici') || !v('hora_fi')) { err('La jornada necessita la data, l’hora d’inici i l’hora final.', on); return; }
+    if (!v('feina').trim()) { err('Escriu què s’ha fet en aquesta jornada.', on); return; }
+    aj.disabled = true;
+    const r = await sb.from('full_treball_jornades').insert({ full_id: f.id, data: v('data'), hora_inici: v('hora_inici'), hora_fi: v('hora_fi'), persones: Math.max(1, parseInt(v('persones'), 10) || 1), feina: v('feina').trim(), treballador_id: t ? t.id : null });
+    if (r.error) { aj.disabled = false; err(friendly(r.error), on); return; }
+    if (f.estat === 'pendent') await sb.from('fulls_treball').update({ estat: 'en_curs' }).eq('id', f.id);
+    toast('Jornada apuntada'); despres();
+  });
+  const am = $('#ft-afegeix-material'); if (am) am.addEventListener('click', async () => {
+    const v = k => (box.querySelector(`[data-nm="${k}"]`) || {}).value || '', on = $('#ft-nova-material');
+    if (!v('nom').trim()) { err('Escriu quin material és.', on); return; }
+    am.disabled = true;
+    const nom = v('nom').trim(), prod = C.rows('productes').find(p => p.actiu && p.nom.trim().toLowerCase() === nom.toLowerCase());
+    const r = await sb.from('full_treball_material').insert({ full_id: f.id, data: v('data') || ymd(new Date()), nom, quantitat: Number(v('quantitat')) || 1, producte_id: prod ? prod.id : null });
+    if (r.error) { am.disabled = false; err(friendly(r.error), on); return; }
+    toast('Material apuntat'); despres();
+  });
+  box.querySelectorAll('[data-treu-jornada]').forEach(b => b.addEventListener('click', async () => { const r = await sb.from('full_treball_jornades').update({ actiu: false }).eq('id', Number(b.dataset.treuJornada)); if (r.error) { err(friendly(r.error)); return; } despres(); }));
+  box.querySelectorAll('[data-treu-material]').forEach(b => b.addEventListener('click', async () => { const r = await sb.from('full_treball_material').update({ actiu: false }).eq('id', Number(b.dataset.treuMaterial)); if (r.error) { err(friendly(r.error)); return; } despres(); }));
+  box.querySelectorAll('[data-foto-full]').forEach(inp => inp.addEventListener('change', async () => {
+    const fitxers = [...inp.files]; if (!fitxers.length) return;
+    try {
+      const nous = (await pujaAdjunts('fulls/' + f.id, fitxers)).map(x => ({ ...x, grup: inp.dataset.fotoFull, per: t ? t.id : null }));
+      const actual = C.get('fulls_treball', f.id) || f;
+      const r = await sb.from('fulls_treball').update({ adjunts: [...(Array.isArray(actual.adjunts) ? actual.adjunts : []), ...nous] }).eq('id', f.id); if (r.error) throw r.error;
+      toast(nous.length + ' fitxer' + (nous.length === 1 ? '' : 's') + ' pujat' + (nous.length === 1 ? '' : 's')); despres();
+    } catch (e) { err(friendly(e)); }
+  }));
+}
+// ---- l'app: la llista dels fulls de l'operari i un full sol (sense incidència) ----
+function renderFullsOperari(main) {
+  const st = state.ft, t = treballadorActual();
+  if (st.id) return renderFullOperari(main, st.id);
+  const meus = C.rows('fulls_treball').filter(f => f.actiu && t && Number(f.encarregat_id) === t.id && f.estat !== 'anul_lat').sort((a, b) => String(a.termini || '9').localeCompare(String(b.termini || '9')));
+  const pend = meus.filter(f => !f.finalitzat), fets = meus.filter(f => f.finalitzat);
+  const targeta = f => { const inc = f.incidencia_id ? C.get('incidencies', f.incidencia_id) : null, fora = f.termini && !f.finalitzat && new Date() > new Date(f.termini);
+    return `<div class="ic-targeta ${fora ? 'fora' : ''}" data-full="${f.id}"><b>${h(f.nom)}</b> · ${h(f.numero || '')}<br><span class="hint">${h(L('llocs', f.lloc_id))}${inc ? ' · ' + h(inc.numero) : ' · sense incidència'} · ${h(ESTATS_FULL[f.estat] || '')}${f.termini ? ' · termini ' + dmyhm(f.termini) : ''}${fora ? ' · <b class="v-no">fora de termini</b>' : ''}</span></div>`; };
+  const nou = st.nou ? `<div class="ft"><h4 style="margin-top:0">Nou full de treball</h4>
+      <div class="ft-nova" id="ft-nou">
+        <label class="f wide"><span class="l">Nom de la tasca</span><input type="text" data-nf="nom"></label>
+        <label class="f"><span class="l">Termini</span><input type="datetime-local" data-nf="termini" value="${aLocalDT(vencimentPerGrup('mig_termini'))}"></label>
+        <label class="f"><span class="l">Lloc</span><select data-nf="lloc_id"><option value="">Tria el lloc…</option>${C.rows('llocs').filter(l => l.actiu).sort((a, b) => a.nom.localeCompare(b.nom, 'ca')).map(l => `<option value="${l.id}">${h(l.nom)}${l.poblacio ? ' — ' + h(l.poblacio) : ''}</option>`).join('')}</select></label>
+        <label class="f wide"><span class="l">Observacions preliminars per fer la feina</span><textarea lang="ca" spellcheck="true" data-nf="observacions_previes"></textarea></label>
+        <p class="hint wide" style="margin:0">La feina te l’encomanes a tu mateix${t ? ' (' + h(nomTreballador(t)) + ')' : ''}.</p>
+        <div class="actions"><button type="button" class="btn" id="ft-crea">Crea el full</button><button type="button" class="btn ghost" id="ft-nou-cancel">Cancel·la</button></div>
+      </div></div>` : '';
+  main.innerHTML = `<h1>Fulls de treball</h1>
+    ${!t ? '<div class="msg err">El teu usuari no té fitxa de treballador.</div>' : ''}
+    <div id="ferr"></div>
+    ${st.nou ? nou : '<div class="bar"><button class="btn" id="ft-nou-btn">Nou full de treball (sense incidència)</button></div>'}
+    ${pend.length ? pend.map(targeta).join('') : '<div class="empty">Cap full de treball pendent.</div>'}
+    ${fets.length ? `<details ${st.fets ? 'open' : ''} id="ft-fets"><summary class="hint" style="cursor:pointer; margin:14px 0 6px">Finalitzats (${fets.length})</summary>${fets.map(targeta).join('')}</details>` : ''}`;
+  main.querySelectorAll('[data-full]').forEach(c => c.addEventListener('click', () => { const f = C.get('fulls_treball', Number(c.dataset.full)); if (f && f.incidencia_id && f.accio_id) { state.inc.vista = 'diagrama'; state.inc.id = f.incidencia_id; state.inc.sel = f.accio_id; state.inc.form = null; state.mode = 'consulta'; state.table = 'incidencies'; renderApp(); } else { st.id = Number(c.dataset.full); st.form = null; renderMain(); } window.scrollTo({ top: 0 }); }));
+  const nb = $('#ft-nou-btn'); if (nb) nb.addEventListener('click', () => { st.nou = true; renderMain(); });
+  const nc = $('#ft-nou-cancel'); if (nc) nc.addEventListener('click', () => { st.nou = null; renderMain(); });
+  const fd = $('#ft-fets'); if (fd) fd.addEventListener('toggle', () => { st.fets = fd.open; });
+  const cr = $('#ft-crea'); if (cr) cr.addEventListener('click', async () => {
+    const v = k => ($(`#ft-nou [data-nf="${k}"]`) || {}).value || '';
+    if (!v('nom').trim()) { showFormError('Posa el nom de la tasca.'); return; }
+    if (!v('termini')) { showFormError('Cal un termini.'); return; }
+    if (!v('lloc_id')) { showFormError('Tria el lloc.'); return; }
+    if (!t) { showFormError('El teu usuari no té fitxa de treballador.'); return; }
+    cr.disabled = true;
+    const r = await sb.from('fulls_treball').insert({ nom: v('nom').trim(), termini: deLocalDT(v('termini')), lloc_id: Number(v('lloc_id')), observacions_previes: v('observacions_previes').trim() || null, encarregat_id: t.id, demanat_per: t.id, estat: 'pendent' }).select('id').single();
+    if (r.error) { cr.disabled = false; showFormError(friendly(r.error)); return; }
+    await loadTable('fulls_treball'); toast('Full de treball creat'); st.nou = null; st.id = r.data.id; renderMain(); window.scrollTo({ top: 0 });
+  });
+}
+function renderFullOperari(main, id) {
+  const st = state.ft, f = C.get('fulls_treball', id); if (!f) { st.id = null; renderMain(); return; }
+  const lloc = C.get('llocs', f.lloc_id) || {}, client = C.get('clients', lloc.client_id) || {}, qui = f.demanat_per ? C.get('treballadors', f.demanat_per) : null, enc = C.get('treballadors', f.encarregat_id);
+  const fora = f.termini && !f.finalitzat && new Date() > new Date(f.termini), edit = potEditarFull(f), senseJornada = !jornadesFull(f.id).length;
+  main.innerHTML = `<div class="ao">
+    <div class="bar"><button class="btn ghost" id="ft-torna">← Fulls de treball</button></div>
+    <div class="ao-lloc">${h(lloc.nom || 'Lloc sense nom')}${client.nom ? `<span>${h(client.nom)}</span>` : ''}</div>
+    <div class="ao-qui"><span>Ho demana: <b>${h(nomTreballador(qui)) || '—'}</b></span><span>Encarregat: <b>${h(nomTreballador(enc)) || '—'}</b></span></div>
+    <div class="ao-peticio"><div class="ao-sobre"><span>Full de treball ${h(f.numero || '')}</span><span class="pill e-${f.finalitzat ? 'finalitzada' : f.estat === 'en_curs' ? 'en_curs' : 'pendent'}">${h(ESTATS_FULL[f.estat] || '')}</span>${fora ? '<span class="pill fora">Fora de termini</span>' : ''}</div><div class="ao-text">${h(f.nom)}</div></div>
+    <div class="ao-fila"><span class="l">Termini</span><span class="ao-termini ${fora ? 'fora' : ''}">${f.termini ? dmyhm(f.termini) : '—'}</span></div>
+    ${f.observacions_previes ? `<div class="ao-fila"><span class="l">Observacions preliminars</span><div class="ao-desc">${h(f.observacions_previes)}</div></div>` : ''}
+    ${f.resum ? `<div class="ao-fila"><span class="l">Resum del que s’ha fet</span><div class="ao-desc">${h(f.resum)}</div></div>` : ''}
+    <div id="ferr"></div>
+    ${seccionsFullHTML(f)}
+    ${edit ? (st.form === 'finalitza' ? `<div class="ic-form"><h4>Full totalment finalitzat</h4>
+        ${senseJornada ? '<p class="hint"><b class="v-no">No hi ha cap jornada.</b> Apunta-hi la data, les hores, les persones i què has fet, i torna aquí.</p>' : ''}
+        <div class="f"><span class="l">Resum del que has fet</span><textarea lang="ca" spellcheck="true" id="ftf-resum">${h(resumJornades(f.id))}</textarea></div>
+        <div class="actions"><button type="button" class="btn" id="ftf-ok" ${senseJornada ? 'disabled' : ''}>Confirma: totalment finalitzat</button><button type="button" class="btn ghost" id="ftf-cancel">Cancel·la</button></div></div>`
+      : `<div class="actions ic-ops" style="margin-top:10px">${f.estat === 'pendent' ? '<button type="button" class="btn ghost" id="ftf-comenca">Comença</button>' : ''}<button type="button" class="btn" id="ftf-finalitza">Full totalment finalitzat…</button></div>`) : (f.finalitzat ? `<p class="hint">Totalment finalitzat el ${dmyhm(f.finalitzat_el)}${f.albara_id ? ' · ja té albarà' : ''}.</p>` : '')}
+  </div>`;
+  $('#ft-torna').addEventListener('click', () => { st.id = null; st.form = null; renderMain(); window.scrollTo({ top: 0 }); });
+  bindFull(f, main);
+  const co = $('#ftf-comenca'); if (co) co.addEventListener('click', async () => { const r = await sb.from('fulls_treball').update({ estat: 'en_curs' }).eq('id', f.id); if (r.error) { showFormError(friendly(r.error)); return; } await loadTable('fulls_treball'); renderMain(); });
+  const fi = $('#ftf-finalitza'); if (fi) fi.addEventListener('click', () => { st.form = 'finalitza'; renderMain(); });
+  const fc = $('#ftf-cancel'); if (fc) fc.addEventListener('click', () => { st.form = null; renderMain(); });
+  const fo = $('#ftf-ok'); if (fo) fo.addEventListener('click', () => { fo.disabled = true; finalitzaFull(f.id, { resum: $('#ftf-resum').value.trim(), despres: () => { st.form = null; renderMain(); } }); });
+  ompleMiniatures(main);
+}
+// ---- oficina: fotos i resum a la fitxa del full; l'albarà ----
+function fullExtresHTML(row) {
+  if (!row) return '';
+  const jorn = jornadesFull(row.id), mat = materialFull(row.id);
+  const fotos = grup => { const ll = fotosFull(row, grup); return `<div class="ft-fotos">${ll.map(x => `<figure>${x.tipus === 'foto' ? `<img class="ic-mini" data-adj="${h(x.path)}" alt="${h(x.nom)}">` : x.tipus === 'video' ? `<video class="ic-mini" data-adj="${h(x.path)}" muted preload="metadata"></video>` : `<a class="ic-doc" data-adj="${h(x.path)}" href="#">📄 ${h(x.nom.slice(0, 16))}</a>`}<figcaption>${h(nomCurtTreballador(C.get('treballadors', x.per)) || '')}</figcaption></figure>`).join('')}</div>${row.estat !== 'albara' ? `<label class="btn ghost small ft-puja">Afegeix fotos <input type="file" data-foto-full="${grup}" multiple accept="image/*,video/*,.pdf" style="display:none"></label>` : (ll.length ? '' : '<span class="hint">cap</span>')}`; };
+  return `<div class="ft" id="ft" data-full="${row.id}">
+    <div class="ft-resum"><span><b>${jorn.length}</b> jornad${jorn.length === 1 ? 'a' : 'es'} · <b>${String(horesFull(row.id)).replace('.', ',')}</b> h × persones</span><span><b>${mat.length}</b> líni${mat.length === 1 ? 'a' : 'es'} de material</span><span>${row.finalitzat ? 'Totalment finalitzat el ' + dmyhm(row.finalitzat_el) : 'Encara no està totalment finalitzat'}</span>${row.albara_id ? `<span>Albarà <b>${h((C.get('albarans', row.albara_id) || {}).numero_complet || '')}</b></span>` : ''}</div>
+    ${GRUPS_FOTO_FULL.map(([g, nom]) => `<h4>${h(nom)}</h4>${fotos(g)}`).join('')}
+  </div>`;
+}
+function fullExtresBind(frm, td) {
+  const id = Number(frm.dataset.id); if (!id) return;
+  const f = C.get('fulls_treball', id); if (f) bindFull(f, $('#main'));
+}
+// l'albarà d'un full totalment finalitzat: una línia per jornada (hores × persones a preu de l'hora) i una per material (a PVP del producte, si es troba)
+async function creaAlbaraDeFull(id) {
+  const f = C.get('fulls_treball', id); if (!f) return;
+  if (!f.finalitzat) { showFormError('El full ha d’estar totalment finalitzat abans de fer-ne l’albarà.'); return; }
+  if (f.albara_id) { showFormError('Aquest full ja té albarà.'); return; }
+  const lloc = C.get('llocs', f.lloc_id); if (!lloc || !lloc.client_id) { showFormError('El lloc del full no té client.'); return; }
+  const emp = C.rows('empresa')[0] || {}, preuHora = emp.preu_hora != null && emp.preu_hora !== '' ? Number(emp.preu_hora) : null;
+  const jorn = jornadesFull(id), mat = materialFull(id);
+  if (!jorn.length && !mat.length) { showFormError('El full no té ni jornades ni material: no hi ha res a facturar.'); return; }
+  const linies = [];
+  jorn.forEach(j => { const q = Math.round(horesJornada(j) * Number(j.persones || 1) * 100) / 100; linies.push({ descripcio: `Mà d’obra ${dmy(j.data)} · ${j.persones} ${Number(j.persones) === 1 ? 'persona' : 'persones'} · ${String(j.hora_inici || '').slice(0, 5)}–${String(j.hora_fi || '').slice(0, 5)}${j.feina ? ' · ' + j.feina : ''}`, quantitat: q || 1, preu_unitari: preuHora || 0, preu_cost: null, producte_id: null }); });
+  mat.forEach(m => { const p = m.producte_id ? C.get('productes', m.producte_id) : C.rows('productes').find(x => x.actiu && x.nom.trim().toLowerCase() === String(m.nom).trim().toLowerCase()); linies.push({ descripcio: m.nom, quantitat: Number(m.quantitat) || 1, preu_unitari: p ? Number(p.pvp || 0) : 0, preu_cost: p && p.preu_cost != null ? Number(p.preu_cost) : null, producte_id: p ? p.id : null }); });
+  const total = linies.reduce((t, l) => t + Math.round(l.quantitat * l.preu_unitari * 100) / 100, 0);
+  const text = `Albarà per a ${lloc.nom} (${L('clients', lloc.client_id)}) amb data ${dmy(f.finalitzat_el ? ymd(new Date(f.finalitzat_el)) : ymd(new Date()))}:\n\n` + linies.map(l => `• ${String(l.quantitat).replace('.', ',')} × ${l.descripcio} a ${eur(l.preu_unitari)}`).join('\n') + `\n\nTotal (sense IVA): ${eur(total)}.${preuHora == null && jorn.length ? '\n\nL’empresa no té «preu de l’hora»: les línies de mà d’obra surten a 0 €; posa’l a Empresa o corregeix-les a l’albarà.' : ''}${linies.some(l => !l.preu_unitari) ? '\nLes línies a 0 € les pots corregir a l’albarà abans de facturar.' : ''}\n\nD’acord?`;
+  if (!confirm(text)) return;
+  const alb = await sb.from('albarans').insert({ client_id: lloc.client_id, lloc_id: lloc.id, data: f.finalitzat_el ? ymd(new Date(f.finalitzat_el)) : ymd(new Date()), descripcio: `${f.numero || 'Full de treball'} · ${f.nom}`, observacions: `Creat des del full de treball ${f.numero || ''}` + (f.incidencia_id ? ` (incidència ${(C.get('incidencies', f.incidencia_id) || {}).numero || ''})` : '') }).select('id').single();
+  if (alb.error) { showFormError('Albarà: ' + friendly(alb.error)); return; }
+  const lin = await sb.from('albara_linies').insert(linies.map((l, i) => ({ albara_id: alb.data.id, ordre: i + 1, ...l })));
+  if (lin.error) { showFormError('Línies de l’albarà: ' + friendly(lin.error)); return; }
+  const upd = await sb.from('fulls_treball').update({ albara_id: alb.data.id, estat: 'albara' }).eq('id', id);
+  if (upd.error) { showFormError(friendly(upd.error)); return; }
+  await Promise.all([loadTable('albarans'), loadTable('albara_linies'), loadTable('fulls_treball')]);
+  toast('Albarà creat');
+  state.mode = 'consulta'; state.table = 'albarans'; state.editing = alb.data.id; renderApp(); window.scrollTo({ top: 0 });
+}
+
 /* ---------- Pagaments a proveïdors: llista per marcar les pagades (casella al final) i calendari de pagaments per data i forma ---------- */
 const ORDRE_FORMES = ['domiciliacio', 'transferencia', 'talo', 'visa', 'altres', ''];
 const nomFormaProv = v => (OPT.forma_pagament_prov.find(o => o[0] === v) || [])[1] || (v ? String(v) : 'Sense forma de pagament');
@@ -5025,10 +5319,12 @@ function renderAccioOperari(main) {
     ${a.resultat ? `<div class="ao-fila"><span class="l">${a.es_peticio ? 'Resposta' : 'Resultat'}</span><div class="ao-desc">${h(a.resultat)}</div></div>` : ''}
     ${inc.observacions_internes || a.observacions_internes ? `<div class="ao-fila"><span class="l">Observacions internes</span><div class="ao-desc" style="font-size:16px">${h([inc.observacions_internes, a.observacions_internes].filter(Boolean).join('\n'))}</div></div>` : ''}
     ${fotosOperariHTML(inc)}
+    ${a && accioAmbFull(a) ? (fullDeAccio(a) ? seccionsFullHTML(fullDeAccio(a)) : potCrearFullDe(a) ? '<div class="ft" id="ft-creant">Preparant el full de treball…</div>' : '') : ''}
     <aside class="ic-panell ao-panell" id="ic-panell"></aside>` : '<div class="empty">No tens cap acció en aquesta incidència.</div>'}
   </div>`;
   $('#inc-torna').addEventListener('click', () => { st.vista = 'llista'; st.sel = null; st.form = null; state.table = 'accions_meves'; renderApp(); window.scrollTo({ top: 0 }); });
   main.querySelectorAll('[data-tria]').forEach(b => b.addEventListener('click', () => { st.sel = Number(b.dataset.tria); st.form = null; renderMain(); }));
+  if (a && accioAmbFull(a)) { const f = fullDeAccio(a); if (f) bindFull(f, main); else if (potCrearFullDe(a)) creaFullPerAccio(inc, a).then(() => renderMain()).catch(e => { const box = $('#ft-creant'); if (box) box.innerHTML = '<span class="v-no">No s’ha pogut crear el full de treball: ' + h(friendly(e)) + '</span>'; }); }
   if (a) pintaPanell(inc);
   ompleMiniatures(main);
 }
@@ -5041,14 +5337,16 @@ function panellOperariHTML(inc) {
   let ops = '';
   if (potActuar && a.estat === 'pendent') ops += `<button class="btn ghost" data-op="comenca">Comença l’acció</button>`;
   if (potActuar && a.estat !== 'finalitzada' && dest && !a.es_peticio) ops += `<button class="btn ghost" data-op="peticio">Fes una petició a ${h(dest.nom)}…</button>`;
-  if (potActuar && a.estat !== 'finalitzada') ops += `<button class="btn" data-op="finalitza">${a.es_peticio ? 'Respon…' : 'Finalitza l’acció…'}</button>`;
+  if (potActuar && a.estat !== 'finalitzada') ops += `<button class="btn" data-op="finalitza">${a.es_peticio ? 'Respon…' : 'Acció totalment finalitzada…'}</button>`;
   if (a.estat === 'finalitzada') ops += `<span class="hint">${a.es_peticio ? 'Resposta enviada' : 'Acció finalitzada'}${a.finalitzada_el ? ' el ' + dmyhm(a.finalitzada_el) : ''}.</span>`;
   let form = '';
-  if (formOp && formOp.tipus === 'finalitza') form = `<div class="ic-form"><h4>${a.es_peticio ? 'Respon la petició' : 'Finalitza «' + h(nomTipus(a.tipus)) + '»'}</h4>
-      <div class="f"><span class="l">${a.es_peticio ? 'Resposta' : 'Què has fet'}</span><textarea lang="ca" spellcheck="true" id="fin-resultat"></textarea></div>
+  const fullA = !a.es_peticio ? fullDeAccio(a) : null, senseJornada = !!fullA && !jornadesFull(fullA.id).length;
+  if (formOp && formOp.tipus === 'finalitza') form = `<div class="ic-form"><h4>${a.es_peticio ? 'Respon la petició' : 'Acció totalment finalitzada: «' + h(nomTipus(a.tipus)) + '»'}</h4>
+      ${fullA ? `<p class="hint" style="margin:0 0 8px">${senseJornada ? '<b class="v-no">Al full de treball no hi ha cap jornada.</b> Apunta-hi la data, les hores, les persones i què has fet, i torna aquí.' : 'El full de treball (' + h(fullA.numero || '') + ') quedarà totalment finalitzat amb ' + jornadesFull(fullA.id).length + ' jornad' + (jornadesFull(fullA.id).length === 1 ? 'a' : 'es') + ' i ' + materialFull(fullA.id).length + ' líni' + (materialFull(fullA.id).length === 1 ? 'a' : 'es') + ' de material.'}</p>` : ''}
+      <div class="f"><span class="l">${a.es_peticio ? 'Resposta' : 'Resum del que has fet'}</span><textarea lang="ca" spellcheck="true" id="fin-resultat">${fullA ? h(resumJornades(fullA.id)) : ''}</textarea></div>
       <div class="f"><span class="l">Fotos, vídeos, documents${Array.isArray(a.adjunts) && a.adjunts.length ? ' (ja n’hi ha ' + a.adjunts.length + ')' : ''}</span><input type="file" id="fin-fitxers" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx"></div>
       ${pend.length ? `<p class="v-no">Aquesta acció espera ${pend.length} ${pend.length === 1 ? 'resposta' : 'respostes'} a les teves peticions: no es pot finalitzar fins que les tinguis.</p>` : ''}
-      <div class="actions"><button class="btn" id="fin-ok" ${pend.length ? 'disabled' : ''}>${a.es_peticio ? 'Envia la resposta' : 'Confirma: finalitzada'}</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div></div>`;
+      <div class="actions"><button class="btn" id="fin-ok" ${pend.length || senseJornada ? 'disabled' : ''}>${a.es_peticio ? 'Envia la resposta' : 'Confirma: totalment finalitzada'}</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div></div>`;
   if (formOp && formOp.tipus === 'peticio') form = `<div class="ic-form"><h4>Petició a ${h(nomTreballador(dest))}</h4>
       <p class="hint" style="margin:0 0 8px">Li arriba com una petició pendent; fins que no et respongui, aquesta acció queda «esperant».</p>
       <div class="f"><span class="l">Què necessites o què preguntes</span><textarea lang="ca" spellcheck="true" id="pet-text"></textarea></div>
@@ -5108,6 +5406,7 @@ function panellHTML(inc) {
   let formHtml = '';
   if (formOp && formOp.tipus === 'finalitza') formHtml = `<div class="ic-form"><h4>${a.es_peticio && extern ? 'Registra la resposta de ' + h(nomResponsable(a)) : a.es_peticio ? 'Respon la petició' : 'Finalitza «' + h(tp.nom) + '»'}</h4>
       <p class="hint" style="margin:0 0 8px">${a.es_peticio ? 'Escriu la resposta (o adjunta-la) i confirma.' : 'Escriu què ha sortit o adjunta el document, i confirma. Després podràs encarregar el pas següent.'}</p>
+      ${(() => { const f = !a.es_peticio ? fullDeAccio(a) : null; if (!f || f.finalitzat) return ''; const n = jornadesFull(f.id).length; return `<p class="hint" style="margin:0 0 8px">${n ? 'El full de treball ' + h(f.numero || '') + ' quedarà totalment finalitzat (' + n + ' jornad' + (n === 1 ? 'a' : 'es') + ', ' + String(horesFull(f.id)).replace('.', ',') + ' h × persones).' : 'El full de treball ' + h(f.numero || '') + ' no té cap jornada: quedarà obert perquè s’hi apuntin les hores.'}</p>`; })()}
       ${a.tipus === 'decisio_client' ? `<div class="f"><span class="l">Decisió</span><select id="fin-decisio">${INC.decisions.map(o => `<option value="${o[0]}">${h(o[1])}</option>`).join('')}</select></div>` : ''}
       <div class="f"><span class="l">${a.es_peticio ? 'Contingut de la resposta' : 'Resultat'}</span><textarea lang="ca" spellcheck="true" id="fin-resultat"></textarea></div>
       ${extern ? `<div class="f"><span class="l">Rebuda el (si és diferent d’ara)</span><input type="datetime-local" id="fin-recepcio"></div>` : ''}
@@ -5126,6 +5425,7 @@ function panellHTML(inc) {
       <div><span class="l">Responsable</span>${h(nomResponsable(a)) || '—'}${a.gestor_id && !client ? ` <span class="hint">· ho gestiona ${h(nomTreballador(C.get('treballadors', a.gestor_id)))}</span>` : ''}</div>
       <div><span class="l">Creada</span>${dmyhm(a.creat_el)} per ${h(nomCurtTreballador(C.get('treballadors', a.creat_per)))}${origen ? ` · a partir de <a href="#" data-sel="${origen.id}">${h(nomTipus(origen.tipus))}</a>` : ''}</div>
       <div><span class="l">Termini</span>${a.venciment ? dmyhm(a.venciment) + (a.grup_termini ? ' · ' + h(etiquetaOpt(INC.grups, a.grup_termini)) : '') : (a.carril === 'client' ? 'sense termini (acció del client)' : '—')}</div>
+      ${(() => { const f = fullDeAccio(a); return f ? `<div><span class="l">Full de treball</span><a href="#" data-obre-full="${f.id}">${h(f.numero || 'full')}</a> · ${h(ESTATS_FULL[f.estat] || f.estat)} · ${jornadesFull(f.id).length} jornad${jornadesFull(f.id).length === 1 ? 'a' : 'es'} (${String(horesFull(f.id)).replace('.', ',')} h × persones) · ${materialFull(f.id).length} de material${f.albara_id ? ' · albarà ' + h((C.get('albarans', f.albara_id) || {}).numero_complet || '') : ''}</div>` : (!client && accioAmbFull(a) ? `<div><span class="l">Full de treball</span><a href="#" data-crea-full="${a.id}">crea’l</a> <span class="hint">(les accions d’operari noves ja el tenen)</span></div>` : ''); })()}
       ${a.estat === 'finalitzada' ? `<div><span class="l">Finalitzada</span>${dmyhm(a.finalitzada_el)} per ${h(nomCurtTreballador(C.get('treballadors', a.finalitzada_per)))}${a.data_recepcio ? ' · rebuda ' + dmyhm(a.data_recepcio) : ''}</div>` : ''}
       ${a.descripcio ? `<div><span class="l">Descripció / instruccions</span>${h(a.descripcio)}</div>` : ''}
       ${a.decisio ? `<div><span class="l">Decisió</span><b>${h(etiquetaOpt(INC.decisions, a.decisio))}</b></div>` : ''}
@@ -5194,9 +5494,11 @@ function bindPanell(inc) {
   const st = state.inc, p = $('#ic-panell'), t = trebInc();
   const cancel = $('#panell-cancel'); if (cancel) cancel.addEventListener('click', () => { st.form = null; pintaPanell(inc); });
   p.querySelectorAll('[data-sel]').forEach(el => el.addEventListener('click', e => { e.preventDefault(); st.sel = Number(el.dataset.sel); st.form = null; renderMain(); }));
+  p.querySelectorAll('[data-obre-full]').forEach(el => el.addEventListener('click', e => { e.preventDefault(); state.mode = 'consulta'; state.table = 'fulls_treball'; state.editing = Number(el.dataset.obreFull); renderApp(); window.scrollTo({ top: 0 }); }));
+  p.querySelectorAll('[data-crea-full]').forEach(el => el.addEventListener('click', async e => { e.preventDefault(); const a = C.get('incidencia_accions', Number(el.dataset.creaFull)); try { await creaFullPerAccio(inc, a); toast('Full de treball creat'); renderMain(); } catch (e2) { errorInc(friendly(e2)); } }));
   p.querySelectorAll('[data-op]').forEach(b => b.addEventListener('click', async () => {
     const a = C.get('incidencia_accions', st.sel); const op = b.dataset.op;
-    if (op === 'comenca') { await operacio(inc, () => sb.from('incidencia_accions').update({ estat: 'en_curs' }).eq('id', a.id), a.id, 'en_curs', 'Acció en curs'); }
+    if (op === 'comenca') { await marcaFullEnCurs(a); await operacio(inc, () => sb.from('incidencia_accions').update({ estat: 'en_curs' }).eq('id', a.id), a.id, 'en_curs', 'Acció en curs'); }
     else if (op === 'resol') { await operacio(inc, () => sb.from('incidencia_accions').update({ resolta: true, resolta_el: new Date().toISOString() }).eq('id', a.id), a.id, 'resposta_acceptada', 'Resposta donada per suficient'); }
     else if (op === 'visible') { await operacio(inc, () => sb.from('incidencia_accions').update({ visible_client: !a.visible_client }).eq('id', a.id), a.id, 'visibilitat', a.visible_client ? 'Amagada al client' : 'Visible al client'); }
     else if (op === 'deriva') { st.form = { tipus: 'accio', origen: a.id }; pintaPanell(inc); }
@@ -5233,6 +5535,9 @@ function bindPanell(inc) {
     const a = C.get('incidencia_accions', st.sel); let resultat = $('#fin-resultat').value.trim();
     const fitxers = $('#fin-fitxers') ? [...$('#fin-fitxers').files] : [];
     const triaP = $('#fin-pressupost') ? $('#fin-pressupost').value : '';
+    const fullA = !a.es_peticio ? fullDeAccio(a) : null, fullAmbJornades = !!fullA && jornadesFull(fullA.id).length > 0;
+    if (fullA && !fullAmbJornades && APP_NOMES_TASQUES) { errorInc('Abans d’acabar, apunta almenys una jornada al full de treball: data, hores, persones i què s’ha fet.'); return; }
+    if (!resultat && fullAmbJornades) resultat = resumJornades(fullA.id);
     if (!resultat && !fitxers.length && !triaP && !(a.adjunts || []).length && !$('#fin-decisio')) { errorInc(a.es_peticio ? 'Escriu la resposta o adjunta-la.' : 'Escriu el resultat o adjunta el document.'); return; }
     finOk.disabled = true;
     try {
@@ -5246,8 +5551,12 @@ function bindPanell(inc) {
       if ($('#fin-resol') && $('#fin-resol').checked) { canvis.resolta = true; canvis.resolta_el = ara; }
       if ($('#fin-recepcio') && $('#fin-recepcio').value) canvis.data_recepcio = deLocalDT($('#fin-recepcio').value);
       const r = await sb.from('incidencia_accions').update(canvis).eq('id', a.id); if (r.error) throw r.error;
+      // el full de treball de l'acció queda totalment finalitzat amb l'acció; si l'oficina finalitza l'acció i el full no té cap jornada, el full queda obert
+      const fullQuedaObert = !!fullA && !fullA.finalitzat && !fullAmbJornades;
+      if (fullA && !fullA.finalitzat && fullAmbJornades) { const rf = await sb.from('fulls_treball').update({ finalitzat: true, finalitzat_el: ara, finalitzat_per: t.id, estat: 'finalitzat', resum: resultat || null }).eq('id', fullA.id); if (rf.error) throw rf.error; await loadTable('fulls_treball'); }
       await eventInc(inc.id, a.id, a.es_peticio ? 'resposta' : 'finalitzada', (canvis.decisio ? etiquetaOpt(INC.decisions, canvis.decisio) + ' · ' : '') + (resultat || '').slice(0, 200));
-      await recarregaInc(); toast(a.es_peticio ? 'Resposta registrada' : 'Acció finalitzada');
+      await recarregaInc();
+      if (fullQuedaObert) toastErr('Acció finalitzada. El full de treball ' + (fullA.numero || '') + ' queda obert: no hi ha cap jornada apuntada.'); else toast(a.es_peticio ? 'Resposta registrada' : 'Acció finalitzada');
       // acció pròpia acabada: s'ofereix de seguida encarregar el pas següent (una petició contestada torna a qui la va demanar)
       const potSeguir = !APP_NOMES_TASQUES && !a.es_peticio && inc.estat === 'oberta' && (INC.transicions[a.tipus] || []).some(k => potCrearTipus(inc, k));
       st.form = potSeguir ? { tipus: 'accio', origen: a.id, despres: true } : null; renderMain();
@@ -5259,7 +5568,7 @@ function bindPanell(inc) {
     petOk.disabled = true;
     try {
       await creaPeticioOperari(inc, a, text || 'Vegeu els adjunts', fitxers);
-      if (a.estat === 'pendent') { const r = await sb.from('incidencia_accions').update({ estat: 'en_curs' }).eq('id', a.id); if (r.error) throw r.error; }
+      if (a.estat === 'pendent') { await marcaFullEnCurs(a); const r = await sb.from('incidencia_accions').update({ estat: 'en_curs' }).eq('id', a.id); if (r.error) throw r.error; }
       await recarregaInc(); toast('Petició enviada'); st.form = null; renderMain();
     } catch (e) { petOk.disabled = false; errorInc(friendly(e)); }
   });
@@ -5331,6 +5640,7 @@ function bindPanell(inc) {
       try {
         if (f.tipusSel === 'assignar_seguidora') { Object.assign(dades, { estat: 'finalitzada', finalitzada_el: new Date().toISOString(), finalitzada_per: t.id, resultat: 'Nova seguidora: ' + nomTreballador(C.get('treballadors', Number(f.resp))), grup_termini: null, venciment: null }); }
         const r = await sb.from('incidencia_accions').insert(dades).select('id').single(); if (r.error) throw r.error;
+        if (accioAmbFull(dades)) { try { await creaFullPerAccio(inc, { ...dades, id: r.data.id }); } catch (e2) { toastErr('Acció creada, però el full de treball no: ' + friendly(e2)); } }
         if (f.tipusSel === 'assignar_seguidora') { const u = await sb.from('incidencies').update({ seguidora_id: Number(f.resp) }).eq('id', inc.id); if (u.error) throw u.error; }
         await eventInc(inc.id, r.data.id, 'nova_accio', tp.nom + ' → ' + (extern ? (f.carril === 'client' ? (C.get('contactes', Number(f.resp)) || {}).nom : (C.get('proveidors', Number(f.resp)) || {}).nom) : nomTreballador(C.get('treballadors', Number(f.resp)))) + (dades.venciment ? ' · venç ' + dmyhm(dades.venciment) : ''));
         await recarregaInc(); toast('Acció creada'); st.form = null; st.sel = r.data.id; renderMain();
