@@ -328,6 +328,11 @@
   .ic-caixa.sel{ outline:3px solid var(--blue); outline-offset:2px; }
   .ic-caixa .ic-tipus{ color:var(--lc); }
   .ic-caixa.e-esperant{ border-style:dashed; }
+  .ic-caixa.e-programada{ border-style:dotted; background:#fbfbfa; } .ic-caixa.e-programada .ic-qui, .ic-caixa.e-programada .ic-venc{ color:var(--ink-2); }
+  .pill.e-programada{ color:#5c6670; border-style:dashed; background:#f5f6f7; }
+  .xip.prog{ opacity:.7; border-style:dashed; }
+  .ic-ara .prog{ color:var(--ink-2); font-size:13px; } .ic-ara .prog b{ font-weight:600; }
+  details.ic-programades{ margin-top:14px; } details.ic-programades summary{ cursor:pointer; color:var(--ink-2); margin:0 0 8px; } details.ic-programades .ic-targeta{ border-style:dashed; }
   .ic-caixa.fora{ border-color:#d32f2f; }
   .ic-caixa.e-finalitzada{ border:1px solid #d9ded6; background:#f7f8f6; color:#737c71; box-shadow:none; padding-left:11px; }
   .ic-caixa.e-finalitzada::before{ width:4px; background:#c9d0c4; }
@@ -1681,7 +1686,8 @@ const SCHEMA = {
     fulls_treball: {
       label: 'Fulls de treball', nou: 'Nou full de treball', order: 'termini', desc: true,
       display: r => (r.numero || 'full') + ' — ' + r.nom,
-      list: ['numero', 'nom', 'lloc_id', 'encarregat_id', 'termini', 'estat', 'hores', 'incidencia', 'albara'],
+      list: ['numero', 'nom', 'lloc_id', 'encarregat_id', 'inici', 'termini', 'estat', 'hores', 'incidencia', 'albara'],
+      validate: p => p.inici && p.termini && new Date(p.inici) > new Date(p.termini) ? 'La data en què es pot començar no pot ser després del termini.' : null,
       computed: {
         hores: { label: 'Hores', num: true, fn: r => horesFull(r.id) },
         albara: { label: 'Albarà', fn: r => r.albara_id ? ((C.get('albarans', r.albara_id) || {}).numero_complet || 'sí') : '' },
@@ -1704,7 +1710,8 @@ const SCHEMA = {
         { key: 'numero', label: 'Número', type: 'info', fmt: r => r.numero || '(s’assigna en desar)' },
         { key: 'estat', label: 'Estat', type: 'info', fmt: r => ESTATS_FULL[r.estat] || r.estat || 'Pendent' },
         { key: 'nom', label: 'Nom de la tasca', type: 'text', required: true, wide: true },
-        { key: 'termini', label: 'Termini', type: 'datetime', required: true, default: () => vencimentPerGrup('mig_termini').toISOString() },
+        { key: 'inici', label: 'Es pot començar', type: 'datetime', hint: 'buit = de seguida; amb data, el full queda programat fins llavors' },
+        { key: 'termini', label: 'Termini final', type: 'datetime', required: true, default: () => vencimentPerGrup('mig_termini').toISOString() },
         { key: 'lloc_id', label: 'Lloc', type: 'ref', ref: 'llocs', required: true, optionLabel: r => r.nom + (r.poblacio ? ' — ' + r.poblacio : ''), ro: r => !!r && !!r.incidencia_id },
         { key: 'encarregat_id', label: 'A qui s’encomana la feina', type: 'ref', ref: 'treballadors', required: true, filter: r => r.actiu, optionLabel: r => nomTreballador(r) },
         { key: 'demanat_per', label: 'Qui ho demana', type: 'ref', ref: 'treballadors', filter: r => r.actiu, optionLabel: r => nomTreballador(r), default: () => { const t = treballadorActual(); return t ? t.id : ''; } },
@@ -2291,9 +2298,9 @@ function renderAppOperari() {
         <button data-go="informe_tasques_piscina" style="${estilMenu('informe_tasques_piscina')}"><strong>Tasques per piscina</strong>${fonsMenu('informe_tasques_piscina')}</button>
         <button data-go="informe_tasques_dates" style="${estilMenu('informe_tasques_dates')}"><strong>Tasques per data</strong>${fonsMenu('informe_tasques_dates')}</button>
         <button class="ample llarg" data-go="incidencia_reports" style="${estilMenu('incidencia_reports')}"><strong>Reports d’incidències</strong>${fonsMenu('incidencia_reports')}</button>
-        <button class="ample" data-go="fulls_treball_app" style="${estilMenu('fulls_treball_app')}"><strong>Fulls de treball</strong>${(() => { const t = treballadorActual(); const n = t ? C.rows('fulls_treball').filter(f => f.actiu && Number(f.encarregat_id) === t.id && !f.finalitzat && f.estat !== 'anul_lat').length : 0; return n ? `<span class="pend">${n} pendent${n === 1 ? '' : 's'}</span>` : ''; })()}${fonsMenu('fulls_treball_app')}</button>
+        <button class="ample" data-go="fulls_treball_app" style="${estilMenu('fulls_treball_app')}"><strong>Fulls de treball</strong>${(() => { const t = treballadorActual(); const n = t ? C.rows('fulls_treball').filter(f => f.actiu && Number(f.encarregat_id) === t.id && !f.finalitzat && f.estat !== 'anul_lat' && !fullProgramat(f)).length : 0; return n ? `<span class="pend">${n} pendent${n === 1 ? '' : 's'}</span>` : ''; })()}${fonsMenu('fulls_treball_app')}</button>
         <button data-go="calendari_accions" style="${estilMenu('calendari_accions')}"><strong>Calendari accions</strong>${fonsMenu('calendari_accions')}</button>
-        <button data-go="accions_meves" style="${estilMenu('accions_meves')}"><strong>Accions pendents</strong>${(() => { const n = t ? C.rows('incidencia_accions').filter(a => a.actiu && a.estat !== 'finalitzada' && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id) && (C.get('incidencies', a.incidencia_id) || {}).estat === 'oberta').length : 0; return n ? `<span class="pend">${n} ${n === 1 ? 'oberta' : 'obertes'}</span>` : ''; })()}${fonsMenu('accions_meves')}</button>
+        <button data-go="accions_meves" style="${estilMenu('accions_meves')}"><strong>Accions pendents</strong>${(() => { const n = t ? C.rows('incidencia_accions').filter(a => a.actiu && activa(a) && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id) && (C.get('incidencies', a.incidencia_id) || {}).estat === 'oberta').length : 0; return n ? `<span class="pend">${n} ${n === 1 ? 'oberta' : 'obertes'}</span>` : ''; })()}${fonsMenu('accions_meves')}</button>
         <button data-go="nomines" style="${estilMenu('nomines')}"><strong>Nòmines</strong>${fonsMenu('nomines')}</button>
         <button data-go="vacances" style="${estilMenu('vacances')}"><strong>Vacances</strong>${fonsMenu('vacances')}</button>
       </div>`;
@@ -4242,6 +4249,7 @@ const horesJornada = j => { if (!j || !j.hora_inici || !j.hora_fi) return 0; con
 const horesFull = id => Math.round(jornadesFull(id).reduce((t, j) => t + horesJornada(j) * Number(j.persones || 1), 0) * 100) / 100;
 const resumJornades = id => jornadesFull(id).map(j => dmy(j.data) + ': ' + (j.feina || '')).filter(x => !/: $/.test(x)).join('\n');
 const fotosFull = (f, grup) => (Array.isArray(f.adjunts) ? f.adjunts : []).filter(x => (x.grup || 'abans') === grup);
+const fullProgramat = f => !!f && !!f.inici && f.estat === 'pendent' && !f.finalitzat && new Date(f.inici) > new Date();   // encara no toca
 const potEditarFull = f => { const t = treballadorActual(); return !!f && !f.finalitzat && f.estat !== 'albara' && f.estat !== 'anul_lat' && !!t && (esOficina(t) || Number(f.encarregat_id) === t.id || Number(f.demanat_per) === t.id); };
 async function recarregaFulls() { await Promise.all(['fulls_treball', 'full_treball_jornades', 'full_treball_material'].map(loadTable)); }
 // el full d'una acció d'operari: la demanda surt de l'acció (nom = títol, termini = venciment, lloc = el de la incidència…)
@@ -4249,7 +4257,7 @@ async function creaFullPerAccio(inc, a) {
   const ja = fullDeAccio(a); if (ja) return ja.id;
   const termini = a.venciment || vencimentPerGrup(a.grup_termini || 'mig_termini').toISOString();
   const dades = { nom: a.titol || nomTipus(a.tipus), termini, lloc_id: inc.lloc_id, observacions_previes: a.descripcio || null, encarregat_id: a.responsable_treballador_id, demanat_per: a.creat_per || null,
-    incidencia_id: inc.id, accio_id: a.id, estat: a.estat === 'en_curs' ? 'en_curs' : 'pendent' };
+    incidencia_id: inc.id, accio_id: a.id, estat: a.estat === 'en_curs' ? 'en_curs' : 'pendent', inici: a.inici || null };
   const r = await sb.from('fulls_treball').insert(dades).select('id').single(); if (r.error) throw r.error;
   await loadTable('fulls_treball'); return r.data.id;
 }
@@ -4275,7 +4283,7 @@ function seccionsFullHTML(f) {
   const filaM = m => `<tr><td>${dmy(m.data)}</td><td>${h(m.nom)}</td><td class="num">${String(m.quantitat).replace('.', ',')}</td>${edit ? `<td class="num"><button type="button" class="btn ghost small" data-treu-material="${m.id}">Treu</button></td>` : ''}</tr>`;
   const fotos = grup => { const ll = fotosFull(f, grup); return `<div class="ft-fotos">${ll.map(x => `<figure>${x.tipus === 'foto' ? `<img class="ic-mini" data-adj="${h(x.path)}" alt="${h(x.nom)}">` : x.tipus === 'video' ? `<video class="ic-mini" data-adj="${h(x.path)}" muted preload="metadata"></video>` : `<a class="ic-doc" data-adj="${h(x.path)}" href="#">📄 ${h(x.nom.slice(0, 16))}</a>`}<figcaption>${h(nomCurtTreballador(C.get('treballadors', x.per)) || '')}</figcaption></figure>`).join('')}</div>${edit ? `<label class="btn ghost small ft-puja">Afegeix fotos <input type="file" data-foto-full="${grup}" multiple accept="image/*,video/*,.pdf" style="display:none"></label>` : (ll.length ? '' : '<span class="hint">cap</span>')}`; };
   return `<div class="ft" id="ft" data-full="${f.id}">
-    <div class="ft-cap"><span>Full de treball</span><b>${h(f.numero || '')}</b><span class="pill e-${f.estat === 'finalitzat' || f.estat === 'albara' ? 'finalitzada' : f.estat === 'en_curs' ? 'en_curs' : 'pendent'}">${h(ESTATS_FULL[f.estat] || f.estat)}</span>${f.finalitzat ? `<span class="hint">totalment finalitzat el ${dmyhm(f.finalitzat_el)}</span>` : ''}</div>
+    <div class="ft-cap"><span>Full de treball</span><b>${h(f.numero || '')}</b><span class="pill e-${f.estat === 'finalitzat' || f.estat === 'albara' ? 'finalitzada' : f.estat === 'en_curs' ? 'en_curs' : fullProgramat(f) ? 'programada' : 'pendent'}">${fullProgramat(f) ? 'Programat ' + textInici(f) : h(ESTATS_FULL[f.estat] || f.estat)}</span>${f.finalitzat ? `<span class="hint">totalment finalitzat el ${dmyhm(f.finalitzat_el)}</span>` : ''}</div>
     <h4>Jornades de feina ${jorn.length ? `· ${jorn.length} · ${String(hores).replace('.', ',')} h × persones` : ''}</h4>
     ${jorn.length ? `<table class="ft-taula">${jorn.map(filaJ).join('')}</table>` : '<p class="hint">Encara cap. Apunta cada dia que hi treballis: data, hora d’inici i final, persones i què s’ha fet.</p>'}
     ${edit ? `<div class="ft-nova" id="ft-nova-jornada">
@@ -4337,13 +4345,14 @@ function renderFullsOperari(main) {
   const st = state.ft, t = treballadorActual();
   if (st.id) return renderFullOperari(main, st.id);
   const meus = C.rows('fulls_treball').filter(f => f.actiu && t && Number(f.encarregat_id) === t.id && f.estat !== 'anul_lat').sort((a, b) => String(a.termini || '9').localeCompare(String(b.termini || '9')));
-  const pend = meus.filter(f => !f.finalitzat), fets = meus.filter(f => f.finalitzat);
+  const pend = meus.filter(f => !f.finalitzat && !fullProgramat(f)), fets = meus.filter(f => f.finalitzat), programats = meus.filter(fullProgramat).sort((a, b) => String(a.inici).localeCompare(String(b.inici)));
   const targeta = f => { const inc = f.incidencia_id ? C.get('incidencies', f.incidencia_id) : null, fora = f.termini && !f.finalitzat && new Date() > new Date(f.termini);
-    return `<div class="ic-targeta ${fora ? 'fora' : ''}" data-full="${f.id}"><b>${h(f.nom)}</b> · ${h(f.numero || '')}<br><span class="hint">${h(L('llocs', f.lloc_id))}${inc ? ' · ' + h(inc.numero) : ' · sense incidència'} · ${h(ESTATS_FULL[f.estat] || '')}${f.termini ? ' · termini ' + dmyhm(f.termini) : ''}${fora ? ' · <b class="v-no">fora de termini</b>' : ''}</span></div>`; };
+    return `<div class="ic-targeta ${fora ? 'fora' : ''}" data-full="${f.id}"><b>${h(f.nom)}</b> · ${h(f.numero || '')}<br><span class="hint">${h(L('llocs', f.lloc_id))}${inc ? ' · ' + h(inc.numero) : ' · sense incidència'} · ${fullProgramat(f) ? 'programat a partir del ' + dmyhm(f.inici) : h(ESTATS_FULL[f.estat] || '')}${f.termini ? ' · termini ' + dmyhm(f.termini) : ''}${fora ? ' · <b class="v-no">fora de termini</b>' : ''}</span></div>`; };
   const nou = st.nou ? `<div class="ft"><h4 style="margin-top:0">Nou full de treball</h4>
       <div class="ft-nova" id="ft-nou">
         <label class="f wide"><span class="l">Nom de la tasca</span><input type="text" data-nf="nom"></label>
-        <label class="f"><span class="l">Termini</span><input type="datetime-local" data-nf="termini" value="${aLocalDT(vencimentPerGrup('mig_termini'))}"></label>
+        <label class="f"><span class="l">Es pot començar</span><input type="datetime-local" data-nf="inici"><span class="hint">buit = de seguida</span></label>
+        <label class="f"><span class="l">Termini final</span><input type="datetime-local" data-nf="termini" value="${aLocalDT(vencimentPerGrup('mig_termini'))}"></label>
         <label class="f"><span class="l">Lloc</span><select data-nf="lloc_id"><option value="">Tria el lloc…</option>${C.rows('llocs').filter(l => l.actiu).sort((a, b) => a.nom.localeCompare(b.nom, 'ca')).map(l => `<option value="${l.id}">${h(l.nom)}${l.poblacio ? ' — ' + h(l.poblacio) : ''}</option>`).join('')}</select></label>
         <label class="f wide"><span class="l">Observacions preliminars per fer la feina</span><textarea lang="ca" spellcheck="true" data-nf="observacions_previes"></textarea></label>
         <p class="hint wide" style="margin:0">La feina te l’encomanes a tu mateix${t ? ' (' + h(nomTreballador(t)) + ')' : ''}.</p>
@@ -4354,6 +4363,7 @@ function renderFullsOperari(main) {
     <div id="ferr"></div>
     ${st.nou ? nou : '<div class="bar"><button class="btn" id="ft-nou-btn">Nou full de treball (sense incidència)</button></div>'}
     ${pend.length ? pend.map(targeta).join('') : '<div class="empty">Cap full de treball pendent.</div>'}
+    ${programats.length ? `<details class="ic-programades"><summary>Programats per més endavant (${programats.length}): encara no toquen</summary>${programats.map(targeta).join('')}</details>` : ''}
     ${fets.length ? `<details ${st.fets ? 'open' : ''} id="ft-fets"><summary class="hint" style="cursor:pointer; margin:14px 0 6px">Finalitzats (${fets.length})</summary>${fets.map(targeta).join('')}</details>` : ''}`;
   main.querySelectorAll('[data-full]').forEach(c => c.addEventListener('click', () => { const f = C.get('fulls_treball', Number(c.dataset.full)); if (f && f.incidencia_id && f.accio_id) { state.inc.vista = 'diagrama'; state.inc.id = f.incidencia_id; state.inc.sel = f.accio_id; state.inc.form = null; state.mode = 'consulta'; state.table = 'incidencies'; renderApp(); } else { st.id = Number(c.dataset.full); st.form = null; renderMain(); } window.scrollTo({ top: 0 }); }));
   const nb = $('#ft-nou-btn'); if (nb) nb.addEventListener('click', () => { st.nou = true; renderMain(); });
@@ -4365,8 +4375,9 @@ function renderFullsOperari(main) {
     if (!v('termini')) { showFormError('Cal un termini.'); return; }
     if (!v('lloc_id')) { showFormError('Tria el lloc.'); return; }
     if (!t) { showFormError('El teu usuari no té fitxa de treballador.'); return; }
+    if (v('inici') && new Date(v('inici')) > new Date(v('termini'))) { showFormError('La data en què es pot començar no pot ser després del termini.'); return; }
     cr.disabled = true;
-    const r = await sb.from('fulls_treball').insert({ nom: v('nom').trim(), termini: deLocalDT(v('termini')), lloc_id: Number(v('lloc_id')), observacions_previes: v('observacions_previes').trim() || null, encarregat_id: t.id, demanat_per: t.id, estat: 'pendent' }).select('id').single();
+    const r = await sb.from('fulls_treball').insert({ nom: v('nom').trim(), inici: v('inici') ? deLocalDT(v('inici')) : null, termini: deLocalDT(v('termini')), lloc_id: Number(v('lloc_id')), observacions_previes: v('observacions_previes').trim() || null, encarregat_id: t.id, demanat_per: t.id, estat: 'pendent' }).select('id').single();
     if (r.error) { cr.disabled = false; showFormError(friendly(r.error)); return; }
     await loadTable('fulls_treball'); toast('Full de treball creat'); st.nou = null; st.id = r.data.id; renderMain(); window.scrollTo({ top: 0 });
   });
@@ -4379,8 +4390,9 @@ function renderFullOperari(main, id) {
     <div class="bar"><button class="btn ghost" id="ft-torna">← Fulls de treball</button></div>
     <div class="ao-lloc">${h(lloc.nom || 'Lloc sense nom')}${client.nom ? `<span>${h(client.nom)}</span>` : ''}</div>
     <div class="ao-qui"><span>Ho demana: <b>${h(nomTreballador(qui)) || '—'}</b></span><span>Encarregat: <b>${h(nomTreballador(enc)) || '—'}</b></span></div>
-    <div class="ao-peticio"><div class="ao-sobre"><span>Full de treball ${h(f.numero || '')}</span><span class="pill e-${f.finalitzat ? 'finalitzada' : f.estat === 'en_curs' ? 'en_curs' : 'pendent'}">${h(ESTATS_FULL[f.estat] || '')}</span>${fora ? '<span class="pill fora">Fora de termini</span>' : ''}</div><div class="ao-text">${h(f.nom)}</div></div>
-    <div class="ao-fila"><span class="l">Termini</span><span class="ao-termini ${fora ? 'fora' : ''}">${f.termini ? dmyhm(f.termini) : '—'}</span></div>
+    <div class="ao-peticio"><div class="ao-sobre"><span>Full de treball ${h(f.numero || '')}</span><span class="pill e-${f.finalitzat ? 'finalitzada' : f.estat === 'en_curs' ? 'en_curs' : fullProgramat(f) ? 'programada' : 'pendent'}">${fullProgramat(f) ? 'Programat' : h(ESTATS_FULL[f.estat] || '')}</span>${fora ? '<span class="pill fora">Fora de termini</span>' : ''}</div><div class="ao-text">${h(f.nom)}</div></div>
+    ${f.inici ? `<div class="ao-fila"><span class="l">Es pot començar</span><span class="ao-termini">${dmyhm(f.inici)}${fullProgramat(f) ? ' · programat' : ''}</span></div>` : ''}
+    <div class="ao-fila"><span class="l">${f.inici ? 'Termini final' : 'Termini'}</span><span class="ao-termini ${fora ? 'fora' : ''}">${f.termini ? dmyhm(f.termini) : '—'}</span></div>
     ${f.observacions_previes ? `<div class="ao-fila"><span class="l">Observacions preliminars</span><div class="ao-desc">${h(f.observacions_previes)}</div></div>` : ''}
     ${f.resum ? `<div class="ao-fila"><span class="l">Resum del que s’ha fet</span><div class="ao-desc">${h(f.resum)}</div></div>` : ''}
     <div id="ferr"></div>
@@ -4393,7 +4405,7 @@ function renderFullOperari(main, id) {
   </div>`;
   $('#ft-torna').addEventListener('click', () => { st.id = null; st.form = null; renderMain(); window.scrollTo({ top: 0 }); });
   bindFull(f, main);
-  const co = $('#ftf-comenca'); if (co) co.addEventListener('click', async () => { const r = await sb.from('fulls_treball').update({ estat: 'en_curs' }).eq('id', f.id); if (r.error) { showFormError(friendly(r.error)); return; } await loadTable('fulls_treball'); renderMain(); });
+  const co = $('#ftf-comenca'); if (co) co.addEventListener('click', async () => { if (fullProgramat(f) && !confirm('Aquest full està programat a partir del ' + dmyhm(f.inici) + '. Vols començar-lo ara igualment?')) return; const r = await sb.from('fulls_treball').update({ estat: 'en_curs' }).eq('id', f.id); if (r.error) { showFormError(friendly(r.error)); return; } await loadTable('fulls_treball'); renderMain(); });
   const fi = $('#ftf-finalitza'); if (fi) fi.addEventListener('click', () => { st.form = 'finalitza'; renderMain(); });
   const fc = $('#ftf-cancel'); if (fc) fc.addEventListener('click', () => { st.form = null; renderMain(); });
   const fo = $('#ftf-ok'); if (fo) fo.addEventListener('click', () => { fo.disabled = true; finalitzaFull(f.id, { resum: $('#ftf-resum').value.trim(), despres: () => { st.form = null; renderMain(); } }); });
@@ -4774,7 +4786,7 @@ const INC = {
   },
   grups: [['emergencia', 'Emergència: ara mateix'], ['molt_urgent', 'Molt urgent: avui'], ['forca_urgent', 'Força urgent: avui o demà'], ['mig_termini', 'Mig termini: una setmana'], ['urgencia_relativa', 'Urgència relativa: dues setmanes'], ['baixa', 'Baixa urgència: un mes']],
   motiusTancament: [['treball_executat', 'Treball executat'], ['resolt_sense_reparacio', 'Problema resolt sense reparació'], ['pressupost_rebutjat', 'Pressupost rebutjat'], ['client_no_interve', 'El client decideix no intervenir'], ['no_cal_actuacio', 'No cal actuació'], ['altres', 'Altres motius justificats']],
-  estats: { pendent: 'Pendent', en_curs: 'En curs', esperant: 'Esperant', finalitzada: 'Finalitzada' },
+  estats: { pendent: 'Pendent', en_curs: 'En curs', esperant: 'Esperant', programada: 'Programada', finalitzada: 'Finalitzada' },
   decisions: [['aprovat', 'Aprova'], ['rebutjat', 'Rebutja'], ['modificacions', 'Demana modificacions']],
 };
 const INC_URLS = {}; // caché d'enllaços signats dels adjunts
@@ -4809,7 +4821,11 @@ function vencimentPerGrup(grup, base) {
 const accionsInc = inc => C.rows('incidencia_accions').filter(a => a.actiu && Number(a.incidencia_id) === inc.id);
 // peticions fetes des d'una acció que encara no s'han donat per resoltes (a la vista del client, només les que el client pot veure)
 const peticionsPendents = a => C.rows('incidencia_accions').filter(x => x.actiu && Number(x.origen_accio_id) === a.id && x.es_peticio && !x.resolta && accioVisibleCapa(x));
-const estatEfectiu = a => a.estat === 'finalitzada' ? 'finalitzada' : (peticionsPendents(a).length ? 'esperant' : a.estat);
+// programada: té una data d'inici que encara no ha arribat (només es pot començar al març, s'ha de fer dijous vinent…); fins llavors no compta com a oberta
+const iniciFutur = a => !!a && !!a.inici && a.estat === 'pendent' && new Date(a.inici) > new Date();
+const estatEfectiu = a => a.estat === 'finalitzada' ? 'finalitzada' : (peticionsPendents(a).length ? 'esperant' : iniciFutur(a) ? 'programada' : a.estat);
+const activa = a => a.estat !== 'finalitzada' && !iniciFutur(a);   // oberta i que ja toca fer
+const textInici = a => a.inici ? 'a partir del ' + dmyhm(a.inici) : '';
 const foraTermini = a => !!a.venciment && (a.estat === 'finalitzada' ? !!a.finalitzada_el && new Date(a.finalitzada_el) > new Date(a.venciment) : new Date() > new Date(a.venciment));
 const nomResponsable = a => a.responsable_treballador_id ? nomTreballador(C.get('treballadors', a.responsable_treballador_id)) : a.responsable_proveidor_id ? (C.get('proveidors', a.responsable_proveidor_id) || {}).nom || '' : a.responsable_contacte_id ? (C.get('contactes', a.responsable_contacte_id) || {}).nom || '' : '';
 const socResponsable = a => { const t = trebInc(); return !!t && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id); };
@@ -4951,10 +4967,12 @@ function renderIncidencies(main) {
   st.vista = 'llista'; st.capa = 'interna';
   const t = trebInc();
   let llista = C.rows('incidencies').filter(i => i.actiu);
-  if (st.filtre.estat === 'obertes') llista = llista.filter(i => i.estat === 'oberta'); else if (st.filtre.estat === 'tancades') llista = llista.filter(i => i.estat === 'tancada');
+  // en espera: oberta però totes les accions pendents estan programades per més endavant
+  const enEspera = i => { const ob = accionsInc(i).filter(a => a.estat !== 'finalitzada'); return i.estat === 'oberta' && ob.length > 0 && ob.every(iniciFutur); };
+  if (st.filtre.estat === 'obertes') llista = llista.filter(i => i.estat === 'oberta'); else if (st.filtre.estat === 'tancades') llista = llista.filter(i => i.estat === 'tancada'); else if (st.filtre.estat === 'espera') llista = llista.filter(enEspera);
   if (st.filtre.lloc) llista = llista.filter(i => String(i.lloc_id) === st.filtre.lloc);
   if (st.filtre.q) { const q = st.filtre.q.toLowerCase(); llista = llista.filter(i => [i.numero, i.titol, llocInc(i).nom, clientInc(i).nom].some(x => String(x || '').toLowerCase().includes(q))); }
-  llista.sort((a, b) => (a.estat === b.estat ? 0 : a.estat === 'oberta' ? -1 : 1) || String(b.data_obertura).localeCompare(String(a.data_obertura)));
+  llista.sort((a, b) => (a.estat === b.estat ? 0 : a.estat === 'oberta' ? -1 : 1) || (enEspera(a) === enEspera(b) ? 0 : enEspera(a) ? 1 : -1) || String(b.data_obertura).localeCompare(String(a.data_obertura)));
   const llocs = [...new Set(C.rows('incidencies').filter(i => i.actiu).map(i => i.lloc_id))].map(id => C.get('llocs', id)).filter(Boolean).sort((a, b) => a.nom.localeCompare(b.nom, 'ca'));
   const pendentsRep = C.rows('incidencia_reports').filter(r => r.actiu && r.estat === 'pendent').length;
   main.innerHTML = `
@@ -4962,14 +4980,14 @@ function renderIncidencies(main) {
     <p class="sub">Cada incidència penja d’un lloc i té una seguidora. Obre-la per veure el diagrama: el més nou a dalt, les accions obertes amb el color del carril, l’historial en gris.${pendentsRep ? ` <b>${pendentsRep} reports pendents de revisar</b> (a Reports de problemes).` : ''}</p>
     <div class="bar">
       ${esOficina(t) ? '<button class="btn" id="inc-nova">Nova incidència</button>' : ''}
-      <select id="inc-estat" style="width:auto"><option value="obertes" ${st.filtre.estat === 'obertes' ? 'selected' : ''}>Obertes</option><option value="tancades" ${st.filtre.estat === 'tancades' ? 'selected' : ''}>Tancades</option><option value="totes" ${st.filtre.estat === 'totes' ? 'selected' : ''}>Totes</option></select>
+      <select id="inc-estat" style="width:auto"><option value="obertes" ${st.filtre.estat === 'obertes' ? 'selected' : ''}>Obertes</option><option value="espera" ${st.filtre.estat === 'espera' ? 'selected' : ''}>En espera (programades)</option><option value="tancades" ${st.filtre.estat === 'tancades' ? 'selected' : ''}>Tancades</option><option value="totes" ${st.filtre.estat === 'totes' ? 'selected' : ''}>Totes</option></select>
       <select id="inc-lloc" style="width:auto; min-width:200px"><option value="">Tots els llocs</option>${llocs.map(l => `<option value="${l.id}" ${String(l.id) === st.filtre.lloc ? 'selected' : ''}>${h(l.nom)}</option>`).join('')}</select>
       <input type="text" id="inc-q" placeholder="Filtra…" value="${h(st.filtre.q || '')}" style="width:220px">
       <span class="n">${llista.length} incidències</span>
     </div>
     ${llista.length ? `<table class="tbl"><thead><tr><th>Número</th><th>Lloc</th><th>Títol</th><th>Seguidora</th><th>Obertura</th><th>Estat</th><th>Ara</th></tr></thead><tbody>
-      ${llista.map(i => { const acc = accionsInc(i), obertes = acc.filter(a => a.estat !== 'finalitzada'), fora = obertes.filter(foraTermini).length;
-        return `<tr class="row" data-inc="${i.id}"><td>${h(i.numero)}</td><td>${h(llocInc(i).nom)} <span class="hint">${h(clientInc(i).nom || '')}</span></td><td>${h(i.titol)}</td><td>${h(nomCurtTreballador(C.get('treballadors', i.seguidora_id)))}</td><td>${dmyhm(i.data_obertura)}</td><td>${i.estat === 'oberta' ? '<span class="xip ok">oberta</span>' : '<span class="xip">tancada ' + dmy(i.data_tancament) + '</span>'}</td><td>${obertes.length ? obertes.map(a => `<span class="xip ${foraTermini(a) ? 'fora' : ''}">${h(nomTipus(a.tipus))} · ${h(nomResponsable(a))}</span>`).join(' ') : (i.estat === 'oberta' ? '<span class="hint">cap acció oberta</span>' : '')}${fora ? ` <b class="v-no">${fora} fora de termini</b>` : ''}</td></tr>`; }).join('')}
+      ${llista.map(i => { const acc = accionsInc(i), obertes = acc.filter(a => a.estat !== 'finalitzada').sort((x, y) => (iniciFutur(x) === iniciFutur(y) ? 0 : iniciFutur(x) ? 1 : -1)), fora = obertes.filter(foraTermini).length;
+        return `<tr class="row" data-inc="${i.id}"><td>${h(i.numero)}</td><td>${h(llocInc(i).nom)} <span class="hint">${h(clientInc(i).nom || '')}</span></td><td>${h(i.titol)}</td><td>${h(nomCurtTreballador(C.get('treballadors', i.seguidora_id)))}</td><td>${dmyhm(i.data_obertura)}</td><td>${i.estat === 'oberta' ? '<span class="xip ok">oberta</span>' : '<span class="xip">tancada ' + dmy(i.data_tancament) + '</span>'}</td><td>${obertes.length ? obertes.map(a => `<span class="xip ${foraTermini(a) ? 'fora' : ''} ${iniciFutur(a) ? 'prog' : ''}">${h(nomTipus(a.tipus))} · ${h(nomResponsable(a))}${iniciFutur(a) ? ' · ' + textInici(a) : ''}</span>`).join(' ') : (i.estat === 'oberta' ? '<span class="hint">cap acció oberta</span>' : '')}${fora ? ` <b class="v-no">${fora} fora de termini</b>` : ''}</td></tr>`; }).join('')}
     </tbody></table>` : '<div class="empty">Cap incidència amb aquests filtres.</div>'}`;
   if ($('#inc-nova')) $('#inc-nova').addEventListener('click', () => { st.vista = 'nova'; st.nova = {}; renderMain(); });
   $('#inc-estat').addEventListener('change', e => { st.filtre.estat = e.target.value; renderMain(); });
@@ -4988,7 +5006,8 @@ function renderNovaIncidencia(main) {
   const client = n.lloc_id ? C.get('clients', (C.get('llocs', n.lloc_id) || {}).client_id) : null;
   const marcats = new Set((n.contactes || (client ? [client.gestor_id, n.contacte_id, ...contactes.filter(c => c.principal).map(c => c.id)] : [])).filter(Boolean).map(Number));
   const grup = n.grup || 'forca_urgent';
-  const venc = n.venciment != null && n.venciment !== '' ? n.venciment : aLocalDT(vencimentPerGrup(grup));
+  const iniciBase = n.p_inici ? new Date(n.p_inici) : null;
+  const venc = n.venciment != null && n.venciment !== '' ? n.venciment : aLocalDT(vencimentPerGrup(grup, iniciBase && !isNaN(iniciBase.getTime()) ? iniciBase : undefined));
   main.innerHTML = `
     <h1>Nova incidència</h1>
     <div class="panel"><div id="ferr"></div>
@@ -5002,8 +5021,9 @@ function renderNovaIncidencia(main) {
           <h4>Primer pas: a qui s’encarrega i amb quin termini</h4>
           <label class="f"><span class="l">Què s’encarrega <b>*</b></span><select name="p_tipus">${INC.primers.map(k => `<option value="${k}" ${(n.p_tipus || 'diagnosticar') === k ? 'selected' : ''}>F${INC.tipus[k].fase} · ${h(INC.tipus[k].nom)}</option>`).join('')}</select></label>
           <label class="f"><span class="l">Responsable <b>*</b></span><select name="p_resp">${treballadors.map(x => `<option value="${x.id}" ${Number(n.p_resp || (t ? t.id : 0)) === x.id ? 'selected' : ''}>${h(nomTreballador(x))}</option>`).join('')}</select></label>
+          <label class="f"><span class="l">Es pot començar</span><input type="datetime-local" name="p_inici" value="${h(n.p_inici || '')}"><span class="hint">buit = de seguida; amb data, queda programada fins llavors</span></label>
           <label class="f"><span class="l">Grup de termini <b>*</b></span><select name="p_grup">${INC.grups.map(g => `<option value="${g[0]}" ${g[0] === grup ? 'selected' : ''}>${h(g[1])}</option>`).join('')}</select></label>
-          <label class="f"><span class="l">Venciment <b>*</b></span><input type="datetime-local" name="p_venc" value="${h(venc)}"></label>
+          <label class="f"><span class="l">Termini final (venciment) <b>*</b></span><input type="datetime-local" name="p_venc" value="${h(venc)}"></label>
           <label class="f wide"><span class="l">Instruccions per a qui ho fa</span><textarea lang="ca" spellcheck="true" name="p_desc">${h(n.p_desc || '')}</textarea></label>
         </div>
         <div class="f wide"><span class="l">Informació a disposició de (client, administrador, president…)</span>
@@ -5013,15 +5033,17 @@ function renderNovaIncidencia(main) {
       </div>
       <div class="actions"><button class="btn" id="inc-crea">Obre la incidència</button><button class="btn ghost" id="inc-cancel">Cancel·la</button></div>
     </div>`;
-  const guarda = () => { n.titol = $('[name=titol]').value; n.descripcio = $('[name=descripcio]').value; n.seguidora_id = t.id; n.p_tipus = $('[name=p_tipus]').value; n.p_resp = Number($('[name=p_resp]').value); n.p_grup = $('[name=p_grup]').value; n.grup = n.p_grup; n.venciment = $('[name=p_venc]').value; n.p_desc = $('[name=p_desc]').value; n.observacions_internes = $('[name=observacions_internes]').value; n.contactes = [...document.querySelectorAll('[name=contactes]:checked')].map(e => Number(e.value)); };
+  const guarda = () => { n.titol = $('[name=titol]').value; n.descripcio = $('[name=descripcio]').value; n.seguidora_id = t.id; n.p_tipus = $('[name=p_tipus]').value; n.p_resp = Number($('[name=p_resp]').value); n.p_grup = $('[name=p_grup]').value; n.grup = n.p_grup; n.p_inici = $('[name=p_inici]').value; n.venciment = $('[name=p_venc]').value; n.p_desc = $('[name=p_desc]').value; n.observacions_internes = $('[name=observacions_internes]').value; n.contactes = [...document.querySelectorAll('[name=contactes]:checked')].map(e => Number(e.value)); };
   $('[name=lloc_id]').addEventListener('change', e => { guarda(); n.lloc_id = Number(e.target.value) || null; n.contactes = null; renderMain(); });
   $('[name=p_grup]').addEventListener('change', () => { guarda(); n.venciment = ''; renderMain(); });
+  $('[name=p_inici]').addEventListener('change', () => { guarda(); n.venciment = ''; renderMain(); });
   $('#inc-cancel').addEventListener('click', () => { st.vista = 'llista'; st.nova = null; renderMain(); });
   $('#inc-crea').addEventListener('click', async () => {
     guarda();
     const lloc_id = Number($('[name=lloc_id]').value), titol = n.titol.trim(), seguidora_id = n.seguidora_id;
     if (!lloc_id || !titol || !seguidora_id) { showFormError('Falten el lloc, el títol o la seguidora.'); return; }
     if (!n.p_tipus || !n.p_resp || !n.venciment) { showFormError('Cal encarregar el primer pas: què, a qui i amb quin venciment.'); return; }
+    if (n.p_inici && new Date(n.p_inici) > new Date(n.venciment)) { showFormError('La data en què es pot començar no pot ser després del venciment.'); return; }
     $('#inc-crea').disabled = true;
     try {
       const ins = await sb.from('incidencies').insert({ lloc_id, titol, descripcio: n.descripcio.trim() || null, seguidora_id, contactes_autoritzats: n.contactes, observacions_internes: n.observacions_internes.trim() || null }).select('id').single();
@@ -5031,8 +5053,10 @@ function renderNovaIncidencia(main) {
       if (obrir.error) throw obrir.error;
       const tp = INC.tipus[n.p_tipus], incTmp = { seguidora_id };
       const carril = carrilDeResponsable(incTmp, n.p_resp);
-      const primer = await sb.from('incidencia_accions').insert({ incidencia_id: incId, tipus: n.p_tipus, carril, titol: tp.nom, descripcio: n.p_desc.trim() || null, creat_per: t.id, responsable_treballador_id: n.p_resp, estat: 'pendent', grup_termini: n.p_grup, venciment: deLocalDT(n.venciment), origen_accio_id: obrir.data.id, es_peticio: false, visible_client: tp.visibleClient !== false }).select('id').single();
+      const dadesPrimer = { incidencia_id: incId, tipus: n.p_tipus, carril, titol: tp.nom, descripcio: n.p_desc.trim() || null, creat_per: t.id, responsable_treballador_id: n.p_resp, estat: 'pendent', grup_termini: n.p_grup, venciment: deLocalDT(n.venciment), inici: n.p_inici ? deLocalDT(n.p_inici) : null, origen_accio_id: obrir.data.id, es_peticio: false, visible_client: tp.visibleClient !== false };
+      const primer = await sb.from('incidencia_accions').insert(dadesPrimer).select('id').single();
       if (primer.error) throw primer.error;
+      if (accioAmbFull(dadesPrimer)) { try { await creaFullPerAccio({ id: incId, lloc_id }, { ...dadesPrimer, id: primer.data.id }); } catch (e2) { toastErr('Incidència oberta, però el full de treball del primer pas no: ' + friendly(e2)); } }
       if (rep) { await sb.from('incidencia_reports').update({ estat: 'incidencia', incidencia_id: incId }).eq('id', rep.id); }
       await eventInc(incId, obrir.data.id, 'obertura', 'Incidència oberta' + (rep ? ' des del report ' + rep.id : ''));
       await eventInc(incId, primer.data.id, 'nova_accio', tp.nom + ' → ' + nomTreballador(C.get('treballadors', n.p_resp)) + ' · venç ' + dmyhm(n.venciment));
@@ -5148,7 +5172,7 @@ function caixaHTML(a, fila) {
     ${a.titol && a.titol !== tp.nom ? `<div class="ic-titol">${h(a.titol)}</div>` : ''}
     <div class="ic-qui">${h(nomResponsable(a))}${a.gestor_id && !client ? ` <span class="hint">· gestiona ${h(nomCurtTreballador(C.get('treballadors', a.gestor_id)))}</span>` : ''}</div>
     <div class="ic-pills"><span class="pill e-${ee}">${INC.estats[ee]}</span>${fora ? '<span class="pill fora">Fora de termini</span>' : ''}${pend ? `<span class="pill dep">espera ${pend} ${pend === 1 ? 'resposta' : 'respostes'}</span>` : ''}${a.es_peticio && a.estat === 'finalitzada' && !a.resolta ? '<span class="pill dep">resposta per acceptar</span>' : ''}${amp && !client ? '<span class="pill dep">ampliació demanada</span>' : ''}${a.decisio ? `<span class="pill dec">${h(etiquetaOpt(INC.decisions, a.decisio).replace('Demana ', ''))}</span>` : ''}</div>
-    <div class="ic-venc">${a.venciment ? (a.estat === 'finalitzada' ? 'feta ' + dmyhm(a.finalitzada_el) + ' · venç ' + dmyhm(a.venciment) : 'venç ' + dmyhm(a.venciment)) : (a.estat === 'finalitzada' ? dmyhm(a.finalitzada_el) : (a.carril === 'client' ? 'sense termini (client)' : 'sense termini'))}</div>
+    <div class="ic-venc">${a.venciment ? (a.estat === 'finalitzada' ? 'feta ' + dmyhm(a.finalitzada_el) + ' · venç ' + dmyhm(a.venciment) : (a.inici ? 'del ' + dmyhm(a.inici) + ' al ' + dmyhm(a.venciment) : 'venç ' + dmyhm(a.venciment))) : (a.estat === 'finalitzada' ? dmyhm(a.finalitzada_el) : (a.carril === 'client' ? 'sense termini (client)' : 'sense termini'))}</div>
     ${a.estat === 'finalitzada' && a.resultat ? `<div class="ic-res">${h(a.resultat.length > 110 ? a.resultat.slice(0, 108) + '…' : a.resultat)}</div>` : ''}
     ${Array.isArray(a.adjunts) && a.adjunts.length ? `<div class="ic-thumbs">${miniaturesHTML(a.adjunts, 4)}</div>` : ''}
   </div>`;
@@ -5164,10 +5188,13 @@ function pressupostosDelLloc(inc) {
 }
 // de qui depèn el següent pas: les accions obertes, per venciment
 function araDepenHTML(inc, acc) {
-  const obertes = acc.filter(a => a.estat !== 'finalitzada').sort((a, b) => String(a.venciment || '9').localeCompare(String(b.venciment || '9')));
+  const totes = acc.filter(a => a.estat !== 'finalitzada'), obertes = totes.filter(activa).sort((a, b) => String(a.venciment || '9').localeCompare(String(b.venciment || '9')));
+  const programades = totes.filter(iniciFutur).sort((a, b) => String(a.inici).localeCompare(String(b.inici)));
+  const progHtml = programades.length ? `<span class="prog">${obertes.length ? '· ' : ''}${programades.length === 1 ? 'programada' : programades.length + ' programades'}: ${programades.map(a => `<b>${h(nomResponsable(a))}</b> · ${h(nomTipus(a.tipus))} ${textInici(a)}`).join(' · ')}</span>` : '';
   if (inc.estat === 'tancada') return `<div class="ic-ara"><span class="l">Tancada el ${dmyhm(inc.data_tancament)}:</span> <b>${h(etiquetaOpt(INC.motiusTancament, inc.motiu_tancament))}</b>${inc.resultat_final ? ` <span class="hint">· ${h(inc.resultat_final)}</span>` : ''}</div>`;
+  if (!obertes.length && programades.length) return `<div class="ic-ara"><span class="l">En espera:</span> ${progHtml}</div>`;
   if (!obertes.length) return `<div class="ic-ara"><span class="cap">Cap acció oberta: cal encarregar el següent pas (Nova acció) o tancar la incidència.</span></div>`;
-  return `<div class="ic-ara"><span class="l">Ara depèn de:</span>${obertes.map(a => `<span class="qui ${foraTermini(a) ? 'fora' : ''}" data-ara="${a.id}" style="--lc:${colorCarril(a.carril)}" title="${h(etiquetaOpt(INC.carrils, a.carril))}"><i></i>${h(nomResponsable(a))} <small>· ${h(nomTipus(a.tipus))}${a.venciment ? ' · ' + (foraTermini(a) ? 'fora de termini des de ' : 'venç ') + dmyhm(a.venciment) : ''}${estatEfectiu(a) === 'esperant' ? ' · esperant resposta' : ''}</small></span>`).join('')}</div>`;
+  return `<div class="ic-ara"><span class="l">Ara depèn de:</span>${obertes.map(a => `<span class="qui ${foraTermini(a) ? 'fora' : ''}" data-ara="${a.id}" style="--lc:${colorCarril(a.carril)}" title="${h(etiquetaOpt(INC.carrils, a.carril))}"><i></i>${h(nomResponsable(a))} <small>· ${h(nomTipus(a.tipus))}${a.venciment ? ' · ' + (foraTermini(a) ? 'fora de termini des de ' : 'venç ') + dmyhm(a.venciment) : ''}${estatEfectiu(a) === 'esperant' ? ' · esperant resposta' : ''}</small></span>`).join('')}${progHtml}</div>`;
 }
 function renderDiagramaInc(main) {
   if (APP_NOMES_TASQUES) return renderAccioOperari(main);
@@ -5180,8 +5207,8 @@ function renderDiagramaInc(main) {
   const lloc = llocInc(inc), client = clientInc(inc);
   const seguidora = C.get('treballadors', inc.seguidora_id);
   const nFiles = Math.max(1, files.length);
-  const actius = new Set(acc.filter(a => a.estat !== 'finalitzada').map(a => a.carril));
-  const capcaleres = INC.carrils.map((c, i) => { const n = acc.filter(a => a.carril === c[0] && a.estat !== 'finalitzada').length; return `<div class="ic-cap-carril ${actius.has(c[0]) ? 'actiu' : ''}" style="grid-column:${i + 1}; grid-row:1; --lc:${c[2]}">${h(c[1])}<small>${n ? n + (n === 1 ? ' acció oberta' : ' accions obertes') : 'res pendent'}</small></div>`; }).join('');
+  const actius = new Set(acc.filter(activa).map(a => a.carril));
+  const capcaleres = INC.carrils.map((c, i) => { const n = acc.filter(a => a.carril === c[0] && activa(a)).length, p = acc.filter(a => a.carril === c[0] && iniciFutur(a)).length; return `<div class="ic-cap-carril ${actius.has(c[0]) ? 'actiu' : ''}" style="grid-column:${i + 1}; grid-row:1; --lc:${c[2]}">${h(c[1])}<small>${n ? n + (n === 1 ? ' acció oberta' : ' accions obertes') : (p ? '' : 'res pendent')}${p ? (n ? ' · ' : '') + p + (p === 1 ? ' programada' : ' programades') : ''}</small></div>`; }).join('');
   const fons = INC.carrils.map((c, i) => `<div class="ic-carril ${actius.has(c[0]) ? 'actiu' : ''}" style="grid-column:${i + 1}; grid-row:2 / span ${nFiles}; --ls:${c[3]}"></div>`).join('');
   const cossos = files.map((a, i) => caixaHTML(a, i + 2)).join('');
   const events = C.rows('incidencia_events').filter(e => Number(e.incidencia_id) === inc.id).sort((a, b) => String(b.data).localeCompare(String(a.data)));
@@ -5314,7 +5341,8 @@ function renderAccioOperari(main) {
     ${a ? `
     <div class="ao-peticio"><div class="ao-sobre"><span>${h(tp.nom)}</span><span class="pill e-${ee}">${INC.estats[ee]}</span>${foraTermini(a) ? '<span class="pill fora">Fora de termini</span>' : ''}${a.es_peticio ? '<span class="pill dep">et demanen una resposta</span>' : ''}</div>
       <div class="ao-text">${h(titolPeticio || tp.nom)}</div></div>
-    <div class="ao-fila"><span class="l">Termini</span><span class="ao-termini ${foraTermini(a) && a.estat !== 'finalitzada' ? 'fora' : ''}">${a.venciment ? dmyhm(a.venciment) + (a.grup_termini ? ' · ' + h(etiquetaOpt(INC.grups, a.grup_termini)) : '') : '—'}</span></div>
+    ${a.inici ? `<div class="ao-fila"><span class="l">Es pot començar</span><span class="ao-termini">${dmyhm(a.inici)}${iniciFutur(a) ? ' · programada' : ''}</span></div>` : ''}
+    <div class="ao-fila"><span class="l">${a.inici ? 'Termini final' : 'Termini'}</span><span class="ao-termini ${foraTermini(a) && a.estat !== 'finalitzada' ? 'fora' : ''}">${a.venciment ? dmyhm(a.venciment) + (a.grup_termini ? ' · ' + h(etiquetaOpt(INC.grups, a.grup_termini)) : '') : '—'}</span></div>
     ${inc.descripcio ? `<div class="ao-fila"><span class="l">Descripció de la incidència</span><div class="ao-desc">${h(inc.descripcio)}</div></div>` : ''}
     ${a.resultat ? `<div class="ao-fila"><span class="l">${a.es_peticio ? 'Resposta' : 'Resultat'}</span><div class="ao-desc">${h(a.resultat)}</div></div>` : ''}
     ${inc.observacions_internes || a.observacions_internes ? `<div class="ao-fila"><span class="l">Observacions internes</span><div class="ao-desc" style="font-size:16px">${h([inc.observacions_internes, a.observacions_internes].filter(Boolean).join('\n'))}</div></div>` : ''}
@@ -5424,7 +5452,8 @@ function panellHTML(inc) {
     <div class="ic-detall">
       <div><span class="l">Responsable</span>${h(nomResponsable(a)) || '—'}${a.gestor_id && !client ? ` <span class="hint">· ho gestiona ${h(nomTreballador(C.get('treballadors', a.gestor_id)))}</span>` : ''}</div>
       <div><span class="l">Creada</span>${dmyhm(a.creat_el)} per ${h(nomCurtTreballador(C.get('treballadors', a.creat_per)))}${origen ? ` · a partir de <a href="#" data-sel="${origen.id}">${h(nomTipus(origen.tipus))}</a>` : ''}</div>
-      <div><span class="l">Termini</span>${a.venciment ? dmyhm(a.venciment) + (a.grup_termini ? ' · ' + h(etiquetaOpt(INC.grups, a.grup_termini)) : '') : (a.carril === 'client' ? 'sense termini (acció del client)' : '—')}</div>
+      ${a.inici ? `<div><span class="l">Es pot començar</span>${dmyhm(a.inici)}${iniciFutur(a) ? ' · <b>programada</b>: fins llavors no compta com a oberta' : ''}</div>` : ''}
+      <div><span class="l">${a.inici ? 'Termini final' : 'Termini'}</span>${a.venciment ? dmyhm(a.venciment) + (a.grup_termini ? ' · ' + h(etiquetaOpt(INC.grups, a.grup_termini)) : '') : (a.carril === 'client' ? 'sense termini (acció del client)' : '—')}</div>
       ${(() => { const f = fullDeAccio(a); return f ? `<div><span class="l">Full de treball</span><a href="#" data-obre-full="${f.id}">${h(f.numero || 'full')}</a> · ${h(ESTATS_FULL[f.estat] || f.estat)} · ${jornadesFull(f.id).length} jornad${jornadesFull(f.id).length === 1 ? 'a' : 'es'} (${String(horesFull(f.id)).replace('.', ',')} h × persones) · ${materialFull(f.id).length} de material${f.albara_id ? ' · albarà ' + h((C.get('albarans', f.albara_id) || {}).numero_complet || '') : ''}</div>` : (!client && accioAmbFull(a) ? `<div><span class="l">Full de treball</span><a href="#" data-crea-full="${a.id}">crea’l</a> <span class="hint">(les accions d’operari noves ja el tenen)</span></div>` : ''); })()}
       ${a.estat === 'finalitzada' ? `<div><span class="l">Finalitzada</span>${dmyhm(a.finalitzada_el)} per ${h(nomCurtTreballador(C.get('treballadors', a.finalitzada_per)))}${a.data_recepcio ? ' · rebuda ' + dmyhm(a.data_recepcio) : ''}</div>` : ''}
       ${a.descripcio ? `<div><span class="l">Descripció / instruccions</span>${h(a.descripcio)}</div>` : ''}
@@ -5463,7 +5492,8 @@ function formAccioHTML(inc, origen) {
   const proveidors = C.rows('proveidors').filter(x => x.actiu && (carril === 'subcontractista' ? x.subcontractista : !x.subcontractista)).sort((a, b) => a.nom.localeCompare(b.nom, 'ca'));
   const contactes = contactesDelLloc(inc.lloc_id);
   let venc = f.venciment;
-  if (!venc && carril !== 'client') { let v = vencimentPerGrup(grup); if (origen && origen.venciment && peticio && new Date(origen.venciment) < v) v = new Date(origen.venciment); venc = aLocalDT(v); }
+  const iniciBase = f.inici ? new Date(f.inici) : null;   // si es diu quan es pot començar, el venciment del grup es compta des d'aquell dia
+  if (!venc && carril !== 'client') { let v = vencimentPerGrup(grup, iniciBase && !isNaN(iniciBase.getTime()) ? iniciBase : undefined); if (origen && origen.venciment && peticio && new Date(origen.venciment) < v) v = new Date(origen.venciment); venc = aLocalDT(v); }
   const respSel = carril === 'client'
     ? `<select id="na-resp">${contactes.map(c => `<option value="${c.id}" ${Number(f.resp) === c.id || (!f.resp && (inc.contactes_autoritzats || []).map(Number).includes(c.id)) ? 'selected' : ''}>${h(c.nom)}${c.carrec ? ' (' + h(c.carrec) + ')' : ''}</option>`).join('')}</select>`
     : (carril === 'proveidor' || carril === 'subcontractista')
@@ -5478,8 +5508,9 @@ function formAccioHTML(inc, origen) {
     <div class="f"><span class="l">Carril (qui la representa)</span><select id="na-carril" ${permesos.length === 1 ? 'disabled' : ''}>${INC.carrils.filter(c => permesos.includes(c[0])).map(c => `<option value="${c[0]}" ${c[0] === carril ? 'selected' : ''}>${h(c[1])}</option>`).join('')}</select>${tp.carril === 'client' ? '<span class="hint">al carril del client només hi van les autoritzacions que se li demanen</span>' : ''}</div>
     <div class="f"><span class="l">${carril === 'client' ? 'Persona del client' : extern ? 'Proveïdor' : 'Responsable'}</span>${respSel}</div>
     ${extern ? `<div class="f"><span class="l">Qui ho gestiona i n’entra la resposta</span><select id="na-gestor">${treballadors.map(x => `<option value="${x.id}" ${Number(f.gestor || t.id) === x.id ? 'selected' : ''}>${h(nomTreballador(x))}</option>`).join('')}</select></div>` : ''}
-    ${carril !== 'client' ? `<div class="f"><span class="l">Grup de termini</span><select id="na-grup">${INC.grups.map(g => `<option value="${g[0]}" ${g[0] === grup ? 'selected' : ''}>${h(g[1])}</option>`).join('')}</select></div>
-    <div class="f"><span class="l">Venciment</span><input type="datetime-local" id="na-venc" value="${h(venc || '')}">${origen && origen.venciment && peticio ? `<span class="hint">no pot passar del venciment de l’acció d’origen (${dmyhm(origen.venciment)})</span>` : ''}</div>` : '<p class="hint">Les accions del client no tenen termini.</p>'}
+    ${carril !== 'client' ? `<div class="f"><span class="l">Es pot començar</span><input type="datetime-local" id="na-inici" value="${h(f.inici || '')}"><span class="hint">buit = de seguida. Si només es pot fer més endavant (al març, dijous vinent…), posa-hi la data: fins llavors queda <b>programada</b>, no oberta</span></div>
+    <div class="f"><span class="l">Grup de termini</span><select id="na-grup">${INC.grups.map(g => `<option value="${g[0]}" ${g[0] === grup ? 'selected' : ''}>${h(g[1])}</option>`).join('')}</select></div>
+    <div class="f"><span class="l">Termini final (venciment)</span><input type="datetime-local" id="na-venc" value="${h(venc || '')}">${origen && origen.venciment && peticio ? `<span class="hint">no pot passar del venciment de l’acció d’origen (${dmyhm(origen.venciment)})</span>` : ''}</div>` : '<p class="hint">Les accions del client no tenen termini.</p>'}
     ${origen ? `<label class="chk" style="padding:0"><input type="checkbox" id="na-peticio" ${peticio ? 'checked' : ''}> És una petició: «${h(nomTipus(origen.tipus))}» queda esperant la resposta</label>` : ''}
     <label class="chk" style="padding:0"><input type="checkbox" id="na-visible" ${visible ? 'checked' : ''}> Visible al client</label>
     <div class="f"><span class="l">Observacions internes</span><textarea lang="ca" spellcheck="true" id="na-int">${h(f.int || '')}</textarea><span class="hint">${NOTA_INTERNES}</span></div>
@@ -5498,6 +5529,7 @@ function bindPanell(inc) {
   p.querySelectorAll('[data-crea-full]').forEach(el => el.addEventListener('click', async e => { e.preventDefault(); const a = C.get('incidencia_accions', Number(el.dataset.creaFull)); try { await creaFullPerAccio(inc, a); toast('Full de treball creat'); renderMain(); } catch (e2) { errorInc(friendly(e2)); } }));
   p.querySelectorAll('[data-op]').forEach(b => b.addEventListener('click', async () => {
     const a = C.get('incidencia_accions', st.sel); const op = b.dataset.op;
+    if (op === 'comenca' && iniciFutur(a) && !confirm('Aquesta acció està programada ' + textInici(a) + '. Vols començar-la ara igualment?')) return;
     if (op === 'comenca') { await marcaFullEnCurs(a); await operacio(inc, () => sb.from('incidencia_accions').update({ estat: 'en_curs' }).eq('id', a.id), a.id, 'en_curs', 'Acció en curs'); }
     else if (op === 'resol') { await operacio(inc, () => sb.from('incidencia_accions').update({ resolta: true, resolta_el: new Date().toISOString() }).eq('id', a.id), a.id, 'resposta_acceptada', 'Resposta donada per suficient'); }
     else if (op === 'visible') { await operacio(inc, () => sb.from('incidencia_accions').update({ visible_client: !a.visible_client }).eq('id', a.id), a.id, 'visibilitat', a.visible_client ? 'Amagada al client' : 'Visible al client'); }
@@ -5620,21 +5652,23 @@ function bindPanell(inc) {
   });
   // formulari de nova acció: es repinta en canviar tipus o carril, conservant el que s'ha escrit
   const naTipus = $('#na-tipus'); if (naTipus) {
-    const guarda = () => { const f = st.form; f.tipusSel = $('#na-tipus').value; f.titol = $('#na-titol').value; f.desc = $('#na-desc').value; f.carril = $('#na-carril').value; f.resp = $('#na-resp') ? $('#na-resp').value : ''; f.gestor = $('#na-gestor') ? $('#na-gestor').value : ''; f.grup = $('#na-grup') ? $('#na-grup').value : ''; f.venciment = $('#na-venc') ? $('#na-venc').value : ''; f.peticio = $('#na-peticio') ? $('#na-peticio').checked : null; f.visible = $('#na-visible').checked; f.int = $('#na-int').value; };
+    const guarda = () => { const f = st.form; f.tipusSel = $('#na-tipus').value; f.titol = $('#na-titol').value; f.desc = $('#na-desc').value; f.carril = $('#na-carril').value; f.resp = $('#na-resp') ? $('#na-resp').value : ''; f.gestor = $('#na-gestor') ? $('#na-gestor').value : ''; f.grup = $('#na-grup') ? $('#na-grup').value : ''; f.inici = $('#na-inici') ? $('#na-inici').value : ''; f.venciment = $('#na-venc') ? $('#na-venc').value : ''; f.peticio = $('#na-peticio') ? $('#na-peticio').checked : null; f.visible = $('#na-visible').checked; f.int = $('#na-int').value; };
     naTipus.addEventListener('change', () => { guarda(); const f = st.form, tp = INC.tipus[f.tipusSel]; if (!tp) { pintaPanell(inc); return; } const abans = f.carril; f.carril = tp.carril || (['operari', 'seguidora', 'tecnic'].includes(f.carril) && f.resp ? carrilDeResponsable(inc, Number(f.resp)) : carrilDeResponsable(inc, t.id)); if (!carrilsPermesos(f.tipusSel).includes(f.carril)) f.carril = carrilsPermesos(f.tipusSel)[0]; if (f.carril !== abans) f.resp = ''; f.titol = tp.nom; f.peticio = null; f.visible = null; f.venciment = ''; pintaPanell(inc); });
     $('#na-carril').addEventListener('change', () => { guarda(); st.form.resp = ''; st.form.venciment = ''; pintaPanell(inc); });
     if ($('#na-resp')) $('#na-resp').addEventListener('change', () => { guarda(); const f = st.form; if (['operari', 'seguidora', 'tecnic'].includes(f.carril) && f.resp) { f.carril = carrilDeResponsable(inc, Number(f.resp)); pintaPanell(inc); } });
     if ($('#na-grup')) $('#na-grup').addEventListener('change', () => { guarda(); st.form.venciment = ''; pintaPanell(inc); });
+    if ($('#na-inici')) $('#na-inici').addEventListener('change', () => { guarda(); st.form.venciment = ''; pintaPanell(inc); });   // el venciment es torna a comptar des de l'inici
     $('#na-ok').addEventListener('click', async () => {
       guarda(); const f = st.form, tp = INC.tipus[f.tipusSel], origen = f.origen ? C.get('incidencia_accions', f.origen) : null;
       const extern = f.carril === 'client' || f.carril === 'proveidor' || f.carril === 'subcontractista';
       if (!f.titol.trim()) { errorInc('Posa un títol.'); return; }
       if (!f.resp) { errorInc(extern ? 'Tria el proveïdor o la persona del client.' : 'Tria el responsable.'); return; }
       if (f.carril !== 'client' && !f.venciment) { errorInc('Cal un venciment.'); return; }
+      if (f.inici && f.venciment && new Date(f.inici) > new Date(f.venciment)) { errorInc('La data en què es pot començar no pot ser després del venciment.'); return; }
       if (origen && origen.venciment && f.peticio && f.venciment && new Date(f.venciment) > new Date(origen.venciment)) { errorInc('Una petició no pot vèncer més tard que l’acció que l’espera (' + dmyhm(origen.venciment) + ').'); return; }
       const dades = { incidencia_id: inc.id, tipus: f.tipusSel, carril: f.carril, titol: f.titol.trim(), descripcio: f.desc.trim() || null, creat_per: t.id,
         responsable_treballador_id: extern ? null : Number(f.resp), responsable_proveidor_id: f.carril === 'proveidor' || f.carril === 'subcontractista' ? Number(f.resp) : null, responsable_contacte_id: f.carril === 'client' ? Number(f.resp) : null,
-        gestor_id: extern ? Number(f.gestor || t.id) : null, estat: 'pendent', grup_termini: f.carril === 'client' ? null : f.grup, venciment: f.carril === 'client' ? null : deLocalDT(f.venciment),
+        gestor_id: extern ? Number(f.gestor || t.id) : null, estat: 'pendent', grup_termini: f.carril === 'client' ? null : f.grup, venciment: f.carril === 'client' ? null : deLocalDT(f.venciment), inici: f.carril !== 'client' && f.inici ? deLocalDT(f.inici) : null,
         origen_accio_id: origen ? origen.id : null, es_peticio: origen ? !!f.peticio : false, visible_client: !!f.visible, observacions_internes: f.int.trim() || null };
       $('#na-ok').disabled = true;
       try {
@@ -5642,7 +5676,7 @@ function bindPanell(inc) {
         const r = await sb.from('incidencia_accions').insert(dades).select('id').single(); if (r.error) throw r.error;
         if (accioAmbFull(dades)) { try { await creaFullPerAccio(inc, { ...dades, id: r.data.id }); } catch (e2) { toastErr('Acció creada, però el full de treball no: ' + friendly(e2)); } }
         if (f.tipusSel === 'assignar_seguidora') { const u = await sb.from('incidencies').update({ seguidora_id: Number(f.resp) }).eq('id', inc.id); if (u.error) throw u.error; }
-        await eventInc(inc.id, r.data.id, 'nova_accio', tp.nom + ' → ' + (extern ? (f.carril === 'client' ? (C.get('contactes', Number(f.resp)) || {}).nom : (C.get('proveidors', Number(f.resp)) || {}).nom) : nomTreballador(C.get('treballadors', Number(f.resp)))) + (dades.venciment ? ' · venç ' + dmyhm(dades.venciment) : ''));
+        await eventInc(inc.id, r.data.id, 'nova_accio', tp.nom + ' → ' + (extern ? (f.carril === 'client' ? (C.get('contactes', Number(f.resp)) || {}).nom : (C.get('proveidors', Number(f.resp)) || {}).nom) : nomTreballador(C.get('treballadors', Number(f.resp)))) + (dades.inici ? ' · ' + textInici(dades) : '') + (dades.venciment ? ' · venç ' + dmyhm(dades.venciment) : ''));
         await recarregaInc(); toast('Acció creada'); st.form = null; st.sel = r.data.id; renderMain();
       } catch (e) { $('#na-ok').disabled = false; errorInc(friendly(e)); }
     });
@@ -5666,15 +5700,17 @@ async function operacio(inc, fn, accioId, tipusEvent, detall) {
 /* ---------- les meves accions (operaris i tothom) ---------- */
 function renderAccionsMeves(main) {
   const t = trebInc(); state.inc.capa = 'interna';
-  const meves = C.rows('incidencia_accions').filter(a => a.actiu && a.estat !== 'finalitzada' && t && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id))
-    .filter(a => (C.get('incidencies', a.incidencia_id) || {}).estat === 'oberta')
-    .sort((a, b) => String(a.venciment || '9').localeCompare(String(b.venciment || '9')));
+  const totes = C.rows('incidencia_accions').filter(a => a.actiu && a.estat !== 'finalitzada' && t && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id))
+    .filter(a => (C.get('incidencies', a.incidencia_id) || {}).estat === 'oberta');
+  const meves = totes.filter(activa).sort((a, b) => String(a.venciment || '9').localeCompare(String(b.venciment || '9')));
+  const programades = totes.filter(iniciFutur).sort((a, b) => String(a.inici).localeCompare(String(b.inici)));
   const peraAcceptar = C.rows('incidencia_accions').filter(a => a.actiu && a.es_peticio && a.estat === 'finalitzada' && !a.resolta && t && Number(a.creat_per) === t.id);
   const targeta = a => { const inc = C.get('incidencies', a.incidencia_id) || {}, ee = estatEfectiu(a), nAdj = inc.id ? nAdjuntsInc(inc) : 0, internes = [inc.observacions_internes, a.observacions_internes].filter(Boolean).join(' · ');
-    return `<div class="ic-targeta ${foraTermini(a) ? 'fora' : ''}" data-inc="${inc.id}" data-accio="${a.id}"><b>${h(nomTipus(a.tipus))}</b> · ${h(inc.numero || '')} ${h(inc.titol || '')}<br><span class="hint">${h(llocInc(inc).nom || '')}${nAdj ? ' · ' + nAdj + (nAdj === 1 ? ' foto o document' : ' fotos o documents') + ' a la incidència' : ''}</span><br><span class="pill e-${ee}">${INC.estats[ee]}</span> ${a.venciment ? '<span class="' + (foraTermini(a) ? 'v-no' : '') + '">venç ' + dmyhm(a.venciment) + '</span>' : ''}${a.descripcio ? '<br>' + h(a.descripcio.slice(0, 140)) : ''}${internes ? '<br><span class="ic-int"><b>Internes:</b> ' + h(internes.length > 220 ? internes.slice(0, 218) + '…' : internes) + '</span>' : ''}</div>`; };
+    return `<div class="ic-targeta ${foraTermini(a) ? 'fora' : ''}" data-inc="${inc.id}" data-accio="${a.id}"><b>${h(nomTipus(a.tipus))}</b> · ${h(inc.numero || '')} ${h(inc.titol || '')}<br><span class="hint">${h(llocInc(inc).nom || '')}${nAdj ? ' · ' + nAdj + (nAdj === 1 ? ' foto o document' : ' fotos o documents') + ' a la incidència' : ''}</span><br><span class="pill e-${ee}">${INC.estats[ee]}</span> ${iniciFutur(a) ? '<span>' + textInici(a) + '</span> · ' : ''}${a.venciment ? '<span class="' + (foraTermini(a) ? 'v-no' : '') + '">venç ' + dmyhm(a.venciment) + '</span>' : ''}${a.descripcio ? '<br>' + h(a.descripcio.slice(0, 140)) : ''}${internes ? '<br><span class="ic-int"><b>Internes:</b> ' + h(internes.length > 220 ? internes.slice(0, 218) + '…' : internes) + '</span>' : ''}</div>`; };
   main.innerHTML = `<h1>Les meves accions <button class="btn ghost small" id="am-cal" style="vertical-align:middle; margin-left:8px">Calendari</button></h1>
     ${!t ? '<div class="msg err">El teu usuari no té fitxa de treballador.</div>' : ''}
     ${meves.length ? meves.map(targeta).join('') : '<div class="empty">Cap acció oberta assignada a tu.</div>'}
+    ${programades.length ? `<details class="ic-programades"><summary>Programades per més endavant (${programades.length}): encara no toquen</summary>${programades.map(targeta).join('')}</details>` : ''}
     ${peraAcceptar.length ? `<h3>Respostes rebudes per acceptar</h3>${peraAcceptar.map(targeta).join('')}` : ''}`;
   main.querySelectorAll('.ic-targeta').forEach(c => c.addEventListener('click', () => { state.inc.vista = 'diagrama'; state.inc.id = Number(c.dataset.inc); state.inc.sel = Number(c.dataset.accio); state.inc.form = null; state.mode = 'consulta'; state.table = 'incidencies'; renderApp(); window.scrollTo({ top: 0 }); }));
   $('#am-cal').addEventListener('click', () => { state.table = 'calendari_accions'; renderApp(); });
@@ -5706,7 +5742,8 @@ function accionsCalendari() {
     const feta = a.estat === 'finalitzada' || inc.estat !== 'oberta';
     if (feta && !st.fetes) return null;
     if ((st.meves || APP_NOMES_TASQUES) && !(t && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id || Number(a.creat_per) === t.id))) return null; // a l'app, sempre només les pròpies
-    const inici = dataLocal(a.creat_el) || avuiS; let fi = a.venciment ? dataLocal(a.venciment) : (feta ? dataLocal(a.finalitzada_el) || inici : avuiS); if (fi < inici) fi = inici;
+    let inici = dataLocal(a.creat_el) || avuiS; if (a.inici && dataLocal(a.inici) > inici) inici = dataLocal(a.inici);   // si té data d'inici, la franja comença llavors
+    let fi = a.venciment ? dataLocal(a.venciment) : (feta ? dataLocal(a.finalitzada_el) || inici : avuiS); if (fi < inici) fi = inici;
     return { a, inc, inici, fi, feta, sense: !a.venciment, vencuda: !feta && !!a.venciment && new Date() > new Date(a.venciment) };
   }).filter(Boolean);
 }
@@ -5739,7 +5776,7 @@ function detallAccioHTML(x) {
     <h3>${h(tp.nom)}${a.titol && a.titol !== tp.nom ? ' · ' + h(a.titol) : ''} <span class="hint">F${tp.fase} · ${h(INC.fases[tp.fase] || '')}</span></h3>
     <div class="capsal"><span>Incidència <b>${h(inc.numero)} · ${h(inc.titol)}</b></span><span>Lloc <b>${h(llocInc(inc).nom || '')}</b></span><span>Carril <b>${h(etiquetaOpt(INC.carrils, a.carril))}</b></span><span>Estat <b>${INC.estats[estatEfectiu(a)] || a.estat}</b>${x.vencuda ? ' <b class="v-no">· fora de termini</b>' : ''}</span></div>
     <p><b>Responsable:</b> ${h(nomResponsable(a)) || '—'}${a.gestor_id ? ' · ho gestiona ' + h(nomTreballador(C.get('treballadors', a.gestor_id))) : ''}</p>
-    <p><b>Demanada</b> el ${dmyhm(a.creat_el)} per ${h(nomCurtTreballador(C.get('treballadors', a.creat_per)))} · <b>Termini:</b> ${a.venciment ? dmyhm(a.venciment) + (a.grup_termini ? ' · ' + h(etiquetaOpt(INC.grups, a.grup_termini)) : '') : (a.carril === 'client' ? 'sense termini (acció del client)' : 'sense termini')}${a.estat === 'finalitzada' ? ' · <b>Finalitzada</b> el ' + dmyhm(a.finalitzada_el) : ''}</p>
+    <p><b>Demanada</b> el ${dmyhm(a.creat_el)} per ${h(nomCurtTreballador(C.get('treballadors', a.creat_per)))}${a.inici ? ' · <b>Es pot començar:</b> ' + dmyhm(a.inici) : ''} · <b>Termini:</b> ${a.venciment ? dmyhm(a.venciment) + (a.grup_termini ? ' · ' + h(etiquetaOpt(INC.grups, a.grup_termini)) : '') : (a.carril === 'client' ? 'sense termini (acció del client)' : 'sense termini')}${a.estat === 'finalitzada' ? ' · <b>Finalitzada</b> el ' + dmyhm(a.finalitzada_el) : ''}</p>
     ${a.descripcio ? `<p><b>Què es demana:</b> ${h(a.descripcio)}</p>` : ''}
     ${a.resultat ? `<p><b>${a.es_peticio ? 'Resposta' : 'Resultat'}:</b> ${h(a.resultat)}</p>` : ''}
     ${a.observacions_internes ? `<p><b>Internes:</b> ${h(a.observacions_internes)}</p>` : ''}
