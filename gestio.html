@@ -366,6 +366,24 @@
   .ic-ops{ margin-top:12px; gap:6px; }
   .ic-form{ margin-top:12px; padding-top:10px; border-top:1px solid var(--line); }
   .ic-llegenda{ display:flex; flex-wrap:wrap; gap:5px; margin:6px 0 10px; }
+  /* app de l'operari: una acció en una sola pantalla, amb lletra gran; la petició és el que mana */
+  .ao{ font-size:18px; max-width:720px; }
+  .ao .bar{ margin-bottom:10px; }
+  .ao-lloc{ font-size:26px; font-weight:700; line-height:1.2; margin:4px 0 2px; } .ao-lloc span{ display:block; font-size:15px; font-weight:400; color:var(--ink-2); }
+  .ao-titol{ font-size:18px; font-weight:500; color:var(--ink-2); margin:0 0 10px; }
+  .ao-report{ font-size:14px; color:var(--ink-3); margin:0 0 8px; line-height:1.4; }
+  .ao-qui{ font-size:16px; color:var(--ink-2); margin:0 0 14px; display:flex; flex-wrap:wrap; gap:4px 18px; } .ao-qui b{ color:var(--ink); font-weight:600; }
+  .ao-tria{ display:flex; flex-wrap:wrap; gap:8px; margin:0 0 12px; } .ao-tria button{ font:inherit; font-size:15px; border:1.5px solid var(--line-2); background:#fff; border-radius:999px; padding:6px 14px; cursor:pointer; } .ao-tria button.on{ background:var(--ink); color:#fff; border-color:var(--ink); }
+  .ao-peticio{ background:#fff; border:2.5px solid var(--ink); border-radius:14px; padding:14px 18px 16px; margin:0 0 14px; box-shadow:0 2px 0 rgba(29,42,27,.12); }
+  .ao-sobre{ font-size:13px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-2); margin:0 0 8px; display:flex; flex-wrap:wrap; gap:6px 10px; align-items:center; }
+  .ao-text{ font-size:22px; font-weight:600; color:#111; line-height:1.35; white-space:pre-wrap; }
+  .ao-fila{ margin:0 0 12px; line-height:1.4; } .ao-fila .l{ display:block; font-size:13px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-2); margin-bottom:2px; }
+  .ao-termini{ font-size:18px; } .ao-termini.fora{ color:var(--red); font-weight:600; }
+  .ao-desc{ font-size:18px; white-space:pre-wrap; }
+  .ao-fotos .ic-gal-cap{ font-size:15px; font-weight:600; margin-top:10px; } .ao-fotos .ic-thumbs{ gap:8px; } .ao-fotos .ic-thumbs .ic-mini{ width:150px; height:150px; border-radius:10px; } .ao-fotos .ic-doc{ font-size:15px; }
+  .ao-panell{ position:static; width:auto; max-width:none; margin-top:16px; padding:0; border:0; box-shadow:none; background:transparent; font-size:17px; }
+  .ao-panell .ic-ops{ display:flex; flex-wrap:wrap; gap:10px; } .ao-panell .ic-ops .btn{ font-size:17px; padding:13px 18px; }
+  .ao-panell .ic-form{ background:#fff; border:1px solid var(--line-2); border-radius:12px; padding:14px 16px; margin-top:12px; } .ao-panell .ic-form h4{ margin:0 0 8px; font-size:18px; } .ao-panell textarea{ min-height:110px; font-size:18px; }
   .ic-galeria{ margin-top:14px; border-top:1px solid var(--line); padding-top:8px; } .ic-galeria summary{ cursor:pointer; color:var(--ink-2); font-size:13.5px; }
   .ic-gal-grup{ margin:8px 0 4px; } .ic-gal-cap{ font-size:13px; font-weight:600; }
   .ic-hist{ margin-top:10px; } .ic-hist summary{ cursor:pointer; color:var(--ink-2); font-size:13.5px; }
@@ -4858,6 +4876,7 @@ function araDepenHTML(inc, acc) {
   return `<div class="ic-ara"><span class="l">Ara depèn de:</span>${obertes.map(a => `<span class="qui ${foraTermini(a) ? 'fora' : ''}" data-ara="${a.id}" style="--lc:${colorCarril(a.carril)}" title="${h(etiquetaOpt(INC.carrils, a.carril))}"><i></i>${h(nomResponsable(a))} <small>· ${h(nomTipus(a.tipus))}${a.venciment ? ' · ' + (foraTermini(a) ? 'fora de termini des de ' : 'venç ') + dmyhm(a.venciment) : ''}${estatEfectiu(a) === 'esperant' ? ' · esperant resposta' : ''}</small></span>`).join('')}</div>`;
 }
 function renderDiagramaInc(main) {
+  if (APP_NOMES_TASQUES) return renderAccioOperari(main);
   const st = state.inc, inc = C.get('incidencies', st.id), t = trebInc();
   document.body.classList.add('ic-full');
   const externs = externsInc(inc);
@@ -4959,10 +4978,97 @@ function dibuixaFletxes(inc) {
 function pintaPanell(inc) {
   const p = $('#ic-panell'); if (!p) return;
   const st = state.inc; const obert = !!(st.sel || st.form);
+  if (APP_NOMES_TASQUES) { p.hidden = !st.sel; p.innerHTML = st.sel ? panellOperariHTML(inc) : ''; bindPanell(inc); ompleMiniatures(p); return; }
   p.hidden = !obert; if (!obert) { p.innerHTML = ''; return; }
   p.innerHTML = '<button type="button" class="ic-tanca" id="ic-tanca" title="Tanca el panell">×</button>' + panellHTML(inc);
   $('#ic-tanca').addEventListener('click', () => { st.sel = null; st.form = null; document.querySelectorAll('.ic-caixa.sel').forEach(x => x.classList.remove('sel')); pintaPanell(inc); });
   bindPanell(inc); ompleMiniatures(p);
+}
+/* ---------- App de l'operari: la incidència i la seva acció en una sola pantalla, amb lletra gran ----------
+   Sense diagrama ni carrils: el lloc, qui va avisar (petit), la seguidora i qui ho demana, la PETICIÓ (gran i fosca), el termini,
+   la descripció, les fotos (grans, amb qui les ha pujat) i només tres coses a fer: començar, fer una petició a qui ho demana, finalitzar. */
+const accionsMevesInc = (inc, t) => accionsVisibles(inc).filter(a => t && !['obrir', 'tancar', 'reobrir', 'assignar_seguidora', 'visibilitat_client'].includes(a.tipus) && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id));
+// a qui va la petició d'un operari: sempre a qui li ha demanat l'acció (i si és ell mateix, a la seguidora)
+function destinatariPeticio(inc, a) {
+  const t = trebInc(), creador = a && a.creat_per ? C.get('treballadors', a.creat_per) : null;
+  if (creador && creador.actiu && (!t || creador.id !== t.id)) return creador;
+  const seg = C.get('treballadors', inc.seguidora_id); return seg && (!t || seg.id !== t.id) ? seg : (creador || null);
+}
+function fotosOperariHTML(inc) {
+  const grups = adjuntsIncidencia(inc);
+  if (!grups.length) return '';
+  return `<div class="ao-fila ao-fotos"><span class="l">Fotos i documents</span>${grups.map(g => `<div class="ic-gal-grup"><div class="ic-gal-cap">${h(g.titol)}</div><div class="ic-thumbs gran">${miniaturesHTML(g.adjunts)}</div></div>`).join('')}</div>`;
+}
+function renderAccioOperari(main) {
+  const st = state.inc, inc = C.get('incidencies', st.id), t = trebInc();
+  document.body.classList.remove('ic-full');
+  if (!inc) { st.vista = 'llista'; renderMain(); return; }
+  const meves = accionsMevesInc(inc, t);
+  if (!st.sel || !meves.some(a => a.id === Number(st.sel))) { const oberta = meves.find(a => a.estat !== 'finalitzada') || meves[0]; st.sel = oberta ? oberta.id : null; }
+  const a = st.sel ? C.get('incidencia_accions', st.sel) : null;
+  const lloc = llocInc(inc), client = clientInc(inc), seguidora = C.get('treballadors', inc.seguidora_id), reports = reportsInc(inc);
+  const creador = a && a.creat_per ? C.get('treballadors', a.creat_per) : null;
+  const tp = a ? (INC.tipus[a.tipus] || { nom: a.tipus }) : null, ee = a ? estatEfectiu(a) : null;
+  const titolPeticio = a ? [a.titol && a.titol !== tp.nom ? a.titol : '', a.descripcio || ''].filter(Boolean).join('\n') : '';
+  main.innerHTML = `<div class="ao">
+    <div class="bar"><button class="btn ghost" id="inc-torna">← Les meves accions</button></div>
+    <div class="ao-lloc">${h(lloc.nom || 'Lloc sense nom')}${client.nom ? `<span>${h(client.nom)}</span>` : ''}</div>
+    <div class="ao-titol">${h(inc.numero)} · ${h(inc.titol)}${inc.estat === 'tancada' ? ' · <b>tancada</b>' : ''}</div>
+    ${reports.length ? `<div class="ao-report">Report de ${h(quiReporta(reports[0]))}${reports[0].descripcio ? ': ' + h(String(reports[0].descripcio).slice(0, 240)) : ''}</div>` : ''}
+    <div class="ao-qui"><span>Seguidora: <b>${h(nomTreballador(seguidora)) || '—'}</b></span>${creador ? `<span>Ho demana: <b>${h(nomTreballador(creador))}</b></span>` : ''}</div>
+    ${meves.length > 1 ? `<div class="ao-tria">${meves.map(x => `<button type="button" class="${x.id === (a || {}).id ? 'on' : ''}" data-tria="${x.id}">${h(nomTipus(x.tipus))}${x.estat === 'finalitzada' ? ' ✓' : ''}</button>`).join('')}</div>` : ''}
+    ${a ? `
+    <div class="ao-peticio"><div class="ao-sobre"><span>${h(tp.nom)}</span><span class="pill e-${ee}">${INC.estats[ee]}</span>${foraTermini(a) ? '<span class="pill fora">Fora de termini</span>' : ''}${a.es_peticio ? '<span class="pill dep">et demanen una resposta</span>' : ''}</div>
+      <div class="ao-text">${h(titolPeticio || tp.nom)}</div></div>
+    <div class="ao-fila"><span class="l">Termini</span><span class="ao-termini ${foraTermini(a) && a.estat !== 'finalitzada' ? 'fora' : ''}">${a.venciment ? dmyhm(a.venciment) + (a.grup_termini ? ' · ' + h(etiquetaOpt(INC.grups, a.grup_termini)) : '') : '—'}</span></div>
+    ${inc.descripcio ? `<div class="ao-fila"><span class="l">Descripció de la incidència</span><div class="ao-desc">${h(inc.descripcio)}</div></div>` : ''}
+    ${a.resultat ? `<div class="ao-fila"><span class="l">${a.es_peticio ? 'Resposta' : 'Resultat'}</span><div class="ao-desc">${h(a.resultat)}</div></div>` : ''}
+    ${inc.observacions_internes || a.observacions_internes ? `<div class="ao-fila"><span class="l">Observacions internes</span><div class="ao-desc" style="font-size:16px">${h([inc.observacions_internes, a.observacions_internes].filter(Boolean).join('\n'))}</div></div>` : ''}
+    ${fotosOperariHTML(inc)}
+    <aside class="ic-panell ao-panell" id="ic-panell"></aside>` : '<div class="empty">No tens cap acció en aquesta incidència.</div>'}
+  </div>`;
+  $('#inc-torna').addEventListener('click', () => { st.vista = 'llista'; st.sel = null; st.form = null; state.table = 'accions_meves'; renderApp(); window.scrollTo({ top: 0 }); });
+  main.querySelectorAll('[data-tria]').forEach(b => b.addEventListener('click', () => { st.sel = Number(b.dataset.tria); st.form = null; renderMain(); }));
+  if (a) pintaPanell(inc);
+  ompleMiniatures(main);
+}
+// el que pot fer l'operari amb la seva acció: començar, fer una petició a qui li ho demana, finalitzar (o respondre, si és una petició)
+function panellOperariHTML(inc) {
+  const st = state.inc, t = trebInc(), a = C.get('incidencia_accions', st.sel); if (!a) return '';
+  const oberta = inc.estat === 'oberta', potActuar = oberta && t && (socResponsable(a) || Number(a.gestor_id) === t.id);
+  const pend = peticionsPendents(a), dest = destinatariPeticio(inc, a);
+  const formOp = st.form && st.form.accio === a.id ? st.form : null;
+  let ops = '';
+  if (potActuar && a.estat === 'pendent') ops += `<button class="btn ghost" data-op="comenca">Comença l’acció</button>`;
+  if (potActuar && a.estat !== 'finalitzada' && dest && !a.es_peticio) ops += `<button class="btn ghost" data-op="peticio">Fes una petició a ${h(dest.nom)}…</button>`;
+  if (potActuar && a.estat !== 'finalitzada') ops += `<button class="btn" data-op="finalitza">${a.es_peticio ? 'Respon…' : 'Finalitza l’acció…'}</button>`;
+  if (a.estat === 'finalitzada') ops += `<span class="hint">${a.es_peticio ? 'Resposta enviada' : 'Acció finalitzada'}${a.finalitzada_el ? ' el ' + dmyhm(a.finalitzada_el) : ''}.</span>`;
+  let form = '';
+  if (formOp && formOp.tipus === 'finalitza') form = `<div class="ic-form"><h4>${a.es_peticio ? 'Respon la petició' : 'Finalitza «' + h(nomTipus(a.tipus)) + '»'}</h4>
+      <div class="f"><span class="l">${a.es_peticio ? 'Resposta' : 'Què has fet'}</span><textarea lang="ca" spellcheck="true" id="fin-resultat"></textarea></div>
+      <div class="f"><span class="l">Fotos, vídeos, documents${Array.isArray(a.adjunts) && a.adjunts.length ? ' (ja n’hi ha ' + a.adjunts.length + ')' : ''}</span><input type="file" id="fin-fitxers" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx"></div>
+      ${pend.length ? `<p class="v-no">Aquesta acció espera ${pend.length} ${pend.length === 1 ? 'resposta' : 'respostes'} a les teves peticions: no es pot finalitzar fins que les tinguis.</p>` : ''}
+      <div class="actions"><button class="btn" id="fin-ok" ${pend.length ? 'disabled' : ''}>${a.es_peticio ? 'Envia la resposta' : 'Confirma: finalitzada'}</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div></div>`;
+  if (formOp && formOp.tipus === 'peticio') form = `<div class="ic-form"><h4>Petició a ${h(nomTreballador(dest))}</h4>
+      <p class="hint" style="margin:0 0 8px">Li arriba com una petició pendent; fins que no et respongui, aquesta acció queda «esperant».</p>
+      <div class="f"><span class="l">Què necessites o què preguntes</span><textarea lang="ca" spellcheck="true" id="pet-text"></textarea></div>
+      <div class="f"><span class="l">Fotos, vídeos, documents</span><input type="file" id="pet-fitxers" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx"></div>
+      <div class="actions"><button class="btn" id="pet-ok">Envia la petició</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div></div>`;
+  const esperes = pend.length ? `<div class="ao-fila"><span class="l">Esperes resposta de</span>${pend.map(p => h(nomResponsable(p)) + (p.descripcio ? ': ' + h(String(p.descripcio).slice(0, 120)) : '')).join('<br>')}</div>` : '';
+  return `${esperes}${formOp ? '' : `<div class="actions ic-ops">${ops}</div>`}${form}`;
+}
+// la petició d'un operari: tipus «consultar», cap a qui li ha demanat l'acció, amb el termini de l'acció com a màxim
+async function creaPeticioOperari(inc, a, text, fitxers) {
+  const t = trebInc(), dest = destinatariPeticio(inc, a); if (!dest) throw new Error('No sé a qui enviar la petició.');
+  const grup = a.grup_termini || 'mig_termini';
+  let v = vencimentPerGrup(grup); if (a.venciment && new Date(a.venciment) < v) v = new Date(a.venciment);
+  const adjunts = fitxers.length ? await pujaAdjunts(inc.id + '/' + a.id, fitxers) : [];
+  const dades = { incidencia_id: inc.id, tipus: 'consultar', carril: carrilDeResponsable(inc, dest.id), titol: 'Petició de ' + nomCurtTreballador(t), descripcio: text, creat_per: t.id,
+    responsable_treballador_id: dest.id, responsable_proveidor_id: null, responsable_contacte_id: null, gestor_id: null, estat: 'pendent', grup_termini: grup, venciment: v.toISOString(),
+    origen_accio_id: a.id, es_peticio: true, visible_client: false, adjunts };
+  const r = await sb.from('incidencia_accions').insert(dades).select('id').single(); if (r.error) throw r.error;
+  await eventInc(inc.id, r.data.id, 'nova_accio', 'Petició → ' + nomTreballador(dest) + ' · venç ' + dmyhm(dades.venciment));
+  return r.data.id;
 }
 function panellHTML(inc) {
   const st = state.inc, t = trebInc();
@@ -5094,6 +5200,7 @@ function bindPanell(inc) {
     else if (op === 'resol') { await operacio(inc, () => sb.from('incidencia_accions').update({ resolta: true, resolta_el: new Date().toISOString() }).eq('id', a.id), a.id, 'resposta_acceptada', 'Resposta donada per suficient'); }
     else if (op === 'visible') { await operacio(inc, () => sb.from('incidencia_accions').update({ visible_client: !a.visible_client }).eq('id', a.id), a.id, 'visibilitat', a.visible_client ? 'Amagada al client' : 'Visible al client'); }
     else if (op === 'deriva') { st.form = { tipus: 'accio', origen: a.id }; pintaPanell(inc); }
+    else if (op === 'peticio') { st.form = { tipus: 'peticio', accio: a.id }; pintaPanell(inc); }
     else if (op === 'finalitza') { st.form = { tipus: 'finalitza', accio: a.id }; pintaPanell(inc); }
     else if (op === 'ampliacio') { st.form = { tipus: 'ampliacio', accio: a.id }; pintaPanell(inc); }
   }));
@@ -5142,9 +5249,19 @@ function bindPanell(inc) {
       await eventInc(inc.id, a.id, a.es_peticio ? 'resposta' : 'finalitzada', (canvis.decisio ? etiquetaOpt(INC.decisions, canvis.decisio) + ' · ' : '') + (resultat || '').slice(0, 200));
       await recarregaInc(); toast(a.es_peticio ? 'Resposta registrada' : 'Acció finalitzada');
       // acció pròpia acabada: s'ofereix de seguida encarregar el pas següent (una petició contestada torna a qui la va demanar)
-      const potSeguir = !a.es_peticio && inc.estat === 'oberta' && (INC.transicions[a.tipus] || []).some(k => potCrearTipus(inc, k));
+      const potSeguir = !APP_NOMES_TASQUES && !a.es_peticio && inc.estat === 'oberta' && (INC.transicions[a.tipus] || []).some(k => potCrearTipus(inc, k));
       st.form = potSeguir ? { tipus: 'accio', origen: a.id, despres: true } : null; renderMain();
     } catch (e) { finOk.disabled = false; errorInc(friendly(e)); }
+  });
+  const petOk = $('#pet-ok'); if (petOk) petOk.addEventListener('click', async () => {
+    const a = C.get('incidencia_accions', st.sel), text = $('#pet-text').value.trim(), fitxers = $('#pet-fitxers') ? [...$('#pet-fitxers').files] : [];
+    if (!text && !fitxers.length) { errorInc('Escriu què necessites o adjunta-ho.'); return; }
+    petOk.disabled = true;
+    try {
+      await creaPeticioOperari(inc, a, text || 'Vegeu els adjunts', fitxers);
+      if (a.estat === 'pendent') { const r = await sb.from('incidencia_accions').update({ estat: 'en_curs' }).eq('id', a.id); if (r.error) throw r.error; }
+      await recarregaInc(); toast('Petició enviada'); st.form = null; renderMain();
+    } catch (e) { petOk.disabled = false; errorInc(friendly(e)); }
   });
   const ampOk = $('#amp-ok'); if (ampOk) ampOk.addEventListener('click', async () => {
     const a = C.get('incidencia_accions', st.sel), venc = $('#amp-venc').value, motiu = $('#amp-motiu').value.trim();
