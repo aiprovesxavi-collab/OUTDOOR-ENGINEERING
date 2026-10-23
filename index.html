@@ -407,6 +407,19 @@
   .ft-resum{ display:flex; flex-wrap:wrap; gap:6px 16px; font-size:14px; color:var(--ink-2); margin:6px 0 0; }
   .operari .ft-taula td{ font-size:17px; }
   @media (max-width:520px){ .ft-nova{ grid-template-columns:1fr 1fr; } }
+  /* Pregunta-ho (IA): el xat */
+  .ia-xat{ max-width:980px; }
+  .ia-m{ border-radius:12px; padding:12px 16px; margin:0 0 12px; max-width:100%; }
+  .ia-q{ background:#eef3f8; border:1px solid #d5e1ec; margin-left:18%; white-space:pre-wrap; }
+  .ia-r{ background:#fff; border:1px solid var(--line-2); margin-right:8%; }
+  .ia-r .ia-text{ white-space:pre-wrap; line-height:1.45; margin:0 0 8px; }
+  .ia-r .tbl{ margin:8px 0 6px; font-size:13px; } .ia-r .tbl td, .ia-r .tbl th{ padding:4px 8px; }
+  .ia-r details{ margin-top:6px; } .ia-r details summary{ cursor:pointer; color:var(--ink-2); font-size:13px; } .ia-r pre{ white-space:pre-wrap; font-size:12.5px; background:#f6f7f5; border-radius:8px; padding:8px 10px; margin:6px 0; overflow-wrap:anywhere; }
+  .ia-r.ia-err{ border-color:#e3b1ab; background:#fff6f4; }
+  .ia-pensant{ color:var(--ink-2); font-style:italic; }
+  .ia-exemples{ display:flex; flex-wrap:wrap; gap:8px; margin:0 0 14px; } .ia-exemples .btn{ white-space:normal; text-align:left; }
+  .ia-form{ display:flex; gap:10px; align-items:flex-start; max-width:980px; position:sticky; bottom:0; background:var(--bg, #fff); padding:10px 0 4px; } .ia-form textarea{ flex:1; min-height:52px; resize:vertical; }
+  .ia-peu{ display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center; font-size:12.5px; color:var(--ink-2); margin-top:6px; }
   .ic-galeria{ margin-top:14px; border-top:1px solid var(--line); padding-top:8px; } .ic-galeria summary{ cursor:pointer; color:var(--ink-2); font-size:13.5px; }
   .ic-gal-grup{ margin:8px 0 4px; } .ic-gal-cap{ font-size:13px; font-weight:600; }
   .ic-hist{ margin-top:10px; } .ic-hist summary{ cursor:pointer; color:var(--ink-2); font-size:13.5px; }
@@ -1030,6 +1043,7 @@ const campsBombes = [
 
 const SCHEMA = {
   groups: [
+    { label: 'PREGUNTA', color: '#2b5f8a', tables: ['pregunta_ia'] },
     { label: 'QUI · ON', color: '#e08a8a', tables: ['administradors', 'contactes', 'clients', 'llocs', 'informes_lloc', 'clients_per_administrador'] },
     { label: 'FACTURACIÓ', color: '#8a8a8a', tables: ['agrupacions', 'facturacio_recurrent', 'factures', 'marcat_cobrats', 'calendari_facturacio', 'vencudes', 'grafiques_facturacio', 'pressupostos_tasca', 'pressupostos_agrupacio', 'clausules_pressupost'] },
     { label: 'ALBARANS I PRODUCTES', color: '#c9c9c9', tables: ['productes', 'albarans', 'albarans_pendents'] },
@@ -1043,6 +1057,7 @@ const SCHEMA = {
     { label: 'ALTRES', color: '#b48ede', tables: ['tipus_iva', 'empresa', 'aigua_parametres_mensuals', 'avisos_piscina', 'comptes_bancaris', 'poblacions_sol', 'hores_sol'] },
   ],
   pages: {
+    pregunta_ia: { label: 'Pregunta-ho (IA)', render: main => renderPreguntaIA(main) },
     facturacio_recurrent: { label: 'Facturació recurrent', render: main => renderFacturacio(main) },
     informe_adob: { label: 'Adob per equips', render: main => renderInformeAdob(main) },
     albarans_pendents: { label: 'Albarans pendents', render: main => renderAlbaransPendents(main) },
@@ -2064,7 +2079,7 @@ const C = {
   rows: t => cache[t] || [],
   get: (t, id) => { const pk = (SCHEMA.tables[t] || {}).pk; return pk ? (cache[t] || []).find(r => String(r[pk]) === String(id)) : (cache[t] || []).find(r => r.id === Number(id)); },
 };
-const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, pagProv: { vista: 'marca', data: '', q: '', fets: {}, pagades: false }, ft: { id: null, form: null, vista: 'llista', nou: null, fets: false }, marques: {}, fac: { any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), avis: null }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, calAcc: { vista: '', ref: '', meves: false, fetes: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
+const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, pagProv: { vista: 'marca', data: '', q: '', fets: {}, pagades: false }, ft: { id: null, form: null, vista: 'llista', nou: null, fets: false }, marques: {}, fac: { any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), avis: null }, ia: { missatges: [], enviant: false }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, calAcc: { vista: '', ref: '', meves: false, fetes: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
 const L = (t, id) => { const r = C.get(t, id); return r ? SCHEMA.tables[t].display(r, L) : ''; };
 
 /* =====================================================================
@@ -4328,13 +4343,13 @@ function renderMarcatCobrats(main) {
       <span class="n">${nFets ? nFets + ' marcades en aquesta sessió · ' : ''}pendents: ${eur(totC)} a cobrar · ${eur(totP)} a pagar</span>
     </div>
     <h2 class="grup">Clients · cobrat</h2>
-    ${cob.length ? `<table class="tbl informe mc"><thead><tr><th>Factura</th><th>Client</th><th>Lloc</th><th>Venciment</th><th class="num">Import</th><th class="mc-c">Cobrat</th></tr></thead><tbody>
-      ${cob.map(x => { const f = x.f, ok = f.estat === 'cobrada'; return `<tr class="${ok ? 'fet' : ''}"><td><a href="#" data-obre-taula="factures" data-obre-id="${f.id}">${h(f.numero_complet || '')}</a></td><td>${h(x.client)}</td><td>${h(x.llocs)}</td><td>${dmy(f.data_venciment)}${f.data_venciment && f.data_venciment < st.data && !ok ? ' <span class="v-no">vençuda</span>' : ''}</td><td class="num">${eur(f.total)}</td><td class="mc-c"><label class="mc-box ${ok ? 'on' : ''}"><input type="checkbox" data-marca="${f.id}" data-taula="factures" ${ok ? 'checked' : ''}> ${ok ? 'cobrada ' + dmy(f.data_cobrament) : 'cobrat'}</label></td></tr>`; }).join('')}
-      <tr class="total"><td colspan="4">Pendent de cobrar</td><td class="num">${eur(totC)}</td><td></td></tr></tbody></table>` : '<div class="empty">Cap factura emesa pendent de cobrar.</div>'}
+    ${cob.length ? `<table class="tbl informe mc"><thead><tr><th>Factura</th><th>Data factura</th><th>Client</th><th>Lloc</th><th>Venciment</th><th class="num">Import</th><th class="mc-c">Cobrat</th></tr></thead><tbody>
+      ${cob.map(x => { const f = x.f, ok = f.estat === 'cobrada'; return `<tr class="${ok ? 'fet' : ''}"><td><a href="#" data-obre-taula="factures" data-obre-id="${f.id}">${h(f.numero_complet || '')}</a></td><td>${dmy(f.data_factura)}</td><td>${h(x.client)}</td><td>${h(x.llocs)}</td><td>${dmy(f.data_venciment)}${f.data_venciment && f.data_venciment < st.data && !ok ? ' <span class="v-no">vençuda</span>' : ''}</td><td class="num">${eur(f.total)}</td><td class="mc-c"><label class="mc-box ${ok ? 'on' : ''}"><input type="checkbox" data-marca="${f.id}" data-taula="factures" ${ok ? 'checked' : ''}> ${ok ? 'cobrada ' + dmy(f.data_cobrament) : 'cobrat'}</label></td></tr>`; }).join('')}
+      <tr class="total"><td colspan="5">Pendent de cobrar</td><td class="num">${eur(totC)}</td><td></td></tr></tbody></table>` : '<div class="empty">Cap factura emesa pendent de cobrar.</div>'}
     <h2 class="grup">Proveïdors · pagat</h2>
-    ${pag.length ? `<table class="tbl informe mc"><thead><tr><th>Factura</th><th>Proveïdor</th><th>Concepte</th><th>Venciment</th><th class="num">Import</th><th class="mc-c">Pagat</th></tr></thead><tbody>
-      ${pag.map(x => { const f = x.f, ok = !!f.pagada; return `<tr class="${ok ? 'fet' : ''}"><td><a href="#" data-obre-taula="factures_proveidor" data-obre-id="${f.id}">${h(f.numero || '(sense número)')}</a></td><td>${h(x.prov)}${f.dubtosa ? ' <span class="cal"><span class="tipus p">dubtosa</span></span>' : ''}</td><td>${h(String(f.concepte || '').split('\n')[0].slice(0, 60))}</td><td>${dmy(f.data_venciment)}${f.data_venciment && f.data_venciment < st.data && !ok ? ' <span class="v-no">vençuda</span>' : ''}</td><td class="num">${eur(f.total)}</td><td class="mc-c"><label class="mc-box ${ok ? 'on' : ''}"><input type="checkbox" data-marca="${f.id}" data-taula="factures_proveidor" ${ok ? 'checked' : ''}> ${ok ? 'pagada ' + dmy(f.data_pagament) : 'pagat'}</label></td></tr>`; }).join('')}
-      <tr class="total"><td colspan="4">Pendent de pagar</td><td class="num">${eur(totP)}</td><td></td></tr></tbody></table>` : '<div class="empty">Cap factura de proveïdor pendent de pagar.</div>'}`;
+    ${pag.length ? `<table class="tbl informe mc"><thead><tr><th>Factura</th><th>Data factura</th><th>Proveïdor</th><th>Concepte</th><th>Venciment</th><th class="num">Import</th><th class="mc-c">Pagat</th></tr></thead><tbody>
+      ${pag.map(x => { const f = x.f, ok = !!f.pagada; return `<tr class="${ok ? 'fet' : ''}"><td><a href="#" data-obre-taula="factures_proveidor" data-obre-id="${f.id}">${h(f.numero || '(sense número)')}</a></td><td>${dmy(f.data_factura)}</td><td>${h(x.prov)}${f.dubtosa ? ' <span class="cal"><span class="tipus p">dubtosa</span></span>' : ''}</td><td>${h(String(f.concepte || '').split('\n')[0].slice(0, 60))}</td><td>${dmy(f.data_venciment)}${f.data_venciment && f.data_venciment < st.data && !ok ? ' <span class="v-no">vençuda</span>' : ''}</td><td class="num">${eur(f.total)}</td><td class="mc-c"><label class="mc-box ${ok ? 'on' : ''}"><input type="checkbox" data-marca="${f.id}" data-taula="factures_proveidor" ${ok ? 'checked' : ''}> ${ok ? 'pagada ' + dmy(f.data_pagament) : 'pagat'}</label></td></tr>`; }).join('')}
+      <tr class="total"><td colspan="5">Pendent de pagar</td><td class="num">${eur(totP)}</td><td></td></tr></tbody></table>` : '<div class="empty">Cap factura de proveïdor pendent de pagar.</div>'}`;
   $('#mc-data').addEventListener('change', e => { st.data = e.target.value || avui(); renderMain(); });
   $('#mc-q').addEventListener('input', e => { st.q = e.target.value; renderMain(); const el = $('#mc-q'); el.focus(); el.setSelectionRange(el.value.length, el.value.length); });
   main.querySelectorAll('a[data-obre-taula]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); state.mode = 'consulta'; state.table = a.dataset.obreTaula; state.editing = Number(a.dataset.obreId); renderApp(); window.scrollTo({ top: 0 }); }));
@@ -4569,6 +4584,60 @@ async function creaAlbaraDeFull(id) {
   await Promise.all([loadTable('albarans'), loadTable('albara_linies'), loadTable('fulls_treball')]);
   toast('Albarà creat');
   state.mode = 'consulta'; state.table = 'albarans'; state.editing = alb.data.id; renderApp(); window.scrollTo({ top: 0 });
+}
+
+/* ---------- Pregunta-ho: preguntes en llenguatge natural a la base de dades, contestades amb IA (Edge Function pregunta-bd) ---------- */
+const EXEMPLES_IA = ['Quins clients són de Barberà?', 'Els 5 jardins amb més m²', 'Llocs amb alguna factura vençuda i no cobrada', 'Quins llocs han consumit més aigua aquest any?', 'Factures de proveïdor pendents de pagar aquest mes', 'Incidències obertes fora de termini, amb el responsable', 'Hores dels fulls de treball d’aquest mes, per operari', 'Quines piscines de sal porta cada equip?'];
+function csvDeFiles(files) {
+  if (!files.length) return '';
+  const cols = Object.keys(files[0]), cel = v => { const t = v == null ? '' : String(v); return /[";\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+  return '\ufeff' + cols.join(';') + '\n' + files.map(f => cols.map(c => cel(f[c])).join(';')).join('\n');
+}
+function taulaIaHTML(files) {
+  if (!files.length) return '';
+  const cols = Object.keys(files[0]), mostra = files.slice(0, 200);
+  const num = c => mostra.every(f => f[c] == null || typeof f[c] === 'number');
+  const cel = (f, c) => { const v = f[c]; if (v == null) return ''; if (typeof v === 'number') return Number.isInteger(v) ? String(v) : String(Math.round(v * 100) / 100).replace('.', ','); if (typeof v === 'boolean') return v ? 'sí' : 'no'; if (typeof v === 'object') return JSON.stringify(v); return String(v); };
+  return `<table class="tbl"><thead><tr>${cols.map(c => `<th class="${num(c) ? 'num' : ''}">${h(c.replace(/_/g, ' '))}</th>`).join('')}</tr></thead><tbody>${mostra.map(f => `<tr>${cols.map(c => `<td class="${num(c) ? 'num' : ''}">${h(cel(f, c))}</td>`).join('')}</tr>`).join('')}</tbody></table>${files.length > mostra.length ? `<p class="hint">Es mostren les ${mostra.length} primeres files de ${files.length}; el CSV les té totes.</p>` : ''}`;
+}
+function missatgeIaHTML(m, i) {
+  let r = '';
+  if (m.error) r = `<div class="ia-m ia-r ia-err"><p class="ia-text">${h(m.error)}</p></div>`;
+  else if (m.resposta != null) r = `<div class="ia-m ia-r"><p class="ia-text">${h(m.resposta)}</p>${m.files && m.files.length ? taulaIaHTML(m.files) : ''}
+      <div class="ia-peu">${m.files && m.files.length ? `<span>${m.files.length} fil${m.files.length === 1 ? 'a' : 'es'}</span><button type="button" class="btn ghost small" data-csv="${i}">Baixa en CSV</button>` : ''}${m.sql ? `<details><summary>Com ho he calculat</summary>${m.explicacio ? `<p class="hint">${h(m.explicacio)}</p>` : ''}<pre>${h(m.sql)}</pre></details>` : ''}</div></div>`;
+  return `<div class="ia-m ia-q">${h(m.q)}</div>${r}`;
+}
+function renderPreguntaIA(main) {
+  const st = state.ia;
+  main.innerHTML = `<h1>Pregunta-ho</h1>
+    <p class="sub">Pregunta en català el que vulguis saber de les dades: clients, llocs, jardins, factures, cobraments, consum d’aigua, incidències, fulls de treball… La IA ho converteix en una consulta, l’executa (només llegeix; no canvia mai res) i et contesta amb la resposta i la taula. Pots continuar amb preguntes de seguiment. La pregunta, l’esquema (sense dades sensibles) i el resultat passen per Google Gemini, com la lectura de les factures de proveïdor.</p>
+    <div class="ia-xat" id="ia-xat">
+      ${st.missatges.length ? st.missatges.map(missatgeIaHTML).join('') : `<div class="ia-exemples">${EXEMPLES_IA.map(e => `<button type="button" class="btn ghost small" data-ex="${h(e)}">${h(e)}</button>`).join('')}</div>`}
+      ${st.enviant ? '<div class="ia-m ia-r ia-pensant">Pensant… (pot trigar uns segons)</div>' : ''}
+    </div>
+    <form class="ia-form" id="ia-form"><textarea id="ia-q" rows="2" placeholder="Escriu la pregunta… (Retorn per enviar, Maj+Retorn per fer un salt de línia)" ${st.enviant ? 'disabled' : ''}></textarea><button class="btn" type="submit" ${st.enviant ? 'disabled' : ''}>Pregunta</button>${st.missatges.length ? '<button class="btn ghost" type="button" id="ia-neteja">Comença de nou</button>' : ''}</form>`;
+  const q = $('#ia-q');
+  const envia = () => { const text = q.value.trim(); if (!text || st.enviant) return; preguntaIa(text); };
+  $('#ia-form').addEventListener('submit', e => { e.preventDefault(); envia(); });
+  q.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); envia(); } });
+  main.querySelectorAll('[data-ex]').forEach(b => b.addEventListener('click', () => preguntaIa(b.dataset.ex)));
+  main.querySelectorAll('[data-csv]').forEach(b => b.addEventListener('click', () => { const m = st.missatges[Number(b.dataset.csv)]; const blob = new Blob([csvDeFiles(m.files)], { type: 'text/csv;charset=utf-8' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'resposta.csv'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }));
+  const nt = $('#ia-neteja'); if (nt) nt.addEventListener('click', () => { st.missatges = []; renderMain(); });
+  if (!st.enviant) q.focus();
+  const xat = $('#ia-xat'); if (xat && st.missatges.length) { const ult = xat.querySelector('.ia-m.ia-r:last-of-type, .ia-m:last-child'); if (ult && ult.scrollIntoView) ult.scrollIntoView({ block: 'end' }); }
+}
+async function preguntaIa(text) {
+  const st = state.ia, m = { q: text };
+  st.missatges.push(m); st.enviant = true; renderMain();
+  try {
+    const historial = st.missatges.filter(x => x !== m && x.sql).slice(-6).map(x => ({ pregunta: x.q, sql: x.sql, resposta: x.resposta }));
+    const { data, error } = await sb.functions.invoke('pregunta-bd', { body: { pregunta: text, historial } });
+    let dades = data;
+    if (error && !dades) { try { dades = error.context && error.context.json ? await error.context.json() : null; } catch (e) { dades = null; } }
+    if (!dades || dades.error) throw new Error((dades && dades.error) || (error && error.message) || 'No s’ha pogut preguntar');
+    Object.assign(m, { resposta: dades.resposta || '', sql: dades.sql || null, explicacio: dades.explicacio || '', files: Array.isArray(dades.files) ? dades.files : [] });
+  } catch (e) { m.error = /Failed to fetch|FunctionsFetchError/i.test(String(e.message)) ? 'No s’ha pogut connectar amb la funció «pregunta-bd»: cal crear-la a Supabase (Edge Functions) amb el secret GEMINI_API_KEY.' : friendly(e); }
+  st.enviant = false; renderMain();
 }
 
 /* ---------- Pagaments a proveïdors: llista per marcar les pagades (casella al final) i calendari de pagaments per data i forma ---------- */
