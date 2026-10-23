@@ -1189,6 +1189,8 @@ const SCHEMA = {
     },
     agrupacions: {
       label: 'Agrupacions de facturació', nou: 'Nova agrupació de facturació', order: 'nom',
+      // en donar-la de baixa, els seus esborranys de facturació recurrent pendents també
+      enBaixa: async r => { const ids = C.rows('factures').filter(f => f.actiu && f.estat === 'esborrany' && Number(f.agrupacio_id) === r.id).map(f => f.id); if (!ids.length) return ''; const u = await sb.from('factures').update({ actiu: false }).in('id', ids); if (u.error) throw u.error; await loadTable('factures'); return ` · ${ids.length} esborran${ids.length === 1 ? 'y' : 'ys'} de facturació retirat${ids.length === 1 ? '' : 's'}`; },
       display: (r, L) => r.nom + ' — ' + L('clients', r.client_id),
       list: ['estat', 'nom', 'client_id', 'inclou', 'concepte_factura', 'preu', 'data_inici', 'data_fi'],
       computed: { inclou: { label: 'Inclou', fn: r => inclouText(r) }, estat: { label: 'Estat', fn: r => estatAgrupacio(r), color: r => ({ futur: 'c-taronja', actual: 'c-verd-suau', finalitzat: '' })[claAgrupacio(r)] } },
@@ -3186,16 +3188,26 @@ function cobramentPrevist(f) {
   if (dia) v = v.getDate() <= dia ? new Date(v.getFullYear(), v.getMonth(), dia, 12) : new Date(v.getFullYear(), v.getMonth() + 1, dia, 12);
   return ymd(v);
 }
+// un esborrany recurrent «sobra» si la seva agrupació s'ha donat de baixa o ha acabat abans del període facturat
+function motiuSobrant(f) {
+  if (f.origen !== 'recurrent' || !f.agrupacio_id) return '';
+  const a = C.get('agrupacions', f.agrupacio_id);
+  if (!a) return 'l’agrupació ja no existeix';
+  if (!a.actiu) return 'agrupació donada de baixa';
+  if (a.data_fi && f.periode_inici && a.data_fi < f.periode_inici) return 'agrupació acabada el ' + dmy(a.data_fi);
+  return '';
+}
 function renderFacturacio(main) {
   const st = state.fac, mesTria = `${st.any}-${String(st.mes).padStart(2, '0')}`;
   const nomMesDe = (/^[aeiou]/i.test(MESOS_CAT[Number(st.mes) - 1]) ? 'd’' : 'de ') + MESOS_CAT[Number(st.mes) - 1] + ' de ' + st.any;
   const factures = C.rows('factures').filter(r => r.actiu);
   const drafts = factures.filter(r => r.estat === 'esborrany').sort((a, b) => (a.data_factura + a.id).localeCompare(b.data_factura + b.id));
   const delMes = drafts.filter(r => String(r.data_factura || '').slice(0, 7) === mesTria), totalMes = delMes.reduce((t, r) => t + Number(r.total || 0), 0);
+  const sobrants = drafts.filter(r => motiuSobrant(r));
   const anys = []; for (let y = new Date().getFullYear() + 1; y >= new Date().getFullYear() - 2; y--) anys.push(String(y));
   const pendents = factures.filter(r => r.estat === 'emesa').sort((a, b) => String(a.data_venciment).localeCompare(String(b.data_venciment)));
   const sensePdf = factures.filter(r => r.estat !== 'esborrany' && !r.pdf);
-  const filaD = r => `<tr class="${String(r.data_factura || '').slice(0, 7) === mesTria ? '' : 'off'}"><td>${dmy(r.data_factura)}</td><td>${h(L('clients', r.client_id))}</td><td>${h(r.concepte)}</td><td class="hint">${r.periode_inici ? dmy(r.periode_inici) + ' – ' + dmy(r.periode_fi) : ''}</td><td class="num">${eur(r.base_imponible)}</td><td class="num">${eur(r.total)}</td><td>${dmy(cobramentPrevist(r))}</td>
+  const filaD = r => `<tr class="${String(r.data_factura || '').slice(0, 7) === mesTria ? '' : 'off'}"><td>${dmy(r.data_factura)}</td><td>${h(llocsFactura(r))}</td><td>${h(L('clients', r.client_id))}${motiuSobrant(r) ? `<br><b class="v-no">${h(motiuSobrant(r))}</b>` : ''}</td><td>${h(r.concepte)}</td><td class="hint">${r.periode_inici ? dmy(r.periode_inici) + ' – ' + dmy(r.periode_fi) : ''}</td><td class="num">${eur(r.base_imponible)}</td><td class="num">${eur(r.total)}</td><td>${dmy(cobramentPrevist(r))}</td>
     <td class="num"><button class="btn ghost small" data-obre="${r.id}">Obre</button> <button class="btn small" data-emet="${r.id}">Emet</button></td></tr>`;
   const filaP = r => `<tr><td>${h(r.numero_complet)}</td><td>${dmy(r.data_factura)}</td><td>${h(L('clients', r.client_id))}</td><td>${h(r.concepte)}</td><td class="num">${eur(r.total)}</td><td>${dmy(r.data_venciment)}</td>
     <td class="num"><button class="btn ghost small" data-obre="${r.id}">Obre</button> ${r.pdf ? `<button class="btn ghost small" data-pdf="${h(r.pdf)}">PDF</button>` : ''}</td></tr>`;
@@ -3210,10 +3222,12 @@ function renderFacturacio(main) {
       <button class="btn" id="genera">Genera els esborranys ${h(nomMesDe)}</button>
       <button class="btn ghost" id="emet-totes" ${drafts.length ? '' : 'disabled'}>Emet tots els esborranys (${drafts.length})</button>
       <button class="btn ghost" id="pdfs" ${sensePdf.length ? '' : 'disabled'}>Genera els PDF que faltin (${sensePdf.length})</button>
+      ${sobrants.length ? `<button class="btn danger" id="treu-sobrants">Treu els esborranys sobrants (${sobrants.length})</button>` : ''}
     </div>
+    ${sobrants.length ? `<p class="sub"><b class="v-no">${sobrants.length} esborran${sobrants.length === 1 ? 'y' : 'ys'} d’agrupacions donades de baixa o acabades</b>: es van crear abans de donar de baixa l’agrupació i no s’esborren sols. Surten marcats a la llista; «Treu els esborranys sobrants» els dona de baixa.</p>` : ''}
     ${st.avis && st.avis.length ? `<div class="msg err">Hi ha ${st.avis.length} agrupaci${st.avis.length === 1 ? 'ó' : 'ons'} amb mesos anteriors sense facturar; no se n’ha creat cap esborrany: tria aquell mes i genera’ls, o si ja estan facturats fora del programa posa «Facturat fins» a la fitxa de l’agrupació.<br>${st.avis.map(n => '· ' + h(n)).join('<br>')}</div>` : ''}
     <h3>Esborranys (${drafts.length})${drafts.length ? ` <span class="hint">· amb data ${h(nomMesDe)}: ${delMes.length} (${eur(totalMes)})${drafts.length > delMes.length ? '; els d’altres mesos surten en gris' : ''}</span>` : ''}</h3>
-    ${drafts.length ? `<table class="tbl"><thead><tr><th>Data factura</th><th>Client</th><th>Concepte</th><th>Període</th><th>Base</th><th>Total</th><th>Cobrament previst</th><th></th></tr></thead><tbody>${drafts.map(filaD).join('')}</tbody></table>` : '<div class="empty">Cap esborrany pendent.</div>'}
+    ${drafts.length ? `<table class="tbl"><thead><tr><th>Data factura</th><th>Lloc</th><th>Client</th><th>Concepte</th><th>Període</th><th>Base</th><th>Total</th><th>Cobrament previst</th><th></th></tr></thead><tbody>${drafts.map(filaD).join('')}</tbody></table>` : '<div class="empty">Cap esborrany pendent.</div>'}
     <h3>Emeses pendents de cobrar (${pendents.length})</h3>
     ${pendents.length ? `<table class="tbl"><thead><tr><th>Número</th><th>Data</th><th>Client</th><th>Concepte</th><th>Total</th><th>Venciment</th><th></th></tr></thead><tbody>${pendents.map(filaP).join('')}</tbody></table>` : '<div class="empty">Cap.</div>'}`;
   $('#fac-mes').addEventListener('change', e => { st.mes = e.target.value; renderMain(); });
@@ -3243,6 +3257,13 @@ function renderFacturacio(main) {
     const n = await generaPdfsPendents();
     toast(`${n} PDF generats`);
     renderMain();
+  });
+  const ts = $('#treu-sobrants'); if (ts) ts.addEventListener('click', async () => {
+    if (!confirm(`Donar de baixa ${sobrants.length} esborran${sobrants.length === 1 ? 'y' : 'ys'} d’agrupacions donades de baixa o acabades? No són factures emeses: només deixen de sortir.`)) return;
+    ts.disabled = true;
+    const r = await sb.from('factures').update({ actiu: false }).in('id', sobrants.map(x => x.id));
+    if (r.error) { toastErr(friendly(r.error)); ts.disabled = false; return; }
+    await loadTable('factures'); toast(`${sobrants.length} esborranys donats de baixa`); renderMain();
   });
   main.querySelectorAll('[data-pdf]').forEach(b => b.addEventListener('click', () => obreFitxer(b.dataset.pdf)));
   main.querySelectorAll('[data-emet]').forEach(b => b.addEventListener('click', () => emetFactura(Number(b.dataset.emet))));
@@ -4795,7 +4816,9 @@ async function toggleActiu(td) {
   const { error } = await sb.from(t).update({ actiu: !row.actiu }).eq('id', row.id);
   if (error) { showFormError(friendly(error)); return; }
   await loadTable(t);
-  state.editing = null; toast(row.actiu ? 'Donat de baixa' : 'Reactivat');
+  let extra = '';
+  if (row.actiu && td.enBaixa) { try { extra = (await td.enBaixa(row)) || ''; } catch (e) { toastErr(friendly(e)); } }
+  state.editing = null; toast((row.actiu ? 'Donat de baixa' : 'Reactivat') + extra);
   renderMain();
 }
 
