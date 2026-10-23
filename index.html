@@ -2062,7 +2062,7 @@ const C = {
   rows: t => cache[t] || [],
   get: (t, id) => { const pk = (SCHEMA.tables[t] || {}).pk; return pk ? (cache[t] || []).find(r => String(r[pk]) === String(id)) : (cache[t] || []).find(r => r.id === Number(id)); },
 };
-const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, pagProv: { vista: 'marca', data: '', q: '', fets: {}, pagades: false }, ft: { id: null, form: null, vista: 'llista', nou: null, fets: false }, marques: {}, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, calAcc: { vista: '', ref: '', meves: false, fetes: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
+const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, pagProv: { vista: 'marca', data: '', q: '', fets: {}, pagades: false }, ft: { id: null, form: null, vista: 'llista', nou: null, fets: false }, marques: {}, fac: { any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1) }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, calAcc: { vista: '', ref: '', meves: false, fetes: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
 const L = (t, id) => { const r = C.get(t, id); return r ? SCHEMA.tables[t].display(r, L) : ''; };
 
 /* =====================================================================
@@ -3179,33 +3179,44 @@ async function generaPdfsPendents() {
 }
 
 function renderFacturacio(main) {
+  const st = state.fac, mesTria = `${st.any}-${String(st.mes).padStart(2, '0')}`;
+  const nomMesDe = (/^[aeiou]/i.test(MESOS_CAT[Number(st.mes) - 1]) ? 'd’' : 'de ') + MESOS_CAT[Number(st.mes) - 1] + ' de ' + st.any;
   const factures = C.rows('factures').filter(r => r.actiu);
   const drafts = factures.filter(r => r.estat === 'esborrany').sort((a, b) => (a.data_factura + a.id).localeCompare(b.data_factura + b.id));
+  const delMes = drafts.filter(r => String(r.data_factura || '').slice(0, 7) === mesTria), totalMes = delMes.reduce((t, r) => t + Number(r.total || 0), 0);
+  const anys = []; for (let y = new Date().getFullYear() + 1; y >= new Date().getFullYear() - 2; y--) anys.push(String(y));
   const pendents = factures.filter(r => r.estat === 'emesa').sort((a, b) => String(a.data_venciment).localeCompare(String(b.data_venciment)));
   const sensePdf = factures.filter(r => r.estat !== 'esborrany' && !r.pdf);
-  const filaD = r => `<tr><td>${dmy(r.data_factura)}</td><td>${h(L('clients', r.client_id))}</td><td>${h(r.concepte)}</td><td class="num">${eur(r.base_imponible)}</td><td class="num">${eur(r.total)}</td>
+  const filaD = r => `<tr class="${String(r.data_factura || '').slice(0, 7) === mesTria ? '' : 'off'}"><td>${dmy(r.data_factura)}</td><td>${h(L('clients', r.client_id))}</td><td>${h(r.concepte)}</td><td class="hint">${r.periode_inici ? dmy(r.periode_inici) + ' – ' + dmy(r.periode_fi) : ''}</td><td class="num">${eur(r.base_imponible)}</td><td class="num">${eur(r.total)}</td>
     <td class="num"><button class="btn ghost small" data-obre="${r.id}">Obre</button> <button class="btn small" data-emet="${r.id}">Emet</button></td></tr>`;
   const filaP = r => `<tr><td>${h(r.numero_complet)}</td><td>${dmy(r.data_factura)}</td><td>${h(L('clients', r.client_id))}</td><td>${h(r.concepte)}</td><td class="num">${eur(r.total)}</td><td>${dmy(r.data_venciment)}</td>
     <td class="num"><button class="btn ghost small" data-obre="${r.id}">Obre</button> ${r.pdf ? `<button class="btn ghost small" data-pdf="${h(r.pdf)}">PDF</button>` : ''}</td></tr>`;
   main.innerHTML = `
     <h1>Facturació recurrent</h1>
-    <p>Genera els esborranys dels períodes que toquin, repassa'ls i emet. Un esborrany es pot obrir, corregir o donar de baixa; una factura emesa rep número i queda congelada.</p>
+    <p>Tria el mes i genera els esborranys: cada agrupació factura el període que comença aquell mes (per avançat), amb data del dia de facturació del seu client dins del mateix mes. Repassa'ls i emet. Un esborrany es pot obrir, corregir o donar de baixa; una factura emesa rep número i queda congelada.</p>
     <p class="sub">${(() => { const ag = C.rows('agrupacions').filter(a => a.actiu); const n = k => ag.filter(a => claAgrupacio(a) === k).length; return `Agrupacions: <b>${n('actual')} actuals</b> (són les que facturen), ${n('futur')} futures (sense data d’inici: no facturen) i ${n('finalitzat')} finalitzades.`; })()}</p>
     <div class="bar">
-      <button class="btn" id="genera">Genera els esborranys fins avui</button>
+      <span class="nota">Mes a facturar</span>
+      <select id="fac-mes" style="width:auto">${MESOS.map((m, i) => `<option value="${i + 1}" ${String(i + 1) === String(st.mes) ? 'selected' : ''}>${m}</option>`).join('')}</select>
+      <select id="fac-any" style="width:auto">${anys.map(y => `<option value="${y}" ${y === String(st.any) ? 'selected' : ''}>${y}</option>`).join('')}</select>
+      <button class="btn" id="genera">Genera els esborranys ${h(nomMesDe)}</button>
       <button class="btn ghost" id="emet-totes" ${drafts.length ? '' : 'disabled'}>Emet tots els esborranys (${drafts.length})</button>
       <button class="btn ghost" id="pdfs" ${sensePdf.length ? '' : 'disabled'}>Genera els PDF que faltin (${sensePdf.length})</button>
     </div>
-    <h3>Esborranys (${drafts.length})</h3>
-    ${drafts.length ? `<table class="tbl"><thead><tr><th>Data</th><th>Client</th><th>Concepte</th><th>Base</th><th>Total</th><th></th></tr></thead><tbody>${drafts.map(filaD).join('')}</tbody></table>` : '<div class="empty">Cap esborrany pendent.</div>'}
+    <h3>Esborranys (${drafts.length})${drafts.length ? ` <span class="hint">· amb data ${h(nomMesDe)}: ${delMes.length} (${eur(totalMes)})${drafts.length > delMes.length ? '; els d’altres mesos surten en gris' : ''}</span>` : ''}</h3>
+    ${drafts.length ? `<table class="tbl"><thead><tr><th>Data</th><th>Client</th><th>Concepte</th><th>Període</th><th>Base</th><th>Total</th><th></th></tr></thead><tbody>${drafts.map(filaD).join('')}</tbody></table>` : '<div class="empty">Cap esborrany pendent.</div>'}
     <h3>Emeses pendents de cobrar (${pendents.length})</h3>
     ${pendents.length ? `<table class="tbl"><thead><tr><th>Número</th><th>Data</th><th>Client</th><th>Concepte</th><th>Total</th><th>Venciment</th><th></th></tr></thead><tbody>${pendents.map(filaP).join('')}</tbody></table>` : '<div class="empty">Cap.</div>'}`;
+  $('#fac-mes').addEventListener('change', e => { st.mes = e.target.value; renderMain(); });
+  $('#fac-any').addEventListener('change', e => { st.any = e.target.value; renderMain(); });
   $('#genera').addEventListener('click', async () => {
     const b = $('#genera'); b.disabled = true;
-    const { data, error } = await sb.rpc('genera_factures_recurrents');
+    const abans = new Set(C.rows('factures').map(f => f.id));
+    const { data, error } = await sb.rpc('genera_factures_mes', { p_any: Number(st.any), p_mes: Number(st.mes) });
     if (error) { toastErr(friendly(error)); b.disabled = false; return; }
     await loadTable('factures');
-    toast(data ? `${data} esborranys nous` : 'Cap període pendent: no hi ha res a generar');
+    const noves = C.rows('factures').filter(f => !abans.has(f.id)), anteriors = noves.filter(f => String(f.data_factura || '').slice(0, 7) < mesTria).length;
+    toast(data ? `${data} esborranys nous ${nomMesDe}` + (anteriors ? ` (${anteriors} de períodes anteriors que faltaven, amb la data del seu mes)` : '') : `Cap esborrany nou: tot el que comença fins ${nomMesDe} ja està facturat`, anteriors ? 7000 : undefined);
     renderMain();
   });
   $('#emet-totes').addEventListener('click', async () => {
