@@ -1120,7 +1120,7 @@ const SCHEMA = {
         { key: 'poblacio', label: 'Població', type: 'text' },
         { key: 'telefon', label: 'Telèfon', type: 'text', hint: 'buit = el del gestor' },
         { key: 'email_facturacio', label: 'Email de facturació', type: 'email', hint: 'buit = el del gestor' },
-        { key: 'dia_facturacio', label: 'Dia del mes que s’emet', type: 'integer', min: 1, max: 28, required: true, default: 1 },
+        { key: 'dia_facturacio', label: 'Dia del mes que s’emet', type: 'integer', min: 1, max: 28, required: true, default: 5 },
         { key: 'termini_pagament_dies', label: 'Termini de pagament', type: 'select', num: true, options: OPT.termini, required: true, default: '30', hint: 'comptat des de la data de la factura' },
         { key: 'dia_pagament', label: 'Dia de pagament fix', type: 'integer', min: 1, max: 28, hint: 'si paguen sempre un dia concret del mes; buit si no' },
         { key: 'forma_pagament', label: 'Forma de pagament', type: 'select', options: OPT.forma_pagament, required: true, default: 'domiciliacio' },
