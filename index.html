@@ -3204,6 +3204,11 @@ function renderFacturacio(main) {
   const drafts = factures.filter(r => r.estat === 'esborrany').sort((a, b) => (a.data_factura + a.id).localeCompare(b.data_factura + b.id));
   const delMes = drafts.filter(r => String(r.data_factura || '').slice(0, 7) === mesTria), totalMes = delMes.reduce((t, r) => t + Number(r.total || 0), 0);
   const sobrants = drafts.filter(r => motiuSobrant(r));
+  // els esborranys recurrents del mes triat (pel període que facturen): es poden treure i tornar a generar
+  const recurrentsMes = drafts.filter(r => r.origen === 'recurrent' && r.agrupacio_id && String(r.periode_inici || '').slice(0, 7) === mesTria);
+  const tocatsAMa = recurrentsMes.filter(r => r.actualitzat_el && r.creat_el && new Date(r.actualitzat_el) - new Date(r.creat_el) > 60000).length;
+  const avisTocats = tocatsAMa ? `\n\nAtenció: ${tocatsAMa} d’aquests esborranys s’ha${tocatsAMa === 1 ? '' : 'n'} modificat a mà després de crear-l${tocatsAMa === 1 ? 'o' : 'os'} (import, concepte, data…): aquests canvis es perdran.` : '';
+  const treuRecurrents = async ids => { const { data, error } = await sb.rpc('treu_esborranys_recurrents', { p_ids: ids }); if (error) throw error; return Number(data) || 0; };
   const anys = []; for (let y = new Date().getFullYear() + 1; y >= new Date().getFullYear() - 2; y--) anys.push(String(y));
   const pendents = factures.filter(r => r.estat === 'emesa').sort((a, b) => String(a.data_venciment).localeCompare(String(b.data_venciment)));
   const sensePdf = factures.filter(r => r.estat !== 'esborrany' && !r.pdf);
@@ -3220,11 +3225,13 @@ function renderFacturacio(main) {
       <select id="fac-mes" style="width:auto">${MESOS.map((m, i) => `<option value="${i + 1}" ${String(i + 1) === String(st.mes) ? 'selected' : ''}>${m}</option>`).join('')}</select>
       <select id="fac-any" style="width:auto">${anys.map(y => `<option value="${y}" ${y === String(st.any) ? 'selected' : ''}>${y}</option>`).join('')}</select>
       <button class="btn" id="genera">Genera els esborranys ${h(nomMesDe)}</button>
+      ${recurrentsMes.length ? `<button class="btn ghost" id="regenera" title="Treu els esborranys recurrents d’aquest mes i els torna a crear amb les dades actuals">Torna a generar ${h(nomMesDe)} (${recurrentsMes.length})</button><button class="btn ghost" id="treu-mes">Treu els esborranys ${h(nomMesDe)} (${recurrentsMes.length})</button>` : ''}
       <button class="btn ghost" id="emet-totes" ${drafts.length ? '' : 'disabled'}>Emet tots els esborranys (${drafts.length})</button>
       <button class="btn ghost" id="pdfs" ${sensePdf.length ? '' : 'disabled'}>Genera els PDF que faltin (${sensePdf.length})</button>
       ${sobrants.length ? `<button class="btn danger" id="treu-sobrants">Treu els esborranys sobrants (${sobrants.length})</button>` : ''}
     </div>
-    ${sobrants.length ? `<p class="sub"><b class="v-no">${sobrants.length} esborran${sobrants.length === 1 ? 'y' : 'ys'} d’agrupacions donades de baixa o acabades</b>: es van crear abans de donar de baixa l’agrupació i no s’esborren sols. Surten marcats a la llista; «Treu els esborranys sobrants» els dona de baixa.</p>` : ''}
+    ${sobrants.length ? `<p class="sub"><b class="v-no">${sobrants.length} esborran${sobrants.length === 1 ? 'y' : 'ys'} d’agrupacions donades de baixa o acabades</b>: es van crear abans de donar de baixa l’agrupació i no s’esborren sols. Surten marcats a la llista; «Treu els esborranys sobrants» els esborra.</p>` : ''}
+    ${recurrentsMes.length ? `<p class="sub">Si en veus un error (un dia de facturació, un preu, un concepte…), corregeix-lo a la fitxa del client o de l’agrupació i prem «Torna a generar ${h(nomMesDe)}»: treu els ${recurrentsMes.length} esborranys recurrents d’aquest mes i els crea de nou amb les dades actuals. Les factures emeses i els esborranys manuals no es toquen.</p>` : ''}
     ${st.avis && st.avis.length ? `<div class="msg err">Hi ha ${st.avis.length} agrupaci${st.avis.length === 1 ? 'ó' : 'ons'} amb mesos anteriors sense facturar; no se n’ha creat cap esborrany: tria aquell mes i genera’ls, o si ja estan facturats fora del programa posa «Facturat fins» a la fitxa de l’agrupació.<br>${st.avis.map(n => '· ' + h(n)).join('<br>')}</div>` : ''}
     <h3>Esborranys (${drafts.length})${drafts.length ? ` <span class="hint">· amb data ${h(nomMesDe)}: ${delMes.length} (${eur(totalMes)})${drafts.length > delMes.length ? '; els d’altres mesos surten en gris' : ''}</span>` : ''}</h3>
     ${drafts.length ? `<table class="tbl"><thead><tr><th>Data factura</th><th>Lloc</th><th>Client</th><th>Concepte</th><th>Període</th><th>Base</th><th>Total</th><th>Cobrament previst</th><th></th></tr></thead><tbody>${drafts.map(filaD).join('')}</tbody></table>` : '<div class="empty">Cap esborrany pendent.</div>'}
@@ -3259,11 +3266,28 @@ function renderFacturacio(main) {
     renderMain();
   });
   const ts = $('#treu-sobrants'); if (ts) ts.addEventListener('click', async () => {
-    if (!confirm(`Donar de baixa ${sobrants.length} esborran${sobrants.length === 1 ? 'y' : 'ys'} d’agrupacions donades de baixa o acabades? No són factures emeses: només deixen de sortir.`)) return;
+    if (!confirm(`Esborrar ${sobrants.length} esborran${sobrants.length === 1 ? 'y' : 'ys'} d’agrupacions donades de baixa o acabades? No són factures emeses (no tenen número).`)) return;
     ts.disabled = true;
-    const r = await sb.from('factures').update({ actiu: false }).in('id', sobrants.map(x => x.id));
-    if (r.error) { toastErr(friendly(r.error)); ts.disabled = false; return; }
-    await loadTable('factures'); toast(`${sobrants.length} esborranys donats de baixa`); renderMain();
+    try { const n = await treuRecurrents(sobrants.map(x => x.id)); await loadTable('factures'); toast(`${n} esborranys esborrats`); renderMain(); }
+    catch (e) { toastErr(friendly(e)); ts.disabled = false; }
+  });
+  const tm = $('#treu-mes'); if (tm) tm.addEventListener('click', async () => {
+    if (!confirm(`Esborrar els ${recurrentsMes.length} esborranys recurrents ${nomMesDe}? No són factures emeses. Després els podràs tornar a generar.${avisTocats}`)) return;
+    tm.disabled = true;
+    try { const n = await treuRecurrents(recurrentsMes.map(x => x.id)); await loadTable('factures'); toast(`${n} esborranys esborrats`); renderMain(); }
+    catch (e) { toastErr(friendly(e)); tm.disabled = false; }
+  });
+  const rg = $('#regenera'); if (rg) rg.addEventListener('click', async () => {
+    if (!confirm(`Tornar a generar ${nomMesDe}? S’esborren els ${recurrentsMes.length} esborranys recurrents d’aquest mes i es creen de nou amb les dades actuals dels clients i les agrupacions (dia de facturació, preu, concepte, IVA).${avisTocats}`)) return;
+    rg.disabled = true;
+    try {
+      const n = await treuRecurrents(recurrentsMes.map(x => x.id));
+      const { data, error } = await sb.rpc('genera_factures_mes', { p_any: Number(st.any), p_mes: Number(st.mes) }); if (error) throw error;
+      await loadTable('factures');
+      const res = data && typeof data === 'object' ? data : { creades: Number(data) || 0, endarrerides: 0, noms: [] };
+      st.avis = res.endarrerides ? res.noms : null;
+      toast(`${n} esborranys esborrats i ${res.creades} creats de nou ${nomMesDe}`); renderMain();
+    } catch (e) { toastErr(friendly(e)); rg.disabled = false; }
   });
   main.querySelectorAll('[data-pdf]').forEach(b => b.addEventListener('click', () => obreFitxer(b.dataset.pdf)));
   main.querySelectorAll('[data-emet]').forEach(b => b.addEventListener('click', () => emetFactura(Number(b.dataset.emet))));
