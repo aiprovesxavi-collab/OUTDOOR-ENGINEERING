@@ -380,6 +380,11 @@
   .ic-panell .capsal{ font-size:15px; }
   .ic-detall > div{ font-size:15px; }
   .ic-docs{ border:1px solid var(--line-2); border-radius:10px; padding:10px 12px; margin:12px 0 4px; background:#fafbf9; }
+  /* «Fins ara»: el fil de tot el que s'ha dit i mostrat a la incidència */
+  .fil-e{ margin:4px 0 0; padding:4px 0 4px 10px; border-left:3px solid var(--line-2); font-size:14px; line-height:1.4; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .fil-e > b{ color:var(--ink); } .fil-e .fil-q{ font-size:12px; color:var(--ink-3); white-space:nowrap; }
+  .fil-e .ic-thumbs{ margin:4px 0 2px; gap:6px; } .fil-e .ic-mini{ width:84px; height:84px; border-radius:8px; }
+  .operari .fil-e{ font-size:17px; padding-left:12px; } .operari .fil-e .fil-q{ font-size:13px; } .operari .fil-e .ic-mini{ width:120px; height:120px; }
   .ic-docs .ic-thumbs{ gap:8px; margin:0 0 8px; } .ic-docs .ic-mini{ width:104px; height:104px; border-radius:8px; } .ic-docs .ic-mini.actual{ outline:3px solid var(--blue); outline-offset:1px; }
   .ic-docs .ic-doc{ font-size:14px; } .ic-docs .ic-doc.actual{ font-weight:600; color:var(--blue); }
   .ic-panell h4{ margin:14px 0 6px; font-size:13.5px; color:var(--ink-2); }
@@ -5311,13 +5316,35 @@ function adjuntsIncidencia(inc) {
   return grups;
 }
 const nAdjuntsInc = inc => adjuntsIncidencia(inc).reduce((n, g) => n + g.adjunts.length, 0);
-// el quadre de documents del panell: totes les fotos, vídeos i documents de la incidència, sense títols; els de l'acció oberta primer i marcats
+// el quadre de documents del panell: les fotos, vídeos i documents d'aquesta acció (els de la resta surten al fil «Fins ara», cadascun amb qui l'ha posat)
 function docsIncHTML(inc, a) {
-  const grups = adjuntsIncidencia(inc);
-  const propis = grups.filter(g => a && g.accio === a.id), altres = grups.filter(g => !a || g.accio !== a.id).sort((x, y) => String(y.data).localeCompare(String(x.data)));
-  const un = (x, g, actual) => { const t = `${g.titol} · ${dmyhm(g.data)} · ${x.nom}`; return x.tipus === 'foto' ? `<img class="ic-mini ${actual ? 'actual' : ''}" data-adj="${h(x.path)}" alt="${h(x.nom)}" title="${h(t)}">` : x.tipus === 'video' ? `<video class="ic-mini ${actual ? 'actual' : ''}" data-adj="${h(x.path)}" muted preload="metadata" title="${h(t)}"></video>` : `<a class="ic-doc ${actual ? 'actual' : ''}" data-adj="${h(x.path)}" href="#" title="${h(t)}">📄 ${h(x.nom.length > 18 ? x.nom.slice(0, 16) + '…' : x.nom)}</a>`; };
-  const tot = [...propis.flatMap(g => g.adjunts.map(x => un(x, g, true))), ...altres.flatMap(g => g.adjunts.map(x => un(x, g, false)))];
-  return tot.length ? `<div class="ic-thumbs">${tot.join('')}</div>` : '';
+  const adj = a && Array.isArray(a.adjunts) ? a.adjunts : [];
+  return adj.length ? `<div class="ic-thumbs">${miniaturesHTML(adj)}</div>` : '';
+}
+// «Fins ara»: tot el que han dit i mostrat els qui han participat a la incidència, per ordre de data: l'avís, l'obertura, el que es demana a cadascú,
+// cada resultat o resposta amb les seves fotos, i el tancament. Una línia per cosa: XA: text. (L'acció que s'està mirant no hi surt: ja es veu sencera.)
+function entradesFil(inc, actual) {
+  const e = [];
+  const treb = id => { const t = id ? C.get('treballadors', id) : null; return t ? { ini: inicialsTreballador(t) || nomCurtTreballador(t), nom: nomTreballador(t) } : null; };
+  const quiFa = x => x.responsable_treballador_id ? treb(x.responsable_treballador_id) : { ini: nomResponsable(x) || '?', nom: nomResponsable(x) || '' };
+  const aQui = x => x.responsable_treballador_id ? (treb(x.responsable_treballador_id) || {}).ini : nomResponsable(x);
+  reportsInc(inc).forEach(r => e.push({ data: r.data_hora, ini: 'Avís', nom: quiReporta(r), text: (quiReporta(r) ? quiReporta(r) + ': ' : '') + String(r.descripcio || ''), adjunts: Array.isArray(r.adjunts) ? r.adjunts : [], que: 'Report' }));
+  const tots = accionsVisibles(inc), obrir = tots.find(x => x.tipus === 'obrir');
+  const seg = treb(obrir && obrir.creat_per ? obrir.creat_per : inc.seguidora_id) || { ini: '—', nom: '' };
+  const adjObrir = obrir && Array.isArray(obrir.adjunts) ? obrir.adjunts : [];
+  if (inc.descripcio || adjObrir.length) e.push({ data: inc.data_obertura, ...seg, text: String(inc.descripcio || ''), adjunts: adjObrir, que: 'Obertura' });
+  tots.filter(x => !['obrir', 'assignar_seguidora', 'visibilitat_client'].includes(x.tipus) && !(actual && x.id === actual.id)).forEach(x => {
+    const tipus = nomTipus(x.tipus), fet = x.estat === 'finalitzada', adj = Array.isArray(x.adjunts) ? x.adjunts : [];
+    const demanat = [x.titol && x.titol !== tipus ? x.titol : '', x.descripcio || ''].filter(Boolean).join(' — ');
+    if (demanat && x.creat_per) e.push({ data: x.creat_el, ...(treb(x.creat_per) || { ini: '—', nom: '' }), a: aQui(x), text: demanat, adjunts: fet ? [] : adj, que: tipus });
+    if (fet && (x.resultat || x.decisio || adj.length)) e.push({ data: x.finalitzada_el || x.creat_el, ...quiFa(x), text: (x.decisio ? etiquetaOpt(INC.decisions, x.decisio) + (x.resultat ? ': ' : '') : '') + String(x.resultat || ''), adjunts: adj, que: tipus });
+    else if (!fet && adj.length && !demanat) e.push({ data: x.creat_el, ...quiFa(x), text: '', adjunts: adj, que: tipus + ' (en curs)' });
+  });
+  return e.sort((p, q) => String(p.data || '').localeCompare(String(q.data || '')));
+}
+function filIncHTML(inc, actual) {
+  const ents = entradesFil(inc, actual); if (!ents.length) return '';
+  return ents.map(x => `<div class="fil-e"><b title="${h(x.nom || '')}">${h(x.ini)}</b>${x.a ? ` <span class="hint">→ ${h(x.a)}</span>` : ''}${x.text ? ': ' + h(x.text) : ''} <span class="fil-q">· ${h(x.que)}${x.data ? ' · ' + dmyhm(x.data) : ''}</span>${x.adjunts.length ? `<div class="ic-thumbs">${miniaturesHTML(x.adjunts)}</div>` : ''}</div>`).join('');
 }
 function galeriaHTML(inc, compacta) {
   const grups = adjuntsIncidencia(inc);
@@ -5570,10 +5597,10 @@ function destinatariPeticio(inc, a) {
   if (creador && creador.actiu && (!t || creador.id !== t.id)) return creador;
   const seg = C.get('treballadors', inc.seguidora_id); return seg && (!t || seg.id !== t.id) ? seg : (creador || null);
 }
-function fotosOperariHTML(inc, potPujar) {
-  const grups = adjuntsIncidencia(inc);
-  if (!grups.length && !potPujar) return '';
-  return `<div class="ao-fila ao-fotos"><span class="l">Fotos i documents</span>${grups.map(g => `<div class="ic-gal-grup"><div class="ic-gal-cap">${h(g.titol)}</div><div class="ic-thumbs gran">${miniaturesHTML(g.adjunts)}</div></div>`).join('')}${potPujar ? `<label class="btn ghost small" style="cursor:pointer; margin-top:${grups.length ? 10 : 4}px">Afegeix fotos, vídeos o documents <input type="file" id="adj-fitxers" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx" style="display:none"></label>` : ''}</div>`;
+function fotosOperariHTML(inc, a, potPujar) {
+  const adj = a && Array.isArray(a.adjunts) ? a.adjunts : [];
+  if (!adj.length && !potPujar) return '';
+  return `<div class="ao-fila ao-fotos"><span class="l">Les teves fotos i documents</span>${adj.length ? `<div class="ic-thumbs gran">${miniaturesHTML(adj)}</div>` : ''}${potPujar ? `<label class="btn ghost small" style="cursor:pointer; margin-top:${adj.length ? 10 : 4}px">Afegeix fotos, vídeos o documents <input type="file" id="adj-fitxers" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx" style="display:none"></label>` : ''}</div>`;
 }
 function renderAccioOperari(main) {
   const st = state.inc, inc = C.get('incidencies', st.id), t = trebInc();
@@ -5598,10 +5625,10 @@ function renderAccioOperari(main) {
       <div class="ao-text">${h(titolPeticio || tp.nom)}</div></div>
     ${a.inici ? `<div class="ao-fila"><span class="l">Es pot començar</span><span class="ao-termini">${dmyhm(a.inici)}${iniciFutur(a) ? ' · programada' : ''}</span></div>` : ''}
     <div class="ao-fila"><span class="l">${a.inici ? 'Termini final' : 'Termini'}</span><span class="ao-termini ${foraTermini(a) && a.estat !== 'finalitzada' ? 'fora' : ''}">${a.venciment ? dmyhm(a.venciment) + (a.grup_termini ? ' · ' + h(etiquetaOpt(INC.grups, a.grup_termini)) : '') : '—'}</span></div>
-    ${inc.descripcio ? `<div class="ao-fila"><span class="l">Descripció de la incidència</span><div class="ao-desc">${h(inc.descripcio)}</div></div>` : ''}
-    ${a.resultat ? `<div class="ao-fila"><span class="l">${a.es_peticio ? 'Resposta' : 'Resultat'}</span><div class="ao-desc">${h(a.resultat)}</div></div>` : ''}
+    ${(() => { const fil = filIncHTML(inc, a); return fil ? `<div class="ao-fila ao-fil"><span class="l">Fins ara</span>${fil}</div>` : (inc.descripcio ? `<div class="ao-fila"><span class="l">Descripció de la incidència</span><div class="ao-desc">${h(inc.descripcio)}</div></div>` : ''); })()}
+    ${a.resultat ? `<div class="ao-fila"><span class="l">${a.es_peticio ? 'La teva resposta' : 'El teu resultat'}</span><div class="ao-desc">${h(a.resultat)}</div></div>` : ''}
     ${inc.observacions_internes || a.observacions_internes ? `<div class="ao-fila"><span class="l">Observacions internes</span><div class="ao-desc" style="font-size:16px">${h([inc.observacions_internes, a.observacions_internes].filter(Boolean).join('\n'))}</div></div>` : ''}
-    ${fotosOperariHTML(inc, !!a && inc.estat === 'oberta' && !!t && (socResponsable(a) || Number(a.gestor_id) === t.id))}
+    ${fotosOperariHTML(inc, a, !!a && inc.estat === 'oberta' && !!t && (socResponsable(a) || Number(a.gestor_id) === t.id))}
     ${a && accioAmbFull(a) ? (fullDeAccio(a) ? seccionsFullHTML(fullDeAccio(a)) + (a.estat === 'finalitzada' && potEditarFull(fullDeAccio(a)) ? `<div class="actions" style="margin:-8px 0 16px"><button type="button" class="btn ghost small" id="ft-fin-sol">Full totalment finalitzat…</button></div>` : '') : potCrearFullDe(a) ? obreFullHTML(a) : '') : ''}
     <aside class="ic-panell ao-panell" id="ic-panell"></aside>` : `<div class="empty">Ara mateix no tens cap acció en aquesta incidència${participaInc(inc, t) ? ', però hi has participat: a sota en tens tot el seguiment' : ''}.</div>`}
     ${araDepenHTML(inc, accionsVisibles(inc))}
@@ -5726,9 +5753,10 @@ function panellHTML(inc) {
       ${a.observacions ? `<div><span class="l">Observacions</span>${h(a.observacions)}</div>` : ''}
       ${a.observacions_internes && !client ? `<div><span class="l">Observacions internes</span>${h(a.observacions_internes)}</div>` : ''}
       ${!client ? `<div><span class="l">Visible al client</span>${a.visible_client ? 'sí' : 'no'}</div>` : ''}
+      ${(() => { if (client) return ''; const fil = filIncHTML(inc, a); return fil ? `<div class="ic-fil"><span class="l">Fins ara</span>${fil}</div>` : ''; })()}
       ${potActuar && ['pressupost', 'decisio_client'].includes(a.tipus) && pressupostosDelLloc(inc).length ? `<div><span class="l">Pressupost desat d’aquest lloc</span><select id="adj-pressupost" style="width:100%"><option value="">Vincula un pressupost desat…</option>${pressupostosDelLloc(inc).filter(p => !(a.adjunts || []).some(x => x.path && x.path === p.path)).map(p => `<option value="${p.taula}:${p.id}">${dmy(p.data)} · ${h(p.text)}</option>`).join('')}</select><span class="hint">el PDF del pressupost queda adjunt a l’acció sense haver-lo de pujar</span></div>` : ''}
     </div>
-    <div class="ic-docs">${docsIncHTML(inc, a)}${potActuar ? `<label class="btn ghost small" style="cursor:pointer">Afegeix fotos, vídeos o documents <input type="file" id="adj-fitxers" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx" style="display:none"></label>` : (nAdjuntsInc(inc) ? '' : '<span class="hint">Cap foto ni document.</span>')}</div>
+    <div class="ic-docs">${docsIncHTML(inc, a)}${potActuar ? `<label class="btn ghost small" style="cursor:pointer">Afegeix fotos, vídeos o documents <input type="file" id="adj-fitxers" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx" style="display:none"></label>` : ((a.adjunts || []).length ? '' : '<span class="hint">Cap foto ni document en aquesta acció.</span>')}</div>
     ${formOp ? '' : `<div class="actions ic-ops">${ops}</div>`}
     ${formHtml}`;
 }
