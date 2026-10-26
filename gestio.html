@@ -4969,11 +4969,11 @@ const INC = {
   // qui pot crear cada tipus: seguidora (de la incidència), oficina (admin o oficina), tecnic, operari
   qui: {
     obrir: ['seguidora'], assignar_seguidora: ['seguidora', 'oficina'], visibilitat_client: [],
-    diagnosticar: ['seguidora', 'tecnic', 'operari', 'oficina'], planificar: ['seguidora', 'tecnic', 'oficina'], consultar: ['seguidora', 'tecnic', 'operari', 'oficina'],
+    diagnosticar: ['seguidora', 'tecnic', 'oficina'], planificar: ['seguidora', 'tecnic', 'oficina'], consultar: ['seguidora', 'tecnic', 'operari', 'oficina'],
     demanar_preu: ['seguidora', 'tecnic', 'oficina'], pressupost: ['seguidora', 'tecnic', 'oficina'],
     demanar_instruccions: ['seguidora', 'tecnic', 'oficina'], decisio_client: ['seguidora', 'tecnic', 'oficina'], autoritzar_actuacio: ['seguidora', 'tecnic', 'oficina'],
     programar: ['seguidora', 'tecnic', 'oficina'], assignar: ['seguidora', 'tecnic', 'oficina'], executar: ['seguidora', 'tecnic', 'oficina'], demanar_material: ['seguidora', 'tecnic', 'oficina'],
-    registrar_resultat: ['seguidora', 'tecnic', 'operari', 'oficina'], conclusio: ['seguidora', 'tecnic', 'oficina'], tancar: ['seguidora'], reobrir: ['seguidora'],
+    registrar_resultat: ['seguidora', 'tecnic', 'oficina'], conclusio: ['seguidora', 'tecnic', 'oficina'], tancar: ['seguidora'], reobrir: ['seguidora'],
   },
   // de quin tipus d'acció se'n pot derivar quin altre (la matriu de transicions; s'amplia aquí)
   transicions: {
@@ -5661,7 +5661,7 @@ function panellHTML(inc) {
   const potActuar = !client && oberta && t && (socResponsable(a) || esSeguidora(inc) || esOficina(t));
   const extern = a.carril === 'client' || a.carril === 'proveidor' || a.carril === 'subcontractista';
   // derivar: la responsable de l'acció, la seguidora, l'oficina o un tècnic; els operaris només de les seves
-  const potDerivar = !!t && (socResponsable(a) || esSeguidora(inc) || esOficina(t) || carrilDeTreballador(t) === 'tecnic');
+  const potDerivar = !!t && carrilDeTreballador(t) !== 'operari' && (socResponsable(a) || esSeguidora(inc) || esOficina(t) || carrilDeTreballador(t) === 'tecnic');   // l'operari mai deriva: executa o fa peticions
   const derivables = oberta && !client && potDerivar ? (INC.transicions[a.tipus] || []).filter(tipus => potCrearTipus(inc, tipus)) : [];
   let ops = '';
   if (potActuar && a.estat === 'pendent') ops += `<button class="btn ghost small" data-op="comenca">Comença (en curs)</button> `;
@@ -5690,7 +5690,7 @@ function panellHTML(inc) {
       <div class="actions"><button class="btn" id="amp-ok">Demana</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div></div>`;
   if (formOp && formOp.tipus === 'adjunts') formHtml = '';
   return `<h3 class="ic-titol">${h(tp.nom)}${a.titol && a.titol !== tp.nom ? ' · ' + h(a.titol) : ''}</h3>
-    <div class="capsal"><span>Fase <b>${tp.fase} · ${h(INC.fases[tp.fase] || '')}</b></span><span>Carril <b>${h(etiquetaOpt(INC.carrils, a.carril))}</b></span><span>Estat <b>${INC.estats[ee]}</b></span>${foraTermini(a) ? '<span><b class="v-no">Fora de termini</b></span>' : ''}</div>
+    <div class="capsal"><span>Fase <b>${tp.fase}</b></span><span>Carril <b>${h(etiquetaOpt(INC.carrils, a.carril))}</b></span><span>Estat <b>${INC.estats[ee]}</b></span>${foraTermini(a) ? '<span><b class="v-no">Fora de termini</b></span>' : ''}</div>
     <div class="ic-detall">
       <div><span class="l">Responsable</span>${h(nomResponsable(a)) || '—'}${a.gestor_id && !client ? ` <span class="hint">· ho gestiona ${h(nomTreballador(C.get('treballadors', a.gestor_id)))}</span>` : ''}</div>
       <div><span class="l">Creada</span>${dmyhm(a.creat_el)} per ${h(inicialsTreballador(C.get('treballadors', a.creat_per)) || nomCurtTreballador(C.get('treballadors', a.creat_per)))}${origen ? ` · a partir de <a href="#" data-sel="${origen.id}">${origen.tipus === 'obrir' ? 'incidència' : h(nomTipus(origen.tipus))}</a>` : ''}</div>
@@ -5838,10 +5838,13 @@ function bindPanell(inc) {
       const r = await sb.from('incidencia_accions').update(canvis).eq('id', a.id); if (r.error) throw r.error;
       // el full de treball de l'acció queda totalment finalitzat amb l'acció; si l'oficina finalitza l'acció i el full no té cap jornada, el full queda obert
       const fullQuedaObert = !!fullA && !fullA.finalitzat && !fullAmbJornades;
+      // la feina de l'operari torna a qui la va demanar: la seva acció es reobre (o li queda «Registrar resultat»)
+      let retorn = '';
+      if (!a.es_peticio && a.carril === 'operari' && a.creat_per && Number(a.creat_per) !== t.id && (APP_NOMES_TASQUES || carrilDeTreballador(t) === 'operari')) { try { retorn = await retornaAlDemanant(inc, a, t, ara, resultat); } catch (e2) { toastErr('No s’ha pogut tornar la feina a qui la va demanar: ' + friendly(e2)); } }
       if (fullA && !fullA.finalitzat && fullAmbJornades) { const rf = await sb.from('fulls_treball').update({ finalitzat: true, finalitzat_el: ara, finalitzat_per: t.id, estat: 'finalitzat', resum: resultat || null }).eq('id', fullA.id); if (rf.error) throw rf.error; await loadTable('fulls_treball'); }
       await eventInc(inc.id, a.id, a.es_peticio ? 'resposta' : 'finalitzada', (canvis.decisio ? etiquetaOpt(INC.decisions, canvis.decisio) + ' · ' : '') + (resultat || '').slice(0, 200));
       await recarregaInc();
-      if (fullQuedaObert) toastErr('Acció finalitzada. El full de treball ' + (fullA.numero || '') + ' queda obert: no hi ha cap jornada apuntada.'); else toast(a.es_peticio ? 'Resposta registrada' : 'Acció finalitzada');
+      if (fullQuedaObert) toastErr('Acció finalitzada. El full de treball ' + (fullA.numero || '') + ' queda obert: no hi ha cap jornada apuntada.' + retorn); else toast((a.es_peticio ? 'Resposta registrada' : 'Acció finalitzada') + retorn, retorn ? 6000 : undefined);
       // acció pròpia acabada: s'ofereix de seguida encarregar el pas següent (una petició contestada torna a qui la va demanar)
       let potSeguir = !APP_NOMES_TASQUES && !a.es_peticio && inc.estat === 'oberta' && (INC.transicions[a.tipus] || []).some(k => potCrearTipus(inc, k));
       st.form = potSeguir ? { tipus: 'accio', origen: a.id, despres: true } : null;
@@ -5983,6 +5986,25 @@ async function retiraAccio(inc, a) {
     toast('Acció retirada');
     state.inc.sel = a.origen_accio_id || null; state.inc.form = null; renderMain();
   } catch (e) { errorInc(friendly(e)); }
+}
+// en acabar una feina, l'operari la torna a qui la va demanar: si aquella persona té l'acció d'origen (i és seva), es reobre;
+// si no (l'origen és l'obertura, o d'una altra persona), li queda una acció «Registrar resultat» amb el que ha dit l'operari
+async function retornaAlDemanant(inc, a, t, ara, resultat) {
+  const demanant = C.get('treballadors', a.creat_per); if (!demanant || !demanant.actiu) return '';
+  const origen = a.origen_accio_id ? C.get('incidencia_accions', a.origen_accio_id) : null;
+  const estructural = x => ['obrir', 'tancar', 'reobrir', 'assignar_seguidora', 'visibilitat_client'].includes(x.tipus);
+  if (origen && origen.actiu && !estructural(origen) && Number(origen.responsable_treballador_id) === demanant.id) {
+    if (origen.estat !== 'finalitzada') return '';   // encara la té oberta: ja li torna sola
+    const nota = `Reoberta el ${dmyhm(ara)}: ${nomCurtTreballador(t)} ha acabat «${a.titol && a.titol !== nomTipus(a.tipus) ? a.titol : nomTipus(a.tipus)}».`;
+    const r = await sb.from('incidencia_accions').update({ estat: 'en_curs', finalitzada_el: null, finalitzada_per: null, observacions: [origen.observacions, nota].filter(Boolean).join('\n') }).eq('id', origen.id); if (r.error) throw r.error;
+    await eventInc(inc.id, origen.id, 'reoberta', `Torna a ${nomTreballador(demanant)}: ${nomCurtTreballador(t)} ha acabat «${nomTipus(a.tipus)}»`);
+    return ` Torna a ${nomCurtTreballador(demanant)}: «${nomTipus(origen.tipus)}» s’ha reobert.`;
+  }
+  const dades = { incidencia_id: inc.id, tipus: 'registrar_resultat', carril: carrilDeResponsable(inc, demanant.id), titol: 'Revisar la feina: ' + (a.titol || nomTipus(a.tipus)), descripcio: resultat ? `Resultat de ${nomCurtTreballador(t)}: ${resultat}` : null, creat_per: t.id,
+    responsable_treballador_id: demanant.id, responsable_proveidor_id: null, responsable_contacte_id: null, gestor_id: null, estat: 'pendent', grup_termini: 'mig_termini', venciment: vencimentPerGrup('mig_termini').toISOString(), origen_accio_id: a.id, es_peticio: false, visible_client: false };
+  const r = await sb.from('incidencia_accions').insert(dades).select('id').single(); if (r.error) throw r.error;
+  await eventInc(inc.id, r.data.id, 'nova_accio', `Registrar resultat → ${nomTreballador(demanant)} (en acabar ${nomCurtTreballador(t)} «${nomTipus(a.tipus)}»)`);
+  return ` Torna a ${nomCurtTreballador(demanant)}: li queda «Registrar resultat».`;
 }
 async function operacio(inc, fn, accioId, tipusEvent, detall) {
   try { const r = await fn(); if (r.error) throw r.error; await eventInc(inc.id, accioId, tipusEvent, detall); await recarregaInc(); toast(detall); renderMain(); }
