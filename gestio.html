@@ -4937,29 +4937,29 @@ const INC = {
   // carril: clau, nom, color fort (quan hi ha accions obertes) i color suau (fons del carril)
   carrils: [['client', 'Client', '#7b4fb3', '#efe7f8'], ['operari', 'Operari', '#d9742b', '#fbeee3'], ['seguidora', 'Seguidora', '#2f7d4a', '#e4f1e8'], ['tecnic', 'Tècnic', '#2b5f8a', '#e5eef6'], ['subcontractista', 'Subcontractista', '#1f8a8a', '#e2f3f3'], ['proveidor', 'Proveïdor', '#8a6d3b', '#f3ede2']],
   // tipus que es poden encarregar en obrir la incidència (primer pas, amb termini)
-  primers: ['diagnosticar', 'pressupost', 'executar', 'planificar', 'programar', 'consultar'],
+  primers: ['diagnosticar', 'pressupost', 'autoritzar_actuacio', 'executar'],
   tipus: {
     obrir:                { nom: 'Obrir incidència', fase: 1, carril: 'seguidora' },
     assignar_seguidora:   { nom: 'Assignar seguidora', fase: 1, carril: 'seguidora', visibleClient: false },
     visibilitat_client:   { nom: 'Informació a disposició del client', fase: 1, carril: 'client', senseTermini: true }, // ja no es crea (la informació no és cap caixa del client); es manté per a les que hi hagués
-    diagnosticar:         { nom: 'Diagnosticar', fase: 2 },
-    planificar:           { nom: 'Planificar', fase: 2 },
-    consultar:            { nom: 'Consultar / demanar informació', fase: 2, peticio: true, visibleClient: false },
+    diagnosticar:         { nom: 'Anar a veure què passa', fase: 2 },
+    planificar:           { nom: 'Planificar', fase: 2, ocult: true },                                               // retirat: només per a accions antigues
+    consultar:            { nom: 'Petició', fase: 2, peticio: true, visibleClient: false, ocult: true },             // només les peticions dels operaris des de l'app
     demanar_preu:         { nom: 'Demanar preu', fase: 2, peticio: true, carril: 'proveidor', visibleClient: false },
+    autoritzar_actuacio:  { nom: 'Autoritzar actuació (sense pressupost)', fase: 2 },
     pressupost:           { nom: 'Elaborar pressupost', fase: 2 },
-    demanar_instruccions: { nom: 'Demanar instruccions al client', fase: 3, peticio: true, carril: 'client' },
+    demanar_instruccions: { nom: 'Demanar instruccions al client', fase: 3, peticio: true, carril: 'client', ocult: true },   // retirat
     decisio_client:       { nom: 'Decisió del client sobre el pressupost', fase: 3, peticio: true, carril: 'client' },
-    autoritzar_actuacio:  { nom: 'Autoritzar actuació', fase: 3 },
-    programar:            { nom: 'Programar feina', fase: 4 },
-    assignar:             { nom: 'Assignar feina', fase: 4 },
+    programar:            { nom: 'Programar feina', fase: 4, ocult: true },                                          // retirat
+    assignar:             { nom: 'Assignar feina', fase: 4, ocult: true },                                           // retirat
     executar:             { nom: 'Executar feina', fase: 4 },
     demanar_material:     { nom: 'Demanar material', fase: 4, peticio: true, carril: 'proveidor', visibleClient: false },
     registrar_resultat:   { nom: 'Registrar resultat', fase: 4 },
-    conclusio:            { nom: 'Documentar conclusió', fase: 5 },
+    conclusio:            { nom: 'Documentar conclusió', fase: 5, ocult: true },                                     // retirat: el resum final va al tancament
     tancar:               { nom: 'Tancar incidència', fase: 5, carril: 'seguidora' },
     reobrir:              { nom: 'Reobrir incidència', fase: 5, carril: 'seguidora' },
   },
-  fases: { 1: 'Obertura', 2: 'Diagnosi i planificació', 3: 'Decisió', 4: 'Assignació i execució', 5: 'Conclusió i tancament' },
+  fases: { 1: 'Obertura', 2: 'Diagnosi, autorització i pressupost', 3: 'Decisió del client', 4: 'Execució', 5: 'Tancament' },
   // qui pot crear cada tipus: seguidora (de la incidència), oficina (admin o oficina), tecnic, operari
   qui: {
     obrir: ['seguidora'], assignar_seguidora: ['seguidora', 'oficina'], visibilitat_client: [],
@@ -4971,24 +4971,24 @@ const INC = {
   },
   // de quin tipus d'acció se'n pot derivar quin altre (la matriu de transicions; s'amplia aquí)
   transicions: {
-    obrir: ['assignar_seguidora', 'diagnosticar', 'planificar', 'consultar', 'demanar_instruccions', 'programar', 'assignar', 'executar', 'conclusio'],
-    assignar_seguidora: ['diagnosticar', 'planificar', 'consultar'],
+    obrir: ['assignar_seguidora', 'diagnosticar', 'autoritzar_actuacio', 'pressupost', 'demanar_preu', 'executar', 'demanar_material'],
+    assignar_seguidora: ['diagnosticar', 'autoritzar_actuacio', 'pressupost', 'executar'],
     visibilitat_client: [],
-    diagnosticar: ['consultar', 'demanar_preu', 'pressupost', 'planificar', 'demanar_instruccions', 'autoritzar_actuacio', 'programar', 'assignar', 'executar', 'demanar_material', 'conclusio'],
-    planificar: ['consultar', 'demanar_preu', 'pressupost', 'demanar_instruccions', 'autoritzar_actuacio', 'programar', 'assignar', 'executar', 'demanar_material'],
-    consultar: ['consultar'],
+    diagnosticar: ['demanar_preu', 'pressupost', 'autoritzar_actuacio', 'executar', 'demanar_material'],
+    planificar: ['demanar_preu', 'pressupost', 'autoritzar_actuacio', 'executar', 'demanar_material'],
+    consultar: [],
     demanar_preu: [],
-    pressupost: ['decisio_client', 'demanar_instruccions', 'demanar_preu', 'consultar', 'programar', 'assignar', 'executar', 'demanar_material', 'conclusio'],
-    demanar_instruccions: ['autoritzar_actuacio', 'pressupost', 'programar', 'assignar', 'executar', 'conclusio'],
-    decisio_client: ['programar', 'assignar', 'executar', 'demanar_material', 'pressupost', 'conclusio'],
-    autoritzar_actuacio: ['programar', 'assignar', 'executar', 'demanar_material'],
-    programar: ['assignar', 'executar', 'demanar_material'],
-    assignar: ['executar', 'consultar', 'demanar_material'],
-    executar: ['consultar', 'demanar_preu', 'demanar_material', 'registrar_resultat', 'executar', 'conclusio'],
-    demanar_material: ['executar', 'assignar', 'programar', 'consultar'],
-    registrar_resultat: ['conclusio'],
+    autoritzar_actuacio: ['executar', 'demanar_material', 'demanar_preu'],
+    pressupost: ['decisio_client', 'demanar_preu', 'executar', 'demanar_material'],
+    demanar_instruccions: ['autoritzar_actuacio', 'pressupost', 'executar', 'demanar_material'],
+    decisio_client: ['executar', 'demanar_material', 'pressupost'],
+    programar: ['executar', 'demanar_material'],
+    assignar: ['executar', 'demanar_material'],
+    executar: ['demanar_preu', 'demanar_material', 'registrar_resultat', 'executar'],
+    demanar_material: ['executar'],
+    registrar_resultat: [],
     conclusio: [], tancar: [],
-    reobrir: ['diagnosticar', 'planificar', 'consultar', 'programar', 'assignar', 'executar'],
+    reobrir: ['diagnosticar', 'autoritzar_actuacio', 'pressupost', 'executar', 'demanar_material'],
   },
   grups: [['emergencia', 'Emergència: ara mateix'], ['molt_urgent', 'Molt urgent: avui'], ['forca_urgent', 'Força urgent: avui o demà'], ['mig_termini', 'Mig termini: una setmana'], ['urgencia_relativa', 'Urgència relativa: dues setmanes'], ['baixa', 'Baixa urgència: un mes']],
   motiusTancament: [['treball_executat', 'Treball executat'], ['resolt_sense_reparacio', 'Problema resolt sense reparació'], ['pressupost_rebutjat', 'Pressupost rebutjat'], ['client_no_interve', 'El client decideix no intervenir'], ['no_cal_actuacio', 'No cal actuació'], ['altres', 'Altres motius justificats']],
@@ -5704,7 +5704,7 @@ function panellHTML(inc) {
 }
 function formAccioHTML(inc, origen) {
   const st = state.inc, t = trebInc(), f = st.form;
-  let tipusPossibles = Object.keys(INC.tipus).filter(k => !['obrir', 'visibilitat_client', 'tancar', 'reobrir'].includes(k));
+  let tipusPossibles = Object.keys(INC.tipus).filter(k => !['obrir', 'visibilitat_client', 'tancar', 'reobrir'].includes(k) && !INC.tipus[k].ocult);
   if (origen) tipusPossibles = tipusPossibles.filter(k => (INC.transicions[origen.tipus] || []).includes(k));
   tipusPossibles = tipusPossibles.filter(k => potCrearTipus(inc, k));
   if (!tipusPossibles.length) return `<h3>Nova acció</h3><p class="v-no">Des d’aquesta acció no en pots derivar cap altra amb el teu rol.</p><div class="actions"><button class="btn ghost" id="panell-cancel">Tanca</button></div>`;
@@ -5713,7 +5713,7 @@ function formAccioHTML(inc, origen) {
   const tp = INC.tipus[tipus];
   const permesos = carrilsPermesos(tipus);
   let carril = f.carril || tp.carril || carrilDeResponsable(inc, t.id); if (!permesos.includes(carril)) carril = permesos[0];
-  const peticio = f.peticio != null ? f.peticio : !!tp.peticio;
+  const peticio = !!origen && !!tp.peticio;   // les peticions (preu, material, decisió del client) sempre deixen l'acció d'origen esperant
   const visible = f.visible != null ? f.visible : tp.visibleClient !== false;
   const grup = f.grup || (origen && origen.grup_termini) || 'mig_termini';
   const treballadors = C.rows('treballadors').filter(x => x.actiu).sort((a, b) => nomTreballador(a).localeCompare(nomTreballador(b), 'ca'));
@@ -5739,7 +5739,7 @@ function formAccioHTML(inc, origen) {
     ${carril !== 'client' ? `<div class="f"><span class="l">Es pot començar</span><input type="datetime-local" id="na-inici" value="${h(f.inici || '')}"><span class="hint">buit = de seguida. Si només es pot fer més endavant (al març, dijous vinent…), posa-hi la data: fins llavors queda <b>programada</b>, no oberta</span></div>
     <div class="f"><span class="l">Grup de termini</span><select id="na-grup">${INC.grups.map(g => `<option value="${g[0]}" ${g[0] === grup ? 'selected' : ''}>${h(g[1])}</option>`).join('')}</select></div>
     <div class="f"><span class="l">Termini final (venciment)</span><input type="datetime-local" id="na-venc" value="${h(venc || '')}">${origen && origen.venciment && peticio ? `<span class="hint">no pot passar del venciment de l’acció d’origen (${dmyhm(origen.venciment)})</span>` : ''}</div>` : '<p class="hint">Les accions del client no tenen termini.</p>'}
-    ${origen ? `<label class="chk" style="padding:0"><input type="checkbox" id="na-peticio" ${peticio ? 'checked' : ''}> És una petició: «${h(nomTipus(origen.tipus))}» queda esperant la resposta</label>` : ''}
+    ${peticio ? `<p class="hint" style="margin:0">És una petició: «${h(nomTipus(origen.tipus))}» queda esperant la resposta, que tornarà a qui l’ha demanada.</p>` : ''}
     <label class="chk" style="padding:0"><input type="checkbox" id="na-visible" ${visible ? 'checked' : ''}> Visible al client</label>
     <div class="f"><span class="l">Observacions internes</span><textarea lang="ca" spellcheck="true" id="na-int">${h(f.int || '')}</textarea><span class="hint">${NOTA_INTERNES}</span></div>
     <div class="actions"><button class="btn" id="na-ok">${f.despres ? 'Encarrega' : 'Crea l’acció'}</button><button class="btn ghost" id="panell-cancel">${f.despres ? 'No cal res més' : 'Cancel·la'}</button></div>`;
@@ -5756,9 +5756,9 @@ async function marcaPressupostDecidit(accio, aprovat) {
   }
 }
 function seguentHabitual(origen) {
-  if (origen.tipus === 'pressupost') { const dec = C.rows('incidencia_accions').find(x => x.actiu && Number(x.origen_accio_id) === origen.id && x.tipus === 'decisio_client' && x.estat === 'finalitzada'); return dec && dec.decisio === 'aprovat' ? 'executar' : dec && dec.decisio === 'rebutjat' ? 'conclusio' : 'decisio_client'; }
-  if (origen.tipus === 'decisio_client') return origen.decisio === 'rebutjat' ? 'conclusio' : origen.decisio === 'modificacions' ? 'pressupost' : 'executar';
-  return { obrir: 'diagnosticar', reobrir: 'diagnosticar', diagnosticar: 'pressupost', planificar: 'executar', demanar_instruccions: 'executar', autoritzar_actuacio: 'executar', programar: 'assignar', assignar: 'executar', demanar_material: 'executar', executar: 'registrar_resultat', registrar_resultat: 'conclusio' }[origen.tipus] || null;
+  if (origen.tipus === 'pressupost') { const dec = C.rows('incidencia_accions').find(x => x.actiu && Number(x.origen_accio_id) === origen.id && x.tipus === 'decisio_client' && x.estat === 'finalitzada'); return dec && dec.decisio === 'aprovat' ? 'executar' : dec && dec.decisio === 'rebutjat' ? null : 'decisio_client'; }
+  if (origen.tipus === 'decisio_client') return origen.decisio === 'modificacions' ? 'pressupost' : 'executar';
+  return { obrir: 'diagnosticar', reobrir: 'diagnosticar', diagnosticar: 'pressupost', planificar: 'executar', demanar_instruccions: 'executar', autoritzar_actuacio: 'executar', programar: 'executar', assignar: 'executar', demanar_material: 'executar', executar: 'registrar_resultat' }[origen.tipus] || null;
 }
 function bindPanell(inc) {
   const st = state.inc, p = $('#ic-panell'), t = trebInc();
@@ -5842,7 +5842,8 @@ function bindPanell(inc) {
           if (!rp.error) { await eventInc(inc.id, pres.id, 'finalitzada', aprovat ? 'Pressupost aprovat pel client' : 'Pressupost rebutjat pel client'); await marcaPressupostDecidit(pres, aprovat); await recarregaInc(); }
         }
         const origenSeg = pres && pres.tipus === 'pressupost' ? pres.id : a.id;
-        st.form = { tipus: 'accio', origen: origenSeg, despres: true, tipusSel: aprovat ? 'executar' : 'conclusio', avis: aprovat ? 'Pressupost aprovat pel client. Encarrega ara la feina (Executar feina o Assignar feina) o demana el material al proveïdor (Demanar material).' : 'Pressupost rebutjat pel client. Documenta la conclusió (o encarrega el que calgui) i després tanca la incidència.' };
+        if (aprovat) st.form = { tipus: 'accio', origen: origenSeg, despres: true, tipusSel: 'executar', avis: 'Pressupost aprovat pel client. Encarrega ara la feina (Executar feina) o demana el material al proveïdor (Demanar material).' };
+        else { st.form = null; st.sel = origenSeg; toastErr('Pressupost rebutjat pel client. Si no cal fer res més, tanca la incidència amb el motiu «Pressupost rebutjat»; si no, deriva el que calgui des del pressupost.'); }
       }
       renderMain();
     } catch (e) { finOk.disabled = false; errorInc(friendly(e)); }
@@ -5922,7 +5923,7 @@ function bindPanell(inc) {
       const dades = { incidencia_id: inc.id, tipus: f.tipusSel, carril: f.carril, titol: f.titol.trim(), descripcio: f.desc.trim() || null, creat_per: t.id,
         responsable_treballador_id: extern ? null : Number(f.resp), responsable_proveidor_id: f.carril === 'proveidor' || f.carril === 'subcontractista' ? Number(f.resp) : null, responsable_contacte_id: f.carril === 'client' ? Number(f.resp) : null,
         gestor_id: extern ? Number(f.gestor || t.id) : null, estat: 'pendent', grup_termini: f.carril === 'client' ? null : f.grup, venciment: f.carril === 'client' ? null : deLocalDT(f.venciment), inici: f.carril !== 'client' && f.inici ? deLocalDT(f.inici) : null,
-        origen_accio_id: origen ? origen.id : null, es_peticio: origen ? !!f.peticio : false, visible_client: !!f.visible, observacions_internes: f.int.trim() || null };
+        origen_accio_id: origen ? origen.id : null, es_peticio: !!origen && !!tp.peticio, visible_client: !!f.visible, observacions_internes: f.int.trim() || null };
       $('#na-ok').disabled = true;
       try {
         if (f.tipusSel === 'assignar_seguidora') { Object.assign(dades, { estat: 'finalitzada', finalitzada_el: new Date().toISOString(), finalitzada_per: t.id, resultat: 'Nova seguidora: ' + nomTreballador(C.get('treballadors', Number(f.resp))), grup_termini: null, venciment: null }); }
@@ -6092,7 +6093,7 @@ function renderCalendariAccions(main) {
     cos = `${capDies}${setmanaHTML(items, dl, { setmana: true })}
       <div class="ca-llista"><h3>${delaSetmana.length} ${delaSetmana.length === 1 ? 'acció' : 'accions'} aquesta setmana</h3>${delaSetmana.map(x => `<div class="ic-targeta ${x.vencuda ? 'fora' : ''}" data-accio="${x.a.id}" style="border-left-color:${colorAccio(x.a.tipus)}"><b>${h(nomTipus(x.a.tipus))}</b>${x.a.titol && x.a.titol !== nomTipus(x.a.tipus) ? ' · ' + h(x.a.titol) : ''} · ${h(x.inc.numero)} ${h(x.inc.titol)}<br><span class="hint">${h(llocInc(x.inc).nom || '')} · ${h(nomResponsable(x.a))} · del ${dmy(x.inici)} ${x.a.venciment ? 'al ' + dmyhm(x.a.venciment) : '(sense termini)'}${x.vencuda ? ' · <b class="v-no">fora de termini</b>' : ''}${x.feta ? ' · finalitzada' : ''}</span></div>`).join('') || '<div class="empty">Cap acció en aquesta setmana.</div>'}</div>`;
   }
-  const llegenda = [1, 2, 3, 4, 5].map(f => `<span class="fase">F${f} ${h(INC.fases[f])}:</span>` + Object.keys(INC.tipus).filter(k => INC.tipus[k].fase === f && !['obrir', 'tancar', 'reobrir', 'visibilitat_client'].includes(k)).map(k => `<span style="background:${colorAccio(k)}; color:${textSobre(colorAccio(k))}">${h(INC.tipus[k].nom)}</span>`).join('')).join('<br>');
+  const llegenda = [1, 2, 3, 4, 5].map(f => `<span class="fase">F${f} ${h(INC.fases[f])}:</span>` + Object.keys(INC.tipus).filter(k => INC.tipus[k].fase === f && !['obrir', 'tancar', 'reobrir', 'visibilitat_client'].includes(k) && (!INC.tipus[k].ocult || C.rows('incidencia_accions').some(a => a.actiu && a.tipus === k))).map(k => `<span style="background:${colorAccio(k)}; color:${textSobre(colorAccio(k))}">${h(INC.tipus[k].nom)}</span>`).join('')).join('<br>');
   main.innerHTML = `<h1>Calendari d’accions</h1>
     <p class="sub">${APP_NOMES_TASQUES ? 'Les teves accions (les que tens assignades, gestiones o has demanat): cada franja va de quan es va demanar fins al termini; un color per tipus. Toca una franja per veure què es demana.' : 'Cada franja és una acció, de quan es va demanar fins al termini; un color per tipus (una gamma per fase). Clica una franja per veure què es demana.'} Amb vora vermella, fora de termini; ratllades, sense termini (fins avui).</p>
     <div class="bar">
