@@ -372,15 +372,21 @@
   .ic-doc{ font-size:11.5px; border:1px solid var(--line-2); border-radius:4px; padding:2px 6px; background:#fff; text-decoration:none; color:var(--ink); }
   .ic-mes{ font-size:11.5px; color:var(--ink-2); align-self:center; }
   .ic-fletxes{ position:absolute; left:0; top:0; pointer-events:none; z-index:2; overflow:visible; }
-  .ic-panell{ position:fixed; right:0; top:0; bottom:0; width:400px; max-width:100%; z-index:40; background:#fff; border-left:1px solid var(--line-2); box-shadow:-6px 0 24px rgba(0,0,0,.12); padding:14px 18px 24px; overflow:auto; font-size:14px; }
+  .ic-panell{ position:fixed; right:0; top:0; bottom:0; width:420px; max-width:100%; z-index:40; background:#fff; border-left:1px solid var(--line-2); box-shadow:-6px 0 24px rgba(0,0,0,.12); padding:14px 18px 24px; overflow:auto; font-size:15px; }
   .ic-panell[hidden]{ display:none; }
   .ic-panell .ic-tanca{ position:absolute; right:10px; top:8px; border:0; background:transparent; font-size:22px; line-height:1; cursor:pointer; color:var(--ink-2); padding:4px 8px; }
   .ic-panell h3{ margin:0 36px 8px 0; font-size:16px; color:var(--ink); }
+  .ic-panell h3.ic-titol{ font-size:22px; font-weight:700; line-height:1.25; margin-bottom:10px; }
+  .ic-panell .capsal{ font-size:15px; }
+  .ic-detall > div{ font-size:15px; }
+  .ic-docs{ border:1px solid var(--line-2); border-radius:10px; padding:10px 12px; margin:12px 0 4px; background:#fafbf9; }
+  .ic-docs .ic-thumbs{ gap:8px; margin:0 0 8px; } .ic-docs .ic-mini{ width:104px; height:104px; border-radius:8px; } .ic-docs .ic-mini.actual{ outline:3px solid var(--blue); outline-offset:1px; }
+  .ic-docs .ic-doc{ font-size:14px; } .ic-docs .ic-doc.actual{ font-weight:600; color:var(--blue); }
   .ic-panell h4{ margin:14px 0 6px; font-size:13.5px; color:var(--ink-2); }
   .ic-panell .f{ margin-bottom:10px; }
   .ic-panell .capsal{ gap:4px 16px; margin-bottom:10px; }
   .ic-detall > div{ margin-bottom:8px; }
-  .ic-detall .l{ display:block; font-size:12px; color:var(--ink-3); }
+  .ic-detall .l{ display:block; font-size:12.5px; color:var(--ink-3); }
   .ic-ops{ margin-top:12px; gap:6px; }
   .ic-form{ margin-top:12px; padding-top:10px; border-top:1px solid var(--line); }
   .ic-llegenda{ display:flex; flex-wrap:wrap; gap:5px; margin:6px 0 10px; }
@@ -5289,6 +5295,14 @@ function adjuntsIncidencia(inc) {
   return grups;
 }
 const nAdjuntsInc = inc => adjuntsIncidencia(inc).reduce((n, g) => n + g.adjunts.length, 0);
+// el quadre de documents del panell: totes les fotos, vídeos i documents de la incidència, sense títols; els de l'acció oberta primer i marcats
+function docsIncHTML(inc, a) {
+  const grups = adjuntsIncidencia(inc);
+  const propis = grups.filter(g => a && g.accio === a.id), altres = grups.filter(g => !a || g.accio !== a.id).sort((x, y) => String(y.data).localeCompare(String(x.data)));
+  const un = (x, g, actual) => { const t = `${g.titol} · ${dmyhm(g.data)} · ${x.nom}`; return x.tipus === 'foto' ? `<img class="ic-mini ${actual ? 'actual' : ''}" data-adj="${h(x.path)}" alt="${h(x.nom)}" title="${h(t)}">` : x.tipus === 'video' ? `<video class="ic-mini ${actual ? 'actual' : ''}" data-adj="${h(x.path)}" muted preload="metadata" title="${h(t)}"></video>` : `<a class="ic-doc ${actual ? 'actual' : ''}" data-adj="${h(x.path)}" href="#" title="${h(t)}">📄 ${h(x.nom.length > 18 ? x.nom.slice(0, 16) + '…' : x.nom)}</a>`; };
+  const tot = [...propis.flatMap(g => g.adjunts.map(x => un(x, g, true))), ...altres.flatMap(g => g.adjunts.map(x => un(x, g, false)))];
+  return tot.length ? `<div class="ic-thumbs">${tot.join('')}</div>` : '';
+}
 function galeriaHTML(inc, compacta) {
   const grups = adjuntsIncidencia(inc);
   if (!grups.length) return '<p class="hint">Encara no hi ha cap foto, vídeo ni document.</p>';
@@ -5668,18 +5682,18 @@ function panellHTML(inc) {
       ${extern ? `<div class="f"><span class="l">Rebuda el (si és diferent d’ara)</span><input type="datetime-local" id="fin-recepcio"></div>` : ''}
       ${a.es_peticio && (socCreador(a) || Number(a.gestor_id) === (t || {}).id) ? `<label class="chk" style="padding:0"><input type="checkbox" id="fin-resol" checked> Dono la resposta per suficient (la petició queda resolta)</label>` : ''}
       <div class="f"><span class="l">Fotos, vídeos, documents${Array.isArray(a.adjunts) && a.adjunts.length ? ' (ja n’hi ha ' + a.adjunts.length + ')' : ''}</span><input type="file" id="fin-fitxers" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx"></div>
-      ${pressupostosDelLloc(inc).length ? `<div class="f"><span class="l">O un pressupost desat d’aquest lloc</span><select id="fin-pressupost"><option value="">—</option>${pressupostosDelLloc(inc).filter(p => !(a.adjunts || []).some(x => x.path && x.path === p.path)).map(p => `<option value="${p.taula}:${p.id}">${dmy(p.data)} · ${h(p.text)}</option>`).join('')}</select></div>` : ''}
+      ${['pressupost', 'decisio_client'].includes(a.tipus) && pressupostosDelLloc(inc).length ? `<div class="f"><span class="l">O un pressupost desat d’aquest lloc</span><select id="fin-pressupost"><option value="">—</option>${pressupostosDelLloc(inc).filter(p => !(a.adjunts || []).some(x => x.path && x.path === p.path)).map(p => `<option value="${p.taula}:${p.id}">${dmy(p.data)} · ${h(p.text)}</option>`).join('')}</select></div>` : ''}
       ${pend.length ? `<p class="v-no">Aquesta acció espera ${pend.length} ${pend.length === 1 ? 'resposta' : 'respostes'}: no es pot finalitzar fins que les donis per suficients.</p>` : ''}
       <div class="actions"><button class="btn" id="fin-ok" ${pend.length ? 'disabled' : ''}>${a.es_peticio ? 'Confirma la resposta' : 'Confirma: finalitzada'}</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div></div>`;
   if (formOp && formOp.tipus === 'ampliacio') formHtml = `<div class="ic-form"><h4>Ampliació de termini</h4><p class="sub">Termini actual: ${dmyhm(a.venciment)}. La decideix la seguidora; mentrestant el termini continua comptant.</p>
       <div class="f"><span class="l">Nou termini</span><input type="datetime-local" id="amp-venc" value="${aLocalDT(a.venciment)}"></div><div class="f"><span class="l">Motiu</span><textarea lang="ca" spellcheck="true" id="amp-motiu"></textarea></div>
       <div class="actions"><button class="btn" id="amp-ok">Demana</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div></div>`;
   if (formOp && formOp.tipus === 'adjunts') formHtml = '';
-  return `<h3>${h(tp.nom)}${a.titol && a.titol !== tp.nom ? ' · ' + h(a.titol) : ''}</h3>
+  return `<h3 class="ic-titol">${h(tp.nom)}${a.titol && a.titol !== tp.nom ? ' · ' + h(a.titol) : ''}</h3>
     <div class="capsal"><span>Fase <b>${tp.fase} · ${h(INC.fases[tp.fase] || '')}</b></span><span>Carril <b>${h(etiquetaOpt(INC.carrils, a.carril))}</b></span><span>Estat <b>${INC.estats[ee]}</b></span>${foraTermini(a) ? '<span><b class="v-no">Fora de termini</b></span>' : ''}</div>
     <div class="ic-detall">
       <div><span class="l">Responsable</span>${h(nomResponsable(a)) || '—'}${a.gestor_id && !client ? ` <span class="hint">· ho gestiona ${h(nomTreballador(C.get('treballadors', a.gestor_id)))}</span>` : ''}</div>
-      <div><span class="l">Creada</span>${dmyhm(a.creat_el)} per ${h(nomCurtTreballador(C.get('treballadors', a.creat_per)))}${origen ? ` · a partir de <a href="#" data-sel="${origen.id}">${h(nomTipus(origen.tipus))}</a>` : ''}</div>
+      <div><span class="l">Creada</span>${dmyhm(a.creat_el)} per ${h(inicialsTreballador(C.get('treballadors', a.creat_per)) || nomCurtTreballador(C.get('treballadors', a.creat_per)))}${origen ? ` · a partir de <a href="#" data-sel="${origen.id}">${origen.tipus === 'obrir' ? 'incidència' : h(nomTipus(origen.tipus))}</a>` : ''}</div>
       ${a.inici ? `<div><span class="l">Es pot començar</span>${dmyhm(a.inici)}${iniciFutur(a) ? ' · <b>programada</b>: fins llavors no compta com a oberta' : ''}</div>` : ''}
       <div><span class="l">${a.inici ? 'Termini final' : 'Termini'}</span>${a.venciment ? dmyhm(a.venciment) + (a.grup_termini ? ' · ' + h(etiquetaOpt(INC.grups, a.grup_termini)) : '') : (a.carril === 'client' ? 'sense termini (acció del client)' : '—')}</div>
       ${(() => { const f = fullDeAccio(a); return f ? `<div><span class="l">Full de treball</span><a href="#" data-obre-full="${f.id}">${h(f.numero || 'full')}</a> · ${h(ESTATS_FULL[f.estat] || f.estat)} · ${jornadesFull(f.id).length} jornad${jornadesFull(f.id).length === 1 ? 'a' : 'es'} (${String(horesFull(f.id)).replace('.', ',')} h × persones) · ${materialFull(f.id).length} de material${f.albara_id ? ' · albarà ' + h((C.get('albarans', f.albara_id) || {}).numero_complet || '') : ''}</div>` : (!client && accioAmbFull(a) ? `<div><span class="l">Full de treball</span><a href="#" data-crea-full="${a.id}">crea’l</a> <span class="hint">(les accions d’operari noves ja el tenen)</span></div>` : ''); })()}
@@ -5694,11 +5708,9 @@ function panellHTML(inc) {
       ${a.observacions ? `<div><span class="l">Observacions</span>${h(a.observacions)}</div>` : ''}
       ${a.observacions_internes && !client ? `<div><span class="l">Observacions internes</span>${h(a.observacions_internes)}</div>` : ''}
       ${!client ? `<div><span class="l">Visible al client</span>${a.visible_client ? 'sí' : 'no'}</div>` : ''}
-      ${Array.isArray(a.adjunts) && a.adjunts.length ? `<div><span class="l">Adjunts</span><div class="ic-thumbs gran">${miniaturesHTML(a.adjunts)}</div></div>` : ''}
-      ${potActuar ? `<div><label class="btn ghost small" style="cursor:pointer">Adjunta fitxers <input type="file" id="adj-fitxers" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx" style="display:none"></label></div>` : ''}
-      ${potActuar && pressupostosDelLloc(inc).length ? `<div><span class="l">Pressupost desat d’aquest lloc</span><select id="adj-pressupost" style="width:100%"><option value="">Vincula un pressupost desat…</option>${pressupostosDelLloc(inc).filter(p => !(a.adjunts || []).some(x => x.path && x.path === p.path)).map(p => `<option value="${p.taula}:${p.id}">${dmy(p.data)} · ${h(p.text)}</option>`).join('')}</select><span class="hint">el PDF del pressupost queda adjunt a l’acció sense haver-lo de pujar</span></div>` : ''}
+      ${potActuar && ['pressupost', 'decisio_client'].includes(a.tipus) && pressupostosDelLloc(inc).length ? `<div><span class="l">Pressupost desat d’aquest lloc</span><select id="adj-pressupost" style="width:100%"><option value="">Vincula un pressupost desat…</option>${pressupostosDelLloc(inc).filter(p => !(a.adjunts || []).some(x => x.path && x.path === p.path)).map(p => `<option value="${p.taula}:${p.id}">${dmy(p.data)} · ${h(p.text)}</option>`).join('')}</select><span class="hint">el PDF del pressupost queda adjunt a l’acció sense haver-lo de pujar</span></div>` : ''}
     </div>
-    <details class="ic-galeria" ${a.estat !== 'finalitzada' ? 'open' : ''}><summary>Fotos i documents de tota la incidència (${nAdjuntsInc(inc)})</summary>${galeriaHTML(inc, true)}</details>
+    <div class="ic-docs">${docsIncHTML(inc, a)}${potActuar ? `<label class="btn ghost small" style="cursor:pointer">Afegeix fotos, vídeos o documents <input type="file" id="adj-fitxers" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx" style="display:none"></label>` : (nAdjuntsInc(inc) ? '' : '<span class="hint">Cap foto ni document.</span>')}</div>
     ${formOp ? '' : `<div class="actions ic-ops">${ops}</div>`}
     ${formHtml}`;
 }
