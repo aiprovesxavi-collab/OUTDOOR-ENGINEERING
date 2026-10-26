@@ -5650,25 +5650,26 @@ function panellOperariHTML(inc) {
   let ops = '';
   if (potActuar && a.estat === 'pendent') ops += `<button class="btn ghost" data-op="comenca">Comença l’acció</button>`;
   if (potActuar && a.estat !== 'finalitzada' && dest && !a.es_peticio) ops += `<button class="btn ghost" data-op="peticio">Fes una petició a ${h(dest.nom)}…</button>`;
-  if (potActuar && a.estat !== 'finalitzada') ops += `<button class="btn" data-op="finalitza">${a.es_peticio ? 'Respon…' : 'Acció totalment finalitzada…'}</button>`;
   if (a.estat === 'finalitzada') ops += `<span class="hint">${a.es_peticio ? 'Resposta enviada' : 'Acció finalitzada'}${a.finalitzada_el ? ' el ' + dmyhm(a.finalitzada_el) : ''}.</span>`;
   let form = '';
+  // finalitzar és un sol pas: el resum s'escriu aquí mateix i es confirma amb el botó
+  const fo = formOp && formOp.tipus === 'finalitza' ? formOp : {}, mostraFin = potActuar && a.estat !== 'finalitzada' && (!formOp || formOp.tipus === 'finalitza');
   const fullA = !a.es_peticio ? fullDeAccio(a) : null, potObrirFull = !fullA && !a.es_peticio && accioAmbFull(a) && potCrearFullDe(a);
   const nJ = fullA ? jornadesFull(fullA.id).length : 0, nM = fullA ? materialFull(fullA.id).length : 0, nF = fullA && Array.isArray(fullA.adjunts) ? fullA.adjunts.length : 0, fullBuit = !!fullA && !nJ && !nM && !nF;
   const avisFull = !fullA || fullA.finalitzat ? '' : fullBuit ? 'El full de treball ' + h(fullA.numero || '') + ' està buit: quedarà anul·lat. Si hi has d’apuntar alguna cosa, cancel·la i omple’l abans.'
     : 'El full de treball ' + h(fullA.numero || '') + ' quedarà totalment finalitzat (' + nJ + ' jornad' + (nJ === 1 ? 'a' : 'es') + ', ' + nM + ' de material' + (nF ? ', ' + nF + ' fitxer' + (nF === 1 ? '' : 's') : '') + ').';
-  if (formOp && formOp.tipus === 'finalitza') form = `<div class="ic-form"><h4>${a.es_peticio ? 'Respon la petició' : 'Acció totalment finalitzada: «' + h(nomTipus(a.tipus)) + '»'}</h4>
+  if (mostraFin) form = `<div class="ic-form"><h4>${a.es_peticio ? 'Respon la petició' : 'Quan acabis: acció totalment finalitzada'}</h4>
       ${avisFull ? `<p class="hint" style="margin:0 0 8px">${avisFull}</p>` : potObrirFull ? `<div class="ft-obre-fin"><button type="button" class="btn ghost small" id="fin-obre-full">Obre un full de treball abans</button> <span class="hint">(només si hi has d’apuntar jornades, material o fotos)</span></div>` : ''}
-      <div class="f"><span class="l">${a.es_peticio ? 'Resposta' : 'Resum del que has fet'}</span><textarea lang="ca" spellcheck="true" id="fin-resultat">${formOp.resultat != null ? h(formOp.resultat) : fullA && jornadesFull(fullA.id).length ? h(resumJornades(fullA.id)) : a.estat !== 'finalitzada' && a.resultat ? h(a.resultat) : ''}</textarea></div>
+      <div class="f"><span class="l">${a.es_peticio ? 'Resposta' : 'Resum del que has fet'}</span><textarea lang="ca" spellcheck="true" id="fin-resultat">${fo.resultat != null ? h(fo.resultat) : fullA && jornadesFull(fullA.id).length ? h(resumJornades(fullA.id)) : a.estat !== 'finalitzada' && a.resultat ? h(a.resultat) : ''}</textarea></div>
       ${pend.length ? `<p class="v-no">Aquesta acció espera ${pend.length} ${pend.length === 1 ? 'resposta' : 'respostes'} a les teves peticions: no es pot finalitzar fins que les tinguis.</p>` : ''}
-      <div class="actions"><button class="btn" id="fin-ok" ${pend.length ? 'disabled' : ''}>${a.es_peticio ? 'Envia la resposta' : 'Confirma: totalment finalitzada'}</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div></div>`;
+      <div class="actions"><button class="btn" id="fin-ok" ${pend.length ? 'disabled' : ''}>${a.es_peticio ? 'Envia la resposta' : 'Acció totalment finalitzada'}</button></div></div>`;
   if (formOp && formOp.tipus === 'peticio') form = `<div class="ic-form"><h4>Petició a ${h(nomTreballador(dest))}</h4>
       <p class="hint" style="margin:0 0 8px">Li arriba com una petició pendent; fins que no et respongui, aquesta acció queda «esperant».</p>
       <div class="f"><span class="l">Què necessites o què preguntes</span><textarea lang="ca" spellcheck="true" id="pet-text">${formOp.text != null ? h(formOp.text) : ''}</textarea></div>
       <div class="f"><span class="l">Fotos, vídeos, documents</span><input type="file" id="pet-fitxers" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx"></div>
       <div class="actions"><button class="btn" id="pet-ok">Envia la petició</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div></div>`;
   const esperes = pend.length ? `<div class="ao-fila"><span class="l">Esperes resposta de</span>${pend.map(p => h(nomResponsable(p)) + (p.descripcio ? ': ' + h(String(p.descripcio).slice(0, 120)) : '') + (potRetirarAccio(inc, p) ? ` <a href="#" data-retira="${p.id}" class="hint">(feta per error: retira-la)</a>` : '')).join('<br>')}</div>` : '';
-  return `${esperes}${formOp ? '' : `<div class="actions ic-ops">${ops}</div>`}${form}`;
+  return `${esperes}${formOp && formOp.tipus !== 'finalitza' ? '' : (ops ? `<div class="actions ic-ops">${ops}</div>` : '')}${form}`;
 }
 // la petició d'un operari: tipus «consultar», cap a qui li ha demanat l'acció, amb el termini de l'acció com a màxim
 async function creaPeticioOperari(inc, a, text, fitxers) {
@@ -5711,7 +5712,6 @@ function panellHTML(inc) {
   const derivables = oberta && !client && potDerivar ? (INC.transicions[a.tipus] || []).filter(tipus => potCrearTipus(inc, tipus)) : [];
   let ops = '';
   if (potActuar && a.estat === 'pendent') ops += `<button class="btn ghost small" data-op="comenca">Comença (en curs)</button> `;
-  if (potActuar && a.estat !== 'finalitzada') ops += `<button class="btn small" data-op="finalitza">${a.es_peticio && extern ? 'Registra la resposta…' : a.es_peticio ? 'Respon…' : 'Finalitza l’acció…'}</button> `;
   if (!client && oberta && a.es_peticio && a.estat === 'finalitzada' && !a.resolta && t && (socCreador(a) || esSeguidora(inc) || esOficina(t))) ops += `<button class="btn small" data-op="resol">Dona la resposta per suficient</button> `;
   if (derivables.length) ops += `<button class="btn ghost small" data-op="deriva">${a.estat === 'finalitzada' ? 'Encarrega el pas següent…' : 'Deriva una acció / fes una petició…'}</button> `;
   if (potActuar && a.venciment && a.estat !== 'finalitzada' && !esSeguidora(inc)) ops += `<button class="btn ghost small" data-op="ampliacio">Demana ampliació de termini</button> `;
@@ -5720,16 +5720,18 @@ function panellHTML(inc) {
   if (!client && oberta && a.estat !== 'finalitzada' && a.responsable_proveidor_id && potActuar) { const p = C.get('proveidors', a.responsable_proveidor_id); if (p && p.email) ops += enllacCorreuProveidor(inc, a, p); }
   const formOp = st.form && st.form.accio === a.id ? st.form : null;
   let formHtml = '';
-  if (formOp && formOp.tipus === 'finalitza') formHtml = `<div class="ic-form"><h4>${a.es_peticio && extern ? 'Registra la resposta de ' + h(nomResponsable(a)) : a.es_peticio ? 'Respon la petició' : 'Finalitza «' + h(tp.nom) + '»'}</h4>
-      ${formOp.avis ? `<div class="msg ok">${h(formOp.avis)}</div>` : ''}
+  // finalitzar és un sol pas: el resultat (o la resposta, la decisió) s'escriu aquí mateix i es confirma amb un botó; cap pas previ
+  const fo = formOp && formOp.tipus === 'finalitza' ? formOp : {}, mostraFin = potActuar && a.estat !== 'finalitzada' && (!formOp || formOp.tipus === 'finalitza');
+  if (mostraFin) formHtml = `<div class="ic-form"><h4>${a.es_peticio && extern ? 'Registra la resposta de ' + h(nomResponsable(a)) : a.es_peticio ? 'Respon la petició' : 'Finalitza «' + h(tp.nom) + '»'}</h4>
+      ${fo.avis ? `<div class="msg ok">${h(fo.avis)}</div>` : ''}
       ${(() => { const f = !a.es_peticio ? fullDeAccio(a) : null; if (!f || f.finalitzat) return ''; const n = jornadesFull(f.id).length, m = materialFull(f.id).length, nf = Array.isArray(f.adjunts) ? f.adjunts.length : 0; return `<p class="hint" style="margin:0 0 8px">${n || m || nf ? 'El full de treball ' + h(f.numero || '') + ' quedarà totalment finalitzat (' + n + ' jornad' + (n === 1 ? 'a' : 'es') + ', ' + String(horesFull(f.id)).replace('.', ',') + ' h × persones, ' + m + ' de material).' : 'El full de treball ' + h(f.numero || '') + ' està buit: quedarà anul·lat.'}</p>`; })()}
-      ${a.tipus === 'decisio_client' ? `<div class="f"><span class="l">Decisió</span><select id="fin-decisio">${INC.decisions.map(o => `<option value="${o[0]}" ${formOp.decisio === o[0] ? 'selected' : ''}>${h(o[1])}</option>`).join('')}</select></div>` : ''}
+      ${a.tipus === 'decisio_client' ? `<div class="f"><span class="l">Decisió</span><select id="fin-decisio">${INC.decisions.map(o => `<option value="${o[0]}" ${fo.decisio === o[0] ? 'selected' : ''}>${h(o[1])}</option>`).join('')}</select></div>` : ''}
       ${(a.adjunts || []).length ? `<p class="hint" style="margin:0 0 8px">Ja hi ha adjunt: ${h((a.adjunts || []).map(x => x.nom).join(', '))}${a.es_peticio ? '' : ' (el resultat pot quedar buit).'}</p>` : a.tipus === 'pressupost' ? '<p class="hint" style="margin:0 0 8px">Encara no hi ha cap pressupost adjunt: puja’l al quadre de documents o vincula’n un de desat (a dalt). Es pot finalitzar igualment.</p>' : ''}
-      <div class="f"><span class="l">${a.es_peticio ? 'Contingut de la resposta' : 'Resultat'}</span><textarea lang="ca" spellcheck="true" id="fin-resultat">${formOp.resultat != null ? h(formOp.resultat) : a.estat !== 'finalitzada' && a.resultat ? h(a.resultat) : ''}</textarea></div>
+      <div class="f"><span class="l">${a.es_peticio ? 'Contingut de la resposta' : 'Resultat'}</span><textarea lang="ca" spellcheck="true" id="fin-resultat">${fo.resultat != null ? h(fo.resultat) : a.estat !== 'finalitzada' && a.resultat ? h(a.resultat) : ''}</textarea></div>
       ${extern ? `<div class="f"><span class="l">Rebuda el (si és diferent d’ara)</span><input type="datetime-local" id="fin-recepcio"></div>` : ''}
       ${a.es_peticio && (socCreador(a) || Number(a.gestor_id) === (t || {}).id) ? `<label class="chk" style="padding:0"><input type="checkbox" id="fin-resol" checked> Dono la resposta per suficient (la petició queda resolta)</label>` : ''}
       ${pend.length ? `<p class="v-no">Aquesta acció espera ${pend.length} ${pend.length === 1 ? 'resposta' : 'respostes'}: no es pot finalitzar fins que les donis per suficients.</p>` : ''}
-      <div class="actions"><button class="btn" id="fin-ok" ${pend.length ? 'disabled' : ''}>${a.es_peticio ? 'Confirma la resposta' : 'Confirma: finalitzada'}</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div></div>`;
+      <div class="actions"><button class="btn" id="fin-ok" ${pend.length ? 'disabled' : ''}>${a.es_peticio && extern ? 'Registra la resposta' : a.es_peticio ? 'Envia la resposta' : 'Finalitza l’acció'}</button></div></div>`;
   if (formOp && formOp.tipus === 'ampliacio') formHtml = `<div class="ic-form"><h4>Ampliació de termini</h4><p class="sub">Termini actual: ${dmyhm(a.venciment)}. La decideix la seguidora; mentrestant el termini continua comptant.</p>
       <div class="f"><span class="l">Nou termini</span><input type="datetime-local" id="amp-venc" value="${aLocalDT(a.venciment)}"></div><div class="f"><span class="l">Motiu</span><textarea lang="ca" spellcheck="true" id="amp-motiu"></textarea></div>
       <div class="actions"><button class="btn" id="amp-ok">Demana</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div></div>`;
@@ -5757,7 +5759,7 @@ function panellHTML(inc) {
       ${potActuar && ['pressupost', 'decisio_client'].includes(a.tipus) && pressupostosDelLloc(inc).length ? `<div><span class="l">Pressupost desat d’aquest lloc</span><select id="adj-pressupost" style="width:100%"><option value="">Vincula un pressupost desat…</option>${pressupostosDelLloc(inc).filter(p => !(a.adjunts || []).some(x => x.path && x.path === p.path)).map(p => `<option value="${p.taula}:${p.id}">${dmy(p.data)} · ${h(p.text)}</option>`).join('')}</select><span class="hint">el PDF del pressupost queda adjunt a l’acció sense haver-lo de pujar</span></div>` : ''}
     </div>
     <div class="ic-docs">${docsIncHTML(inc, a)}${potActuar ? `<label class="btn ghost small" style="cursor:pointer">Afegeix fotos, vídeos o documents <input type="file" id="adj-fitxers" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx" style="display:none"></label>` : ((a.adjunts || []).length ? '' : '<span class="hint">Cap foto ni document en aquesta acció.</span>')}</div>
-    ${formOp ? '' : `<div class="actions ic-ops">${ops}</div>`}
+    ${formOp && formOp.tipus !== 'finalitza' ? '' : (ops ? `<div class="actions ic-ops">${ops}</div>` : '')}
     ${formHtml}`;
 }
 function formAccioHTML(inc, origen) {
@@ -5837,7 +5839,6 @@ function bindPanell(inc) {
     else if (op === 'retira') { await retiraAccio(inc, a); }
     else if (op === 'deriva') { st.form = { tipus: 'accio', origen: a.id }; pintaPanell(inc); }
     else if (op === 'peticio') { st.form = { tipus: 'peticio', accio: a.id }; pintaPanell(inc); }
-    else if (op === 'finalitza') { st.form = { tipus: 'finalitza', accio: a.id }; pintaPanell(inc); }
     else if (op === 'ampliacio') { st.form = { tipus: 'ampliacio', accio: a.id }; pintaPanell(inc); }
   }));
   p.querySelectorAll('[data-amp]').forEach(b => b.addEventListener('click', async () => {
@@ -5861,7 +5862,7 @@ function bindPanell(inc) {
     } catch (e) { adjP.disabled = false; errorInc(friendly(e)); }
   });
   // si hi ha un formulari obert (finalitzar, petició), el que s'hi ha escrit no es perd en tornar a pintar el panell
-  const desaForm = () => { if (!st.form) return; const r = $('#fin-resultat'); if (r) st.form.resultat = r.value; const d = $('#fin-decisio'); if (d) st.form.decisio = d.value; const p = $('#pet-text'); if (p) st.form.text = p.value; };
+  const desaForm = () => { const r = $('#fin-resultat'); if (r && !st.form) st.form = { tipus: 'finalitza', accio: st.sel }; if (!st.form) return; if (r) st.form.resultat = r.value; const d = $('#fin-decisio'); if (d) st.form.decisio = d.value; const p = $('#pet-text'); if (p) st.form.text = p.value; };
   const adj = $('#adj-fitxers'); if (adj) adj.addEventListener('change', async () => {
     const a = C.get('incidencia_accions', st.sel), fitxers = [...adj.files]; if (!fitxers.length) return;
     try { const nous = await pujaAdjunts(inc.id + '/' + a.id, fitxers); const r = await sb.from('incidencia_accions').update({ adjunts: [...(a.adjunts || []), ...nous] }).eq('id', a.id); if (r.error) throw r.error; await eventInc(inc.id, a.id, 'adjunts', nous.length + ' fitxers'); await recarregaInc(); toast(nous.length + ' fitxers pujats'); desaForm(); renderMain(); }
@@ -5869,7 +5870,7 @@ function bindPanell(inc) {
   });
   const finObre = $('#fin-obre-full'); if (finObre) finObre.addEventListener('click', async () => {
     const a = C.get('incidencia_accions', st.sel);
-    if (await obreFullDeAccio(inc, a, finObre)) { st.form = null; toast('Full de treball obert. Apunta-hi la feina i, quan acabis, torna a «Acció totalment finalitzada».', 6000); renderMain(); const box = $('#ft'); if (box && box.scrollIntoView) box.scrollIntoView({ block: 'start' }); }
+    if (await obreFullDeAccio(inc, a, finObre)) { st.form = null; toast('Full de treball obert: apunta-hi la feina i, quan acabis, prem «Acció totalment finalitzada».', 6000); renderMain(); const box = $('#ft'); if (box && box.scrollIntoView) box.scrollIntoView({ block: 'start' }); }
   });
   const finOk = $('#fin-ok'); if (finOk) finOk.addEventListener('click', async () => {
     const a = C.get('incidencia_accions', st.sel); let resultat = $('#fin-resultat').value.trim();
