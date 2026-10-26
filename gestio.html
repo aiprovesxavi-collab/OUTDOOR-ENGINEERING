@@ -5632,7 +5632,7 @@ function panellOperariHTML(inc) {
     : 'El full de treball ' + h(fullA.numero || '') + ' quedarà totalment finalitzat (' + nJ + ' jornad' + (nJ === 1 ? 'a' : 'es') + ', ' + nM + ' de material' + (nF ? ', ' + nF + ' fitxer' + (nF === 1 ? '' : 's') : '') + ').';
   if (formOp && formOp.tipus === 'finalitza') form = `<div class="ic-form"><h4>${a.es_peticio ? 'Respon la petició' : 'Acció totalment finalitzada: «' + h(nomTipus(a.tipus)) + '»'}</h4>
       ${avisFull ? `<p class="hint" style="margin:0 0 8px">${avisFull}</p>` : potObrirFull ? `<div class="ft-obre-fin"><button type="button" class="btn ghost small" id="fin-obre-full">Obre un full de treball abans</button> <span class="hint">(només si hi has d’apuntar jornades, material o fotos)</span></div>` : ''}
-      <div class="f"><span class="l">${a.es_peticio ? 'Resposta' : 'Resum del que has fet'}</span><textarea lang="ca" spellcheck="true" id="fin-resultat">${fullA ? h(resumJornades(fullA.id)) : ''}</textarea></div>
+      <div class="f"><span class="l">${a.es_peticio ? 'Resposta' : 'Resum del que has fet'}</span><textarea lang="ca" spellcheck="true" id="fin-resultat">${fullA && jornadesFull(fullA.id).length ? h(resumJornades(fullA.id)) : a.estat !== 'finalitzada' && a.resultat ? h(a.resultat) : ''}</textarea></div>
       ${pend.length ? `<p class="v-no">Aquesta acció espera ${pend.length} ${pend.length === 1 ? 'resposta' : 'respostes'} a les teves peticions: no es pot finalitzar fins que les tinguis.</p>` : ''}
       <div class="actions"><button class="btn" id="fin-ok" ${pend.length ? 'disabled' : ''}>${a.es_peticio ? 'Envia la resposta' : 'Confirma: totalment finalitzada'}</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div></div>`;
   if (formOp && formOp.tipus === 'peticio') form = `<div class="ic-form"><h4>Petició a ${h(nomTreballador(dest))}</h4>
@@ -5694,9 +5694,10 @@ function panellHTML(inc) {
   const formOp = st.form && st.form.accio === a.id ? st.form : null;
   let formHtml = '';
   if (formOp && formOp.tipus === 'finalitza') formHtml = `<div class="ic-form"><h4>${a.es_peticio && extern ? 'Registra la resposta de ' + h(nomResponsable(a)) : a.es_peticio ? 'Respon la petició' : 'Finalitza «' + h(tp.nom) + '»'}</h4>
+      ${formOp.avis ? `<div class="msg ok">${h(formOp.avis)}</div>` : ''}
       ${(() => { const f = !a.es_peticio ? fullDeAccio(a) : null; if (!f || f.finalitzat) return ''; const n = jornadesFull(f.id).length, m = materialFull(f.id).length, nf = Array.isArray(f.adjunts) ? f.adjunts.length : 0; return `<p class="hint" style="margin:0 0 8px">${n || m || nf ? 'El full de treball ' + h(f.numero || '') + ' quedarà totalment finalitzat (' + n + ' jornad' + (n === 1 ? 'a' : 'es') + ', ' + String(horesFull(f.id)).replace('.', ',') + ' h × persones, ' + m + ' de material).' : 'El full de treball ' + h(f.numero || '') + ' està buit: quedarà anul·lat.'}</p>`; })()}
       ${a.tipus === 'decisio_client' ? `<div class="f"><span class="l">Decisió</span><select id="fin-decisio">${INC.decisions.map(o => `<option value="${o[0]}">${h(o[1])}</option>`).join('')}</select></div>` : ''}
-      <div class="f"><span class="l">${a.es_peticio ? 'Contingut de la resposta' : 'Resultat'}</span><textarea lang="ca" spellcheck="true" id="fin-resultat"></textarea></div>
+      <div class="f"><span class="l">${a.es_peticio ? 'Contingut de la resposta' : 'Resultat'}</span><textarea lang="ca" spellcheck="true" id="fin-resultat">${a.estat !== 'finalitzada' && a.resultat ? h(a.resultat) : ''}</textarea></div>
       ${extern ? `<div class="f"><span class="l">Rebuda el (si és diferent d’ara)</span><input type="datetime-local" id="fin-recepcio"></div>` : ''}
       ${a.es_peticio && (socCreador(a) || Number(a.gestor_id) === (t || {}).id) ? `<label class="chk" style="padding:0"><input type="checkbox" id="fin-resol" checked> Dono la resposta per suficient (la petició queda resolta)</label>` : ''}
       ${['pressupost', 'decisio_client'].includes(a.tipus) && pressupostosDelLloc(inc).length ? `<div class="f"><span class="l">O un pressupost desat d’aquest lloc</span><select id="fin-pressupost"><option value="">—</option>${pressupostosDelLloc(inc).filter(p => !(a.adjunts || []).some(x => x.path && x.path === p.path)).map(p => `<option value="${p.taula}:${p.id}">${dmy(p.data)} · ${h(p.text)}</option>`).join('')}</select></div>` : ''}
@@ -5865,15 +5866,21 @@ function bindPanell(inc) {
         else { const rf = await sb.from('fulls_treball').update({ finalitzat: true, finalitzat_el: ara, finalitzat_per: t.id, estat: 'finalitzat', resum: resultat || null }).eq('id', fullA.id); if (rf.error) throw rf.error; }
         await loadTable('fulls_treball');
       }
-      // la feina de l'operari torna a qui la va demanar: la seva acció es reobre (o li queda «Registrar resultat»)
-      let retorn = '';
-      if (!a.es_peticio && a.carril === 'operari' && a.creat_per && Number(a.creat_per) !== t.id && (APP_NOMES_TASQUES || carrilDeTreballador(t) === 'operari')) { try { retorn = await retornaAlDemanant(inc, a, t, ara, resultat); } catch (e2) { toastErr('No s’ha pogut tornar la feina a qui la va demanar: ' + friendly(e2)); } }
+      // la feina de l'operari torna a l'acció anterior (la de qui la va encarregar): es reobre, i des d'allà s'encarrega el pas següent
+      let retorn = '', retornA = null, retornQui = null;
+      if (!a.es_peticio && a.carril === 'operari') { try { const rr = await reobreAnterior(inc, a, t, ara, resultat); if (rr) { retorn = rr.text; retornA = rr.accio; retornQui = rr.qui; } } catch (e2) { toastErr('No s’ha pogut tornar la feina a l’acció anterior: ' + friendly(e2)); } }
       await eventInc(inc.id, a.id, a.es_peticio ? 'resposta' : 'finalitzada', (canvis.decisio ? etiquetaOpt(INC.decisions, canvis.decisio) + ' · ' : '') + (resultat || '').slice(0, 200));
       await recarregaInc();
       toast((a.es_peticio ? 'Resposta registrada' : 'Acció finalitzada') + (fullAnullat ? ' · el full de treball, buit, queda anul·lat' : '') + retorn, retorn || fullAnullat ? 6000 : undefined);
       // acció pròpia acabada: s'ofereix de seguida encarregar el pas següent (una petició contestada torna a qui la va demanar)
       let potSeguir = !APP_NOMES_TASQUES && !a.es_peticio && inc.estat === 'oberta' && (INC.transicions[a.tipus] || []).some(k => potCrearTipus(inc, k));
       st.form = potSeguir ? { tipus: 'accio', origen: a.id, despres: true } : null;
+      // acció d'operari acabada des de l'oficina: la que mana ara és l'acció anterior (reoberta); s'hi va directament, amb el formulari de finalitzar-la, per encarregar el pas següent des d'allà
+      if (!APP_NOMES_TASQUES && retornA && inc.estat === 'oberta') {
+        const titolA = a.titol && a.titol !== nomTipus(a.tipus) ? a.titol : nomTipus(a.tipus), potActuarA = socResponsable(retornA) || esSeguidora(inc) || esOficina(t);
+        st.sel = retornA.id;
+        st.form = potActuarA ? { tipus: 'finalitza', accio: retornA.id, avis: `«${titolA}» (${nomCurtTreballador(C.get('treballadors', a.responsable_treballador_id))}) finalitzada: la feina torna a «${nomTipus(retornA.tipus)}» (${nomCurtTreballador(retornQui)}). Si ja està, confirma-la i encarrega el pas següent des d’aquí; si no, cancel·la i queda oberta.` } : null;
+      }
       // decisió del client sobre un pressupost: en aquell moment el pressupost queda aprovat (o rebutjat) i s'encarrega el pas següent
       if (!APP_NOMES_TASQUES && a.tipus === 'decisio_client' && canvis.decisio && canvis.decisio !== 'modificacions' && inc.estat === 'oberta') {
         const pres = a.origen_accio_id ? C.get('incidencia_accions', a.origen_accio_id) : null;
@@ -6014,22 +6021,29 @@ async function retiraAccio(inc, a) {
 }
 // en acabar una feina, l'operari la torna a qui la va demanar: si aquella persona té l'acció d'origen (i és seva), es reobre;
 // si no (l'origen és l'obertura, o d'una altra persona), li queda una acció «Registrar resultat» amb el que ha dit l'operari
-async function retornaAlDemanant(inc, a, t, ara, resultat) {
-  const demanant = C.get('treballadors', a.creat_per); if (!demanant || !demanant.actiu) return '';
+// En acabar una acció d'operari (des de l'app o des de l'oficina, qui sigui qui la finalitzi), la feina torna a l'acció que la va precedir
+// (la de qui la va encarregar: normalment la seguidora o el tècnic): si estava finalitzada es reobre, i des d'allà s'encarrega el pas següent.
+// Si l'acció anterior no és interna (del client o d'un proveïdor) o no n'hi ha, a qui la va crear li queda «Registrar resultat».
+async function reobreAnterior(inc, a, t, ara, resultat) {
+  const titolA = a.titol && a.titol !== nomTipus(a.tipus) ? a.titol : nomTipus(a.tipus);
   const origen = a.origen_accio_id ? C.get('incidencia_accions', a.origen_accio_id) : null;
-  const estructural = x => ['obrir', 'tancar', 'reobrir', 'assignar_seguidora', 'visibilitat_client'].includes(x.tipus);
-  if (origen && origen.actiu && !estructural(origen) && Number(origen.responsable_treballador_id) === demanant.id) {
-    if (origen.estat !== 'finalitzada') return '';   // encara la té oberta: ja li torna sola
-    const nota = `Reoberta el ${dmyhm(ara)}: ${nomCurtTreballador(t)} ha acabat «${a.titol && a.titol !== nomTipus(a.tipus) ? a.titol : nomTipus(a.tipus)}».`;
+  if (origen && origen.actiu && origen.responsable_treballador_id) {
+    const qui = C.get('treballadors', origen.responsable_treballador_id);
+    if (origen.estat !== 'finalitzada') {   // encara oberta: ja li torna sola; queda a l'historial
+      await eventInc(inc.id, origen.id, 'retorn', `${nomCurtTreballador(t)} ha acabat «${titolA}»: torna a ${nomTreballador(qui)}`);
+      return { accio: origen, qui, text: ` · «${nomTipus(origen.tipus)}» (${nomCurtTreballador(qui)}) continua oberta: li torna.` };
+    }
+    const nota = `Reoberta el ${dmyhm(ara)}: ${nomCurtTreballador(t)} ha acabat «${titolA}».`;
     const r = await sb.from('incidencia_accions').update({ estat: 'en_curs', finalitzada_el: null, finalitzada_per: null, observacions: [origen.observacions, nota].filter(Boolean).join('\n') }).eq('id', origen.id); if (r.error) throw r.error;
-    await eventInc(inc.id, origen.id, 'reoberta', `Torna a ${nomTreballador(demanant)}: ${nomCurtTreballador(t)} ha acabat «${nomTipus(a.tipus)}»`);
-    return ` Torna a ${nomCurtTreballador(demanant)}: «${nomTipus(origen.tipus)}» s’ha reobert.`;
+    await eventInc(inc.id, origen.id, 'reoberta', `Torna a ${nomTreballador(qui)}: ${nomCurtTreballador(t)} ha acabat «${titolA}»`);
+    return { accio: origen, qui, reoberta: true, text: ` · «${nomTipus(origen.tipus)}» (${nomCurtTreballador(qui)}) torna a estar oberta.` };
   }
+  const demanant = C.get('treballadors', a.creat_per); if (!demanant || !demanant.actiu || demanant.id === t.id) return null;
   const dades = { incidencia_id: inc.id, tipus: 'registrar_resultat', carril: carrilDeResponsable(inc, demanant.id), titol: 'Revisar la feina: ' + (a.titol || nomTipus(a.tipus)), descripcio: resultat ? `Resultat de ${nomCurtTreballador(t)}: ${resultat}` : null, creat_per: t.id,
     responsable_treballador_id: demanant.id, responsable_proveidor_id: null, responsable_contacte_id: null, gestor_id: null, estat: 'pendent', grup_termini: 'mig_termini', venciment: vencimentPerGrup('mig_termini').toISOString(), origen_accio_id: a.id, es_peticio: false, visible_client: false };
   const r = await sb.from('incidencia_accions').insert(dades).select('id').single(); if (r.error) throw r.error;
   await eventInc(inc.id, r.data.id, 'nova_accio', `Registrar resultat → ${nomTreballador(demanant)} (en acabar ${nomCurtTreballador(t)} «${nomTipus(a.tipus)}»)`);
-  return ` Torna a ${nomCurtTreballador(demanant)}: li queda «Registrar resultat».`;
+  return { accio: null, qui: demanant, text: ` · Torna a ${nomCurtTreballador(demanant)}: li queda «Registrar resultat».` };
 }
 async function operacio(inc, fn, accioId, tipusEvent, detall) {
   try { const r = await fn(); if (r.error) throw r.error; await eventInc(inc.id, accioId, tipusEvent, detall); await recarregaInc(); toast(detall); renderMain(); }
