@@ -381,7 +381,10 @@
   .ic-detall > div{ font-size:15px; }
   .ic-docs{ border:1px solid var(--line-2); border-radius:10px; padding:10px 12px; margin:12px 0 4px; background:#fafbf9; }
   /* «Fins ara»: el fil de tot el que s'ha dit i mostrat a la incidència */
-  .fil-e{ margin:4px 0 0; padding:4px 0 4px 10px; border-left:3px solid var(--line-2); font-size:14px; line-height:1.4; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .fil-e{ margin:4px 0 0; padding:4px 0 4px 10px; border-left:3px solid transparent; font-size:14px; line-height:1.4; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .fil-e.vis{ border-left-color:#7b4fb3; }   /* violeta: el client ho veu; sense línia: no ho veu */
+  .ic-fil{ margin:8px 0 10px; } .ic-fil > .l{ display:block; font-size:12.5px; color:var(--ink-3); }
+  .ic-propi.vis{ border-left:4px solid #7b4fb3; padding-left:10px; }   /* l'acció que es mira, si el client la veu */
   .fil-e > b{ color:var(--ink); } .fil-e .fil-q{ font-size:12px; color:var(--ink-3); white-space:nowrap; }
   .fil-e .ic-thumbs{ margin:4px 0 2px; gap:6px; } .fil-e .ic-mini{ width:84px; height:84px; border-radius:8px; }
   .operari .fil-e{ font-size:17px; padding-left:12px; } .operari .fil-e .fil-q{ font-size:13px; } .operari .fil-e .ic-mini{ width:120px; height:120px; }
@@ -2353,7 +2356,7 @@ function renderAppOperari() {
         <button class="ample llarg" data-go="incidencia_reports" style="${estilMenu('incidencia_reports')}"><strong>Reports d’incidències</strong>${fonsMenu('incidencia_reports')}</button>
         <button class="ample" data-go="fulls_treball_app" style="${estilMenu('fulls_treball_app')}"><strong>Fulls de treball</strong>${(() => { const t = treballadorActual(); const n = t ? C.rows('fulls_treball').filter(f => f.actiu && Number(f.encarregat_id) === t.id && !f.finalitzat && f.estat !== 'anul_lat' && !fullProgramat(f)).length : 0; return n ? `<span class="pend">${n} pendent${n === 1 ? '' : 's'}</span>` : ''; })()}${fonsMenu('fulls_treball_app')}</button>
         <button data-go="calendari_accions" style="${estilMenu('calendari_accions')}"><strong>Calendari accions</strong>${fonsMenu('calendari_accions')}</button>
-        <button data-go="accions_meves" style="${estilMenu('accions_meves')}"><strong>Accions pendents</strong>${(() => { const n = t ? C.rows('incidencia_accions').filter(a => a.actiu && activa(a) && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id) && (C.get('incidencies', a.incidencia_id) || {}).estat === 'oberta').length : 0; return n ? `<span class="pend">${n} ${n === 1 ? 'oberta' : 'obertes'}</span>` : ''; })()}${fonsMenu('accions_meves')}</button>
+        <button data-go="accions_meves" style="${estilMenu('accions_meves')}"><strong>Accions pendents</strong>${(() => { const n = t ? C.rows('incidencia_accions').filter(a => a.actiu && activa(a) && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id) && (C.get('incidencies', a.incidencia_id) || {}).estat === 'oberta').length : 0; const m = t ? C.rows('incidencies').filter(i => senseSeguent(i) && (Number(i.seguidora_id) === t.id || (!APP_NOMES_TASQUES && esOficina(t)))).length : 0; return n || m ? `<span class="pend">${n ? n + (n === 1 ? ' oberta' : ' obertes') : ''}${n && m ? ' · ' : ''}${m ? m + ' per encarregar' : ''}</span>` : ''; })()}${fonsMenu('accions_meves')}</button>
         <button data-go="nomines" style="${estilMenu('nomines')}"><strong>Nòmines</strong>${fonsMenu('nomines')}</button>
         <button data-go="vacances" style="${estilMenu('vacances')}"><strong>Vacances</strong>${fonsMenu('vacances')}</button>
       </div>`;
@@ -5061,6 +5064,10 @@ const estatEfectiu = a => a.estat === 'finalitzada' ? 'finalitzada' : (peticions
 const activa = a => a.estat !== 'finalitzada' && !iniciFutur(a);   // oberta i que ja toca fer
 const textInici = a => a.inici ? 'a partir del ' + dmyhm(a.inici) : '';
 const foraTermini = a => !!a.venciment && (a.estat === 'finalitzada' ? !!a.finalitzada_el && new Date(a.finalitzada_el) > new Date(a.venciment) : new Date() > new Date(a.venciment));
+// incidència oberta sense cap acció oberta ni programada: algú (la seguidora) ha d'encarregar el pas següent o tancar-la
+const senseSeguent = i => i.actiu && i.estat === 'oberta' && !accionsInc(i).some(a => a.estat !== 'finalitzada');
+// l'última cosa que hi ha passat: qui ha acabat què i quan
+function ultimaFeta(i) { const f = accionsInc(i).filter(a => a.estat === 'finalitzada' && !['obrir', 'assignar_seguidora', 'visibilitat_client'].includes(a.tipus)).sort((x, y) => String(y.finalitzada_el || '').localeCompare(String(x.finalitzada_el || '')))[0]; return f ? `${nomResponsable(f)} ha acabat «${nomTipus(f.tipus)}» el ${dmyhm(f.finalitzada_el)}` : 'oberta el ' + dmyhm(i.data_obertura); }
 const nomResponsable = a => a.responsable_treballador_id ? nomTreballador(C.get('treballadors', a.responsable_treballador_id)) : a.responsable_proveidor_id ? (C.get('proveidors', a.responsable_proveidor_id) || {}).nom || '' : a.responsable_contacte_id ? (C.get('contactes', a.responsable_contacte_id) || {}).nom || '' : '';
 const socResponsable = a => { const t = trebInc(); return !!t && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id); };
 const socCreador = a => { const t = trebInc(); return !!t && Number(a.creat_per) === t.id; };
@@ -5210,7 +5217,7 @@ function renderIncidencies(main) {
   if (st.filtre.estat === 'obertes') llista = llista.filter(i => i.estat === 'oberta'); else if (st.filtre.estat === 'tancades') llista = llista.filter(i => i.estat === 'tancada'); else if (st.filtre.estat === 'espera') llista = llista.filter(enEspera);
   if (st.filtre.lloc) llista = llista.filter(i => String(i.lloc_id) === st.filtre.lloc);
   if (st.filtre.q) { const q = st.filtre.q.toLowerCase(); llista = llista.filter(i => [i.numero, i.titol, llocInc(i).nom, clientInc(i).nom].some(x => String(x || '').toLowerCase().includes(q))); }
-  llista.sort((a, b) => (a.estat === b.estat ? 0 : a.estat === 'oberta' ? -1 : 1) || (enEspera(a) === enEspera(b) ? 0 : enEspera(a) ? 1 : -1) || String(b.data_obertura).localeCompare(String(a.data_obertura)));
+  llista.sort((a, b) => (a.estat === b.estat ? 0 : a.estat === 'oberta' ? -1 : 1) || (senseSeguent(a) === senseSeguent(b) ? 0 : senseSeguent(a) ? -1 : 1) || (enEspera(a) === enEspera(b) ? 0 : enEspera(a) ? 1 : -1) || String(b.data_obertura).localeCompare(String(a.data_obertura)));
   const llocs = [...new Set(C.rows('incidencies').filter(i => i.actiu).map(i => i.lloc_id))].map(id => C.get('llocs', id)).filter(Boolean).sort((a, b) => a.nom.localeCompare(b.nom, 'ca'));
   const pendentsRep = C.rows('incidencia_reports').filter(r => r.actiu && r.estat === 'pendent').length;
   main.innerHTML = `
@@ -5225,7 +5232,7 @@ function renderIncidencies(main) {
     </div>
     ${llista.length ? `<table class="tbl"><thead><tr><th>Número</th><th>Lloc</th><th>Títol</th><th>Seguidora</th><th>Obertura</th><th>Estat</th><th>Ara</th></tr></thead><tbody>
       ${llista.map(i => { const acc = accionsInc(i), obertes = acc.filter(a => a.estat !== 'finalitzada').sort((x, y) => (iniciFutur(x) === iniciFutur(y) ? 0 : iniciFutur(x) ? 1 : -1)), fora = obertes.filter(foraTermini).length;
-        return `<tr class="row" data-inc="${i.id}"><td>${h(i.numero)}</td><td>${h(llocInc(i).nom)} <span class="hint">${h(clientInc(i).nom || '')}</span></td><td>${h(i.titol)}</td><td>${h(nomCurtTreballador(C.get('treballadors', i.seguidora_id)))}</td><td>${dmyhm(i.data_obertura)}</td><td>${i.estat === 'oberta' ? '<span class="xip ok">oberta</span>' : '<span class="xip">tancada ' + dmy(i.data_tancament) + '</span>'}</td><td>${obertes.length ? obertes.map(a => `<span class="xip carril ${foraTermini(a) ? 'fora' : ''} ${iniciFutur(a) ? 'prog' : ''}" style="--lc:${colorCarril(a.carril)}" title="${h(etiquetaOpt(INC.carrils, a.carril))}"><i></i>${h(nomResponsable(a))} <small>· ${h(nomTipus(a.tipus))}${iniciFutur(a) ? ' · ' + textInici(a) : ''}</small></span>`).join(' ') : (i.estat === 'oberta' ? '<span class="hint">cap acció oberta</span>' : '')}${fora ? ` <b class="v-no">${fora} fora de termini</b>` : ''}</td></tr>`; }).join('')}
+        return `<tr class="row" data-inc="${i.id}"><td>${h(i.numero)}</td><td>${h(llocInc(i).nom)} <span class="hint">${h(clientInc(i).nom || '')}</span></td><td>${h(i.titol)}</td><td>${h(nomCurtTreballador(C.get('treballadors', i.seguidora_id)))}</td><td>${dmyhm(i.data_obertura)}</td><td>${i.estat === 'oberta' ? '<span class="xip ok">oberta</span>' : '<span class="xip">tancada ' + dmy(i.data_tancament) + '</span>'}</td><td>${obertes.length ? obertes.map(a => `<span class="xip carril ${foraTermini(a) ? 'fora' : ''} ${iniciFutur(a) ? 'prog' : ''}" style="--lc:${colorCarril(a.carril)}" title="${h(etiquetaOpt(INC.carrils, a.carril))}"><i></i>${h(nomResponsable(a))} <small>· ${h(nomTipus(a.tipus))}${iniciFutur(a) ? ' · ' + textInici(a) : ''}</small></span>`).join(' ') : (i.estat === 'oberta' ? `<span class="xip carril" style="--lc:${colorCarril('seguidora')}" title="${h(ultimaFeta(i))}"><i></i>${h(nomCurtTreballador(C.get('treballadors', i.seguidora_id)))} <small>· cal encarregar el pas següent o tancar</small></span>` : '')}${fora ? ` <b class="v-no">${fora} fora de termini</b>` : ''}</td></tr>`; }).join('')}
     </tbody></table>` : '<div class="empty">Cap incidència amb aquests filtres.</div>'}`;
   if ($('#inc-nova')) $('#inc-nova').addEventListener('click', () => { st.vista = 'nova'; st.nova = {}; renderMain(); });
   $('#inc-estat').addEventListener('change', e => { st.filtre.estat = e.target.value; renderMain(); });
@@ -5328,23 +5335,24 @@ function entradesFil(inc, actual) {
   const treb = id => { const t = id ? C.get('treballadors', id) : null; return t ? { ini: inicialsTreballador(t) || nomCurtTreballador(t), nom: nomTreballador(t) } : null; };
   const quiFa = x => x.responsable_treballador_id ? treb(x.responsable_treballador_id) : { ini: nomResponsable(x) || '?', nom: nomResponsable(x) || '' };
   const aQui = x => x.responsable_treballador_id ? (treb(x.responsable_treballador_id) || {}).ini : nomResponsable(x);
-  reportsInc(inc).forEach(r => e.push({ data: r.data_hora, ini: 'Avís', nom: quiReporta(r), text: (quiReporta(r) ? quiReporta(r) + ': ' : '') + String(r.descripcio || ''), adjunts: Array.isArray(r.adjunts) ? r.adjunts : [], que: 'Report' }));
+  reportsInc(inc).forEach(r => e.push({ data: r.data_hora, ini: 'Avís', nom: quiReporta(r), text: (quiReporta(r) ? quiReporta(r) + ': ' : '') + String(r.descripcio || ''), adjunts: Array.isArray(r.adjunts) ? r.adjunts : [], que: 'Report', vis: true }));
   const tots = accionsVisibles(inc), obrir = tots.find(x => x.tipus === 'obrir');
   const seg = treb(obrir && obrir.creat_per ? obrir.creat_per : inc.seguidora_id) || { ini: '—', nom: '' };
   const adjObrir = obrir && Array.isArray(obrir.adjunts) ? obrir.adjunts : [];
-  if (inc.descripcio || adjObrir.length) e.push({ data: inc.data_obertura, ...seg, text: String(inc.descripcio || ''), adjunts: adjObrir, que: 'Obertura' });
+  if (inc.descripcio || adjObrir.length) e.push({ data: inc.data_obertura, ...seg, text: String(inc.descripcio || ''), adjunts: adjObrir, que: 'Obertura', vis: !obrir || !!obrir.visible_client });
   tots.filter(x => !['obrir', 'assignar_seguidora', 'visibilitat_client'].includes(x.tipus) && !(actual && x.id === actual.id)).forEach(x => {
     const tipus = nomTipus(x.tipus), fet = x.estat === 'finalitzada', adj = Array.isArray(x.adjunts) ? x.adjunts : [];
     const demanat = [x.titol && x.titol !== tipus ? x.titol : '', x.descripcio || ''].filter(Boolean).join(' — ');
-    if (demanat && x.creat_per) e.push({ data: x.creat_el, ...(treb(x.creat_per) || { ini: '—', nom: '' }), a: aQui(x), text: demanat, adjunts: fet ? [] : adj, que: tipus });
-    if (fet && (x.resultat || x.decisio || adj.length)) e.push({ data: x.finalitzada_el || x.creat_el, ...quiFa(x), text: (x.decisio ? etiquetaOpt(INC.decisions, x.decisio) + (x.resultat ? ': ' : '') : '') + String(x.resultat || ''), adjunts: adj, que: tipus });
-    else if (!fet && adj.length && !demanat) e.push({ data: x.creat_el, ...quiFa(x), text: '', adjunts: adj, que: tipus + ' (en curs)' });
+    const vis = !!x.visible_client;
+    if (demanat && x.creat_per) e.push({ data: x.creat_el, ...(treb(x.creat_per) || { ini: '—', nom: '' }), a: aQui(x), text: demanat, adjunts: fet ? [] : adj, que: tipus, vis });
+    if (fet && (x.resultat || x.decisio || adj.length)) e.push({ data: x.finalitzada_el || x.creat_el, ...quiFa(x), text: (x.decisio ? etiquetaOpt(INC.decisions, x.decisio) + (x.resultat ? ': ' : '') : '') + String(x.resultat || ''), adjunts: adj, que: tipus, vis });
+    else if (!fet && adj.length && !demanat) e.push({ data: x.creat_el, ...quiFa(x), text: '', adjunts: adj, que: tipus + ' (en curs)', vis });
   });
   return e.sort((p, q) => String(p.data || '').localeCompare(String(q.data || '')));
 }
 function filIncHTML(inc, actual) {
   const ents = entradesFil(inc, actual); if (!ents.length) return '';
-  return ents.map(x => `<div class="fil-e"><b title="${h(x.nom || '')}">${h(x.ini)}</b>${x.a ? ` <span class="hint">→ ${h(x.a)}</span>` : ''}${x.text ? ': ' + h(x.text) : ''} <span class="fil-q">· ${h(x.que)}${x.data ? ' · ' + dmyhm(x.data) : ''}</span>${x.adjunts.length ? `<div class="ic-thumbs">${miniaturesHTML(x.adjunts)}</div>` : ''}</div>`).join('');
+  return ents.map(x => `<div class="fil-e ${x.vis ? 'vis' : ''}"><b title="${h(x.nom || '')}">${h(x.ini)}</b>${x.a ? ` <span class="hint">→ ${h(x.a)}</span>` : ''}${x.text ? ': ' + h(x.text) : ''} <span class="fil-q">· ${h(x.que)}${x.data ? ' · ' + dmyhm(x.data) : ''}</span>${x.adjunts.length ? `<div class="ic-thumbs">${miniaturesHTML(x.adjunts)}</div>` : ''}</div>`).join('');
 }
 function galeriaHTML(inc, compacta) {
   const grups = adjuntsIncidencia(inc);
@@ -5722,25 +5730,23 @@ function panellHTML(inc) {
   let formHtml = '';
   // finalitzar és un sol pas: el resultat (o la resposta, la decisió) s'escriu aquí mateix i es confirma amb un botó; cap pas previ
   const fo = formOp && formOp.tipus === 'finalitza' ? formOp : {}, mostraFin = potActuar && a.estat !== 'finalitzada' && (!formOp || formOp.tipus === 'finalitza');
-  if (mostraFin) formHtml = `<div class="ic-form"><h4>${a.es_peticio && extern ? 'Registra la resposta de ' + h(nomResponsable(a)) : a.es_peticio ? 'Respon la petició' : 'Finalitza «' + h(tp.nom) + '»'}</h4>
+  if (mostraFin) formHtml = `<div class="ic-form">
       ${fo.avis ? `<div class="msg ok">${h(fo.avis)}</div>` : ''}
       ${(() => { const f = !a.es_peticio ? fullDeAccio(a) : null; if (!f || f.finalitzat) return ''; const n = jornadesFull(f.id).length, m = materialFull(f.id).length, nf = Array.isArray(f.adjunts) ? f.adjunts.length : 0; return `<p class="hint" style="margin:0 0 8px">${n || m || nf ? 'El full de treball ' + h(f.numero || '') + ' quedarà totalment finalitzat (' + n + ' jornad' + (n === 1 ? 'a' : 'es') + ', ' + String(horesFull(f.id)).replace('.', ',') + ' h × persones, ' + m + ' de material).' : 'El full de treball ' + h(f.numero || '') + ' està buit: quedarà anul·lat.'}</p>`; })()}
       ${a.tipus === 'decisio_client' ? `<div class="f"><span class="l">Decisió</span><select id="fin-decisio">${INC.decisions.map(o => `<option value="${o[0]}" ${fo.decisio === o[0] ? 'selected' : ''}>${h(o[1])}</option>`).join('')}</select></div>` : ''}
-      ${(a.adjunts || []).length ? `<p class="hint" style="margin:0 0 8px">Ja hi ha adjunt: ${h((a.adjunts || []).map(x => x.nom).join(', '))}${a.es_peticio ? '' : ' (el resultat pot quedar buit).'}</p>` : a.tipus === 'pressupost' ? '<p class="hint" style="margin:0 0 8px">Encara no hi ha cap pressupost adjunt: puja’l al quadre de documents o vincula’n un de desat (a dalt). Es pot finalitzar igualment.</p>' : ''}
-      <div class="f"><span class="l">${a.es_peticio ? 'Contingut de la resposta' : 'Resultat'}</span><textarea lang="ca" spellcheck="true" id="fin-resultat">${fo.resultat != null ? h(fo.resultat) : a.estat !== 'finalitzada' && a.resultat ? h(a.resultat) : ''}</textarea></div>
+      <div class="f"><span class="l">${a.es_peticio && extern ? 'Resposta de ' + h(nomResponsable(a)) : a.es_peticio ? 'Resposta' : 'Resultat'}</span><textarea lang="ca" spellcheck="true" id="fin-resultat">${fo.resultat != null ? h(fo.resultat) : a.estat !== 'finalitzada' && a.resultat ? h(a.resultat) : ''}</textarea></div>
       ${extern ? `<div class="f"><span class="l">Rebuda el (si és diferent d’ara)</span><input type="datetime-local" id="fin-recepcio"></div>` : ''}
       ${a.es_peticio && (socCreador(a) || Number(a.gestor_id) === (t || {}).id) ? `<label class="chk" style="padding:0"><input type="checkbox" id="fin-resol" checked> Dono la resposta per suficient (la petició queda resolta)</label>` : ''}
-      ${pend.length ? `<p class="v-no">Aquesta acció espera ${pend.length} ${pend.length === 1 ? 'resposta' : 'respostes'}: no es pot finalitzar fins que les donis per suficients.</p>` : ''}
+      ${pend.length ? `<p class="v-no">Espera ${pend.length === 1 ? 'la resposta' : pend.length + ' respostes'} de ${pend.map(p => `<a href="#" data-sel="${p.id}">${h(nomResponsable(p))}</a>`).join(', ')}: no es pot finalitzar fins que les donis per suficients.</p>` : ''}
       <div class="actions"><button class="btn" id="fin-ok" ${pend.length ? 'disabled' : ''}>${a.es_peticio && extern ? 'Registra la resposta' : a.es_peticio ? 'Envia la resposta' : 'Finalitza l’acció'}</button></div></div>`;
   if (formOp && formOp.tipus === 'ampliacio') formHtml = `<div class="ic-form"><h4>Ampliació de termini</h4><p class="sub">Termini actual: ${dmyhm(a.venciment)}. La decideix la seguidora; mentrestant el termini continua comptant.</p>
       <div class="f"><span class="l">Nou termini</span><input type="datetime-local" id="amp-venc" value="${aLocalDT(a.venciment)}"></div><div class="f"><span class="l">Motiu</span><textarea lang="ca" spellcheck="true" id="amp-motiu"></textarea></div>
       <div class="actions"><button class="btn" id="amp-ok">Demana</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div></div>`;
   if (formOp && formOp.tipus === 'adjunts') formHtml = '';
-  return `<h3 class="ic-titol">${h(tp.nom)}${a.titol && a.titol !== tp.nom ? ' · ' + h(a.titol) : ''}</h3>
+  return `<div class="ic-propi ${a.visible_client && !client ? 'vis' : ''}"><h3 class="ic-titol">${h(tp.nom)}${a.titol && a.titol !== tp.nom ? ' · ' + h(a.titol) : ''}</h3>
     <div class="capsal"><span>Fase <b>${tp.fase}</b></span><span>Carril <b>${h(etiquetaOpt(INC.carrils, a.carril))}</b></span><span>Estat <b>${INC.estats[ee]}</b></span>${foraTermini(a) ? '<span><b class="v-no">Fora de termini</b></span>' : ''}</div>
     <div class="ic-detall">
       <div><span class="l">Responsable</span>${h(nomResponsable(a)) || '—'}${a.gestor_id && !client ? ` <span class="hint">· ho gestiona ${h(nomTreballador(C.get('treballadors', a.gestor_id)))}</span>` : ''}</div>
-      <div><span class="l">Creada</span>${dmyhm(a.creat_el)} per ${h(inicialsTreballador(C.get('treballadors', a.creat_per)) || nomCurtTreballador(C.get('treballadors', a.creat_per)))}${origen ? ` · a partir de <a href="#" data-sel="${origen.id}">${origen.tipus === 'obrir' ? 'incidència' : h(nomTipus(origen.tipus))}</a>` : ''}</div>
       ${a.inici ? `<div><span class="l">Es pot començar</span>${dmyhm(a.inici)}${iniciFutur(a) ? ' · <b>programada</b>: fins llavors no compta com a oberta' : ''}</div>` : ''}
       <div><span class="l">${a.inici ? 'Termini final' : 'Termini'}</span>${a.venciment ? dmyhm(a.venciment) + (a.grup_termini ? ' · ' + h(etiquetaOpt(INC.grups, a.grup_termini)) : '') : (a.carril === 'client' ? 'sense termini (acció del client)' : '—')}</div>
       ${(() => { const f = fullDeAccio(a); return f ? `<div><span class="l">Full de treball</span><a href="#" data-obre-full="${f.id}">${h(f.numero || 'full')}</a> · ${h(ESTATS_FULL[f.estat] || f.estat)} · ${jornadesFull(f.id).length} jornad${jornadesFull(f.id).length === 1 ? 'a' : 'es'} (${String(horesFull(f.id)).replace('.', ',')} h × persones) · ${materialFull(f.id).length} de material${f.albara_id ? ' · albarà ' + h((C.get('albarans', f.albara_id) || {}).numero_complet || '') : ''}</div>` : (!client && accioAmbFull(a) && potCrearFullDe(a) ? `<div><span class="l">Full de treball</span><a href="#" data-crea-full="${a.id}">obre’n un</a> <span class="hint">(opcional, en qualsevol moment: només si cal apuntar-hi jornades, material o fotos)</span></div>` : ''); })()}
@@ -5749,13 +5755,12 @@ function panellHTML(inc) {
       ${a.decisio ? `<div><span class="l">Decisió</span><b>${h(etiquetaOpt(INC.decisions, a.decisio))}</b></div>` : ''}
       ${a.resultat ? `<div><span class="l">${a.es_peticio ? 'Resposta' : 'Resultat'}</span>${h(a.resultat)}</div>` : ''}
       ${a.es_peticio ? `<div><span class="l">Petició</span>${a.resolta ? 'resposta donada per suficient el ' + dmyhm(a.resolta_el) : a.estat === 'finalitzada' ? '<b>resposta pendent d’acceptar per qui la va demanar</b>' : 'pendent de resposta'}</div>` : ''}
-      ${pend.length ? `<div><span class="l">Espera</span>${pend.map(p => `<a href="#" data-sel="${p.id}">${h(nomTipus(p.tipus))} · ${h(nomResponsable(p))}</a>`).join(', ')}</div>` : ''}
-      ${fills.length ? `<div><span class="l">Derivades</span>${fills.map(p => `<a href="#" data-sel="${p.id}">${h(nomTipus(p.tipus))} · ${h(nomResponsable(p))}</a>`).join(', ')}</div>` : ''}
       ${amps.length && !client ? `<div><span class="l">Ampliacions</span>${amps.map(x => `<div>${dmyhm(x.demanada_el)}: ${dmyhm(x.venciment_original)} → ${dmyhm(x.venciment_nou)} · ${h(x.motiu)} · <b>${x.estat}</b>${x.estat === 'pendent' && oberta && esSeguidora(inc) ? ` <button class="btn small" data-amp="${x.id}" data-dec="aprovada">Aprova</button> <button class="btn ghost small" data-amp="${x.id}" data-dec="rebutjada">Rebutja</button>` : ''}</div>`).join('')}</div>` : ''}
-      ${a.observacions ? `<div><span class="l">Observacions</span>${h(a.observacions)}</div>` : ''}
+      ${(() => { const obs = String(a.observacions || '').split('\n').filter(l => l.trim() && !/^Reoberta el /.test(l)).join('\n'); return obs ? `<div><span class="l">Observacions</span>${h(obs)}</div>` : ''; })()}
       ${a.observacions_internes && !client ? `<div><span class="l">Observacions internes</span>${h(a.observacions_internes)}</div>` : ''}
-      ${!client ? `<div><span class="l">Visible al client</span>${a.visible_client ? 'sí' : 'no'}</div>` : ''}
-      ${(() => { if (client) return ''; const fil = filIncHTML(inc, a); return fil ? `<div class="ic-fil"><span class="l">Fins ara</span>${fil}</div>` : ''; })()}
+    </div></div>
+    ${(() => { if (client) return ''; const fil = filIncHTML(inc, a); return fil ? `<div class="ic-fil"><span class="l">Fins ara</span>${fil}</div>` : ''; })()}
+    <div class="ic-detall">
       ${potActuar && ['pressupost', 'decisio_client'].includes(a.tipus) && pressupostosDelLloc(inc).length ? `<div><span class="l">Pressupost desat d’aquest lloc</span><select id="adj-pressupost" style="width:100%"><option value="">Vincula un pressupost desat…</option>${pressupostosDelLloc(inc).filter(p => !(a.adjunts || []).some(x => x.path && x.path === p.path)).map(p => `<option value="${p.taula}:${p.id}">${dmy(p.data)} · ${h(p.text)}</option>`).join('')}</select><span class="hint">el PDF del pressupost queda adjunt a l’acció sense haver-lo de pujar</span></div>` : ''}
     </div>
     <div class="ic-docs">${docsIncHTML(inc, a)}${potActuar ? `<label class="btn ghost small" style="cursor:pointer">Afegeix fotos, vídeos o documents <input type="file" id="adj-fitxers" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx" style="display:none"></label>` : ((a.adjunts || []).length ? '' : '<span class="hint">Cap foto ni document en aquesta acció.</span>')}</div>
@@ -5874,7 +5879,6 @@ function bindPanell(inc) {
   });
   const finOk = $('#fin-ok'); if (finOk) finOk.addEventListener('click', async () => {
     const a = C.get('incidencia_accions', st.sel); let resultat = $('#fin-resultat').value.trim();
-    const formAbans = st.form && st.form.accio === a.id ? st.form : null;   // pot portar el pas següent proposat (p. ex. Executar feina, en confirmar un pressupost aprovat)
     const fitxers = [];   // les fotos i documents es pugen des de la caixa de l'acció, no des d'aquí
     const triaP = $('#fin-pressupost') ? $('#fin-pressupost').value : '';
     const fullA = !a.es_peticio ? fullDeAccio(a) : null, fullAmbJornades = !!fullA && jornadesFull(fullA.id).length > 0;
@@ -5887,7 +5891,6 @@ function bindPanell(inc) {
       const nous = fitxers.length ? await pujaAdjunts(inc.id + '/' + a.id, fitxers) : [];
       if (triaP) { const [taula, id] = triaP.split(':'); let p = C.get(taula, Number(id)); if (p && !p.pdf) { if (taula === 'pressupostos_tasca') await generaPdfPressupost(p.id, { obrir: false }); else await generaPdfPressupostAgrupacio(p.id, { obrir: false }); p = C.get(taula, Number(id)); } if (p && p.pdf) nous.push({ path: p.pdf, nom: (p.numero || 'pressupost-' + p.id) + '.pdf', tipus: 'document', pressupost: taula + ':' + p.id }); }
       const tots = [...(a.adjunts || []), ...nous];
-      if (!resultat && tots.length) resultat = (tots.length === 1 ? 'Adjunt: ' : 'Adjunts: ') + tots.map(x => x.nom).join(', ');
       const ara = new Date().toISOString();
       const canvis = { estat: 'finalitzada', finalitzada_el: ara, finalitzada_per: t.id, resultat: resultat || null, adjunts: tots };
       if ($('#fin-decisio')) canvis.decisio = $('#fin-decisio').value;
@@ -5901,41 +5904,27 @@ function bindPanell(inc) {
         else { const rf = await sb.from('fulls_treball').update({ finalitzat: true, finalitzat_el: ara, finalitzat_per: t.id, estat: 'finalitzat', resum: resultat || null }).eq('id', fullA.id); if (rf.error) throw rf.error; }
         await loadTable('fulls_treball');
       }
-      // la feina torna a l'acció anterior (la de qui la va encarregar) quan acaba una acció d'operari o de subcontractista, una petició (preu d'un proveïdor,
-      // material, decisió del client…) o una acció del client: si l'anterior estava finalitzada es reobre, i des d'allà s'encarrega el pas següent
-      let retorn = '', retornA = null, retornQui = null;
-      const torna = a.es_peticio || ['operari', 'client', 'proveidor', 'subcontractista'].includes(a.carril);
-      const decisio = a.tipus === 'decisio_client' ? canvis.decisio : null;
-      const notaDecisio = decisio ? (decisio === 'aprovat' ? 'Pressupost aprovat pel client' : decisio === 'rebutjat' ? 'Pressupost rebutjat pel client' : 'El client demana modificacions al pressupost') + ' (' + dmyhm(ara) + ')' + (resultat ? ': ' + resultat : '') : null;
-      if (torna) { try { const rr = await reobreAnterior(inc, a, t, ara, resultat, { nota: notaDecisio }); if (rr) { retorn = rr.text; retornA = rr.accio; retornQui = rr.qui; } } catch (e2) { toastErr('No s’ha pogut tornar la feina a l’acció anterior: ' + friendly(e2)); } }
       // decisió del client: el pressupost desat queda acceptat o rebutjat
-      if (decisio && decisio !== 'modificacions') { const pres = a.origen_accio_id ? C.get('incidencia_accions', a.origen_accio_id) : null; if (pres && pres.tipus === 'pressupost') await marcaPressupostDecidit(pres, decisio === 'aprovat'); }
+      const decisio = a.tipus === 'decisio_client' ? canvis.decisio : null, pres = decisio && a.origen_accio_id ? C.get('incidencia_accions', a.origen_accio_id) : null;
+      if (decisio && decisio !== 'modificacions' && pres && pres.tipus === 'pressupost') await marcaPressupostDecidit(pres, decisio === 'aprovat');
       await eventInc(inc.id, a.id, a.es_peticio ? 'resposta' : 'finalitzada', (canvis.decisio ? etiquetaOpt(INC.decisions, canvis.decisio) + ' · ' : '') + (resultat || '').slice(0, 200));
       await recarregaInc();
       // pressupost finalitzat: va directament al client
       let alClient = null;
       if (a.tipus === 'pressupost' && inc.estat === 'oberta') { try { alClient = await pressupostAlClient(inc, a, t); } catch (e2) { toastErr('El pressupost no s’ha pogut passar al client: ' + friendly(e2)); } }
       const alClientText = alClient && alClient.accio ? ' · va al client: «Decisió del client sobre el pressupost» per a ' + alClient.contacte.nom : '';
-      toast((a.es_peticio ? 'Resposta registrada' : 'Acció finalitzada') + (fullAnullat ? ' · el full de treball, buit, queda anul·lat' : '') + alClientText + retorn, retorn || fullAnullat || alClientText ? 6000 : undefined);
-      // acció pròpia acabada: s'ofereix de seguida encarregar el pas següent (amb el tipus proposat, si venia d'un pressupost aprovat)
+      toast((a.es_peticio ? 'Resposta registrada' : 'Acció finalitzada') + (fullAnullat ? ' · el full de treball, buit, queda anul·lat' : '') + alClientText, fullAnullat || alClientText ? 6000 : undefined);
+      // l'acció queda finalitzada, sense tocar cap altra: qui ho va encarregar (la seguidora) encarrega el pas següent. A l'oficina s'ofereix de seguida.
       let potSeguir = !APP_NOMES_TASQUES && !a.es_peticio && inc.estat === 'oberta' && (INC.transicions[a.tipus] || []).some(k => potCrearTipus(inc, k));
-      const seg = formAbans && formAbans.seguentTipus ? { tipusSel: formAbans.seguentTipus, avis: formAbans.seguentAvis } : {};
-      st.form = potSeguir ? { tipus: 'accio', origen: a.id, despres: true, ...seg } : null;
+      st.form = potSeguir ? { tipus: 'accio', origen: a.id, despres: true } : null;
       if (alClient && alClient.accio) { st.sel = alClient.accio.id; st.form = null; }
       else if (alClient && alClient.form) { if (APP_NOMES_TASQUES) toastErr(alClient.avis + ' Fes-ho des de l’oficina.'); else st.form = { tipus: 'accio', origen: a.id, despres: true, tipusSel: 'decisio_client', avis: alClient.avis }; }
-      // l'acció anterior és ara la que mana: a l'oficina s'hi va directament, amb el formulari de finalitzar-la, per encarregar el pas següent des d'allà
-      if (!APP_NOMES_TASQUES && retornA && inc.estat === 'oberta') {
-        const titolA = a.titol && a.titol !== nomTipus(a.tipus) ? a.titol : nomTipus(a.tipus), potActuarA = socResponsable(retornA) || esSeguidora(inc) || esOficina(t);
-        const tornaA = `«${nomTipus(retornA.tipus)}» (${nomCurtTreballador(retornQui)})`;
-        st.sel = retornA.id; st.form = null;
-        if (decisio === 'modificacions') toastErr(`El client demana modificacions al pressupost: ${tornaA} torna a estar oberta. Refés el pressupost i, en finalitzar-la, se li tornarà a enviar.`, 8000);
-        else if (potActuarA) {
-          let avis, seguentTipus = null, seguentAvis = null;
-          if (decisio === 'aprovat') { avis = `El client ha aprovat el pressupost: torna a ${tornaA}. Confirma-la i encarrega la feina (Executar feina) o demana el material (Demanar material).`; seguentTipus = 'executar'; seguentAvis = 'Pressupost aprovat pel client. Encarrega ara la feina (Executar feina) o demana el material al proveïdor (Demanar material).'; }
-          else if (decisio === 'rebutjat') avis = `El client ha rebutjat el pressupost: torna a ${tornaA}. Si no cal fer res més, confirma-la i tanca la incidència amb el motiu «Pressupost rebutjat»; si cal fer alguna cosa, confirma-la i encarrega-ho.`;
-          else avis = `«${titolA}» (${a.responsable_treballador_id ? nomCurtTreballador(C.get('treballadors', a.responsable_treballador_id)) : nomResponsable(a)}) ${a.es_peticio ? 'contestada' : 'finalitzada'}: la feina torna a ${tornaA}. Si ja està, confirma-la i encarrega el pas següent des d’aquí; si no, cancel·la i queda oberta.`;
-          st.form = { tipus: 'finalitza', accio: retornA.id, avis, seguentTipus, seguentAvis };
-        }
+      // decisió del client registrada: el pas següent, des del pressupost (aprovat: la feina o el material; rebutjat: tancar o el que calgui) o un pressupost nou (modificacions)
+      if (!APP_NOMES_TASQUES && decisio && inc.estat === 'oberta') {
+        if (decisio === 'modificacions') st.form = { tipus: 'accio', origen: a.id, despres: true, tipusSel: 'pressupost', avis: 'El client demana modificacions al pressupost. Encarrega el pressupost nou (Elaborar pressupost): quan es finalitzi, tornarà al client.' };
+        else { const origenSeg = pres && pres.tipus === 'pressupost' ? pres.id : a.id;
+          st.form = decisio === 'aprovat' ? { tipus: 'accio', origen: origenSeg, despres: true, tipusSel: 'executar', avis: 'Pressupost aprovat pel client. Encarrega ara la feina (Executar feina) o demana el material al proveïdor (Demanar material).' }
+            : { tipus: 'accio', origen: origenSeg, despres: true, avis: 'Pressupost rebutjat pel client. Si no cal fer res més, «No cal res més» i tanca la incidència amb el motiu «Pressupost rebutjat»; si cal fer alguna cosa, encarrega-la.' }; }
       }
       renderMain();
     } catch (e) { finOk.disabled = false; errorInc(friendly(e)); }
@@ -6063,37 +6052,6 @@ async function retiraAccio(inc, a) {
     state.inc.sel = a.origen_accio_id || null; state.inc.form = null; renderMain();
   } catch (e) { errorInc(friendly(e)); }
 }
-// en acabar una feina, l'operari la torna a qui la va demanar: si aquella persona té l'acció d'origen (i és seva), es reobre;
-// si no (l'origen és l'obertura, o d'una altra persona), li queda una acció «Registrar resultat» amb el que ha dit l'operari
-// En acabar una acció d'operari (des de l'app o des de l'oficina, qui sigui qui la finalitzi), la feina torna a l'acció que la va precedir
-// (la de qui la va encarregar: normalment la seguidora o el tècnic): si estava finalitzada es reobre, i des d'allà s'encarrega el pas següent.
-// Si l'acció anterior no és interna (del client o d'un proveïdor) o no n'hi ha, a qui la va crear li queda «Registrar resultat».
-async function reobreAnterior(inc, a, t, ara, resultat, opts) {
-  const titolA = a.titol && a.titol !== nomTipus(a.tipus) ? a.titol : nomTipus(a.tipus), nota = opts && opts.nota ? opts.nota : null;
-  const qui_fa = a.responsable_treballador_id ? nomCurtTreballador(C.get('treballadors', a.responsable_treballador_id)) : nomResponsable(a);   // qui ha fet la feina o ha contestat
-  const origen = a.origen_accio_id ? C.get('incidencia_accions', a.origen_accio_id) : null;
-  if (origen && origen.actiu && origen.responsable_treballador_id) {
-    const qui = C.get('treballadors', origen.responsable_treballador_id);
-    const resultatNou = nota ? [origen.resultat, nota].filter(Boolean).join(' · ') : undefined;
-    if (origen.estat !== 'finalitzada') {   // encara oberta: ja li torna sola; queda a l'historial
-      if (resultatNou !== undefined) { const r = await sb.from('incidencia_accions').update({ resultat: resultatNou }).eq('id', origen.id); if (r.error) throw r.error; }
-      await eventInc(inc.id, origen.id, 'retorn', `${qui_fa} ha ${a.es_peticio ? 'contestat' : 'acabat'} «${titolA}»: torna a ${nomTreballador(qui)}`);
-      return { accio: origen, qui, text: ` · «${nomTipus(origen.tipus)}» (${nomCurtTreballador(qui)}) continua oberta: li torna.` };
-    }
-    const notaObs = `Reoberta el ${dmyhm(ara)}: ${qui_fa} ha ${a.es_peticio ? 'contestat' : 'acabat'} «${titolA}».`;
-    const canvis = { estat: 'en_curs', finalitzada_el: null, finalitzada_per: null, observacions: [origen.observacions, notaObs].filter(Boolean).join('\n') }; if (resultatNou !== undefined) canvis.resultat = resultatNou;
-    const r = await sb.from('incidencia_accions').update(canvis).eq('id', origen.id); if (r.error) throw r.error;
-    await eventInc(inc.id, origen.id, 'reoberta', `Torna a ${nomTreballador(qui)}: ${qui_fa} ha ${a.es_peticio ? 'contestat' : 'acabat'} «${titolA}»`);
-    return { accio: origen, qui, reoberta: true, text: ` · «${nomTipus(origen.tipus)}» (${nomCurtTreballador(qui)}) torna a estar oberta.` };
-  }
-  if (a.es_peticio || a.carril !== 'operari') return null;
-  const demanant = C.get('treballadors', a.creat_per); if (!demanant || !demanant.actiu || demanant.id === t.id) return null;
-  const dades = { incidencia_id: inc.id, tipus: 'registrar_resultat', carril: carrilDeResponsable(inc, demanant.id), titol: 'Revisar la feina: ' + (a.titol || nomTipus(a.tipus)), descripcio: resultat ? `Resultat de ${nomCurtTreballador(t)}: ${resultat}` : null, creat_per: t.id,
-    responsable_treballador_id: demanant.id, responsable_proveidor_id: null, responsable_contacte_id: null, gestor_id: null, estat: 'pendent', grup_termini: 'mig_termini', venciment: vencimentPerGrup('mig_termini').toISOString(), origen_accio_id: a.id, es_peticio: false, visible_client: false };
-  const r = await sb.from('incidencia_accions').insert(dades).select('id').single(); if (r.error) throw r.error;
-  await eventInc(inc.id, r.data.id, 'nova_accio', `Registrar resultat → ${nomTreballador(demanant)} (en acabar ${nomCurtTreballador(t)} «${nomTipus(a.tipus)}»)`);
-  return { accio: null, qui: demanant, text: ` · Torna a ${nomCurtTreballador(demanant)}: li queda «Registrar resultat».` };
-}
 // En finalitzar «Elaborar pressupost», el pressupost va directament al client: es crea la «Decisió del client sobre el pressupost» (petició al client),
 // si se sap a qui (un sol contacte autoritzat a la incidència, o un sol contacte al lloc). Si no, a l'oficina queda el formulari amb el tipus triat, per dir a qui.
 // No es fa si el client ja ha aprovat o rebutjat aquest pressupost, ni si ja té una decisió pendent.
@@ -6125,8 +6083,11 @@ function renderAccionsMeves(main) {
   const meves = totes.filter(activa).sort((a, b) => String(a.venciment || '9').localeCompare(String(b.venciment || '9')));
   const programades = totes.filter(iniciFutur).sort((a, b) => String(a.inici).localeCompare(String(b.inici)));
   const peraAcceptar = C.rows('incidencia_accions').filter(a => a.actiu && a.es_peticio && a.estat === 'finalitzada' && !a.resolta && t && Number(a.creat_per) === t.id);
+  // les incidències que segueixo (o totes, si soc de l'oficina) sense cap acció oberta: toca encarregar el pas següent o tancar-les
+  const perEncarregar = t ? C.rows('incidencies').filter(i => senseSeguent(i) && (Number(i.seguidora_id) === t.id || (!APP_NOMES_TASQUES && esOficina(t)))).sort((x, y) => String(y.data_obertura).localeCompare(String(x.data_obertura))) : [];
+  const targetaEnc = i => `<div class="ic-targeta" data-inc="${i.id}" data-accio="" style="border-left-color:${colorCarril('seguidora')}"><b>${h(i.numero)}</b> · ${h(i.titol)}<br><span class="hint">${h(llocInc(i).nom || '')} · ${h(ultimaFeta(i))}</span><br><span class="pill dep">cal encarregar el pas següent o tancar</span></div>`;
   // a l'app: les incidències en què ha participat i que ara no depenen d'ell (les que sí, ja surten a dalt)
-  const ambMeves = new Set([...totes, ...peraAcceptar].map(a => Number(a.incidencia_id)));
+  const ambMeves = new Set([...totes, ...peraAcceptar].map(a => Number(a.incidencia_id)).concat(perEncarregar.map(i => i.id)));
   const participades = APP_NOMES_TASQUES && t ? C.rows('incidencies').filter(i => i.actiu && i.estat === 'oberta' && !ambMeves.has(i.id) && participaInc(i, t)).sort((x, y) => String(y.data_obertura).localeCompare(String(x.data_obertura))) : [];
   const participadesTancades = APP_NOMES_TASQUES && t ? C.rows('incidencies').filter(i => i.actiu && i.estat === 'tancada' && participaInc(i, t)).sort((x, y) => String(y.data_tancament || '').localeCompare(String(x.data_tancament || ''))).slice(0, 30) : [];
   const targetaInc = i => { const ob = accionsInc(i).filter(a => a.estat !== 'finalitzada' && activa(a)), qui = ob.map(a => nomCurtTreballador(C.get('treballadors', a.responsable_treballador_id)) || nomResponsable(a)).filter(Boolean);
@@ -6138,6 +6099,7 @@ function renderAccionsMeves(main) {
     ${meves.length ? meves.map(targeta).join('') : '<div class="empty">Cap acció oberta assignada a tu.</div>'}
     ${programades.length ? `<details class="ic-programades"><summary>Programades per més endavant (${programades.length}): encara no toquen</summary>${programades.map(targeta).join('')}</details>` : ''}
     ${peraAcceptar.length ? `<h3>Respostes rebudes per acceptar</h3>${peraAcceptar.map(targeta).join('')}` : ''}
+    ${perEncarregar.length ? `<h3>Incidències que esperen el pas següent</h3><p class="hint">Ningú no hi té cap acció oberta: encarrega’n una (Nova acció) o tanca-les.</p>${perEncarregar.map(targetaEnc).join('')}` : ''}
     ${participades.length ? `<h3>Incidències en què has participat</h3><p class="hint">Obertes, però ara no depenen de tu: pots veure’n tot el seguiment.</p>${participades.map(targetaInc).join('')}` : ''}
     ${participadesTancades.length ? `<details class="ic-programades"><summary>Tancades en què vas participar (${participadesTancades.length})</summary>${participadesTancades.map(targetaInc).join('')}</details>` : ''}`;
   main.querySelectorAll('.ic-targeta').forEach(c => c.addEventListener('click', () => { state.inc.vista = 'diagrama'; state.inc.id = Number(c.dataset.inc); state.inc.sel = c.dataset.accio ? Number(c.dataset.accio) : null; state.inc.form = null; state.mode = 'consulta'; state.table = 'incidencies'; renderApp(); window.scrollTo({ top: 0 }); }));
