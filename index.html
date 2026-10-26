@@ -336,6 +336,14 @@
   .ic-caixa.e-programada{ border-style:dotted; background:#fbfbfa; } .ic-caixa.e-programada .ic-qui, .ic-caixa.e-programada .ic-venc{ color:var(--ink-2); }
   .pill.e-programada{ color:#5c6670; border-style:dashed; background:#f5f6f7; }
   .xip.prog{ opacity:.7; border-style:dashed; }
+  /* xip amb el color del carril (llista d'incidències) */
+  .xip.carril{ border:1.5px solid var(--lc, var(--line)); color:var(--lc, var(--ink)); background:#fff; font-weight:600; } .xip.carril i{ display:inline-block; width:9px; height:9px; border-radius:50%; background:var(--lc, var(--ink-2)); margin-right:5px; vertical-align:0; } .xip.carril small{ font-weight:400; color:var(--ink-2); }
+  .xip.carril.fora{ border-color:#d32f2f; } .xip.carril.fora small{ color:#d32f2f; }
+  /* línia de temps de tota la incidència (app) */
+  .ao-tot{ margin:14px 0; } .ao-tot summary{ cursor:pointer; font-size:15px; color:var(--ink-2); margin-bottom:8px; }
+  .ao-tot .ic-targeta{ border-left-width:8px; cursor:default; } .ao-tot .ic-targeta.meva{ background:#fbfdf6; } .ao-tot .ic-targeta .l{ font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-2); }
+  .ao-tot .ic-targeta .res{ margin-top:4px; color:var(--ink-2); white-space:pre-wrap; }
+  .ic-targeta.part{ border-left-width:8px; }
   .ic-ara .prog{ color:var(--ink-2); font-size:13px; } .ic-ara .prog b{ font-weight:600; }
   details.ic-programades{ margin-top:14px; } details.ic-programades summary{ cursor:pointer; color:var(--ink-2); margin:0 0 8px; } details.ic-programades .ic-targeta{ border-style:dashed; }
   .ic-caixa.fora{ border-color:#d32f2f; }
@@ -2079,7 +2087,7 @@ const C = {
   rows: t => cache[t] || [],
   get: (t, id) => { const pk = (SCHEMA.tables[t] || {}).pk; return pk ? (cache[t] || []).find(r => String(r[pk]) === String(id)) : (cache[t] || []).find(r => r.id === Number(id)); },
 };
-const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, pagProv: { vista: 'marca', data: '', q: '', fets: {}, pagades: false }, ft: { id: null, form: null, vista: 'llista', nou: null, fets: false }, marques: {}, fac: { any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), avis: null }, ia: { missatges: [], enviant: false }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, calAcc: { vista: '', ref: '', meves: false, fetes: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
+const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, pagProv: { vista: 'marca', data: '', q: '', fets: {}, pagades: false }, ft: { id: null, form: null, vista: 'llista', nou: null, fets: false }, marques: {}, fac: { any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), avis: null }, ia: { missatges: [], enviant: false }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, calAcc: { vista: '', ref: '', meves: false, fetes: false, interns: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
 const L = (t, id) => { const r = C.get(t, id); return r ? SCHEMA.tables[t].display(r, L) : ''; };
 
 /* =====================================================================
@@ -4377,7 +4385,7 @@ const TIPUS_SENSE_FULL = ['obrir', 'tancar', 'reobrir', 'assignar_seguidora', 'v
 const accioAmbFull = a => !!a && a.carril === 'operari' && !a.es_peticio && !!a.responsable_treballador_id && !TIPUS_SENSE_FULL.includes(a.tipus);
 const fullDeAccio = a => a ? C.rows('fulls_treball').find(f => f.actiu && Number(f.accio_id) === Number(a.id)) : null;
 // qui pot crear el full d'una acció (és el que permet la base de dades): l'oficina, l'encarregat de l'acció o qui la va crear
-const potCrearFullDe = a => { const t = treballadorActual(); return !!t && (esOficina(t) || Number(a.responsable_treballador_id) === t.id || Number(a.creat_per) === t.id); };
+const potCrearFullDe = a => { const t = treballadorActual(); return !!t && a.estat !== 'finalitzada' && (esOficina(t) || Number(a.responsable_treballador_id) === t.id || Number(a.creat_per) === t.id); };
 const jornadesFull = id => C.rows('full_treball_jornades').filter(j => j.actiu && Number(j.full_id) === Number(id)).sort((a, b) => String(a.data).localeCompare(String(b.data)) || String(a.hora_inici || '').localeCompare(String(b.hora_inici || '')) || a.id - b.id);
 const materialFull = id => C.rows('full_treball_material').filter(m => m.actiu && Number(m.full_id) === Number(id)).sort((a, b) => String(a.data).localeCompare(String(b.data)) || a.id - b.id);
 const horesJornada = j => { if (!j || !j.hora_inici || !j.hora_fi) return 0; const [h1, m1] = String(j.hora_inici).split(':').map(Number), [h2, m2] = String(j.hora_fi).split(':').map(Number); let min = (h2 * 60 + (m2 || 0)) - (h1 * 60 + (m1 || 0)); if (min < 0) min += 24 * 60; return Math.round(min / 60 * 100) / 100; };
@@ -4385,7 +4393,7 @@ const horesFull = id => Math.round(jornadesFull(id).reduce((t, j) => t + horesJo
 const resumJornades = id => jornadesFull(id).map(j => dmy(j.data) + ': ' + (j.feina || '')).filter(x => !/: $/.test(x)).join('\n');
 const fotosFull = (f, grup) => (Array.isArray(f.adjunts) ? f.adjunts : []).filter(x => (x.grup || 'abans') === grup);
 const fullProgramat = f => !!f && !!f.inici && f.estat === 'pendent' && !f.finalitzat && new Date(f.inici) > new Date();   // encara no toca
-const potEditarFull = f => { const t = treballadorActual(); return !!f && !f.finalitzat && f.estat !== 'albara' && f.estat !== 'anul_lat' && !!t && (esOficina(t) || Number(f.encarregat_id) === t.id || Number(f.demanat_per) === t.id); };
+const potEditarFull = f => { const t = treballadorActual(); const acc = f && f.accio_id ? C.get('incidencia_accions', f.accio_id) : null; return !!f && !f.finalitzat && f.estat !== 'albara' && f.estat !== 'anul_lat' && !(acc && acc.estat === 'finalitzada') && !!t && (esOficina(t) || Number(f.encarregat_id) === t.id || Number(f.demanat_per) === t.id); };
 async function recarregaFulls() { await Promise.all(['fulls_treball', 'full_treball_jornades', 'full_treball_material'].map(loadTable)); }
 // el full d'una acció d'operari: la demanda surt de l'acció (nom = títol, termini = venciment, lloc = el de la incidència…)
 async function creaFullPerAccio(inc, a) {
@@ -5178,7 +5186,7 @@ function renderIncidencies(main) {
     </div>
     ${llista.length ? `<table class="tbl"><thead><tr><th>Número</th><th>Lloc</th><th>Títol</th><th>Seguidora</th><th>Obertura</th><th>Estat</th><th>Ara</th></tr></thead><tbody>
       ${llista.map(i => { const acc = accionsInc(i), obertes = acc.filter(a => a.estat !== 'finalitzada').sort((x, y) => (iniciFutur(x) === iniciFutur(y) ? 0 : iniciFutur(x) ? 1 : -1)), fora = obertes.filter(foraTermini).length;
-        return `<tr class="row" data-inc="${i.id}"><td>${h(i.numero)}</td><td>${h(llocInc(i).nom)} <span class="hint">${h(clientInc(i).nom || '')}</span></td><td>${h(i.titol)}</td><td>${h(nomCurtTreballador(C.get('treballadors', i.seguidora_id)))}</td><td>${dmyhm(i.data_obertura)}</td><td>${i.estat === 'oberta' ? '<span class="xip ok">oberta</span>' : '<span class="xip">tancada ' + dmy(i.data_tancament) + '</span>'}</td><td>${obertes.length ? obertes.map(a => `<span class="xip ${foraTermini(a) ? 'fora' : ''} ${iniciFutur(a) ? 'prog' : ''}">${h(nomTipus(a.tipus))} · ${h(nomResponsable(a))}${iniciFutur(a) ? ' · ' + textInici(a) : ''}</span>`).join(' ') : (i.estat === 'oberta' ? '<span class="hint">cap acció oberta</span>' : '')}${fora ? ` <b class="v-no">${fora} fora de termini</b>` : ''}</td></tr>`; }).join('')}
+        return `<tr class="row" data-inc="${i.id}"><td>${h(i.numero)}</td><td>${h(llocInc(i).nom)} <span class="hint">${h(clientInc(i).nom || '')}</span></td><td>${h(i.titol)}</td><td>${h(nomCurtTreballador(C.get('treballadors', i.seguidora_id)))}</td><td>${dmyhm(i.data_obertura)}</td><td>${i.estat === 'oberta' ? '<span class="xip ok">oberta</span>' : '<span class="xip">tancada ' + dmy(i.data_tancament) + '</span>'}</td><td>${obertes.length ? obertes.map(a => `<span class="xip carril ${foraTermini(a) ? 'fora' : ''} ${iniciFutur(a) ? 'prog' : ''}" style="--lc:${colorCarril(a.carril)}" title="${h(etiquetaOpt(INC.carrils, a.carril))}"><i></i>${h(nomResponsable(a))} <small>· ${h(nomTipus(a.tipus))}${iniciFutur(a) ? ' · ' + textInici(a) : ''}</small></span>`).join(' ') : (i.estat === 'oberta' ? '<span class="hint">cap acció oberta</span>' : '')}${fora ? ` <b class="v-no">${fora} fora de termini</b>` : ''}</td></tr>`; }).join('')}
     </tbody></table>` : '<div class="empty">Cap incidència amb aquests filtres.</div>'}`;
   if ($('#inc-nova')) $('#inc-nova').addEventListener('click', () => { st.vista = 'nova'; st.nova = {}; renderMain(); });
   $('#inc-estat').addEventListener('change', e => { st.filtre.estat = e.target.value; renderMain(); });
@@ -5500,6 +5508,21 @@ function pintaPanell(inc) {
    Sense diagrama ni carrils: el lloc, qui va avisar (petit), la seguidora i qui ho demana, la PETICIÓ (gran i fosca), el termini,
    la descripció, les fotos (grans, amb qui les ha pujat) i només tres coses a fer: començar, fer una petició a qui ho demana, finalitzar. */
 const accionsMevesInc = (inc, t) => accionsVisibles(inc).filter(a => t && !['obrir', 'tancar', 'reobrir', 'assignar_seguidora', 'visibilitat_client'].includes(a.tipus) && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id));
+// l'operari ha participat en una incidència si n'és la seguidora o ha estat responsable, gestor, creador o qui ha finalitzat alguna acció (també de les retirades)
+const participaInc = (inc, t) => !!t && (Number(inc.seguidora_id) === t.id || C.rows('incidencia_accions').some(a => Number(a.incidencia_id) === inc.id && [a.responsable_treballador_id, a.gestor_id, a.creat_per, a.finalitzada_per].some(x => Number(x) === t.id)));
+// línia de temps de tota la incidència per a l'app: totes les accions, de la més nova a la més antiga, amb el color del carril
+function liniaTempsIncHTML(inc, t) {
+  const acc = ordenaAccions(accionsVisibles(inc));
+  if (!acc.length) return '';
+  const fila = a => { const ee = estatEfectiu(a), meva = t && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id);
+    return `<div class="ic-targeta ${meva ? 'meva' : ''} ${foraTermini(a) && a.estat !== 'finalitzada' ? 'fora' : ''}" style="border-left-color:${colorCarril(a.carril)}">
+      <span class="l">${h(etiquetaOpt(INC.carrils, a.carril))} · ${dmyhm(a.creat_el)}</span><br>
+      <b>${h(nomTipus(a.tipus))}</b>${a.titol && a.titol !== nomTipus(a.tipus) ? ' · ' + h(a.titol) : ''} → <b>${h(nomResponsable(a)) || '—'}</b>${meva ? ' (tu)' : ''}<br>
+      <span class="pill e-${ee}">${INC.estats[ee]}</span>${a.es_peticio ? ' <span class="pill dep">petició</span>' : ''}${a.estat === 'finalitzada' ? ` <span class="hint">feta el ${dmyhm(a.finalitzada_el)}</span>` : (a.venciment ? ` <span class="${foraTermini(a) ? 'v-no' : 'hint'}">venç ${dmyhm(a.venciment)}</span>` : '')}
+      ${a.descripcio ? `<div class="res">${h(String(a.descripcio).slice(0, 240))}</div>` : ''}${a.resultat ? `<div class="res"><b>${a.es_peticio ? 'Resposta' : 'Resultat'}:</b> ${h(String(a.resultat).slice(0, 300))}</div>` : ''}
+    </div>`; };
+  return acc.map(fila).join('');
+}
 // a qui va la petició d'un operari: sempre a qui li ha demanat l'acció (i si és ell mateix, a la seguidora)
 function destinatariPeticio(inc, a) {
   const t = trebInc(), creador = a && a.creat_per ? C.get('treballadors', a.creat_per) : null;
@@ -5539,7 +5562,9 @@ function renderAccioOperari(main) {
     ${inc.observacions_internes || a.observacions_internes ? `<div class="ao-fila"><span class="l">Observacions internes</span><div class="ao-desc" style="font-size:16px">${h([inc.observacions_internes, a.observacions_internes].filter(Boolean).join('\n'))}</div></div>` : ''}
     ${fotosOperariHTML(inc)}
     ${a && accioAmbFull(a) ? (fullDeAccio(a) ? seccionsFullHTML(fullDeAccio(a)) : potCrearFullDe(a) ? '<div class="ft" id="ft-creant">Preparant el full de treball…</div>' : '') : ''}
-    <aside class="ic-panell ao-panell" id="ic-panell"></aside>` : '<div class="empty">No tens cap acció en aquesta incidència.</div>'}
+    <aside class="ic-panell ao-panell" id="ic-panell"></aside>` : `<div class="empty">Ara mateix no tens cap acció en aquesta incidència${participaInc(inc, t) ? ', però hi has participat: a sota en tens tot el seguiment' : ''}.</div>`}
+    ${araDepenHTML(inc, accionsVisibles(inc))}
+    <details class="ao-tot" ${a && a.estat !== 'finalitzada' ? '' : 'open'}><summary>Tota la incidència: ${accionsVisibles(inc).length} accions (${accionsVisibles(inc).filter(x => x.estat !== 'finalitzada').length} obertes)</summary>${liniaTempsIncHTML(inc, t)}</details>
   </div>`;
   $('#inc-torna').addEventListener('click', () => { st.vista = 'llista'; st.sel = null; st.form = null; state.table = 'accions_meves'; renderApp(); window.scrollTo({ top: 0 }); });
   main.querySelectorAll('[data-tria]').forEach(b => b.addEventListener('click', () => { st.sel = Number(b.dataset.tria); st.form = null; renderMain(); }));
@@ -5571,7 +5596,7 @@ function panellOperariHTML(inc) {
       <div class="f"><span class="l">Què necessites o què preguntes</span><textarea lang="ca" spellcheck="true" id="pet-text"></textarea></div>
       <div class="f"><span class="l">Fotos, vídeos, documents</span><input type="file" id="pet-fitxers" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx"></div>
       <div class="actions"><button class="btn" id="pet-ok">Envia la petició</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div></div>`;
-  const esperes = pend.length ? `<div class="ao-fila"><span class="l">Esperes resposta de</span>${pend.map(p => h(nomResponsable(p)) + (p.descripcio ? ': ' + h(String(p.descripcio).slice(0, 120)) : '')).join('<br>')}</div>` : '';
+  const esperes = pend.length ? `<div class="ao-fila"><span class="l">Esperes resposta de</span>${pend.map(p => h(nomResponsable(p)) + (p.descripcio ? ': ' + h(String(p.descripcio).slice(0, 120)) : '') + (potRetirarAccio(inc, p) ? ` <a href="#" data-retira="${p.id}" class="hint">(feta per error: retira-la)</a>` : '')).join('<br>')}</div>` : '';
   return `${esperes}${formOp ? '' : `<div class="actions ic-ops">${ops}</div>`}${form}`;
 }
 // la petició d'un operari: tipus «consultar», cap a qui li ha demanat l'acció, amb el termini de l'acció com a màxim
@@ -5620,6 +5645,7 @@ function panellHTML(inc) {
   if (derivables.length) ops += `<button class="btn ghost small" data-op="deriva">${a.estat === 'finalitzada' ? 'Encarrega el pas següent…' : 'Deriva una acció / fes una petició…'}</button> `;
   if (potActuar && a.venciment && a.estat !== 'finalitzada' && !esSeguidora(inc)) ops += `<button class="btn ghost small" data-op="ampliacio">Demana ampliació de termini</button> `;
   if (!client && oberta && (esSeguidora(inc) || esOficina(t))) ops += `<button class="btn ghost small" data-op="visible">${a.visible_client ? 'Amaga al client' : 'Mostra al client'}</button> `;
+  if (!client && oberta && potRetirarAccio(inc, a)) ops += `<button class="btn ghost small" data-op="retira" title="Si s’ha creat per error: desapareix i tot queda com abans de crear-la">Retira l’acció (feta per error)</button> `;
   if (!client && oberta && a.estat !== 'finalitzada' && a.responsable_proveidor_id && potActuar) { const p = C.get('proveidors', a.responsable_proveidor_id); if (p && p.email) ops += enllacCorreuProveidor(inc, a, p); }
   const formOp = st.form && st.form.accio === a.id ? st.form : null;
   let formHtml = '';
@@ -5715,6 +5741,7 @@ function seguentHabitual(origen) {
 function bindPanell(inc) {
   const st = state.inc, p = $('#ic-panell'), t = trebInc();
   const cancel = $('#panell-cancel'); if (cancel) cancel.addEventListener('click', () => { st.form = null; pintaPanell(inc); });
+  p.querySelectorAll('[data-retira]').forEach(el => el.addEventListener('click', async e => { e.preventDefault(); const x = C.get('incidencia_accions', Number(el.dataset.retira)); if (x) await retiraAccio(inc, x); }));
   p.querySelectorAll('[data-sel]').forEach(el => el.addEventListener('click', e => { e.preventDefault(); st.sel = Number(el.dataset.sel); st.form = null; renderMain(); }));
   p.querySelectorAll('[data-obre-full]').forEach(el => el.addEventListener('click', e => { e.preventDefault(); state.mode = 'consulta'; state.table = 'fulls_treball'; state.editing = Number(el.dataset.obreFull); renderApp(); window.scrollTo({ top: 0 }); }));
   p.querySelectorAll('[data-crea-full]').forEach(el => el.addEventListener('click', async e => { e.preventDefault(); const a = C.get('incidencia_accions', Number(el.dataset.creaFull)); try { await creaFullPerAccio(inc, a); toast('Full de treball creat'); renderMain(); } catch (e2) { errorInc(friendly(e2)); } }));
@@ -5724,6 +5751,7 @@ function bindPanell(inc) {
     if (op === 'comenca') { await marcaFullEnCurs(a); await operacio(inc, () => sb.from('incidencia_accions').update({ estat: 'en_curs' }).eq('id', a.id), a.id, 'en_curs', 'Acció en curs'); }
     else if (op === 'resol') { await operacio(inc, () => sb.from('incidencia_accions').update({ resolta: true, resolta_el: new Date().toISOString() }).eq('id', a.id), a.id, 'resposta_acceptada', 'Resposta donada per suficient'); }
     else if (op === 'visible') { await operacio(inc, () => sb.from('incidencia_accions').update({ visible_client: !a.visible_client }).eq('id', a.id), a.id, 'visibilitat', a.visible_client ? 'Amagada al client' : 'Visible al client'); }
+    else if (op === 'retira') { await retiraAccio(inc, a); }
     else if (op === 'deriva') { st.form = { tipus: 'accio', origen: a.id }; pintaPanell(inc); }
     else if (op === 'peticio') { st.form = { tipus: 'peticio', accio: a.id }; pintaPanell(inc); }
     else if (op === 'finalitza') { st.form = { tipus: 'finalitza', accio: a.id }; pintaPanell(inc); }
@@ -5883,6 +5911,32 @@ function errorInc(msg) {
   if (acts) acts.parentNode.insertBefore(e, acts); else p.appendChild(e);
   if (e.scrollIntoView) e.scrollIntoView({ block: 'nearest' });
 }
+// retirar una acció creada per error: desapareix (queda donada de baixa, apuntada a l'historial) i tot torna a l'acció d'origen.
+// Només si no és estructural (obrir, tancar…), no està finalitzada, no en deriva cap altra i el seu full de treball no té feina apuntada;
+// ho pot fer qui la va crear, la seguidora o l'oficina (i l'operari, les seves peticions).
+function potRetirarAccio(inc, a) {
+  const t = trebInc(); if (!t || !a || !a.actiu) return false;
+  if (['obrir', 'tancar', 'reobrir', 'assignar_seguidora', 'visibilitat_client'].includes(a.tipus) || a.estat === 'finalitzada') return false;
+  if (C.rows('incidencia_accions').some(x => x.actiu && Number(x.origen_accio_id) === a.id)) return false;
+  return socCreador(a) || esSeguidora(inc) || esOficina(t);
+}
+async function retiraAccio(inc, a) {
+  if (!potRetirarAccio(inc, a)) { errorInc('Aquesta acció no es pot retirar: o no és teva, o ja està finalitzada, o en deriva alguna altra (retira primer les derivades).'); return; }
+  const full = fullDeAccio(a);
+  if (full && (jornadesFull(full.id).length || materialFull(full.id).length || (Array.isArray(full.adjunts) && full.adjunts.length))) { errorInc('El full de treball d’aquesta acció ja té feina apuntada (jornades, material o fotos): no es pot retirar.'); return; }
+  const origen = a.origen_accio_id ? C.get('incidencia_accions', a.origen_accio_id) : null;
+  if (!confirm(`Retirar «${nomTipus(a.tipus)}${a.titol && a.titol !== nomTipus(a.tipus) ? ' · ' + a.titol : ''}» (${nomResponsable(a)})? Desapareix del diagrama i tot queda com abans de crear-la${origen ? ', a «' + nomTipus(origen.tipus) + '»' : ''}. Queda apuntat a l’historial.`)) return;
+  try {
+    let r = await sb.from('incidencia_accions').update({ actiu: false }).eq('id', a.id); if (r.error) throw r.error;
+    if (full) { r = await sb.from('fulls_treball').update({ actiu: false, estat: 'anul_lat' }).eq('id', full.id); if (r.error) throw r.error; }
+    const amps = C.rows('incidencia_ampliacions').filter(x => x.actiu && Number(x.accio_id) === a.id).map(x => x.id);
+    if (amps.length) { r = await sb.from('incidencia_ampliacions').update({ actiu: false }).in('id', amps); if (r.error) throw r.error; }
+    await eventInc(inc.id, a.origen_accio_id || null, 'accio_retirada', `Retirada (feta per error): ${nomTipus(a.tipus)}${a.titol && a.titol !== nomTipus(a.tipus) ? ' · ' + a.titol : ''} → ${nomResponsable(a)}`);
+    await recarregaInc(); if (full) await loadTable('fulls_treball');
+    toast('Acció retirada');
+    state.inc.sel = a.origen_accio_id || null; state.inc.form = null; renderMain();
+  } catch (e) { errorInc(friendly(e)); }
+}
 async function operacio(inc, fn, accioId, tipusEvent, detall) {
   try { const r = await fn(); if (r.error) throw r.error; await eventInc(inc.id, accioId, tipusEvent, detall); await recarregaInc(); toast(detall); renderMain(); }
   catch (e) { errorInc(friendly(e)); }
@@ -5896,14 +5950,22 @@ function renderAccionsMeves(main) {
   const meves = totes.filter(activa).sort((a, b) => String(a.venciment || '9').localeCompare(String(b.venciment || '9')));
   const programades = totes.filter(iniciFutur).sort((a, b) => String(a.inici).localeCompare(String(b.inici)));
   const peraAcceptar = C.rows('incidencia_accions').filter(a => a.actiu && a.es_peticio && a.estat === 'finalitzada' && !a.resolta && t && Number(a.creat_per) === t.id);
+  // a l'app: les incidències en què ha participat i que ara no depenen d'ell (les que sí, ja surten a dalt)
+  const ambMeves = new Set([...totes, ...peraAcceptar].map(a => Number(a.incidencia_id)));
+  const participades = APP_NOMES_TASQUES && t ? C.rows('incidencies').filter(i => i.actiu && i.estat === 'oberta' && !ambMeves.has(i.id) && participaInc(i, t)).sort((x, y) => String(y.data_obertura).localeCompare(String(x.data_obertura))) : [];
+  const participadesTancades = APP_NOMES_TASQUES && t ? C.rows('incidencies').filter(i => i.actiu && i.estat === 'tancada' && participaInc(i, t)).sort((x, y) => String(y.data_tancament || '').localeCompare(String(x.data_tancament || ''))).slice(0, 30) : [];
+  const targetaInc = i => { const ob = accionsInc(i).filter(a => a.estat !== 'finalitzada' && activa(a)), qui = ob.map(a => nomCurtTreballador(C.get('treballadors', a.responsable_treballador_id)) || nomResponsable(a)).filter(Boolean);
+    return `<div class="ic-targeta part" data-inc="${i.id}" data-accio="" style="border-left-color:${ob.length ? colorCarril(ob[0].carril) : '#c9d0c4'}"><b>${h(i.numero)}</b> · ${h(i.titol)}<br><span class="hint">${h(llocInc(i).nom || '')}${i.estat === 'tancada' ? ' · tancada ' + dmy(i.data_tancament) : (qui.length ? ' · ara depèn de ' + h([...new Set(qui)].join(', ')) : ' · cap acció oberta')}</span></div>`; };
   const targeta = a => { const inc = C.get('incidencies', a.incidencia_id) || {}, ee = estatEfectiu(a), nAdj = inc.id ? nAdjuntsInc(inc) : 0, internes = [inc.observacions_internes, a.observacions_internes].filter(Boolean).join(' · ');
     return `<div class="ic-targeta ${foraTermini(a) ? 'fora' : ''}" data-inc="${inc.id}" data-accio="${a.id}"><b>${h(nomTipus(a.tipus))}</b> · ${h(inc.numero || '')} ${h(inc.titol || '')}<br><span class="hint">${h(llocInc(inc).nom || '')}${nAdj ? ' · ' + nAdj + (nAdj === 1 ? ' foto o document' : ' fotos o documents') + ' a la incidència' : ''}</span><br><span class="pill e-${ee}">${INC.estats[ee]}</span> ${iniciFutur(a) ? '<span>' + textInici(a) + '</span> · ' : ''}${a.venciment ? '<span class="' + (foraTermini(a) ? 'v-no' : '') + '">venç ' + dmyhm(a.venciment) + '</span>' : ''}${a.descripcio ? '<br>' + h(a.descripcio.slice(0, 140)) : ''}${internes ? '<br><span class="ic-int"><b>Internes:</b> ' + h(internes.length > 220 ? internes.slice(0, 218) + '…' : internes) + '</span>' : ''}</div>`; };
   main.innerHTML = `<h1>Les meves accions <button class="btn ghost small" id="am-cal" style="vertical-align:middle; margin-left:8px">Calendari</button></h1>
     ${!t ? '<div class="msg err">El teu usuari no té fitxa de treballador.</div>' : ''}
     ${meves.length ? meves.map(targeta).join('') : '<div class="empty">Cap acció oberta assignada a tu.</div>'}
     ${programades.length ? `<details class="ic-programades"><summary>Programades per més endavant (${programades.length}): encara no toquen</summary>${programades.map(targeta).join('')}</details>` : ''}
-    ${peraAcceptar.length ? `<h3>Respostes rebudes per acceptar</h3>${peraAcceptar.map(targeta).join('')}` : ''}`;
-  main.querySelectorAll('.ic-targeta').forEach(c => c.addEventListener('click', () => { state.inc.vista = 'diagrama'; state.inc.id = Number(c.dataset.inc); state.inc.sel = Number(c.dataset.accio); state.inc.form = null; state.mode = 'consulta'; state.table = 'incidencies'; renderApp(); window.scrollTo({ top: 0 }); }));
+    ${peraAcceptar.length ? `<h3>Respostes rebudes per acceptar</h3>${peraAcceptar.map(targeta).join('')}` : ''}
+    ${participades.length ? `<h3>Incidències en què has participat</h3><p class="hint">Obertes, però ara no depenen de tu: pots veure’n tot el seguiment.</p>${participades.map(targetaInc).join('')}` : ''}
+    ${participadesTancades.length ? `<details class="ic-programades"><summary>Tancades en què vas participar (${participadesTancades.length})</summary>${participadesTancades.map(targetaInc).join('')}</details>` : ''}`;
+  main.querySelectorAll('.ic-targeta').forEach(c => c.addEventListener('click', () => { state.inc.vista = 'diagrama'; state.inc.id = Number(c.dataset.inc); state.inc.sel = c.dataset.accio ? Number(c.dataset.accio) : null; state.inc.form = null; state.mode = 'consulta'; state.table = 'incidencies'; renderApp(); window.scrollTo({ top: 0 }); }));
   $('#am-cal').addEventListener('click', () => { state.table = 'calendari_accions'; renderApp(); });
 }
 
@@ -5932,6 +5994,7 @@ function accionsCalendari() {
     const inc = C.get('incidencies', a.incidencia_id); if (!inc || !inc.actiu) return null;
     const feta = a.estat === 'finalitzada' || inc.estat !== 'oberta';
     if (feta && !st.fetes) return null;
+    if (st.interns && ['client', 'proveidor', 'subcontractista'].includes(a.carril)) return null; // només el que depèn de gent de casa
     if ((st.meves || APP_NOMES_TASQUES) && !(t && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id || Number(a.creat_per) === t.id))) return null; // a l'app, sempre només les pròpies
     let inici = dataLocal(a.creat_el) || avuiS; if (a.inici && dataLocal(a.inici) > inici) inici = dataLocal(a.inici);   // si té data d'inici, la franja comença llavors
     let fi = a.venciment ? dataLocal(a.venciment) : (feta ? dataLocal(a.finalitzada_el) || inici : avuiS); if (fi < inici) fi = inici;
@@ -6004,6 +6067,7 @@ function renderCalendariAccions(main) {
       <button class="btn ghost small" id="ca-avui">Avui</button>
       ${APP_NOMES_TASQUES ? '' : `<label class="chk" style="padding:0"><input type="checkbox" id="ca-meves" ${st.meves ? 'checked' : ''}> Només les meves</label>`}
       <label class="chk" style="padding:0"><input type="checkbox" id="ca-fetes" ${st.fetes ? 'checked' : ''}> També les finalitzades</label>
+      <label class="chk" style="padding:0" title="Amaga les accions dels carrils de client, proveïdor i subcontractista"><input type="checkbox" id="ca-interns" ${st.interns ? 'checked' : ''}> Sense clients, proveïdors ni subcontractistes</label>
       <span class="n">${items.length} ${items.length === 1 ? 'acció' : 'accions'}</span>
     </div>
     ${sel ? detallAccioHTML(sel) : ''}
@@ -6014,6 +6078,7 @@ function renderCalendariAccions(main) {
   $('#ca-avui').addEventListener('click', () => { st.ref = avui(); renderMain(); });
   if ($('#ca-meves')) $('#ca-meves').addEventListener('change', e => { st.meves = e.target.checked; renderMain(); });
   $('#ca-fetes').addEventListener('change', e => { st.fetes = e.target.checked; renderMain(); });
+  $('#ca-interns').addEventListener('change', e => { st.interns = e.target.checked; renderMain(); });
   main.querySelectorAll('[data-accio]').forEach(el => el.addEventListener('click', () => { st.sel = Number(el.dataset.accio); renderMain(); const d = $('#ca-detall'); if (d && d.scrollIntoView) d.scrollIntoView({ block: 'nearest' }); }));
   if ($('#ca-tanca')) $('#ca-tanca').addEventListener('click', () => { st.sel = null; renderMain(); });
   if ($('#ca-obre')) $('#ca-obre').addEventListener('click', () => { state.inc.vista = 'diagrama'; state.inc.id = sel.inc.id; state.inc.sel = sel.a.id; state.inc.form = null; state.inc.capa = 'interna'; state.mode = 'consulta'; state.table = 'incidencies'; renderApp(); window.scrollTo({ top: 0 }); });
