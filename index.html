@@ -5786,7 +5786,10 @@ async function marcaPressupostDecidit(accio, aprovat) {
   }
 }
 function seguentHabitual(origen) {
-  if (origen.tipus === 'pressupost') { const dec = C.rows('incidencia_accions').find(x => x.actiu && Number(x.origen_accio_id) === origen.id && x.tipus === 'decisio_client' && x.estat === 'finalitzada'); return dec && dec.decisio === 'aprovat' ? 'executar' : dec && dec.decisio === 'rebutjat' ? null : 'decisio_client'; }
+  if (origen.tipus === 'pressupost') {   // compta l'última decisió del client (pot haver-n'hi hagut una de «modificacions» abans)
+    const decs = C.rows('incidencia_accions').filter(x => x.actiu && Number(x.origen_accio_id) === origen.id && x.tipus === 'decisio_client' && x.estat === 'finalitzada').sort((a, b) => String(a.finalitzada_el || '').localeCompare(String(b.finalitzada_el || '')) || a.id - b.id);
+    const dec = decs[decs.length - 1]; return dec && dec.decisio === 'aprovat' ? 'executar' : dec && dec.decisio === 'rebutjat' ? null : 'decisio_client';
+  }
   if (origen.tipus === 'decisio_client') return origen.decisio === 'modificacions' ? 'pressupost' : 'executar';
   return { obrir: 'diagnosticar', reobrir: 'diagnosticar', diagnosticar: 'pressupost', planificar: 'executar', demanar_instruccions: 'executar', autoritzar_actuacio: 'executar', programar: 'executar', assignar: 'executar', demanar_material: 'executar', executar: 'registrar_resultat' }[origen.tipus] || null;
 }
@@ -5840,6 +5843,7 @@ function bindPanell(inc) {
   });
   const finOk = $('#fin-ok'); if (finOk) finOk.addEventListener('click', async () => {
     const a = C.get('incidencia_accions', st.sel); let resultat = $('#fin-resultat').value.trim();
+    const formAbans = st.form && st.form.accio === a.id ? st.form : null;   // pot portar el pas següent proposat (p. ex. Executar feina, en confirmar un pressupost aprovat)
     const fitxers = [];   // les fotos i documents es pugen des de la caixa de l'acció, no des d'aquí
     const triaP = $('#fin-pressupost') ? $('#fin-pressupost').value : '';
     const fullA = !a.es_peticio ? fullDeAccio(a) : null, fullAmbJornades = !!fullA && jornadesFull(fullA.id).length > 0;
@@ -5866,32 +5870,41 @@ function bindPanell(inc) {
         else { const rf = await sb.from('fulls_treball').update({ finalitzat: true, finalitzat_el: ara, finalitzat_per: t.id, estat: 'finalitzat', resum: resultat || null }).eq('id', fullA.id); if (rf.error) throw rf.error; }
         await loadTable('fulls_treball');
       }
-      // la feina de l'operari torna a l'acció anterior (la de qui la va encarregar): es reobre, i des d'allà s'encarrega el pas següent
+      // la feina torna a l'acció anterior (la de qui la va encarregar) quan acaba una acció d'operari o de subcontractista, una petició (preu d'un proveïdor,
+      // material, decisió del client…) o una acció del client: si l'anterior estava finalitzada es reobre, i des d'allà s'encarrega el pas següent
       let retorn = '', retornA = null, retornQui = null;
-      if (!a.es_peticio && a.carril === 'operari') { try { const rr = await reobreAnterior(inc, a, t, ara, resultat); if (rr) { retorn = rr.text; retornA = rr.accio; retornQui = rr.qui; } } catch (e2) { toastErr('No s’ha pogut tornar la feina a l’acció anterior: ' + friendly(e2)); } }
+      const torna = a.es_peticio || ['operari', 'client', 'proveidor', 'subcontractista'].includes(a.carril);
+      const decisio = a.tipus === 'decisio_client' ? canvis.decisio : null;
+      const notaDecisio = decisio ? (decisio === 'aprovat' ? 'Pressupost aprovat pel client' : decisio === 'rebutjat' ? 'Pressupost rebutjat pel client' : 'El client demana modificacions al pressupost') + ' (' + dmyhm(ara) + ')' + (resultat ? ': ' + resultat : '') : null;
+      if (torna) { try { const rr = await reobreAnterior(inc, a, t, ara, resultat, { nota: notaDecisio }); if (rr) { retorn = rr.text; retornA = rr.accio; retornQui = rr.qui; } } catch (e2) { toastErr('No s’ha pogut tornar la feina a l’acció anterior: ' + friendly(e2)); } }
+      // decisió del client: el pressupost desat queda acceptat o rebutjat
+      if (decisio && decisio !== 'modificacions') { const pres = a.origen_accio_id ? C.get('incidencia_accions', a.origen_accio_id) : null; if (pres && pres.tipus === 'pressupost') await marcaPressupostDecidit(pres, decisio === 'aprovat'); }
       await eventInc(inc.id, a.id, a.es_peticio ? 'resposta' : 'finalitzada', (canvis.decisio ? etiquetaOpt(INC.decisions, canvis.decisio) + ' · ' : '') + (resultat || '').slice(0, 200));
       await recarregaInc();
-      toast((a.es_peticio ? 'Resposta registrada' : 'Acció finalitzada') + (fullAnullat ? ' · el full de treball, buit, queda anul·lat' : '') + retorn, retorn || fullAnullat ? 6000 : undefined);
-      // acció pròpia acabada: s'ofereix de seguida encarregar el pas següent (una petició contestada torna a qui la va demanar)
+      // pressupost finalitzat: va directament al client
+      let alClient = null;
+      if (a.tipus === 'pressupost' && inc.estat === 'oberta') { try { alClient = await pressupostAlClient(inc, a, t); } catch (e2) { toastErr('El pressupost no s’ha pogut passar al client: ' + friendly(e2)); } }
+      const alClientText = alClient && alClient.accio ? ' · va al client: «Decisió del client sobre el pressupost» per a ' + alClient.contacte.nom : '';
+      toast((a.es_peticio ? 'Resposta registrada' : 'Acció finalitzada') + (fullAnullat ? ' · el full de treball, buit, queda anul·lat' : '') + alClientText + retorn, retorn || fullAnullat || alClientText ? 6000 : undefined);
+      // acció pròpia acabada: s'ofereix de seguida encarregar el pas següent (amb el tipus proposat, si venia d'un pressupost aprovat)
       let potSeguir = !APP_NOMES_TASQUES && !a.es_peticio && inc.estat === 'oberta' && (INC.transicions[a.tipus] || []).some(k => potCrearTipus(inc, k));
-      st.form = potSeguir ? { tipus: 'accio', origen: a.id, despres: true } : null;
-      // acció d'operari acabada des de l'oficina: la que mana ara és l'acció anterior (reoberta); s'hi va directament, amb el formulari de finalitzar-la, per encarregar el pas següent des d'allà
+      const seg = formAbans && formAbans.seguentTipus ? { tipusSel: formAbans.seguentTipus, avis: formAbans.seguentAvis } : {};
+      st.form = potSeguir ? { tipus: 'accio', origen: a.id, despres: true, ...seg } : null;
+      if (alClient && alClient.accio) { st.sel = alClient.accio.id; st.form = null; }
+      else if (alClient && alClient.form) { if (APP_NOMES_TASQUES) toastErr(alClient.avis + ' Fes-ho des de l’oficina.'); else st.form = { tipus: 'accio', origen: a.id, despres: true, tipusSel: 'decisio_client', avis: alClient.avis }; }
+      // l'acció anterior és ara la que mana: a l'oficina s'hi va directament, amb el formulari de finalitzar-la, per encarregar el pas següent des d'allà
       if (!APP_NOMES_TASQUES && retornA && inc.estat === 'oberta') {
         const titolA = a.titol && a.titol !== nomTipus(a.tipus) ? a.titol : nomTipus(a.tipus), potActuarA = socResponsable(retornA) || esSeguidora(inc) || esOficina(t);
-        st.sel = retornA.id;
-        st.form = potActuarA ? { tipus: 'finalitza', accio: retornA.id, avis: `«${titolA}» (${nomCurtTreballador(C.get('treballadors', a.responsable_treballador_id))}) finalitzada: la feina torna a «${nomTipus(retornA.tipus)}» (${nomCurtTreballador(retornQui)}). Si ja està, confirma-la i encarrega el pas següent des d’aquí; si no, cancel·la i queda oberta.` } : null;
-      }
-      // decisió del client sobre un pressupost: en aquell moment el pressupost queda aprovat (o rebutjat) i s'encarrega el pas següent
-      if (!APP_NOMES_TASQUES && a.tipus === 'decisio_client' && canvis.decisio && canvis.decisio !== 'modificacions' && inc.estat === 'oberta') {
-        const pres = a.origen_accio_id ? C.get('incidencia_accions', a.origen_accio_id) : null;
-        const aprovat = canvis.decisio === 'aprovat';
-        if (pres && pres.tipus === 'pressupost' && pres.estat !== 'finalitzada') {
-          const rp = await sb.from('incidencia_accions').update({ estat: 'finalitzada', finalitzada_el: ara, finalitzada_per: t.id, resultat: (aprovat ? 'Pressupost aprovat pel client' : 'Pressupost rebutjat pel client') + ' (' + dmyhm(ara) + ')' + (resultat ? ' · ' + resultat : '') }).eq('id', pres.id);
-          if (!rp.error) { await eventInc(inc.id, pres.id, 'finalitzada', aprovat ? 'Pressupost aprovat pel client' : 'Pressupost rebutjat pel client'); await marcaPressupostDecidit(pres, aprovat); await recarregaInc(); }
+        const tornaA = `«${nomTipus(retornA.tipus)}» (${nomCurtTreballador(retornQui)})`;
+        st.sel = retornA.id; st.form = null;
+        if (decisio === 'modificacions') toastErr(`El client demana modificacions al pressupost: ${tornaA} torna a estar oberta. Refés el pressupost i, en finalitzar-la, se li tornarà a enviar.`, 8000);
+        else if (potActuarA) {
+          let avis, seguentTipus = null, seguentAvis = null;
+          if (decisio === 'aprovat') { avis = `El client ha aprovat el pressupost: torna a ${tornaA}. Confirma-la i encarrega la feina (Executar feina) o demana el material (Demanar material).`; seguentTipus = 'executar'; seguentAvis = 'Pressupost aprovat pel client. Encarrega ara la feina (Executar feina) o demana el material al proveïdor (Demanar material).'; }
+          else if (decisio === 'rebutjat') avis = `El client ha rebutjat el pressupost: torna a ${tornaA}. Si no cal fer res més, confirma-la i tanca la incidència amb el motiu «Pressupost rebutjat»; si cal fer alguna cosa, confirma-la i encarrega-ho.`;
+          else avis = `«${titolA}» (${a.responsable_treballador_id ? nomCurtTreballador(C.get('treballadors', a.responsable_treballador_id)) : nomResponsable(a)}) ${a.es_peticio ? 'contestada' : 'finalitzada'}: la feina torna a ${tornaA}. Si ja està, confirma-la i encarrega el pas següent des d’aquí; si no, cancel·la i queda oberta.`;
+          st.form = { tipus: 'finalitza', accio: retornA.id, avis, seguentTipus, seguentAvis };
         }
-        const origenSeg = pres && pres.tipus === 'pressupost' ? pres.id : a.id;
-        if (aprovat) st.form = { tipus: 'accio', origen: origenSeg, despres: true, tipusSel: 'executar', avis: 'Pressupost aprovat pel client. Encarrega ara la feina (Executar feina) o demana el material al proveïdor (Demanar material).' };
-        else { st.form = null; st.sel = origenSeg; toastErr('Pressupost rebutjat pel client. Si no cal fer res més, tanca la incidència amb el motiu «Pressupost rebutjat»; si no, deriva el que calgui des del pressupost.'); }
       }
       renderMain();
     } catch (e) { finOk.disabled = false; errorInc(friendly(e)); }
@@ -6024,26 +6037,49 @@ async function retiraAccio(inc, a) {
 // En acabar una acció d'operari (des de l'app o des de l'oficina, qui sigui qui la finalitzi), la feina torna a l'acció que la va precedir
 // (la de qui la va encarregar: normalment la seguidora o el tècnic): si estava finalitzada es reobre, i des d'allà s'encarrega el pas següent.
 // Si l'acció anterior no és interna (del client o d'un proveïdor) o no n'hi ha, a qui la va crear li queda «Registrar resultat».
-async function reobreAnterior(inc, a, t, ara, resultat) {
-  const titolA = a.titol && a.titol !== nomTipus(a.tipus) ? a.titol : nomTipus(a.tipus);
+async function reobreAnterior(inc, a, t, ara, resultat, opts) {
+  const titolA = a.titol && a.titol !== nomTipus(a.tipus) ? a.titol : nomTipus(a.tipus), nota = opts && opts.nota ? opts.nota : null;
+  const qui_fa = a.responsable_treballador_id ? nomCurtTreballador(C.get('treballadors', a.responsable_treballador_id)) : nomResponsable(a);   // qui ha fet la feina o ha contestat
   const origen = a.origen_accio_id ? C.get('incidencia_accions', a.origen_accio_id) : null;
   if (origen && origen.actiu && origen.responsable_treballador_id) {
     const qui = C.get('treballadors', origen.responsable_treballador_id);
+    const resultatNou = nota ? [origen.resultat, nota].filter(Boolean).join(' · ') : undefined;
     if (origen.estat !== 'finalitzada') {   // encara oberta: ja li torna sola; queda a l'historial
-      await eventInc(inc.id, origen.id, 'retorn', `${nomCurtTreballador(t)} ha acabat «${titolA}»: torna a ${nomTreballador(qui)}`);
+      if (resultatNou !== undefined) { const r = await sb.from('incidencia_accions').update({ resultat: resultatNou }).eq('id', origen.id); if (r.error) throw r.error; }
+      await eventInc(inc.id, origen.id, 'retorn', `${qui_fa} ha ${a.es_peticio ? 'contestat' : 'acabat'} «${titolA}»: torna a ${nomTreballador(qui)}`);
       return { accio: origen, qui, text: ` · «${nomTipus(origen.tipus)}» (${nomCurtTreballador(qui)}) continua oberta: li torna.` };
     }
-    const nota = `Reoberta el ${dmyhm(ara)}: ${nomCurtTreballador(t)} ha acabat «${titolA}».`;
-    const r = await sb.from('incidencia_accions').update({ estat: 'en_curs', finalitzada_el: null, finalitzada_per: null, observacions: [origen.observacions, nota].filter(Boolean).join('\n') }).eq('id', origen.id); if (r.error) throw r.error;
-    await eventInc(inc.id, origen.id, 'reoberta', `Torna a ${nomTreballador(qui)}: ${nomCurtTreballador(t)} ha acabat «${titolA}»`);
+    const notaObs = `Reoberta el ${dmyhm(ara)}: ${qui_fa} ha ${a.es_peticio ? 'contestat' : 'acabat'} «${titolA}».`;
+    const canvis = { estat: 'en_curs', finalitzada_el: null, finalitzada_per: null, observacions: [origen.observacions, notaObs].filter(Boolean).join('\n') }; if (resultatNou !== undefined) canvis.resultat = resultatNou;
+    const r = await sb.from('incidencia_accions').update(canvis).eq('id', origen.id); if (r.error) throw r.error;
+    await eventInc(inc.id, origen.id, 'reoberta', `Torna a ${nomTreballador(qui)}: ${qui_fa} ha ${a.es_peticio ? 'contestat' : 'acabat'} «${titolA}»`);
     return { accio: origen, qui, reoberta: true, text: ` · «${nomTipus(origen.tipus)}» (${nomCurtTreballador(qui)}) torna a estar oberta.` };
   }
+  if (a.es_peticio || a.carril !== 'operari') return null;
   const demanant = C.get('treballadors', a.creat_per); if (!demanant || !demanant.actiu || demanant.id === t.id) return null;
   const dades = { incidencia_id: inc.id, tipus: 'registrar_resultat', carril: carrilDeResponsable(inc, demanant.id), titol: 'Revisar la feina: ' + (a.titol || nomTipus(a.tipus)), descripcio: resultat ? `Resultat de ${nomCurtTreballador(t)}: ${resultat}` : null, creat_per: t.id,
     responsable_treballador_id: demanant.id, responsable_proveidor_id: null, responsable_contacte_id: null, gestor_id: null, estat: 'pendent', grup_termini: 'mig_termini', venciment: vencimentPerGrup('mig_termini').toISOString(), origen_accio_id: a.id, es_peticio: false, visible_client: false };
   const r = await sb.from('incidencia_accions').insert(dades).select('id').single(); if (r.error) throw r.error;
   await eventInc(inc.id, r.data.id, 'nova_accio', `Registrar resultat → ${nomTreballador(demanant)} (en acabar ${nomCurtTreballador(t)} «${nomTipus(a.tipus)}»)`);
   return { accio: null, qui: demanant, text: ` · Torna a ${nomCurtTreballador(demanant)}: li queda «Registrar resultat».` };
+}
+// En finalitzar «Elaborar pressupost», el pressupost va directament al client: es crea la «Decisió del client sobre el pressupost» (petició al client),
+// si se sap a qui (un sol contacte autoritzat a la incidència, o un sol contacte al lloc). Si no, a l'oficina queda el formulari amb el tipus triat, per dir a qui.
+// No es fa si el client ja ha aprovat o rebutjat aquest pressupost, ni si ja té una decisió pendent.
+async function pressupostAlClient(inc, a, t) {
+  if (seguentHabitual(a) !== 'decisio_client' || !potCrearTipus(inc, 'decisio_client')) return null;
+  if (C.rows('incidencia_accions').some(x => x.actiu && Number(x.origen_accio_id) === a.id && x.tipus === 'decisio_client' && x.estat !== 'finalitzada')) return null;
+  const contactes = contactesDelLloc(inc.lloc_id), auts = (inc.contactes_autoritzats || []).map(Number);
+  const cands = contactes.filter(c => auts.includes(c.id)), tria = cands.length ? cands : contactes;
+  if (tria.length !== 1) return { form: true, avis: contactes.length ? 'El pressupost va al client: tria a qui l’envies.' : 'El pressupost va al client, però el lloc no té cap contacte: posa’n un a la fitxa del lloc o del client.' };
+  const c = tria[0];
+  const dades = { incidencia_id: inc.id, tipus: 'decisio_client', carril: 'client', titol: nomTipus('decisio_client'), descripcio: a.titol && a.titol !== nomTipus(a.tipus) ? a.titol : null, creat_per: t.id,
+    responsable_treballador_id: null, responsable_proveidor_id: null, responsable_contacte_id: c.id, gestor_id: t.id, estat: 'pendent', grup_termini: null, venciment: null, inici: null,
+    origen_accio_id: a.id, es_peticio: true, visible_client: true };
+  const r = await sb.from('incidencia_accions').insert(dades).select('id').single(); if (r.error) throw r.error;
+  await eventInc(inc.id, r.data.id, 'nova_accio', `Decisió del client sobre el pressupost → ${c.nom} (en finalitzar el pressupost)`);
+  await recarregaInc();
+  return { accio: C.get('incidencia_accions', r.data.id) || { id: r.data.id }, contacte: c };
 }
 async function operacio(inc, fn, accioId, tipusEvent, detall) {
   try { const r = await fn(); if (r.error) throw r.error; await eventInc(inc.id, accioId, tipusEvent, detall); await recarregaInc(); toast(detall); renderMain(); }
