@@ -1825,8 +1825,11 @@ const SCHEMA = {
         { label: 'Obre una incidència', run: () => obreIncidenciaDesDeReport(r.id) },
         { label: 'Vincula a una incidència oberta', run: () => vinculaReport(r.id) },
         { label: 'És una observació', run: () => resolReport(r.id, 'observacio') },
+        { label: 'No és un tema d’Outdoor: tanca’l', run: () => resolReport(r.id, 'no_outdoor') },
         { label: 'Descarta', run: () => resolReport(r.id, 'descartat') },
       ] : [],
+      // la casella de notificació: en marcar-la queda qui i quan
+      abansDesar: (p, id) => { const r = id ? C.get('incidencia_reports', id) : null; if (p.notificat && !(r && r.notificat)) { const t = treballadorActual(); p.notificat_el = new Date().toISOString(); p.notificat_per = t ? t.id : null; } if (p.notificat === false) { p.notificat_el = null; p.notificat_per = null; } },
       fields: [
         { key: 'lloc_id', label: 'Lloc', type: 'ref', ref: 'llocs', required: true, optionLabel: r => r.nom + ' — ' + ((C.get('clients', r.client_id) || {}).nom || '') },
         { key: 'qui_tipus', label: 'Qui ho comunica', type: 'select', options: OPT.qui_report, required: true, virtual: true, derive: r => r.treballador_comunica_id ? 'treballador' : 'client', default: () => { const t = treballadorActual(); return t && t.rol === 'tecnic' ? 'treballador' : 'client'; } },
@@ -1839,6 +1842,8 @@ const SCHEMA = {
         { key: 'descripcio', label: 'Què passa', type: 'textarea', required: true },
         { key: 'registrat_per', label: 'Registrat per', type: 'ref', ref: 'treballadors', default: () => { const t = treballadorActual(); return t ? t.id : ''; }, hint: 'buit = l’ha enviat la persona mateixa pel codi QR' },
         { key: 'estat', label: 'Estat', type: 'info', fmt: r => estatReportText(r) },
+        { key: 'notificat', label: 'S’ha enviat la notificació al president / administrador', type: 'boolean', hint: 'marca-ho quan els hagis avisat (p. ex. si no és un tema d’Outdoor)' },
+        { key: 'notificat_el', label: 'Notificació enviada', type: 'info', fmt: r => r.notificat ? dmyhm(r.notificat_el) + (r.notificat_per ? ' per ' + nomCurtTreballador(C.get('treballadors', r.notificat_per)) : '') : '—' },
         { key: 'incidencia_id', label: 'Incidència', type: 'info', fmt: r => r.incidencia_id ? L('incidencies', r.incidencia_id) : '—' },
         { key: 'motiu', label: 'Motiu (si és observació o s’ha descartat)', type: 'info', fmt: r => r.motiu || '—' },
       ],
@@ -4948,6 +4953,7 @@ const INC = {
     programar:            { nom: 'Programar feina', fase: 4 },
     assignar:             { nom: 'Assignar feina', fase: 4 },
     executar:             { nom: 'Executar feina', fase: 4 },
+    demanar_material:     { nom: 'Demanar material', fase: 4, peticio: true, carril: 'proveidor', visibleClient: false },
     registrar_resultat:   { nom: 'Registrar resultat', fase: 4 },
     conclusio:            { nom: 'Documentar conclusió', fase: 5 },
     tancar:               { nom: 'Tancar incidència', fase: 5, carril: 'seguidora' },
@@ -4960,7 +4966,7 @@ const INC = {
     diagnosticar: ['seguidora', 'tecnic', 'operari', 'oficina'], planificar: ['seguidora', 'tecnic', 'oficina'], consultar: ['seguidora', 'tecnic', 'operari', 'oficina'],
     demanar_preu: ['seguidora', 'tecnic', 'oficina'], pressupost: ['seguidora', 'tecnic', 'oficina'],
     demanar_instruccions: ['seguidora', 'tecnic', 'oficina'], decisio_client: ['seguidora', 'tecnic', 'oficina'], autoritzar_actuacio: ['seguidora', 'tecnic', 'oficina'],
-    programar: ['seguidora', 'tecnic', 'oficina'], assignar: ['seguidora', 'tecnic', 'oficina'], executar: ['seguidora', 'tecnic', 'oficina'],
+    programar: ['seguidora', 'tecnic', 'oficina'], assignar: ['seguidora', 'tecnic', 'oficina'], executar: ['seguidora', 'tecnic', 'oficina'], demanar_material: ['seguidora', 'tecnic', 'oficina'],
     registrar_resultat: ['seguidora', 'tecnic', 'operari', 'oficina'], conclusio: ['seguidora', 'tecnic', 'oficina'], tancar: ['seguidora'], reobrir: ['seguidora'],
   },
   // de quin tipus d'acció se'n pot derivar quin altre (la matriu de transicions; s'amplia aquí)
@@ -4968,17 +4974,18 @@ const INC = {
     obrir: ['assignar_seguidora', 'diagnosticar', 'planificar', 'consultar', 'demanar_instruccions', 'programar', 'assignar', 'executar', 'conclusio'],
     assignar_seguidora: ['diagnosticar', 'planificar', 'consultar'],
     visibilitat_client: [],
-    diagnosticar: ['consultar', 'demanar_preu', 'pressupost', 'planificar', 'demanar_instruccions', 'autoritzar_actuacio', 'programar', 'assignar', 'executar', 'conclusio'],
-    planificar: ['consultar', 'demanar_preu', 'pressupost', 'demanar_instruccions', 'autoritzar_actuacio', 'programar', 'assignar', 'executar'],
+    diagnosticar: ['consultar', 'demanar_preu', 'pressupost', 'planificar', 'demanar_instruccions', 'autoritzar_actuacio', 'programar', 'assignar', 'executar', 'demanar_material', 'conclusio'],
+    planificar: ['consultar', 'demanar_preu', 'pressupost', 'demanar_instruccions', 'autoritzar_actuacio', 'programar', 'assignar', 'executar', 'demanar_material'],
     consultar: ['consultar'],
     demanar_preu: [],
-    pressupost: ['decisio_client', 'demanar_instruccions', 'demanar_preu', 'consultar', 'programar', 'assignar', 'executar', 'conclusio'],
+    pressupost: ['decisio_client', 'demanar_instruccions', 'demanar_preu', 'consultar', 'programar', 'assignar', 'executar', 'demanar_material', 'conclusio'],
     demanar_instruccions: ['autoritzar_actuacio', 'pressupost', 'programar', 'assignar', 'executar', 'conclusio'],
-    decisio_client: ['programar', 'assignar', 'executar', 'pressupost', 'conclusio'],
-    autoritzar_actuacio: ['programar', 'assignar', 'executar'],
-    programar: ['assignar', 'executar'],
-    assignar: ['executar', 'consultar'],
-    executar: ['consultar', 'demanar_preu', 'registrar_resultat', 'executar', 'conclusio'],
+    decisio_client: ['programar', 'assignar', 'executar', 'demanar_material', 'pressupost', 'conclusio'],
+    autoritzar_actuacio: ['programar', 'assignar', 'executar', 'demanar_material'],
+    programar: ['assignar', 'executar', 'demanar_material'],
+    assignar: ['executar', 'consultar', 'demanar_material'],
+    executar: ['consultar', 'demanar_preu', 'demanar_material', 'registrar_resultat', 'executar', 'conclusio'],
+    demanar_material: ['executar', 'assignar', 'programar', 'consultar'],
     registrar_resultat: ['conclusio'],
     conclusio: [], tancar: [],
     reobrir: ['diagnosticar', 'planificar', 'consultar', 'programar', 'assignar', 'executar'],
@@ -5083,7 +5090,7 @@ async function ompleMiniatures(arrel) {
 }
 
 /* ---------- reports ---------- */
-const estatReportText = r => ({ pendent: 'Pendent de revisar a l’oficina', incidencia: 'Convertit en incidència', observacio: 'Observació (sense incidència)', descartat: 'Descartat' })[r.estat] || 'Pendent de revisar a l’oficina';
+const estatReportText = r => ({ pendent: 'Pendent de revisar a l’oficina', incidencia: 'Convertit en incidència', observacio: 'Observació (sense incidència)', descartat: 'Descartat', no_outdoor: 'No és un tema d’Outdoor (tancat)' })[r.estat] || 'Pendent de revisar a l’oficina';
 function targetesReportsHTML(rows) {
   if (!rows.length) return '<div class="empty">Cap report.</div>';
   return rows.map(r => `<div class="ic-targeta" data-report="${r.id}"><b>${dmyhm(r.data_hora)}</b> · ${h(L('llocs', r.lloc_id))}<br><span class="hint">${h(quiReporta(r))} · ${h(estatReportText(r))}${r.incidencia_id ? ' · ' + h(L('incidencies', r.incidencia_id)) : ''}</span><br>${h(String(r.descripcio || '').slice(0, 160))}${Array.isArray(r.adjunts) && r.adjunts.length ? `<div class="ic-thumbs">${miniaturesHTML(r.adjunts, 4)}</div>` : ''}</div>`).join('');
@@ -5091,11 +5098,13 @@ function targetesReportsHTML(rows) {
 const quiReporta = r => r.treballador_comunica_id ? nomTreballador(C.get('treballadors', r.treballador_comunica_id)) : (r.nom_comunica || (r.contacte_id ? (C.get('contactes', r.contacte_id) || {}).nom : '') || '');
 const correuReporta = r => r.treballador_comunica_id ? ((C.get('treballadors', r.treballador_comunica_id) || {}).email_acces || (C.get('treballadors', r.treballador_comunica_id) || {}).email || '') : (r.email_comunica || '');
 async function resolReport(id, estat) {
-  const motiu = prompt(estat === 'observacio' ? 'És una observació que no necessita incidència. Motiu o nota:' : 'Es descarta el report. Motiu (en queda constància):');
+  const motiu = prompt(estat === 'observacio' ? 'És una observació que no necessita incidència. Motiu o nota:' : estat === 'no_outdoor' ? 'No és un tema d’Outdoor: el report queda tancat. Nota (de qui és el tema, què s’ha dit al president o a l’administrador…):' : 'Es descarta el report. Motiu (en queda constància):');
   if (motiu == null) return;
-  const res = await sb.from('incidencia_reports').update({ estat, motiu: motiu || null }).eq('id', id);
+  const canvis = { estat, motiu: motiu || null };
+  if (estat === 'no_outdoor') { const r = C.get('incidencia_reports', id); if (r && !r.notificat && confirm('Marcar també que s’ha enviat la notificació al president / administrador?')) { const t = treballadorActual(); Object.assign(canvis, { notificat: true, notificat_el: new Date().toISOString(), notificat_per: t ? t.id : null }); } }
+  const res = await sb.from('incidencia_reports').update(canvis).eq('id', id);
   if (res.error) { showFormError(friendly(res.error)); return; }
-  await loadTable('incidencia_reports'); toast(estat === 'observacio' ? 'Report marcat com a observació' : 'Report descartat'); state.editing = null; renderMain();
+  await loadTable('incidencia_reports'); toast(estat === 'observacio' ? 'Report marcat com a observació' : estat === 'no_outdoor' ? 'Report tancat: no és un tema d’Outdoor' : 'Report descartat'); state.editing = null; renderMain();
 }
 async function vinculaReport(id) {
   const r = C.get('incidencia_reports', id);
@@ -5122,7 +5131,9 @@ async function pujaFitxersReportNou(id) {
   toast(nous.length + ' fitxers pujats');
 }
 function reportExtresHTML(row) {
-  return `<div class="bar" style="margin:0">
+  const dest = row && row.lloc_id ? contactesDelLloc(row.lloc_id).filter(c => c.email) : [];
+  const avis = row && dest.length ? `<div class="bar" style="margin:0 0 8px">${dest.slice(0, 4).map(c => `<a class="btn ghost small" href="${enllacMailto(c.email, 'Avís rebut sobre ' + (L('llocs', row.lloc_id) || ''), 'Bon dia,\n\nHem rebut aquest avís' + (quiReporta(row) ? ' de ' + quiReporta(row) : '') + ' (' + dmyhm(row.data_hora) + '):\n«' + String(row.descripcio || '') + '»\n\n' + (row.estat === 'no_outdoor' ? 'No és un tema del manteniment d’Outdoor: us ho fem arribar perquè ho pugueu gestionar.' : '') + '\n\nOutdoor Engineering Solutions, SL')}">Escriu a ${h(c.nom)}${c.carrec ? ' (' + h(c.carrec) + ')' : ''}</a>`).join('')}<span class="hint">després, marca la casella «S’ha enviat la notificació»</span></div>` : '';
+  return `${avis}<div class="bar" style="margin:0">
     ${row ? '' : '<button type="button" class="btn" id="gps-report">Localitza’m</button><span class="nota" id="gps-nota"></span>'}
     <div class="ic-adjunts-rep">${row ? `<div class="ic-thumbs">${miniaturesHTML(row.adjunts)}</div>` : ''}
       <label class="btn ghost small" style="cursor:pointer">${row ? 'Afegeix fotos, vídeos o documents' : 'Fotos, vídeos o documents (es pugen en desar)'} <input type="file" id="rep-fitxers" multiple accept="image/*,video/*,.pdf,.doc,.docx" style="display:none"></label><span class="nota" id="rep-fitxers-nota"></span></div>
@@ -5718,7 +5729,7 @@ function formAccioHTML(inc, origen) {
       : `<select id="na-resp">${treballadors.map(x => `<option value="${x.id}" ${Number(f.resp || (carril === 'seguidora' ? inc.seguidora_id : t.id)) === x.id ? 'selected' : ''}>${h(nomTreballador(x))}</option>`).join('')}</select>`;
   const extern = carril === 'client' || carril === 'proveidor' || carril === 'subcontractista';
   return `<h3>${f.despres ? 'Pas següent' : 'Nova acció'}${origen ? ' a partir de «' + h(nomTipus(origen.tipus)) + '»' : ''}</h3>
-    ${f.despres ? `<div class="msg ok">«${h(nomTipus(origen.tipus))}» ha quedat finalitzada. Encarrega ara el pas següent, o tanca si no cal res més.</div>` : ''}
+    ${f.despres ? `<div class="msg ok">${f.avis ? h(f.avis) : '«' + h(nomTipus(origen.tipus)) + '» ha quedat finalitzada. Encarrega ara el pas següent, o tanca si no cal res més.'}</div>` : ''}
     <div class="f"><span class="l">Tipus</span><select id="na-tipus">${tipusPossibles.map(k => `<option value="${k}" ${k === tipus ? 'selected' : ''}>F${INC.tipus[k].fase} · ${h(INC.tipus[k].nom)}</option>`).join('')}</select></div>
     <div class="f"><span class="l">Títol</span><input type="text" id="na-titol" value="${h(f.titol != null ? f.titol : tp.nom)}"></div>
     <div class="f"><span class="l">Descripció / instruccions</span><textarea lang="ca" spellcheck="true" id="na-desc">${h(f.desc || '')}</textarea></div>
@@ -5734,9 +5745,20 @@ function formAccioHTML(inc, origen) {
     <div class="actions"><button class="btn" id="na-ok">${f.despres ? 'Encarrega' : 'Crea l’acció'}</button><button class="btn ghost" id="panell-cancel">${f.despres ? 'No cal res més' : 'Cancel·la'}</button></div>`;
 }
 // el pas que normalment ve després de cada tipus d'acció (preselecció; es pot canviar)
+// el pressupost desat (de tasca o d'agrupació) que anava adjunt a l'acció «Elaborar pressupost» queda acceptat o rebutjat amb la decisió del client
+async function marcaPressupostDecidit(accio, aprovat) {
+  const paths = (Array.isArray(accio.adjunts) ? accio.adjunts : []).map(x => x.path).filter(Boolean); if (!paths.length) return;
+  for (const taula of ['pressupostos_tasca', 'pressupostos_agrupacio']) {
+    for (const p of C.rows(taula).filter(x => x.actiu && x.pdf && paths.includes(x.pdf) && x.estat !== 'acceptat' && x.estat !== 'rebutjat')) {
+      const r = await sb.from(taula).update(aprovat ? { estat: 'acceptat', data_acceptacio: avui() } : { estat: 'rebutjat' }).eq('id', p.id);
+      if (!r.error) await loadTable(taula);
+    }
+  }
+}
 function seguentHabitual(origen) {
   if (origen.tipus === 'pressupost') { const dec = C.rows('incidencia_accions').find(x => x.actiu && Number(x.origen_accio_id) === origen.id && x.tipus === 'decisio_client' && x.estat === 'finalitzada'); return dec && dec.decisio === 'aprovat' ? 'executar' : dec && dec.decisio === 'rebutjat' ? 'conclusio' : 'decisio_client'; }
-  return { obrir: 'diagnosticar', reobrir: 'diagnosticar', diagnosticar: 'pressupost', planificar: 'executar', decisio_client: 'executar', demanar_instruccions: 'executar', autoritzar_actuacio: 'executar', programar: 'assignar', assignar: 'executar', executar: 'registrar_resultat', registrar_resultat: 'conclusio' }[origen.tipus] || null;
+  if (origen.tipus === 'decisio_client') return origen.decisio === 'rebutjat' ? 'conclusio' : origen.decisio === 'modificacions' ? 'pressupost' : 'executar';
+  return { obrir: 'diagnosticar', reobrir: 'diagnosticar', diagnosticar: 'pressupost', planificar: 'executar', demanar_instruccions: 'executar', autoritzar_actuacio: 'executar', programar: 'assignar', assignar: 'executar', demanar_material: 'executar', executar: 'registrar_resultat', registrar_resultat: 'conclusio' }[origen.tipus] || null;
 }
 function bindPanell(inc) {
   const st = state.inc, p = $('#ic-panell'), t = trebInc();
@@ -5809,8 +5831,20 @@ function bindPanell(inc) {
       await recarregaInc();
       if (fullQuedaObert) toastErr('Acció finalitzada. El full de treball ' + (fullA.numero || '') + ' queda obert: no hi ha cap jornada apuntada.'); else toast(a.es_peticio ? 'Resposta registrada' : 'Acció finalitzada');
       // acció pròpia acabada: s'ofereix de seguida encarregar el pas següent (una petició contestada torna a qui la va demanar)
-      const potSeguir = !APP_NOMES_TASQUES && !a.es_peticio && inc.estat === 'oberta' && (INC.transicions[a.tipus] || []).some(k => potCrearTipus(inc, k));
-      st.form = potSeguir ? { tipus: 'accio', origen: a.id, despres: true } : null; renderMain();
+      let potSeguir = !APP_NOMES_TASQUES && !a.es_peticio && inc.estat === 'oberta' && (INC.transicions[a.tipus] || []).some(k => potCrearTipus(inc, k));
+      st.form = potSeguir ? { tipus: 'accio', origen: a.id, despres: true } : null;
+      // decisió del client sobre un pressupost: en aquell moment el pressupost queda aprovat (o rebutjat) i s'encarrega el pas següent
+      if (!APP_NOMES_TASQUES && a.tipus === 'decisio_client' && canvis.decisio && canvis.decisio !== 'modificacions' && inc.estat === 'oberta') {
+        const pres = a.origen_accio_id ? C.get('incidencia_accions', a.origen_accio_id) : null;
+        const aprovat = canvis.decisio === 'aprovat';
+        if (pres && pres.tipus === 'pressupost' && pres.estat !== 'finalitzada') {
+          const rp = await sb.from('incidencia_accions').update({ estat: 'finalitzada', finalitzada_el: ara, finalitzada_per: t.id, resultat: (aprovat ? 'Pressupost aprovat pel client' : 'Pressupost rebutjat pel client') + ' (' + dmyhm(ara) + ')' + (resultat ? ' · ' + resultat : '') }).eq('id', pres.id);
+          if (!rp.error) { await eventInc(inc.id, pres.id, 'finalitzada', aprovat ? 'Pressupost aprovat pel client' : 'Pressupost rebutjat pel client'); await marcaPressupostDecidit(pres, aprovat); await recarregaInc(); }
+        }
+        const origenSeg = pres && pres.tipus === 'pressupost' ? pres.id : a.id;
+        st.form = { tipus: 'accio', origen: origenSeg, despres: true, tipusSel: aprovat ? 'executar' : 'conclusio', avis: aprovat ? 'Pressupost aprovat pel client. Encarrega ara la feina (Executar feina o Assignar feina) o demana el material al proveïdor (Demanar material).' : 'Pressupost rebutjat pel client. Documenta la conclusió (o encarrega el que calgui) i després tanca la incidència.' };
+      }
+      renderMain();
     } catch (e) { finOk.disabled = false; errorInc(friendly(e)); }
   });
   const petOk = $('#pet-ok'); if (petOk) petOk.addEventListener('click', async () => {
@@ -5977,7 +6011,7 @@ const COLORS_ACCIO = {
   obrir: '#8d8d8d', assignar_seguidora: '#6f6f6f', visibilitat_client: '#b5b5b5',                                   // F1 grisos
   diagnosticar: '#1f5fbf', planificar: '#3b7dd8', consultar: '#5e9ae6', demanar_preu: '#8fbcef', pressupost: '#0f3f8f', // F2 blaus
   demanar_instruccions: '#7b4fb3', decisio_client: '#a07fd2', autoritzar_actuacio: '#5e3690',                     // F3 liles
-  programar: '#e08a2b', assignar: '#f0a64f', executar: '#c9671a', registrar_resultat: '#f6c88a',                   // F4 taronges
+  programar: '#e08a2b', assignar: '#f0a64f', executar: '#c9671a', demanar_material: '#b8862b', registrar_resultat: '#f6c88a', // F4 taronges
   conclusio: '#2f7d4a', tancar: '#1e5c35', reobrir: '#6db585',                                                    // F5 verds
 };
 const colorAccio = tipus => COLORS_ACCIO[tipus] || '#8d8d8d';
