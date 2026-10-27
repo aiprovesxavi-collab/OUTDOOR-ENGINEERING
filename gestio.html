@@ -169,6 +169,10 @@
   @media (max-width:820px){ .chks{ grid-template-columns:1fr; } }
   .f .l .toca{ color:var(--red); font-weight:600; margin-left:6px; }
   .extres{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:0 0 16px; }
+  .extres:empty{ display:none; } .extres-final{ display:block; margin:18px 0 0; }
+  .ic-docs-gran{ padding:14px 16px; } .ic-docs-gran > .l{ display:block; font-size:13px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-2); margin:0 0 10px; }
+  .ic-docs-gran .ic-mini{ width:150px; height:150px; border-radius:10px; } .ic-docs-gran .ic-thumbs{ gap:10px; margin:0 0 12px; }
+  .ic-docs-gran label.btn{ display:inline-block; white-space:normal; line-height:1.35; text-align:left; max-width:100%; }
   .extres .nota{ font-size:13px; color:var(--ink-2); }
   @media (max-width:820px){ input[type=number],input[type=date],input[type=time],input[type=datetime-local],select{ font-size:16px; padding:10px 12px; } .btn{ padding:11px 18px; } }
   input:disabled,select:disabled,textarea:disabled{ background:var(--bg-2); color:var(--ink-2); }
@@ -402,7 +406,7 @@
   .ao{ font-size:18px; max-width:720px; }
   .ao .bar{ margin-bottom:10px; }
   .ao-lloc{ font-size:26px; font-weight:700; line-height:1.2; margin:4px 0 2px; } .ao-lloc span{ display:block; font-size:15px; font-weight:400; color:var(--ink-2); }
-  .ao-titol{ font-size:18px; font-weight:500; color:var(--ink-2); margin:0 0 10px; }
+  .ao-titol{ font-size:22px; font-weight:700; color:var(--ink); margin:0 0 10px; line-height:1.3; }
   .ao-report{ font-size:14px; color:var(--ink-3); margin:0 0 8px; line-height:1.4; }
   .ao-qui{ font-size:16px; color:var(--ink-2); margin:0 0 14px; display:flex; flex-wrap:wrap; gap:4px 18px; } .ao-qui b{ color:var(--ink); font-weight:600; }
   .ao-tria{ display:flex; flex-wrap:wrap; gap:8px; margin:0 0 12px; } .ao-tria button{ font:inherit; font-size:15px; border:1.5px solid var(--line-2); background:#fff; border-radius:999px; padding:6px 14px; cursor:pointer; } .ao-tria button.on{ background:var(--ink); color:#fff; border-color:var(--ink); }
@@ -1859,12 +1863,11 @@ const SCHEMA = {
         { key: 'data_hora', label: 'Quan s’ha vist o rebut', type: 'datetime', required: true, default: () => aLocalDT(new Date()) },
         { key: 'descripcio', label: 'Què passa', type: 'textarea', required: true },
         { key: 'registrat_per', label: 'Registrat per', type: 'ref', ref: 'treballadors', default: () => { const t = treballadorActual(); return t ? t.id : ''; }, hint: 'buit = l’ha enviat la persona mateixa pel codi QR' },
-        { key: 'estat', label: 'Estat', type: 'info', fmt: r => estatReportText(r) },
-        { key: 'notificat', label: 'S’ha enviat la notificació al president / administrador', type: 'boolean', hint: 'marca-ho quan els hagis avisat (p. ex. si no és un tema d’Outdoor)' },
-        { key: 'notificat_el', label: 'Notificació enviada', type: 'info', fmt: r => r.notificat ? dmyhm(r.notificat_el) + (r.notificat_per ? ' per ' + nomCurtTreballador(C.get('treballadors', r.notificat_per)) : '') : '—' },
-        { key: 'incidencia_id', label: 'Incidència', type: 'info', fmt: r => r.incidencia_id ? L('incidencies', r.incidencia_id) : '—' },
-        { key: 'motiu', label: 'Motiu (si és observació o s’ha descartat)', type: 'info', fmt: r => r.motiu || '—' },
+        { key: 'estat', label: 'Estat', type: 'info', fmt: r => estatReportText(r) + (r.incidencia_id ? ' · ' + L('incidencies', r.incidencia_id) : '') + (r.motiu ? ' · ' + r.motiu : '') },
+        // la notificació al client (president / administrador) la marca la seguidora a l'oficina quan decideix què fa amb el report; a l'app no cal
+        { key: 'notificat', label: 'S’ha enviat la notificació al client (president / administrador)', type: 'boolean', hint: 'marca-ho quan els hagis avisat (p. ex. si no és un tema d’Outdoor); queda apuntat qui i quan', nomesOficina: true },
       ],
+      extrasFinal: reportFotosHTML,
     },
     // taules de les incidències: les gestiona la pàgina "Incidències" (no tenen formulari genèric)
     incidencies: { label: 'Incidències', nou: 'Nova incidència', order: 'id', display: r => (r.numero || '') + ' — ' + (r.titol || ''), list: ['numero', 'titol'], fields: [] },
@@ -2494,6 +2497,7 @@ function formHTML(td, row) {
   // els camps amb el mateix "grup" (caselles) van junts en una fila de tres
   const trossos = []; let grupObert = null;
   td.fields.forEach(f => {
+    if (f.nomesOficina && APP_NOMES_TASQUES) return;   // camps que a l'app no toquen (p. ex. la notificació d'un report: la marca la seguidora)
     if (f.grup) {
       if (grupObert !== f.grup) { if (grupObert) trossos.push('</div>'); trossos.push(`<div class="f wide chks" data-grup="${f.grup}">`); grupObert = f.grup; }
       trossos.push(unCamp(f));
@@ -2522,6 +2526,7 @@ function formHTML(td, row) {
         </div>
       </form>
       ${childrenHTML(td, row)}
+      ${td.extrasFinal ? `<div class="extres extres-final">${td.extrasFinal(row)}</div>` : ''}
     </div>`;
 }
 
@@ -5192,11 +5197,13 @@ async function pujaFitxersReportNou(id) {
 function reportExtresHTML(row) {
   const dest = row && row.lloc_id ? contactesDelLloc(row.lloc_id).filter(c => c.email) : [];
   const avis = row && dest.length ? `<div class="bar" style="margin:0 0 8px">${dest.slice(0, 4).map(c => `<a class="btn ghost small" href="${enllacMailto(c.email, 'Avís rebut sobre ' + (L('llocs', row.lloc_id) || ''), 'Bon dia,\n\nHem rebut aquest avís' + (quiReporta(row) ? ' de ' + quiReporta(row) : '') + ' (' + dmyhm(row.data_hora) + '):\n«' + String(row.descripcio || '') + '»\n\n' + (row.estat === 'no_outdoor' ? 'No és un tema del manteniment d’Outdoor: us ho fem arribar perquè ho pugueu gestionar.' : '') + '\n\nOutdoor Engineering Solutions, SL')}">Escriu a ${h(c.nom)}${c.carrec ? ' (' + h(c.carrec) + ')' : ''}</a>`).join('')}<span class="hint">després, marca la casella «S’ha enviat la notificació»</span></div>` : '';
-  return `${avis}<div class="bar" style="margin:0">
-    ${row ? '' : '<button type="button" class="btn" id="gps-report">Localitza’m</button><span class="nota" id="gps-nota"></span>'}
-    <div class="ic-adjunts-rep">${row ? `<div class="ic-thumbs">${miniaturesHTML(row.adjunts)}</div>` : ''}
-      <label class="btn ghost small" style="cursor:pointer">${row ? 'Afegeix fotos, vídeos o documents' : 'Fotos, vídeos o documents (es pugen en desar)'} <input type="file" id="rep-fitxers" multiple accept="image/*,video/*,.pdf,.doc,.docx" style="display:none"></label><span class="nota" id="rep-fitxers-nota"></span></div>
-  </div>`;
+  return `${avis}${row ? '' : '<div class="bar" style="margin:0"><button type="button" class="btn" id="gps-report">Localitza’m</button><span class="nota" id="gps-nota"></span></div>'}`;
+}
+// el quadre de fotos i documents del report: gran i al final del formulari (en desar-lo, s'hi poden afegir més)
+function reportFotosHTML(row) {
+  const adj = row && Array.isArray(row.adjunts) ? row.adjunts : [];
+  return `<div class="ic-docs ic-docs-gran"><span class="l">Fotos i documents</span>${adj.length ? `<div class="ic-thumbs">${miniaturesHTML(adj)}</div>` : ''}
+    <label class="btn ghost" style="cursor:pointer">${row ? 'Afegeix fotos, vídeos o documents' : 'Fotos, vídeos o documents (es pugen en desar)'} <input type="file" id="rep-fitxers" multiple accept="image/*,video/*,.pdf,.doc,.docx" style="display:none"></label><span class="nota" id="rep-fitxers-nota"></span></div>`;
 }
 function reportBind(frm, td) {
   const btn = $('#gps-report'), nota = $('#gps-nota');
@@ -5649,13 +5656,13 @@ function renderAccioOperari(main) {
     <div class="bar"><button class="btn ghost" id="inc-torna">← Les meves accions</button></div>
     <div class="ao-lloc">${h(lloc.nom || 'Lloc sense nom')}${client.nom ? `<span>${h(client.nom)}</span>` : ''}</div>
     <div class="ao-titol">${h(inc.numero)} · ${h(inc.titol)}${inc.estat === 'tancada' ? ' · <b>tancada</b>' : ''}</div>
-    ${reports.length ? `<div class="ao-report">Report de ${h(quiReporta(reports[0]))}${reports[0].descripcio ? ': ' + h(String(reports[0].descripcio).slice(0, 240)) : ''}</div>` : ''}
+    ${reports.length ? `<div class="ao-report">Report de ${h(quiReporta(reports[0]))} · ${dmyhm(reports[0].data_hora)}</div>` : ''}
     <div class="ao-qui"><span>Seguidora: <b>${h(nomTreballador(seguidora)) || '—'}</b></span>${creador ? `<span>Ho demana: <b>${h(nomTreballador(creador))}</b></span>` : ''}</div>
     ${meves.length > 1 ? `<div class="ao-tria">${meves.map(x => `<button type="button" class="${x.id === (a || {}).id ? 'on' : ''}" data-tria="${x.id}">${h(nomTipus(x.tipus))}${x.estat === 'finalitzada' ? ' ✓' : ''}</button>`).join('')}</div>` : ''}
     ${a ? `
     <div class="ao-peticio"><div class="ao-sobre"><span>${h(tp.nom)}</span><span class="pill e-${ee}">${INC.estats[ee]}</span>${foraTermini(a) ? '<span class="pill fora">Fora de termini</span>' : ''}${a.es_peticio ? '<span class="pill dep">et demanen una resposta</span>' : ''}</div>
       ${titolPeticio ? `<div class="ao-text">${h(titolPeticio)}</div>` : ''}
-      <div class="ao-inc"><b>${h(inc.titol || '')}</b>${inc.descripcio ? '\n' + h(inc.descripcio) : ''}</div></div>
+      ${inc.descripcio ? `<div class="ao-inc">${h(inc.descripcio)}</div>` : ''}</div>
     ${inc.observacions_internes || a.observacions_internes ? `<div class="ao-fila ao-int"><span class="l">Observacions internes</span><div class="ao-desc">${h([inc.observacions_internes, a.observacions_internes].filter(Boolean).join('\n'))}</div></div>` : ''}
     ${a.inici ? `<div class="ao-fila"><span class="l">Es pot començar</span><span class="ao-termini">${dmyhm(a.inici)}${iniciFutur(a) ? ' · programada' : ''}</span></div>` : ''}
     <div class="ao-fila"><span class="l">${a.inici ? 'Termini final' : 'Termini'}</span><span class="ao-termini ${foraTermini(a) && a.estat !== 'finalitzada' ? 'fora' : ''}">${a.venciment ? dmyhm(a.venciment) + (a.grup_termini ? ' · ' + h(etiquetaOpt(INC.grups, a.grup_termini)) : '') : '—'}</span></div>
