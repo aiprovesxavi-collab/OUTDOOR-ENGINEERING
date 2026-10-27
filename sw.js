@@ -16,7 +16,7 @@ self.addEventListener('push', e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (x) { d = { text: e.data ? e.data.text() : '' }; }
   const mostra = self.registration.showNotification(d.titol || 'Acció nova', {
-    body: d.text || '', icon: 'icona-192.png', badge: 'icona-192.png', tag: d.tag || 'gestio-accions', renotify: true, data: { url: d.url || './', accio_id: d.accio_id || null },
+    body: d.text || '', icon: 'icona-192.png', badge: 'icona-192.png', tag: d.tag || 'gestio-accions', renotify: true, vibrate: [180, 90, 180], data: { url: d.url || './', accio_id: d.accio_id || null },
   });
   const avisa = self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => cs.forEach(c => c.postMessage({ tipus: 'push', accio_id: d.accio_id || null })));
   e.waitUntil(Promise.all([mostra, avisa]));

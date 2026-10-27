@@ -2269,18 +2269,29 @@ async function start() {
    ===================================================================== */
 let audioCtx = null, avisosConeguts = null, avisosTimer = null;
 const avisosActius = () => { try { return localStorage.getItem('gestio_avisos') === '1'; } catch (e) { return false; } };
-function soAvis() {
+// el navegador només deixa sonar després que l'usuari hagi tocat la pàgina: el primer toc (o tecla) desbloqueja l'àudio per a la resta de la sessió
+function desbloquejaAudio() {
   try {
     audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended' && audioCtx.resume) audioCtx.resume().catch(() => {});
-    const t0 = audioCtx.currentTime;
-    [[659.25, 0], [783.99, 0.16], [1046.5, 0.32]].forEach(([f, dt]) => {   // mi · sol · do: un acord suau, ascendent
-      const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type = 'sine'; o.frequency.value = f;
-      g.gain.setValueAtTime(0.0001, t0 + dt); g.gain.exponentialRampToValueAtTime(0.22, t0 + dt + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dt + 0.7);
-      o.connect(g).connect(audioCtx.destination); o.start(t0 + dt); o.stop(t0 + dt + 0.75);
-    });
+    if (audioCtx.state !== 'running' && audioCtx.resume) audioCtx.resume().catch(() => {});
+    const b = audioCtx.createBufferSource(); b.buffer = audioCtx.createBuffer(1, 1, 22050); b.connect(audioCtx.destination); b.start(0);   // un silenci: a l'iPhone cal reproduir alguna cosa dins del toc
   } catch (e) {}
 }
+async function soAvis() {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state && audioCtx.state !== 'running' && audioCtx.resume) { try { await Promise.race([audioCtx.resume(), new Promise(r => setTimeout(r, 1500))]); } catch (e) {} }
+    if (audioCtx.state && audioCtx.state !== 'running') { vibra(); return; }   // encara no s'ha tocat la pàgina: el navegador no deixa sonar
+    const t0 = audioCtx.currentTime, nota = (f, dt, durada) => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t0 + dt); g.gain.exponentialRampToValueAtTime(0.4, t0 + dt + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dt + durada);
+      o.connect(g).connect(audioCtx.destination); o.start(t0 + dt); o.stop(t0 + dt + durada + 0.05);
+    };
+    [0, 1.1].forEach(r => { nota(659.25, r, 0.45); nota(783.99, r + 0.18, 0.45); nota(1046.5, r + 0.36, 0.9); });   // mi · sol · do (ascendent), dos cops
+    vibra();
+  } catch (e) {}
+}
+function vibra() { try { if (navigator.vibrate) navigator.vibrate([180, 90, 180]); } catch (e) {} }
 /* --- avisos als aparells (Web Push): el navegador registra l'aparell (push_subscripcions) i l'Edge Function «avisa-accio» hi envia la notificació,
        també amb l'app tancada. Cal https, el service worker (sw.js) i el permís de notificacions; a l'iPhone, a més, l'app a la pantalla d'inici. --- */
 const b64uAU8 = s => { s = String(s).replace(/-/g, '+').replace(/_/g, '/'); s += '='.repeat((4 - s.length % 4) % 4); return Uint8Array.from(atob(s), c => c.charCodeAt(0)); };
@@ -2290,7 +2301,7 @@ async function registreSW() {   // el registre del service worker (sw.js), si hi
   try { const reg = await navigator.serviceWorker.getRegistration(); if (!reg) return null; if (reg.active) return reg; return await Promise.race([navigator.serviceWorker.ready, new Promise(r => setTimeout(() => r(null), 4000))]); } catch (e) { return null; }
 }
 const filaPush = (sub, t) => { const j = sub.toJSON ? sub.toJSON() : sub; return { treballador_id: t.id, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, pagina: APP_NOMES_TASQUES ? 'index' : 'gestio', navegador: String(navigator.userAgent || '').slice(0, 200), actualitzat_el: new Date().toISOString() }; };
-let pushMotiu = '';   // per què no s'ha pogut registrar l'aparell (per dir-ho en activar els avisos)
+let pushMotiu = '', pushActiu = false;   // per què no s'ha pogut registrar l'aparell (per dir-ho en activar els avisos); si rep els avisos push
 const mateixaClau = sub => { try { const k = sub.options && sub.options.applicationServerKey; if (!k) return true; const a = new Uint8Array(k), b = b64uAU8(VAPID_PUBLIC); return a.length === b.length && a.every((x, i) => x === b[i]); } catch (e) { return true; } };
 // registra aquest aparell per rebre els avisos (cal haver donat permís de notificacions); torna true si ha quedat registrat
 async function subscriuPush(silenci) {
@@ -2309,8 +2320,19 @@ async function subscriuPush(silenci) {
       r = await sb.from('push_subscripcions').upsert(filaPush(sub, t), { onConflict: 'endpoint' });
     }
     if (r.error) throw r.error;
-    return true;
-  } catch (e) { pushMotiu = friendly(e); if (!silenci) toastErr('No s’ha pogut registrar aquest aparell per als avisos: ' + friendly(e)); return false; }
+    pushActiu = true; return true;
+  } catch (e) { pushMotiu = friendly(e); pushActiu = false; if (!silenci) toastErr('No s’ha pogut registrar aquest aparell per als avisos: ' + friendly(e)); return false; }
+}
+// demana a l'Edge Function que enviï una notificació de prova a aquest aparell: comprova tot el circuit (funció, secret i registre de l'aparell)
+async function provaPush() {
+  try {
+    if (!sb || !sb.functions) return { ok: false, motiu: 'sense connexió amb les funcions' };
+    const { data, error } = await sb.functions.invoke('avisa-accio', { body: { motiu: 'prova' } });
+    if (error) { let m = error.message || String(error); try { const j = error.context && error.context.json ? await error.context.json() : null; if (j && j.error) m = j.error; } catch (e) {} return { ok: false, motiu: /not found|404/i.test(m) ? 'la funció «avisa-accio» no és desplegada' : m }; }
+    if (data && data.error) return { ok: false, motiu: data.error };
+    if (data && data.enviats > 0) return { ok: true };
+    return { ok: false, motiu: data && data.errors && data.errors.length ? 'el servei de notificacions ha respost ' + data.errors.join(', ') : 'cap aparell registrat' };
+  } catch (e) { return { ok: false, motiu: friendly(e) }; }
 }
 // dona de baixa aquest aparell (en desactivar els avisos o en sortir): no hi arribarà res fins que es tornin a activar
 async function oblidaPush() {
@@ -2332,7 +2354,11 @@ async function activaAvisos() {
   const permis = !!(window.Notification && Notification.permission === 'granted');
   const push = permis ? await subscriuPush(true) : false;
   const consellIphone = esIphone() && !navigator.standalone ? ' A l’iPhone, per rebre’ls també amb l’app tancada, afegeix l’app a la pantalla d’inici (Compartir → Afegeix a la pantalla d’inici) i activa-hi els avisos.' : '';
-  if (push) toast('Avisos activats: aquest aparell rebrà una notificació quan tinguis una acció nova, també amb l’app tancada, i sonarà si la tens oberta.', 7000);
+  if (push) {
+    const prova = await provaPush();
+    if (prova.ok) toast('Avisos activats: t’acabem d’enviar una notificació de prova a aquest aparell. Rebràs un avís a cada acció nova, també amb l’app tancada, i sonarà si tens l’app oberta.', 9000);
+    else toastErr('Avisos activats i aparell registrat, però la notificació de prova no ha sortit: ' + prova.motiu + '. Mentre l’app sigui oberta sonarà igualment.');
+  }
   else if (permis) toast('Avisos activats: sonarà i sortirà una notificació mentre l’app sigui oberta.' + (pushMotiu ? ' No s’ha pogut registrar l’aparell per rebre’ls amb l’app tancada: ' + pushMotiu + '.' : '') + consellIphone, 10000);
   else toast('Avisos activats només a la pantalla: sonarà mentre l’app sigui oberta. ' + (window.Notification && Notification.permission === 'denied' ? 'El navegador té les notificacions bloquejades per a aquesta pàgina: permet-les a la configuració del lloc per rebre-les.' : 'Aquest navegador no permet notificacions.' + consellIphone), 10000);
 }
@@ -2351,7 +2377,7 @@ async function comprovaAvisos() {
 // la notificació del sistema: pel service worker si hi és (a Android és l'única manera); si no, la de la pàgina
 async function mostraNotificacio(titol, text) {
   if (!window.Notification || Notification.permission !== 'granted') return;
-  const opcions = { body: text, tag: 'gestio-accions', icon: 'icona-192.png', data: { url: (APP_NOMES_TASQUES ? 'index' : 'gestio') + '.html#accions' } };
+  const opcions = { body: text, tag: 'gestio-accions', renotify: true, vibrate: [180, 90, 180], icon: 'icona-192.png', data: { url: (APP_NOMES_TASQUES ? 'index' : 'gestio') + '.html#accions' } };
   try { const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null; if (reg && reg.showNotification) { await reg.showNotification(titol, opcions); return; } } catch (e) {}
   try { new Notification(titol, opcions); } catch (e) {}
 }
@@ -2360,7 +2386,7 @@ function avisaAccionsNoves(ids) {
   const linia = a => { const inc = C.get('incidencies', a.incidencia_id) || {}; return `${nomTipus(a.tipus)}${a.titol && a.titol !== nomTipus(a.tipus) ? ' · ' + a.titol : ''} (${inc.numero || ''}${llocInc(inc).nom ? ' · ' + llocInc(inc).nom : ''})`; };
   const titol = acc.length === 1 ? 'Acció nova' : acc.length + ' accions noves', text = acc.map(linia).join(' · ');
   toast(titol + ': ' + text, 9000);
-  if (avisosActius()) { soAvis(); mostraNotificacio(titol, text); }
+  if (avisosActius()) { soAvis(); if (!pushActiu) mostraNotificacio(titol, text); }   // amb el push actiu, la notificació ja la mostra el service worker
   if (!state.table || state.table === 'accions_meves') renderApp();   // el menú i la llista es posen al dia; en qualsevol altra pantalla no es toca res
 }
 function engegaAvisos() {
@@ -2368,6 +2394,7 @@ function engegaAvisos() {
   if (avisosTimer) clearInterval(avisosTimer); avisosTimer = setInterval(comprovaAvisos, 30000);   // cada mig minut mentre l'app és oberta (i en tornar-hi)
   if (!engegaAvisos.escolta) {
     engegaAvisos.escolta = true;
+    ['touchend', 'click', 'keydown'].forEach(ev => document.addEventListener(ev, desbloquejaAudio, { once: true, passive: true }));
     document.addEventListener('visibilitychange', () => { if (!document.hidden) comprovaAvisos(); });
     // missatges del service worker: ha arribat un avís (la llista es posa al dia) o s'ha tocat la notificació (s'obren les accions)
     if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', e => { const d = e.data || {}; if (d.tipus === 'push') comprovaAvisos(); if (d.tipus === 'obre' && treballadorActual()) { state.table = 'accions_meves'; state.editing = null; renderApp(); comprovaAvisos(); } });
