@@ -409,6 +409,8 @@
   .ao-peticio{ background:#fff; border:2.5px solid var(--ink); border-radius:14px; padding:14px 18px 16px; margin:0 0 14px; box-shadow:0 2px 0 rgba(29,42,27,.12); }
   .ao-sobre{ font-size:13px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-2); margin:0 0 8px; display:flex; flex-wrap:wrap; gap:6px 10px; align-items:center; }
   .ao-text{ font-size:22px; font-weight:600; color:#111; line-height:1.35; white-space:pre-wrap; }
+  .ao-inc{ font-size:18px; line-height:1.4; white-space:pre-wrap; margin-top:8px; color:var(--ink); } .ao-inc b{ font-size:19px; }   /* la incidència: títol i descripció */
+  .ao-int .ao-desc{ background:#fff6d6; border:1px solid #ecd9a0; border-radius:10px; padding:8px 12px; font-size:17px; }   /* observacions internes: ben visibles */
   .ao-fila{ margin:0 0 12px; line-height:1.4; } .ao-fila .l{ display:block; font-size:13px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-2); margin-bottom:2px; }
   .ao-termini{ font-size:18px; } .ao-termini.fora{ color:var(--red); font-weight:600; }
   .ao-desc{ font-size:18px; white-space:pre-wrap; }
@@ -5330,7 +5332,7 @@ function docsIncHTML(inc, a) {
 }
 // «Fins ara»: tot el que han dit i mostrat els qui han participat a la incidència, per ordre de data: l'avís, l'obertura, el que es demana a cadascú,
 // cada resultat o resposta amb les seves fotos, i el tancament. Una línia per cosa: XA: text. (L'acció que s'està mirant no hi surt: ja es veu sencera.)
-function entradesFil(inc, actual) {
+function entradesFil(inc, actual, opts) {
   const e = [];
   const treb = id => { const t = id ? C.get('treballadors', id) : null; return t ? { ini: inicialsTreballador(t) || nomCurtTreballador(t), nom: nomTreballador(t) } : null; };
   const quiFa = x => x.responsable_treballador_id ? treb(x.responsable_treballador_id) : { ini: nomResponsable(x) || '?', nom: nomResponsable(x) || '' };
@@ -5339,7 +5341,7 @@ function entradesFil(inc, actual) {
   const tots = accionsVisibles(inc), obrir = tots.find(x => x.tipus === 'obrir');
   const seg = treb(obrir && obrir.creat_per ? obrir.creat_per : inc.seguidora_id) || { ini: '—', nom: '' };
   const adjObrir = obrir && Array.isArray(obrir.adjunts) ? obrir.adjunts : [];
-  if (inc.descripcio || adjObrir.length) e.push({ data: inc.data_obertura, ...seg, text: String(inc.descripcio || ''), adjunts: adjObrir, que: 'Obertura', vis: !obrir || !!obrir.visible_client });
+  if ((inc.descripcio || adjObrir.length) && !(opts && opts.senseObertura)) e.push({ data: inc.data_obertura, ...seg, text: String(inc.descripcio || ''), adjunts: adjObrir, que: 'Obertura', vis: !obrir || !!obrir.visible_client });
   tots.filter(x => !['obrir', 'assignar_seguidora', 'visibilitat_client'].includes(x.tipus) && !(actual && x.id === actual.id)).forEach(x => {
     const tipus = nomTipus(x.tipus), fet = x.estat === 'finalitzada', adj = Array.isArray(x.adjunts) ? x.adjunts : [];
     const demanat = [x.titol && x.titol !== tipus ? x.titol : '', x.descripcio || ''].filter(Boolean).join(' — ');
@@ -5350,8 +5352,8 @@ function entradesFil(inc, actual) {
   });
   return e.sort((p, q) => String(p.data || '').localeCompare(String(q.data || '')));
 }
-function filIncHTML(inc, actual) {
-  const ents = entradesFil(inc, actual); if (!ents.length) return '';
+function filIncHTML(inc, actual, opts) {
+  const ents = entradesFil(inc, actual, opts); if (!ents.length) return '';
   return ents.map(x => `<div class="fil-e ${x.vis ? 'vis' : ''}"><b title="${h(x.nom || '')}">${h(x.ini)}</b>${x.a ? ` <span class="hint">→ ${h(x.a)}</span>` : ''}${x.text ? ': ' + h(x.text) : ''} <span class="fil-q">· ${h(x.que)}${x.data ? ' · ' + dmyhm(x.data) : ''}</span>${x.adjunts.length ? `<div class="ic-thumbs">${miniaturesHTML(x.adjunts)}</div>` : ''}</div>`).join('');
 }
 function galeriaHTML(inc, compacta) {
@@ -5630,12 +5632,13 @@ function renderAccioOperari(main) {
     ${meves.length > 1 ? `<div class="ao-tria">${meves.map(x => `<button type="button" class="${x.id === (a || {}).id ? 'on' : ''}" data-tria="${x.id}">${h(nomTipus(x.tipus))}${x.estat === 'finalitzada' ? ' ✓' : ''}</button>`).join('')}</div>` : ''}
     ${a ? `
     <div class="ao-peticio"><div class="ao-sobre"><span>${h(tp.nom)}</span><span class="pill e-${ee}">${INC.estats[ee]}</span>${foraTermini(a) ? '<span class="pill fora">Fora de termini</span>' : ''}${a.es_peticio ? '<span class="pill dep">et demanen una resposta</span>' : ''}</div>
-      <div class="ao-text">${h(titolPeticio || tp.nom)}</div></div>
+      ${titolPeticio ? `<div class="ao-text">${h(titolPeticio)}</div>` : ''}
+      <div class="ao-inc"><b>${h(inc.titol || '')}</b>${inc.descripcio ? '\n' + h(inc.descripcio) : ''}</div></div>
+    ${inc.observacions_internes || a.observacions_internes ? `<div class="ao-fila ao-int"><span class="l">Observacions internes</span><div class="ao-desc">${h([inc.observacions_internes, a.observacions_internes].filter(Boolean).join('\n'))}</div></div>` : ''}
     ${a.inici ? `<div class="ao-fila"><span class="l">Es pot començar</span><span class="ao-termini">${dmyhm(a.inici)}${iniciFutur(a) ? ' · programada' : ''}</span></div>` : ''}
     <div class="ao-fila"><span class="l">${a.inici ? 'Termini final' : 'Termini'}</span><span class="ao-termini ${foraTermini(a) && a.estat !== 'finalitzada' ? 'fora' : ''}">${a.venciment ? dmyhm(a.venciment) + (a.grup_termini ? ' · ' + h(etiquetaOpt(INC.grups, a.grup_termini)) : '') : '—'}</span></div>
-    ${(() => { const fil = filIncHTML(inc, a); return fil ? `<div class="ao-fila ao-fil"><span class="l">Fins ara</span>${fil}</div>` : (inc.descripcio ? `<div class="ao-fila"><span class="l">Descripció de la incidència</span><div class="ao-desc">${h(inc.descripcio)}</div></div>` : ''); })()}
+    ${(() => { const fil = filIncHTML(inc, a, { senseObertura: true }); return fil ? `<div class="ao-fila ao-fil"><span class="l">Fins ara</span>${fil}</div>` : ''; })()}
     ${a.resultat ? `<div class="ao-fila"><span class="l">${a.es_peticio ? 'La teva resposta' : 'El teu resultat'}</span><div class="ao-desc">${h(a.resultat)}</div></div>` : ''}
-    ${inc.observacions_internes || a.observacions_internes ? `<div class="ao-fila"><span class="l">Observacions internes</span><div class="ao-desc" style="font-size:16px">${h([inc.observacions_internes, a.observacions_internes].filter(Boolean).join('\n'))}</div></div>` : ''}
     ${fotosOperariHTML(inc, a, !!a && inc.estat === 'oberta' && !!t && (socResponsable(a) || Number(a.gestor_id) === t.id))}
     ${a && accioAmbFull(a) ? (fullDeAccio(a) ? seccionsFullHTML(fullDeAccio(a)) + (a.estat === 'finalitzada' && potEditarFull(fullDeAccio(a)) ? `<div class="actions" style="margin:-8px 0 16px"><button type="button" class="btn ghost small" id="ft-fin-sol">Full totalment finalitzat…</button></div>` : '') : potCrearFullDe(a) ? obreFullHTML(a) : '') : ''}
     <aside class="ic-panell ao-panell" id="ic-panell"></aside>` : `<div class="empty">Ara mateix no tens cap acció en aquesta incidència${participaInc(inc, t) ? ', però hi has participat: a sota en tens tot el seguiment' : ''}.</div>`}
@@ -5904,6 +5907,15 @@ function bindPanell(inc) {
         else { const rf = await sb.from('fulls_treball').update({ finalitzat: true, finalitzat_el: ara, finalitzat_per: t.id, estat: 'finalitzat', resum: resultat || null }).eq('id', fullA.id); if (rf.error) throw rf.error; }
         await loadTable('fulls_treball');
       }
+      // la feina de l'operari torna a qui la va encarregar: l'acció d'origen (del tècnic o la seguidora) es reobre si estava finalitzada; la de l'operari queda tancada
+      let torna = null, reoberta = false;
+      if (!a.es_peticio && a.carril === 'operari' && a.origen_accio_id) {
+        const o = C.get('incidencia_accions', a.origen_accio_id);
+        if (o && o.actiu && o.responsable_treballador_id) {
+          torna = o;
+          if (o.estat === 'finalitzada') { try { const ro = await sb.from('incidencia_accions').update({ estat: 'en_curs', finalitzada_el: null, finalitzada_per: null }).eq('id', o.id); if (ro.error) throw ro.error; reoberta = true; await eventInc(inc.id, o.id, 'reoberta', `Torna a ${nomTreballador(C.get('treballadors', o.responsable_treballador_id))}: ${nomCurtTreballador(t)} ha acabat «${a.titol && a.titol !== nomTipus(a.tipus) ? a.titol : nomTipus(a.tipus)}»`); } catch (e2) { toastErr('No s’ha pogut reobrir l’acció anterior: ' + friendly(e2)); torna = null; } }
+        }
+      }
       // decisió del client: el pressupost desat queda acceptat o rebutjat
       const decisio = a.tipus === 'decisio_client' ? canvis.decisio : null, pres = decisio && a.origen_accio_id ? C.get('incidencia_accions', a.origen_accio_id) : null;
       if (decisio && decisio !== 'modificacions' && pres && pres.tipus === 'pressupost') await marcaPressupostDecidit(pres, decisio === 'aprovat');
@@ -5913,10 +5925,13 @@ function bindPanell(inc) {
       let alClient = null;
       if (a.tipus === 'pressupost' && inc.estat === 'oberta') { try { alClient = await pressupostAlClient(inc, a, t); } catch (e2) { toastErr('El pressupost no s’ha pogut passar al client: ' + friendly(e2)); } }
       const alClientText = alClient && alClient.accio ? ' · va al client: «Decisió del client sobre el pressupost» per a ' + alClient.contacte.nom : '';
-      toast((a.es_peticio ? 'Resposta registrada' : 'Acció finalitzada') + (fullAnullat ? ' · el full de treball, buit, queda anul·lat' : '') + alClientText, fullAnullat || alClientText ? 6000 : undefined);
-      // l'acció queda finalitzada, sense tocar cap altra: qui ho va encarregar (la seguidora) encarrega el pas següent. A l'oficina s'ofereix de seguida.
+      const tornaText = torna ? ` · torna a ${nomCurtTreballador(C.get('treballadors', torna.responsable_treballador_id))}: «${nomTipus(torna.tipus)}»${reoberta ? ' s’ha reobert' : ' continua oberta'}` : '';
+      toast((a.es_peticio ? 'Resposta registrada' : 'Acció finalitzada') + (fullAnullat ? ' · el full de treball, buit, queda anul·lat' : '') + alClientText + tornaText, fullAnullat || alClientText || tornaText ? 6000 : undefined);
+      // acció pròpia acabada: s'ofereix de seguida encarregar el pas següent (a l'oficina)
       let potSeguir = !APP_NOMES_TASQUES && !a.es_peticio && inc.estat === 'oberta' && (INC.transicions[a.tipus] || []).some(k => potCrearTipus(inc, k));
       st.form = potSeguir ? { tipus: 'accio', origen: a.id, despres: true } : null;
+      // feina d'operari acabada des de l'oficina: es va a l'acció que torna a estar oberta (des d'allà es deriva el pas següent)
+      if (!APP_NOMES_TASQUES && torna) { st.sel = torna.id; st.form = null; }
       if (alClient && alClient.accio) { st.sel = alClient.accio.id; st.form = null; }
       else if (alClient && alClient.form) { if (APP_NOMES_TASQUES) toastErr(alClient.avis + ' Fes-ho des de l’oficina.'); else st.form = { tipus: 'accio', origen: a.id, despres: true, tipusSel: 'decisio_client', avis: alClient.avis }; }
       // decisió del client registrada: el pas següent, des del pressupost (aprovat: la feina o el material; rebutjat: tancar o el que calgui) o un pressupost nou (modificacions)
