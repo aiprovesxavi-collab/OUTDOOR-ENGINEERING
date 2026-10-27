@@ -432,7 +432,9 @@
   .ft-nova .f{ gap:3px; } .ft-nova .f .l{ font-size:12.5px; } .ft-nova .wide{ grid-column:1 / -1; } .ft-nova textarea{ min-height:64px; } .ft-nova .actions{ grid-column:1 / -1; margin:2px 0 0; }
   .ft-fotos{ display:flex; flex-wrap:wrap; gap:8px; } .ft-fotos figure{ margin:0; text-align:center; font-size:12px; color:var(--ink-2); } .ft-fotos .ic-mini{ width:120px; height:120px; border-radius:10px; }
   .ft-puja{ display:inline-block; margin-top:6px; }
-  .ft-obre{ display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; border-style:dashed; padding:12px 16px; font-size:16px; color:var(--ink-2); } .ft-obre .hint{ flex-basis:100%; margin:0; } .ft-obre .msg.err{ flex-basis:100%; margin:0; }
+  .ft-obre{ margin:4px 0 14px; } .ft-obre .msg.err{ margin:6px 0 0; }
+  .ft-obre-gran{ display:block; width:100%; background:#e4f1e8; border:1.5px solid #b9d7c3; color:var(--ink); border-radius:12px; padding:16px; font:inherit; font-size:17px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; text-align:center; cursor:pointer; }
+  .ft-obre-gran:hover{ background:#d8ebde; }
   .ft-obre-fin{ margin:0 0 10px; } .ft-obre-fin .hint{ display:block; margin:4px 0 0; font-size:14px; }
   .ft-resum{ display:flex; flex-wrap:wrap; gap:6px 16px; font-size:14px; color:var(--ink-2); margin:6px 0 0; }
   .operari .ft-taula td{ font-size:17px; }
@@ -2253,7 +2255,58 @@ async function start() {
   recordaUsuari();
   renderApp();
   mostraFelicitacions();
+  engegaAvisos();
   if (faltes.length) toastErr('Taules que la base de dades encara no té: ' + faltes.join(', ') + '. Executa el fitxer SQL que les crea (o «notify pgrst, \'reload schema\'» si acabes de fer-ho).');
+}
+
+/* =====================================================================
+   Avisos: quan algú té una acció nova (o li'n torna una), un avís a la pantalla i, si els ha activat, una notificació i un so agradable.
+   Es comprova cada minut (i en tornar a la pestanya). El so i la notificació només es poden activar amb un toc de l'usuari (el navegador ho exigeix).
+   ===================================================================== */
+let audioCtx = null, avisosConeguts = null, avisosTimer = null;
+const avisosActius = () => { try { return localStorage.getItem('gestio_avisos') === '1'; } catch (e) { return false; } };
+function soAvis() {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const t0 = audioCtx.currentTime;
+    [[659.25, 0], [783.99, 0.16], [1046.5, 0.32]].forEach(([f, dt]) => {   // mi · sol · do: un acord suau, ascendent
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t0 + dt); g.gain.exponentialRampToValueAtTime(0.22, t0 + dt + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dt + 0.7);
+      o.connect(g).connect(audioCtx.destination); o.start(t0 + dt); o.stop(t0 + dt + 0.75);
+    });
+  } catch (e) {}
+}
+async function activaAvisos() {
+  try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); await audioCtx.resume(); } catch (e) {}
+  if (window.Notification && Notification.permission === 'default') { try { await Notification.requestPermission(); } catch (e) {} }
+  try { localStorage.setItem('gestio_avisos', '1'); } catch (e) {}
+  soAvis(); pintaBotoAvisos();
+  toast('Avisos activats: sonarà' + (window.Notification && Notification.permission === 'granted' ? ' i sortirà una notificació' : '') + ' quan tinguis una acció nova.', 6000);
+}
+function desactivaAvisos() { try { localStorage.setItem('gestio_avisos', '0'); } catch (e) {} pintaBotoAvisos(); toast('Avisos desactivats'); }
+function pintaBotoAvisos() { const b = $('#avisos'); if (!b) return; b.textContent = avisosActius() ? '🔔 Avisos' : '🔕 Avisos'; b.title = avisosActius() ? 'Avisos activats: un so i una notificació quan tinguis una acció nova (toca per desactivar)' : 'Activa els avisos: un so i una notificació quan tinguis una acció nova'; }
+function bindBotoAvisos() { const b = $('#avisos'); if (b) { pintaBotoAvisos(); b.addEventListener('click', () => { if (avisosActius()) desactivaAvisos(); else activaAvisos(); }); } }
+// les accions obertes que depenen de mi (responsable o gestor) en incidències obertes
+function accionsMevesIds() { const t = treballadorActual(); if (!t) return new Set(); return new Set(C.rows('incidencia_accions').filter(a => a.actiu && a.estat !== 'finalitzada' && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id) && (C.get('incidencies', a.incidencia_id) || {}).estat === 'oberta').map(a => a.id)); }
+async function comprovaAvisos() {
+  if (!user || !treballadorActual() || document.hidden) return;
+  try { await Promise.all([loadTable('incidencia_accions'), loadTable('incidencies')]); } catch (e) { return; }
+  const ara = accionsMevesIds();
+  if (avisosConeguts) { const noves = [...ara].filter(id => !avisosConeguts.has(id)); if (noves.length) avisaAccionsNoves(noves); }
+  avisosConeguts = ara;
+}
+function avisaAccionsNoves(ids) {
+  const acc = ids.map(id => C.get('incidencia_accions', id)).filter(Boolean); if (!acc.length) return;
+  const linia = a => { const inc = C.get('incidencies', a.incidencia_id) || {}; return `${nomTipus(a.tipus)}${a.titol && a.titol !== nomTipus(a.tipus) ? ' · ' + a.titol : ''} (${inc.numero || ''}${llocInc(inc).nom ? ' · ' + llocInc(inc).nom : ''})`; };
+  const titol = acc.length === 1 ? 'Acció nova' : acc.length + ' accions noves', text = acc.map(linia).join(' · ');
+  toast(titol + ': ' + text, 9000);
+  if (avisosActius()) { soAvis(); if (window.Notification && Notification.permission === 'granted') { try { new Notification(titol, { body: text, tag: 'gestio-accions' }); } catch (e) {} } }
+  if (!state.table || state.table === 'accions_meves') renderApp();   // el menú i la llista es posen al dia; en qualsevol altra pantalla no es toca res
+}
+function engegaAvisos() {
+  avisosConeguts = accionsMevesIds();
+  if (avisosTimer) clearInterval(avisosTimer); avisosTimer = setInterval(comprovaAvisos, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) comprovaAvisos(); });
 }
 
 /* =====================================================================
@@ -2270,7 +2323,7 @@ function renderApp() {
         <button data-mode="entrada" class="${state.mode === 'entrada' ? 'on' : ''}">Entrada de dades</button>
         <button data-mode="consulta" class="${state.mode === 'consulta' ? 'on' : ''}">Consulta de dades</button>
       </span>
-      <span class="who">${h(nomTreballador(treballadorActual()) || user.email)}${treballadorActual() ? ` <span class="sub">· ${h((OPT.rol.find(o => o[0] === treballadorActual().rol) || [])[1] || treballadorActual().rol)}</span>` : ' <span class="sub">· sense fitxa de treballador</span>'} <button class="btn ghost small" id="logout">Surt</button></span>
+      <span class="who">${h(nomTreballador(treballadorActual()) || user.email)}${treballadorActual() ? ` <span class="sub">· ${h((OPT.rol.find(o => o[0] === treballadorActual().rol) || [])[1] || treballadorActual().rol)}</span>` : ' <span class="sub">· sense fitxa de treballador</span>'} <button class="btn ghost small" id="avisos">🔕 Avisos</button> <button class="btn ghost small" id="logout">Surt</button></span>
     </div>
     <div class="shell">
       <nav class="side">
@@ -2282,6 +2335,7 @@ function renderApp() {
     </div>`;
   $('#brand').addEventListener('click', () => { state.table = null; state.editing = null; renderApp(); });
   $('#logout').addEventListener('click', async () => { await sb.auth.signOut(); user = null; renderLogin(); });
+  bindBotoAvisos();
   document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
     state.mode = b.dataset.mode; state.editing = null; renderApp();
   }));
@@ -2344,11 +2398,12 @@ function renderAppOperari() {
   $('#app').innerHTML = `
     <div class="top">
       <span class="brand" id="brand">Outdoor</span>
-      <span class="who">${h(t ? nomCurtTreballador(t) : user.email)} <button class="btn ghost small" id="logout">Surt</button></span>
+      <span class="who">${h(t ? nomCurtTreballador(t) : user.email)} <button class="btn ghost small" id="avisos">🔕 Avisos</button> <button class="btn ghost small" id="logout">Surt</button></span>
     </div>
     <div class="shell" style="grid-template-columns:minmax(0,1fr)"><div class="main" id="main"></div></div>`;
   $('#brand').addEventListener('click', () => { state.table = null; state.editing = null; renderApp(); });
   $('#logout').addEventListener('click', async () => { await sb.auth.signOut(); user = null; renderLogin(); });
+  bindBotoAvisos();
   const main = $('#main');
   if (!state.table) {
     main.innerHTML = `
@@ -4435,8 +4490,7 @@ async function creaFullPerAccio(inc, a) {
 }
 // el full és opcional: només cal si s'hi han d'apuntar jornades, material o fotos; s'obre des de l'acció (app o oficina), mai sol
 function obreFullHTML(a) {
-  const acabada = a.estat === 'finalitzada';
-  return `<div class="ft ft-obre" id="ft-obre"><span>${acabada ? 'Sense full de treball.' : 'Aquesta acció no té full de treball.'}</span><button type="button" class="btn ghost small" id="ft-obre-btn">${acabada ? 'Obre’n un per apuntar-hi la feina' : 'Obre’n un per a aquesta acció'}</button>${acabada ? '' : '<p class="hint">Només cal si hi has d’apuntar jornades (dia, hores i persones), material de magatzem o fotos de la feina. Moltes accions no en necessiten.</p>'}</div>`;
+  return `<div class="ft-obre" id="ft-obre"><button type="button" class="ft-obre-gran" id="ft-obre-btn">Full de treball</button></div>`;
 }
 async function obreFullDeAccio(inc, a, btn) {
   if (btn) btn.disabled = true;
@@ -5018,7 +5072,7 @@ const INC = {
   // qui pot crear cada tipus: seguidora (de la incidència), oficina (admin o oficina), tecnic, operari
   qui: {
     obrir: ['seguidora'], assignar_seguidora: ['seguidora', 'oficina'], visibilitat_client: [],
-    diagnosticar: ['seguidora', 'tecnic', 'oficina'], planificar: ['seguidora', 'tecnic', 'oficina'], consultar: ['seguidora', 'tecnic', 'operari', 'oficina'],
+    diagnosticar: ['seguidora', 'tecnic', 'oficina'], planificar: ['seguidora', 'tecnic', 'oficina'], consultar: ['seguidora', 'tecnic', 'oficina'],
     demanar_preu: ['seguidora', 'tecnic', 'oficina'], pressupost: ['seguidora', 'tecnic', 'oficina'],
     demanar_instruccions: ['seguidora', 'tecnic', 'oficina'], decisio_client: ['seguidora', 'tecnic', 'oficina'], autoritzar_actuacio: ['seguidora', 'tecnic', 'oficina'],
     programar: ['seguidora', 'tecnic', 'oficina'], assignar: ['seguidora', 'tecnic', 'oficina'], executar: ['seguidora', 'tecnic', 'oficina'], demanar_material: ['seguidora', 'tecnic', 'oficina'],
@@ -5034,9 +5088,9 @@ const INC = {
     consultar: [],
     demanar_preu: [],
     autoritzar_actuacio: ['executar', 'demanar_material', 'demanar_preu', 'albarans'],
-    pressupost: ['decisio_client', 'demanar_preu', 'executar', 'demanar_material'],
+    pressupost: ['decisio_client', 'demanar_preu', 'executar', 'demanar_material', 'albarans'],
     demanar_instruccions: ['autoritzar_actuacio', 'pressupost', 'executar', 'demanar_material'],
-    decisio_client: ['executar', 'demanar_material', 'pressupost'],
+    decisio_client: ['executar', 'demanar_material', 'pressupost', 'albarans'],
     programar: ['executar', 'demanar_material'],
     assignar: ['executar', 'demanar_material'],
     executar: ['demanar_preu', 'demanar_material', 'registrar_resultat', 'executar', 'albarans'],
@@ -5073,7 +5127,7 @@ const deLocalDT = v => v ? new Date(v).toISOString() : null;
 function vencimentPerGrup(grup, base) {
   const d = base ? new Date(base) : new Date();
   const a20 = dies => { const x = new Date(d); x.setDate(x.getDate() + dies); x.setHours(20, 0, 0, 0); return x; };
-  if (grup === 'emergencia') return d;
+  if (grup === 'emergencia') return new Date(d.getTime() + 2 * 3600000);   // «ara mateix»: dues hores
   if (grup === 'molt_urgent') { const x = a20(0); return x > d ? x : new Date(d.getTime() + 2 * 3600000); }
   if (grup === 'forca_urgent') return a20(1);
   if (grup === 'mig_termini') return a20(7);
@@ -5530,7 +5584,7 @@ function renderDiagramaInc(main) {
     ${araDepenHTML(inc, acc)}
     <div class="bar ic-bar">
       <button class="btn ghost" id="inc-torna">← Incidències</button>
-      ${inc.estat === 'oberta' && t && !extern ? `<button class="btn" id="inc-accio">Nova acció</button>` : ''}
+      ${inc.estat === 'oberta' && t && !extern && carrilDeTreballador(t) !== 'operari' ? `<button class="btn" id="inc-accio">Nova acció</button>` : ''}
       ${inc.estat === 'oberta' && esSeguidora(inc) && !extern ? `<button class="btn danger" id="inc-tanca" style="margin-left:0">Tanca la incidència</button>` : ''}
       ${inc.estat === 'tancada' && esSeguidora(inc) && !extern ? `<button class="btn" id="inc-reobre">Reobre</button>` : ''}
       ${inc.estat === 'oberta' && (esSeguidora(inc) || esOficina(t)) && !extern ? `<button class="btn ghost" id="inc-edita">Edita la capçalera</button>` : ''}
@@ -5702,7 +5756,7 @@ function panellOperariHTML(inc) {
   const avisFull = !fullA || fullA.finalitzat ? '' : fullBuit ? 'El full de treball ' + h(fullA.numero || '') + ' està buit: quedarà anul·lat. Si hi has d’apuntar alguna cosa, cancel·la i omple’l abans.'
     : 'El full de treball ' + h(fullA.numero || '') + ' quedarà totalment finalitzat (' + nJ + ' jornad' + (nJ === 1 ? 'a' : 'es') + ', ' + nM + ' de material' + (nF ? ', ' + nF + ' fitxer' + (nF === 1 ? '' : 's') : '') + ').';
   if (mostraFin) form = `<div class="ic-form"><h4>${a.es_peticio ? 'Respon la petició' : 'Quan acabis: acció totalment finalitzada'}</h4>
-      ${avisFull ? `<p class="hint" style="margin:0 0 8px">${avisFull}</p>` : potObrirFull ? `<div class="ft-obre-fin"><button type="button" class="btn ghost small" id="fin-obre-full">Obre un full de treball</button> <span class="hint">(només si hi has d’apuntar jornades, material o fotos; moltes accions no en necessiten)</span></div>` : ''}
+      ${avisFull ? `<p class="hint" style="margin:0 0 8px">${avisFull}</p>` : potObrirFull ? `<div class="ft-obre-fin"><button type="button" class="ft-obre-gran" id="fin-obre-full">Full de treball</button></div>` : ''}
       <div class="f"><span class="l">${a.es_peticio ? 'Resposta' : 'Resum del que has fet'}</span><textarea lang="ca" spellcheck="true" id="fin-resultat">${fo.resultat != null ? h(fo.resultat) : fullA && jornadesFull(fullA.id).length ? h(resumJornades(fullA.id)) : a.estat !== 'finalitzada' && a.resultat ? h(a.resultat) : ''}</textarea></div>
       ${pend.length ? `<p class="v-no">Aquesta acció espera ${pend.length} ${pend.length === 1 ? 'resposta' : 'respostes'} a les teves peticions: no es pot finalitzar fins que les tinguis.</p>` : ''}
       <div class="actions"><button class="btn" id="fin-ok" ${pend.length ? 'disabled' : ''}>${a.es_peticio ? 'Envia la resposta' : 'Acció totalment finalitzada'}</button></div></div>`;
@@ -5865,7 +5919,7 @@ function seguentHabitual(origen) {
     const dec = decs[decs.length - 1]; return dec && dec.decisio === 'aprovat' ? 'executar' : dec && dec.decisio === 'rebutjat' ? null : 'decisio_client';
   }
   if (origen.tipus === 'decisio_client') return origen.decisio === 'modificacions' ? 'pressupost' : 'executar';
-  return { obrir: 'diagnosticar', reobrir: 'diagnosticar', diagnosticar: 'pressupost', planificar: 'executar', demanar_instruccions: 'executar', autoritzar_actuacio: 'executar', programar: 'executar', assignar: 'executar', demanar_material: 'executar', executar: 'registrar_resultat', registrar_resultat: 'albarans' }[origen.tipus] || null;
+  return { obrir: 'diagnosticar', reobrir: 'diagnosticar', diagnosticar: 'pressupost', planificar: 'executar', demanar_instruccions: 'executar', autoritzar_actuacio: 'executar', programar: 'executar', assignar: 'executar', demanar_material: 'executar', executar: 'albarans', registrar_resultat: 'albarans' }[origen.tipus] || null;
 }
 function bindPanell(inc) {
   const st = state.inc, p = $('#ic-panell'), t = trebInc();
