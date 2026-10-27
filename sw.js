@@ -3,7 +3,7 @@
 // s'obre sempre la pàgina que l'ha rebuda, encara que en el mateix navegador també s'hagi obert l'altra.
 // Fa la pàgina instal·lable, en guarda una còpia per si s'obre sense xarxa (les dades sempre necessiten connexió)
 // i rep els avisos (Web Push) d'accions noves, també amb la pàgina tancada.
-const VERSIO = 4, CACHE = 'gestio-outdoor-v' + VERSIO;
+const VERSIO = 5, CACHE = 'gestio-outdoor-v' + VERSIO;
 const OFICINA = /\/gestio\.html$/.test(self.registration.scope);   // aquest registre és el de l'oficina; si no, el de l'app
 const PAGINA = self.registration.scope;                              // la pàgina que s'obre: l'arrel (app) o gestio.html (oficina)
 const esMeva = url => { let p = ''; try { p = new URL(url).pathname; } catch (x) { return false; } return OFICINA ? /\/gestio(\.html)?$/.test(p) : /\/(index(\.html)?)?$/.test(p); };
@@ -24,16 +24,26 @@ self.addEventListener('message', e => {
   if (d.tipus === 'versio') { const resposta = { tipus: 'versio', versio: VERSIO, oficina: OFICINA }; const port = e.ports && e.ports[0]; if (port) port.postMessage(resposta); else if (e.source) e.source.postMessage(resposta); }
 });
 
+// pregunta a una pàgina oberta si pot fer sonar ella mateixa la melodia (és a la vista, amb els avisos activats i el so desbloquejat)
+const potSonar = c => new Promise(res => {
+  try { const mc = new MessageChannel(); const tanca = v => { try { mc.port1.close(); } catch (x) {} res(v); }; const t = setTimeout(() => tanca(false), 400); mc.port1.onmessage = ev => { clearTimeout(t); tanca(!!(ev.data && ev.data.sona)); }; c.postMessage({ tipus: 'pots-sonar' }, [mc.port2]); }
+  catch (x) { res(false); }
+});
 // Un avís (enviat per l'Edge Function «avisa-accio»): es mostra la notificació i s'avisa la pàgina, si és oberta, perquè es posi al dia.
+// Si la pàgina és a la vista i pot sonar, la notificació surt en silenci i sona la melodia de la pàgina (no dos sons alhora);
+// amb la pàgina tancada o amagada, sona el so de notificacions del sistema (el web no el pot triar).
 self.addEventListener('push', e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (x) { d = { text: e.data ? e.data.text() : '' }; }
-  const mostra = self.registration.showNotification(d.titol || 'Acció nova', {
-    body: d.text || '', icon: 'icona-192.png', badge: 'icona-192.png', tag: (d.tag || 'gestio-accions') + (OFICINA ? '-oficina' : ''), renotify: true, vibrate: [180, 90, 180],
-    data: { accio_id: d.accio_id || null, prova: !!d.prova },
-  });
-  const avisa = self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => cs.filter(c => esMeva(c.url)).forEach(c => c.postMessage({ tipus: 'push', accio_id: d.accio_id || null })));
-  e.waitUntil(Promise.all([mostra, avisa]));
+  e.waitUntil((async () => {
+    const meves = (await self.clients.matchAll({ type: 'window', includeUncontrolled: true })).filter(c => esMeva(c.url));
+    const visibles = meves.filter(c => c.visibilityState === 'visible');
+    const silenci = visibles.length ? (await Promise.all(visibles.map(potSonar))).some(Boolean) : false;
+    const opcions = { body: d.text || '', icon: 'icona-192.png', badge: 'icona-192.png', tag: (d.tag || 'gestio-accions') + (OFICINA ? '-oficina' : ''), renotify: true, data: { accio_id: d.accio_id || null, prova: !!d.prova } };
+    if (silenci) opcions.silent = true; else opcions.vibrate = [180, 90, 180];   // (silent i vibrate no poden anar junts)
+    await self.registration.showNotification(d.titol || 'Acció nova', opcions);
+    meves.forEach(c => c.postMessage({ tipus: 'push', accio_id: d.accio_id || null, prova: !!d.prova }));
+  })());
 });
 
 // En tocar la notificació: es porta al davant la pàgina d'aquest registre (o s'obre) i s'hi obre l'acció.

@@ -2274,7 +2274,10 @@ async function start() {
    Avisos: quan algú té una acció nova (o li'n torna una), un avís a la pantalla i, si els ha activat, una notificació i un so agradable.
    Es comprova cada minut (i en tornar a la pestanya). El so i la notificació només es poden activar amb un toc de l'usuari (el navegador ho exigeix).
    ===================================================================== */
-let audioCtx = null, avisosConeguts = null, avisosTimer = null;
+// la melodia dels avisos: de moment, l'acord de mi · sol · do (sintetitzat, a soAvis). Quan l'app passi a APK s'hi posarà la melodia gravada
+// (notificacio.m4a), com a so de les notificacions; per fer-la sonar també dins de la pàgina, n'hi ha prou de posar-hi el MP3 en base64.
+const SO_AVIS = '';
+let audioCtx = null, avisosConeguts = null, avisosTimer = null, bufferAvis = null, carregantAvis = null;
 // l'app i l'oficina guarden per separat si tenen els avisos activats (comparteixen el navegador i, per tant, el localStorage)
 const CLAU_AVISOS = APP_NOMES_TASQUES ? 'gestio_avisos' : 'gestio_avisos_oficina', CLAU_AVISOS_ALTRA = APP_NOMES_TASQUES ? 'gestio_avisos_oficina' : 'gestio_avisos';
 const avisosActius = () => { try { return localStorage.getItem(CLAU_AVISOS) === '1'; } catch (e) { return false; } };
@@ -2284,13 +2287,34 @@ function desbloquejaAudio() {
     audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state !== 'running' && audioCtx.resume) audioCtx.resume().catch(() => {});
     const b = audioCtx.createBufferSource(); b.buffer = audioCtx.createBuffer(1, 1, 22050); b.connect(audioCtx.destination); b.start(0);   // un silenci: a l'iPhone cal reproduir alguna cosa dins del toc
+    carregaSoAvis();   // la melodia, a punt per sonar a l'instant
   } catch (e) {}
 }
+// descodifica la melodia (un sol cop); null si el navegador no pot
+function carregaSoAvis() {
+  if (bufferAvis) return Promise.resolve(bufferAvis);
+  if (carregantAvis) return carregantAvis;
+  carregantAvis = new Promise(res => {
+    try {
+      if (!SO_AVIS || !audioCtx || !audioCtx.decodeAudioData) return res(null);
+      const bytes = Uint8Array.from(atob(SO_AVIS), c => c.charCodeAt(0));
+      let fet = false; const acaba = b => { if (!fet) { fet = true; bufferAvis = b || null; res(bufferAvis); } };
+      const p = audioCtx.decodeAudioData(bytes.buffer, acaba, () => acaba(null));
+      if (p && p.then) p.then(acaba, () => acaba(null));
+    } catch (e) { res(null); }
+  }).then(b => { carregantAvis = null; return b; });
+  return carregantAvis;
+}
+// pot sonar ara mateix (la pàgina és a la vista, amb els avisos activats i el so desbloquejat per un toc)
+const potSonarAra = () => !document.hidden && avisosActius() && !!audioCtx && audioCtx.state === 'running';
 async function soAvis() {
   try {
     audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state && audioCtx.state !== 'running' && audioCtx.resume) { try { await Promise.race([audioCtx.resume(), new Promise(r => setTimeout(r, 1500))]); } catch (e) {} }
     if (audioCtx.state && audioCtx.state !== 'running') { vibra(); return; }   // encara no s'ha tocat la pàgina: el navegador no deixa sonar
+    const melodia = await carregaSoAvis();
+    if (melodia) { const font = audioCtx.createBufferSource(); font.buffer = melodia; font.connect(audioCtx.destination); font.start(); vibra(); return; }
+    // l'acord (si no hi ha melodia gravada o el navegador no la pot descodificar)
     const t0 = audioCtx.currentTime, nota = (f, dt, durada) => {
       const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type = 'sine'; o.frequency.value = f;
       g.gain.setValueAtTime(0.0001, t0 + dt); g.gain.exponentialRampToValueAtTime(0.4, t0 + dt + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dt + durada);
@@ -2305,7 +2329,7 @@ function vibra() { try { if (navigator.vibrate) navigator.vibrate([180, 90, 180]
        també amb l'app tancada. Cal https, el service worker (sw.js) i el permís de notificacions; a l'iPhone, a més, l'app a la pantalla d'inici. --- */
 const b64uAU8 = s => { s = String(s).replace(/-/g, '+').replace(/_/g, '/'); s += '='.repeat((4 - s.length % 4) % 4); return Uint8Array.from(atob(s), c => c.charCodeAt(0)); };
 const potPush = () => !!(VAPID_PUBLIC && 'serviceWorker' in navigator && 'PushManager' in window && window.Notification && location.protocol === 'https:');
-const SW_VERSIO = 4;   // la versió del sw.js que va amb aquesta pàgina (el navegador en pot tenir un d'antic fins que es posa al dia)
+const SW_VERSIO = 5;   // la versió del sw.js que va amb aquesta pàgina (el navegador en pot tenir un d'antic fins que es posa al dia)
 // cada pàgina té el seu registre del service worker i la seva subscripció d'avisos: l'app, l'abast de l'arrel; l'oficina, el de gestio.html
 const SW_ABAST = APP_NOMES_TASQUES ? './' : './gestio.html', SW_ABAST_ALTRA = APP_NOMES_TASQUES ? './gestio.html' : './';
 // el registre d'un abast (per defecte el d'aquesta pàgina), actiu; si no n'hi ha, es crea (només el propi i en https)
@@ -2461,17 +2485,19 @@ async function mostraPanellAvisos() {
 }
 // les accions obertes que depenen de mi (responsable o gestor) en incidències obertes
 function accionsMevesIds() { const t = treballadorActual(); if (!t) return new Set(); return new Set(C.rows('incidencia_accions').filter(a => a.actiu && a.estat !== 'finalitzada' && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id) && (C.get('incidencies', a.incidencia_id) || {}).estat === 'oberta').map(a => a.id)); }
-async function comprovaAvisos() {
+async function comprovaAvisos(perPush) {
   if (!user || !treballadorActual() || document.hidden) return;
-  try { await Promise.all([loadTable('incidencia_accions'), loadTable('incidencies')]); } catch (e) { return; }
-  const ara = accionsMevesIds();
-  if (avisosConeguts) { const noves = [...ara].filter(id => !avisosConeguts.has(id)); if (noves.length) avisaAccionsNoves(noves); }
+  try { await Promise.all([loadTable('incidencia_accions'), loadTable('incidencies')]); } catch (e) { if (perPush === true && avisosActius()) soAvis(); return; }
+  const ara = accionsMevesIds(); let noves = [];
+  if (avisosConeguts) { noves = [...ara].filter(id => !avisosConeguts.has(id)); if (noves.length) avisaAccionsNoves(noves); }
   avisosConeguts = ara;
+  if (perPush === true && !noves.length && avisosActius()) soAvis();   // ha arribat un avís (una prova, o una acció que ja es coneixia): la melodia igualment
 }
 // la notificació del sistema: pel service worker si hi és (a Android és l'única manera); si no, la de la pàgina
-async function mostraNotificacio(titol, text, accioId) {
+async function mostraNotificacio(titol, text, accioId, silenci) {
   if (!window.Notification || Notification.permission !== 'granted') return;
-  const opcions = { body: text, tag: 'gestio-accions' + (APP_NOMES_TASQUES ? '' : '-oficina'), renotify: true, vibrate: [180, 90, 180], icon: 'icona-192.png', data: { accio_id: accioId || null } };
+  const opcions = { body: text, tag: 'gestio-accions' + (APP_NOMES_TASQUES ? '' : '-oficina'), renotify: true, icon: 'icona-192.png', data: { accio_id: accioId || null } };
+  if (silenci) opcions.silent = true; else opcions.vibrate = [180, 90, 180];   // en silenci quan ja sona la melodia (silent i vibrate no poden anar junts)
   try { const reg = await registreSW(); if (reg && reg.showNotification) { await reg.showNotification(titol, opcions); return; } } catch (e) {}
   try { new Notification(titol, opcions); } catch (e) {}
 }
@@ -2480,7 +2506,7 @@ function avisaAccionsNoves(ids) {
   const linia = a => { const inc = C.get('incidencies', a.incidencia_id) || {}; return `${nomTipus(a.tipus)}${a.titol && a.titol !== nomTipus(a.tipus) ? ' · ' + a.titol : ''} (${inc.numero || ''}${llocInc(inc).nom ? ' · ' + llocInc(inc).nom : ''})`; };
   const titol = acc.length === 1 ? 'Acció nova' : acc.length + ' accions noves', text = acc.map(linia).join(' · ');
   toast(titol + ': ' + text, 9000);
-  if (avisosActius()) { soAvis(); if (!pushActiu) mostraNotificacio(titol, text, acc.length === 1 ? acc[0].id : null); }   // amb el push actiu, la notificació ja la mostra el service worker
+  if (avisosActius()) { const sona = potSonarAra(); soAvis(); if (!pushActiu) mostraNotificacio(titol, text, acc.length === 1 ? acc[0].id : null, sona); }   // amb el push actiu, la notificació ja la mostra el service worker
   if (!state.table || state.table === 'accions_meves') renderApp();   // el menú i la llista es posen al dia; en qualsevol altra pantalla no es toca res
 }
 function engegaAvisos() {
@@ -2491,7 +2517,7 @@ function engegaAvisos() {
     ['touchend', 'click', 'keydown'].forEach(ev => document.addEventListener(ev, desbloquejaAudio, { once: true, passive: true }));
     document.addEventListener('visibilitychange', () => { if (!document.hidden) comprovaAvisos(); });
     // missatges del service worker: ha arribat un avís (la llista es posa al dia) o s'ha tocat la notificació (s'obren les accions)
-    if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', e => { const d = e.data || {}; if (d.tipus === 'push') comprovaAvisos(); if (d.tipus === 'obre' && d.accio_id && !d.prova && treballadorActual()) (async () => { try { await Promise.all([loadTable('incidencia_accions'), loadTable('incidencies')]); } catch (x) {} obreDesDAvis(d.accio_id); comprovaAvisos(); })(); });
+    if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', e => { const d = e.data || {}; if (d.tipus === 'pots-sonar' && e.ports && e.ports[0]) e.ports[0].postMessage({ sona: potSonarAra() }); if (d.tipus === 'push') comprovaAvisos(true); if (d.tipus === 'obre' && d.accio_id && !d.prova && treballadorActual()) (async () => { try { await Promise.all([loadTable('incidencia_accions'), loadTable('incidencies')]); } catch (x) {} obreDesDAvis(d.accio_id); comprovaAvisos(); })(); });
   }
   // amb els avisos activats, l'aparell queda registrat (o es posa al dia) cada cop que s'entra
   (async () => { await migraAvisosOficina(); if (avisosActius() && window.Notification && Notification.permission === 'granted') subscriuPush(true); })();
