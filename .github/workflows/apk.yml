@@ -1,0 +1,176 @@
+# Builds the Outdoor Android app (Trusted Web Activity) from apk_android.zip,
+# signs it and publishes it as Outdoor.apk in a GitHub Release.
+# Place this file at .github/workflows/apk.yml in the repository.
+name: Build Outdoor APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - apk_android.zip
+      - .github/workflows/apk.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      APK_NAME: Outdoor.apk
+      SITE_ASSETLINKS: https://app.outdoor.barcelona/.well-known/assetlinks.json
+
+    steps:
+      - name: Check that the 4 secrets exist
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          missing=0
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error title=Missing secret $name::Add the repository secret $name (Settings > Secrets and variables > Actions > New repository secret). The value is in claus_apk.txt."
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then exit 1; fi
+          echo "All 4 secrets are present."
+
+      - name: Check out the repository
+        uses: actions/checkout@v5
+
+      - name: Unzip the Android project
+        run: |
+          if [ ! -f apk_android.zip ]; then
+            echo "::error title=apk_android.zip not found::Upload apk_android.zip to the root folder of the repository."
+            exit 1
+          fi
+          rm -rf "$RUNNER_TEMP/twa"
+          unzip -q apk_android.zip -d "$RUNNER_TEMP/twa"
+          gradlew_path=$(find "$RUNNER_TEMP/twa" -maxdepth 2 -type f -name gradlew -print -quit)
+          if [ -z "$gradlew_path" ]; then
+            echo "::error title=Bad zip::apk_android.zip does not contain the Android project (gradlew not found)."
+            exit 1
+          fi
+          project_dir=$(dirname "$gradlew_path")
+          chmod +x "$project_dir/gradlew"
+          echo "PROJECT_DIR=$project_dir" >> "$GITHUB_ENV"
+          echo "Android project folder: $project_dir"
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build the release APK (unsigned) with the Gradle wrapper
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: ./gradlew --no-daemon --stacktrace assembleRelease
+
+      - name: Sign the APK (zipalign + apksigner)
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          build_tools=""
+          for v in $(find "$sdk/build-tools" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort -rV); do
+            if [ -x "$sdk/build-tools/$v/zipalign" ] && [ -x "$sdk/build-tools/$v/apksigner" ]; then
+              build_tools="$sdk/build-tools/$v"
+              break
+            fi
+          done
+          if [ -z "$build_tools" ]; then
+            echo "::error::No Android build-tools with zipalign and apksigner found in $sdk/build-tools."
+            exit 1
+          fi
+          echo "Using $build_tools"
+          echo "BUILD_TOOLS=$build_tools" >> "$GITHUB_ENV"
+
+          unsigned=$(find "$PROJECT_DIR/app/build/outputs/apk/release" -type f -name '*.apk' -print -quit)
+          if [ -z "$unsigned" ]; then
+            echo "::error::The release APK was not produced by Gradle."
+            exit 1
+          fi
+
+          keystore="$RUNNER_TEMP/outdoor-apk.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode --ignore-garbage > "$keystore"
+          if ! keytool -list -keystore "$keystore" -storepass:env ANDROID_KEYSTORE_PASSWORD \
+                -alias "$ANDROID_KEY_ALIAS" > /dev/null 2>&1; then
+            echo "::error title=Keystore check failed::ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD and ANDROID_KEY_ALIAS do not match (incomplete base64, wrong password or wrong alias). Copy them again from claus_apk.txt."
+            rm -f "$keystore"
+            exit 1
+          fi
+
+          mkdir -p dist
+          "$build_tools/zipalign" -p -f 4 "$unsigned" "$RUNNER_TEMP/aligned.apk"
+          "$build_tools/apksigner" sign \
+            --ks "$keystore" \
+            --ks-key-alias "$ANDROID_KEY_ALIAS" \
+            --ks-pass env:ANDROID_KEYSTORE_PASSWORD \
+            --key-pass env:ANDROID_KEY_PASSWORD \
+            --out "dist/$APK_NAME" \
+            "$RUNNER_TEMP/aligned.apk"
+          rm -f "$keystore"
+
+      - name: Verify the signature
+        run: |
+          set -euo pipefail
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "dist/$APK_NAME"
+          digest=$("$BUILD_TOOLS/apksigner" verify --print-certs "dist/$APK_NAME" \
+            | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | tr 'a-f' 'A-F' | sed 's/../&:/g; s/:$//')
+          if [ -z "$digest" ]; then
+            echo "::error::Could not read the signing certificate of dist/$APK_NAME."
+            exit 1
+          fi
+          echo "Signing certificate SHA-256: $digest"
+          echo "CERT_SHA256=$digest" >> "$GITHUB_ENV"
+
+      - name: Check assetlinks.json on the website (warning only)
+        run: |
+          if curl -fsSL --max-time 30 "$SITE_ASSETLINKS" | tr -d ' \n\r\t' | grep -qi "$CERT_SHA256"; then
+            echo "OK: $SITE_ASSETLINKS contains $CERT_SHA256"
+          else
+            echo "::warning title=assetlinks.json::$SITE_ASSETLINKS is missing or does not contain $CERT_SHA256. Until it does, the app opens with a browser address bar."
+          fi
+
+      - name: Upload the APK as a workflow artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: Outdoor-apk-${{ github.run_number }}
+          path: dist/${{ env.APK_NAME }}
+          if-no-files-found: error
+
+      - name: Publish the APK in a GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: apk-${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" "dist/$APK_NAME" --clobber
+          else
+            gh release create "$TAG" "dist/$APK_NAME" \
+              --target "$GITHUB_SHA" \
+              --title "Outdoor APK ($TAG)" \
+              --notes "Signed APK built by GitHub Actions run ${{ github.run_number }} from commit ${GITHUB_SHA::7}. Signing certificate SHA-256: $CERT_SHA256"
+          fi
+          latest="${{ github.server_url }}/${{ github.repository }}/releases/latest/download/$APK_NAME"
+          {
+            echo "### Outdoor.apk is ready"
+            echo ""
+            echo "- This build: ${{ github.server_url }}/${{ github.repository }}/releases/download/$TAG/$APK_NAME"
+            echo "- Always the newest build: $latest"
+            echo "- Signing certificate SHA-256: \`$CERT_SHA256\`"
+          } >> "$GITHUB_STEP_SUMMARY"
