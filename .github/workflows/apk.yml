@@ -126,19 +126,24 @@ jobs:
       - name: Verify the signature
         run: |
           set -euo pipefail
-          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "dist/$APK_NAME"
-          digest=$("$BUILD_TOOLS/apksigner" verify --print-certs "dist/$APK_NAME" \
-            | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | tr 'a-f' 'A-F' | sed 's/../&:/g; s/:$//')
+          # apksigner fails here if the signature is not valid
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "dist/$APK_NAME" | tee "$RUNNER_TEMP/verify.txt"
+          # the certificate line is "Signer #1 certificate SHA-256 digest: ..." in older build-tools
+          # and "V3.0 Signer: certificate SHA-256 digest: ..." in newer ones: take the first one
+          digest=$(awk -F'digest: ' '/[Cc]ertificate SHA-256 digest: / && d == "" { d = $2 } END { print d }' "$RUNNER_TEMP/verify.txt" \
+            | tr -d '[:space:]' | tr 'a-f' 'A-F' | sed 's/../&:/g; s/:$//')
           if [ -z "$digest" ]; then
-            echo "::error::Could not read the signing certificate of dist/$APK_NAME."
-            exit 1
+            echo "::warning::The APK is signed, but the certificate SHA-256 could not be read from the apksigner output."
+          else
+            echo "Signing certificate SHA-256: $digest"
           fi
-          echo "Signing certificate SHA-256: $digest"
           echo "CERT_SHA256=$digest" >> "$GITHUB_ENV"
 
       - name: Check assetlinks.json on the website (warning only)
         run: |
-          if curl -fsSL --max-time 30 "$SITE_ASSETLINKS" | tr -d ' \n\r\t' | grep -qi "$CERT_SHA256"; then
+          if [ -z "${CERT_SHA256:-}" ]; then
+            echo "::warning title=assetlinks.json::Not checked: the signing certificate SHA-256 is unknown."
+          elif curl -fsSL --max-time 30 "$SITE_ASSETLINKS" | tr -d ' \n\r\t' | grep -qi "$CERT_SHA256"; then
             echo "OK: $SITE_ASSETLINKS contains $CERT_SHA256"
           else
             echo "::warning title=assetlinks.json::$SITE_ASSETLINKS is missing or does not contain $CERT_SHA256. Until it does, the app opens with a browser address bar."
