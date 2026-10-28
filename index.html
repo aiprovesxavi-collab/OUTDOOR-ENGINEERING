@@ -6,8 +6,8 @@
 <title>Gestió de manteniment</title>
 <meta name="theme-color" content="#2f7d4a">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icona-192.png">
-<link rel="apple-touch-icon" href="icona-192.png">
+<link rel="icon" href="icones/icona-192.png">
+<link rel="apple-touch-icon" href="icones/icona-192.png">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
@@ -222,6 +222,49 @@
   .msg{ border-radius:5px; padding:10px 14px; margin:0 0 16px; font-size:14px; }
   .msg.err{ background:var(--red-2); color:var(--red); }
   .msg.ok{ background:var(--green-2); color:var(--green); }
+  .compta-filtres{ display:flex; flex-wrap:wrap; gap:8px 14px; align-items:flex-end; margin:4px 0 12px; }
+  .compta-filtres label{ display:flex; flex-direction:column; gap:3px; font-size:13px; color:var(--ink-2); }
+  .compta-filtres .cf-compte input{ min-width:320px; } .compta-filtres .cf-q input{ min-width:220px; }
+  .compta-filtres .rangs{ display:flex; gap:6px; }
+  .compta-accions{ margin:0 0 12px; display:flex; gap:8px; flex-wrap:wrap; }
+  .compta-t th.num, .compta-t td.num{ text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .compta-t .cd-cap td{ background:#f3f6f2; border-top:2px solid var(--line-2); }
+  .compta-t tbody.sel .cd-cap td{ background:#e2f0e5; }
+  .compta-t tbody.anul td{ color:var(--ink-3); }
+  .compta-t tr.total td{ font-weight:600; border-top:2px solid var(--line-2); }
+  .compta-t tr.saldo-ant td{ color:var(--ink-2); font-style:italic; }
+  .cd-tipus{ display:inline-block; font-size:11.5px; padding:1px 8px; border-radius:9px; background:#e8ecef; color:#3c4650; margin-left:6px; vertical-align:1px; }
+  .cd-tipus.t-factura_emesa, .cd-tipus.t-cobrament{ background:#e3efe6; color:#2f6a42; } .cd-tipus.t-factura_rebuda, .cd-tipus.t-pagament{ background:#f6ebdf; color:#8a5420; }
+  .cd-tipus.t-reversio, .cd-tipus.t-anul{ background:#f6e1e1; color:#a33; } .cd-tipus.t-obertura{ background:#e5e8f6; color:#34408a; }
+  .cd-ops{ float:right; display:flex; gap:6px; align-items:center; font-size:13px; }
+  .compta-doc{ margin:12px 0; padding:9px 12px; border-left:3px solid #3f6f4f; background:#f3f7f4; font-size:14px; line-height:1.5; }
+  .ca-linies input{ width:100%; box-sizing:border-box; } .ca-linies td{ vertical-align:top; } .ca-linies .ca-nom{ margin-top:2px; }
+  .ca-dif.err{ color:var(--red); font-weight:600; } .ca-dif.ok{ color:var(--green); }
+  .compta-cfg .fila{ display:grid; grid-template-columns:minmax(220px, 340px) 1fr; gap:6px 14px; align-items:center; margin:6px 0; }
+  .compta-cfg h3{ margin:22px 0 8px; font-size:16px; }
+  .banc-resum{ display:flex; flex-wrap:wrap; gap:4px 22px; align-items:baseline; margin:4px 0 12px; padding:9px 12px; background:#f3f7f4; border-left:3px solid #3f6f4f; font-size:14px; }
+  .banc-resum .hint{ flex-basis:100%; margin:0; }
+  .bc-t td{ vertical-align:top; } .bc-t td.num.neg{ color:var(--red); } .bc-t td.num.pos{ color:var(--green); }
+  .bc-t tr.ignorat td{ color:var(--ink-3); } .bc-t tr.obert td{ background:#eef5f0; }
+  .bc-t .bc-ops{ text-align:right; white-space:nowrap; } .bc-conc div{ line-height:1.4; } .bc-prop{ font-size:13.5px; }
+  .bc-editor > td{ background:#f7faf8; padding:10px 12px 14px; border-bottom:2px solid var(--line-2); }
+  .bc-props{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:0 0 10px; }
+  .bc-pr{ font:inherit; font-size:13px; border:1px solid var(--line-2); background:#fff; border-radius:14px; padding:3px 11px; cursor:pointer; color:var(--ink); text-align:left; }
+  .bc-pr:hover{ border-color:var(--green); background:var(--green-2); }
+  .bc-lin input, .bc-lin select{ width:100%; box-sizing:border-box; } .bc-lin td{ vertical-align:top; }
+  .bc-ed .actions{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .bc-obs{ margin-left:auto; display:flex; gap:6px; align-items:center; font-size:13px; color:var(--ink-2); } .bc-obs input{ width:260px; }
+  .bc-extractes{ margin-top:18px; font-size:14px; } .bc-extractes summary{ cursor:pointer; color:var(--ink-2); }
+  .rm-t tbody.sel .cd-cap td{ background:#e2f0e5; } .rm-t .cd-cap{ cursor:pointer; }
+  .im-amort{ display:inline-flex; gap:6px; align-items:center; margin-left:12px; font-size:14px; } .im-amort input{ width:auto; }
+  .cam-cap{ display:grid; grid-template-columns:170px minmax(220px,1fr) 180px 220px; gap:8px 12px; margin:0 0 12px; }
+  .cam-cap .f{ display:flex; flex-direction:column; gap:3px; text-align:left; } .cam-cap input, .cam-cap select{ width:100%; box-sizing:border-box; }
+  .ca-grid .ca-n{ width:34px; color:var(--ink-3); text-align:right; } .ca-grid .ca-nom.err{ color:var(--red); }
+  .ca-grid input.num, .bc-lin input.num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .cs-sumes th.c{ text-align:center; border-bottom:1px solid var(--line-2); } .cs-sumes tr.n1 td{ font-weight:600; } .cs-sumes tr.n2 td{ font-weight:500; }
+  .cs-t select{ max-width:100%; } .cs-t input[data-cs-codi]{ margin-top:4px; width:140px; }
+  .cd-tipus.t-moviment_banc{ background:#e5eef6; color:#2b5f8a; } .cd-tipus.t-amortitzacio{ background:#efe9f6; color:#5b3f8a; }
+  @media (max-width: 760px){ .cam-cap{ grid-template-columns:1fr 1fr; } .bc-obs{ margin-left:0; } .bc-obs input{ width:100%; } }
   .avisos-panell{ position:fixed; inset:0; z-index:9400; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; padding:16px; }
   .avisos-caixa{ background:#fff; border-radius:12px; padding:18px 20px; max-width:540px; width:100%; box-shadow:0 12px 40px rgba(0,0,0,.25); font-size:15px; }
   .avisos-caixa h3{ margin:0 0 10px; font-size:18px; }
@@ -651,6 +694,7 @@ const ACCENT = { verd: [118, 176, 30], blau: [28, 118, 180] };
    Llistes d'opcions
    ===================================================================== */
 const OPT = {
+  centre_cost: [['jardins', 'Jardins'], ['piscines', 'Piscines'], ['aigues_grises', 'Aigües grises'], ['reparacions', 'Reparacions i incidències'], ['installacions', 'Instal·lacions i obres'], ['generals', 'Despeses generals']],
   tipus_admin: [['despatx','Despatx'],['persona_fisica','Persona física']],
   tipus_client: [['particular','Particular'],['comunitat','Comunitat de propietaris'],['empresa','Empresa'],['administracio_publica','Administració pública']],
   periodicitat: [['mensual','Mensual'],['bimestral','Bimestral'],['trimestral','Trimestral'],['semestral','Semestral'],['anual','Anual']],
@@ -1088,6 +1132,7 @@ const SCHEMA = {
     { label: 'FACTURACIÓ', color: '#8a8a8a', tables: ['agrupacions', 'facturacio_recurrent', 'factures', 'marcat_cobrats', 'calendari_facturacio', 'vencudes', 'grafiques_facturacio', 'pressupostos_tasca', 'pressupostos_agrupacio', 'clausules_pressupost'] },
     { label: 'ALBARANS I PRODUCTES', color: '#c9c9c9', tables: ['productes', 'albarans', 'albarans_pendents'] },
     { label: 'PROVEÏDORS', color: '#c0691e', tables: ['proveidors', 'factures_proveidor', 'puja_factures_proveidor', 'pagaments_proveidor', 'comptes_despesa'] },
+    { label: 'COMPTABILITAT', color: '#3f6f4f', oficina: true, tables: ['compta_diari', 'compta_major', 'compta_sumes', 'compta_nou', 'compta_banc', 'compta_remeses', 'compta_immobilitzat', 'compta_contasol', 'comptes', 'compta_config'] },
     { label: 'TASQUES', color: '#8b5a2b', tables: ['fulls_treball', 'tasques_piscina', 'informe_tasques_piscina', 'informe_tasques_dates'] },
     { label: 'INCIDÈNCIES', color: '#d9534f', tables: ['incidencies', 'accions_meves', 'calendari_accions', 'incidencia_reports', 'codis_qr'] },
     { label: 'CONSUM', color: '#1f5fbf', tables: ['comptadors', 'lectures', 'consum_aigua'] },
@@ -1098,6 +1143,15 @@ const SCHEMA = {
   ],
   pages: {
     pregunta_ia: { label: 'Pregunta-ho (IA)', render: main => renderPreguntaIA(main) },
+    compta_diari: { label: 'Llibre diari', render: main => renderComptaDiari(main) },
+    compta_major: { label: 'Llibre major', render: main => renderComptaMajor(main) },
+    compta_sumes: { label: 'Sumes i saldos', render: main => renderComptaSumes(main) },
+    compta_nou: { label: 'Assentament manual', render: main => renderComptaNou(main) },
+    compta_banc: { label: 'Banc (conciliació)', render: main => renderComptaBanc(main) },
+    compta_remeses: { label: 'Remeses de rebuts', render: main => renderComptaRemeses(main) },
+    compta_immobilitzat: { label: 'Immobilitzat', render: main => renderComptaImmobilitzat(main) },
+    compta_contasol: { label: 'Comptes de ContaSol', render: main => renderComptaContaSol(main) },
+    compta_config: { label: 'Configuració i pendents', render: main => renderComptaConfig(main) },
     facturacio_recurrent: { label: 'Facturació recurrent', render: main => renderFacturacio(main) },
     informe_adob: { label: 'Adob per equips', render: main => renderInformeAdob(main) },
     albarans_pendents: { label: 'Albarans pendents', render: main => renderAlbaransPendents(main) },
@@ -1181,6 +1235,7 @@ const SCHEMA = {
         { key: 'forma_pagament', label: 'Forma de pagament', type: 'select', options: OPT.forma_pagament, required: true, default: 'domiciliacio' },
         { key: 'iban', label: 'IBAN del client', type: 'text', hint: 'obligatori si és domiciliació' },
         { key: 'compte_cobrament_id', label: 'Compte on ens paguen', type: 'ref', ref: 'comptes_bancaris', required: true },
+        { key: 'compte_comptable', label: 'Compte comptable', type: 'info', nomesCompta: true, fmt: r => compteDe(r && r.compte_id) || '(es crea en desar: 430 i el número del client)' },
         { key: 'ref_mandat_sepa', label: 'Referència del mandat SEPA', type: 'text' },
         { key: 'data_mandat_sepa', label: 'Data del mandat SEPA', type: 'date' },
         { key: 'pdf_mandat_sepa', label: 'PDF del mandat signat', type: 'file', folder: 'mandats' },
@@ -1195,6 +1250,7 @@ const SCHEMA = {
         { key: 'alies', label: 'Àlies', type: 'text', required: true, hint: '"Sabadell principal"' },
         { key: 'iban', label: 'IBAN', type: 'text', required: true, dup: 'exact' },
         { key: 'banc', label: 'Banc', type: 'text' },
+        { key: 'compte_comptable', label: 'Compte comptable', type: 'info', nomesCompta: true, fmt: r => compteDe(r && r.compte_id) || '(es crea en desar: 572…)' },
       ],
     },
     llocs: {
@@ -1443,7 +1499,7 @@ const SCHEMA = {
       ],
     },
     factures: {
-      label: 'Factures', nou: 'Nova factura manual (amb línies)', order: 'data_factura', desc: true,
+      label: 'Factures', nou: 'Nova factura manual (amb línies)', order: 'data_factura', desc: true, compta: 'factura',
       display: r => (r.numero_complet || 'esborrany') + ' — ' + L('clients', r.client_id),
       list: ['numero_complet', 'data_factura', 'client_id', 'concepte', 'total', 'estat', 'data_venciment', 'data_cobrament'],
       canBaixa: r => r.estat === 'esborrany',
@@ -1477,7 +1533,8 @@ const SCHEMA = {
         { key: 'data_venciment', label: 'Venciment', type: 'info', fmt: r => dmy(r.data_venciment) || '(es calcula en emetre)' },
         { key: 'pdf', label: 'PDF', type: 'info', fmt: r => r.pdf ? String(r.pdf).split('/').pop() : '(encara no generat)' },
         { key: 'logo', label: 'Logo de la factura', type: 'info', fmt: r => r.tema ? (r.tema === 'verd' ? 'verd (triat)' : 'blau (triat)') : (!r.agrupacio_id ? 'blau (factura sense agrupació)' : (teJardi(r) ? 'verd (l’agrupació inclou jardí)' : 'blau (l’agrupació no inclou jardí)')) },
-        { key: 'data_cobrament', label: 'Data de cobrament', type: 'date', ro: r => !r || r.estat === 'esborrany', hint: 'omple-la quan hagin pagat; l’estat passa a cobrada' },
+        { key: 'data_cobrament', label: 'Data de cobrament', type: 'date', ro: r => !r || r.estat === 'esborrany' || (ambBanc(r) && !esAdminCompta()), hint: 'des de l’inici de la comptabilitat la posa sola la conciliació del banc (Comptabilitat → Banc); abans, omple-la quan hagin pagat' },
+        { key: 'compte_ingressos_id', label: 'Compte d’ingressos (comptabilitat)', type: 'info', nomesCompta: true, fmt: r => compteDe(r && r.compte_ingressos_id) || ((compteCodi('7050001') ? compteText(compteCodi('7050001')) : '7050001') + ' · de moment, tots els ingressos hi van') },
         { key: 'observacions', label: 'Observacions', type: 'textarea' },
       ],
     },
@@ -1704,6 +1761,8 @@ const SCHEMA = {
         { key: 'termini_dies', label: 'Termini (dies)', type: 'integer', min: 0, required: true, default: 30 },
         { key: 'compte_bancari', label: 'Compte del proveïdor', type: 'text' },
         { key: 'codi', label: 'El nostre codi al proveïdor', type: 'text' },
+        { key: 'compte_comptable', label: 'Compte comptable', type: 'info', nomesCompta: true, fmt: r => compteDe(r && r.compte_id) || '(es crearà amb la primera factura comptabilitzada: 400 si són compres, 410 serveis i altres despeses, 523 immobilitzat)' },
+        { key: 'iva_inversio', label: 'De fora d’Espanya: inversió del subjecte passiu (l’IVA de les seves factures s’autorepercuteix)', type: 'boolean', nomesCompta: true },
         { key: 'percentatge_venda', label: '% de venda sobre el cost', type: 'number', step: '1', min: 0, hint: 'per als albarans que surten de les seves factures: 200 = cobrem el doble del que paguem (PVP = cost × 2); buit = al mateix preu' },
         { key: 'pactat_en_quotes', label: 'Pactat en quotes', type: 'boolean' },
         { key: 'subcontractista', label: 'Subcontractista (surt al carril de subcontractista de les incidències)', type: 'boolean' },
@@ -1711,7 +1770,7 @@ const SCHEMA = {
       ],
     },
     factures_proveidor: {
-      label: 'Factures de proveïdor', nou: 'Nova factura de proveïdor (a mà)', order: 'data_factura', desc: true,
+      label: 'Factures de proveïdor', nou: 'Nova factura de proveïdor (a mà)', order: 'data_factura', desc: true, compta: 'factura_proveidor',
       display: (r, L) => (r.numero || 'sense número') + ' — ' + L('proveidors', r.proveidor_id) + ' — ' + dmy(r.data_factura),
       list: ['data_factura', 'proveidor_id', 'numero', 'concepte', 'total', 'compte', 'conforme', 'data_venciment', 'pagada', 'estat'],
       computed: {
@@ -1736,14 +1795,16 @@ const SCHEMA = {
         { key: 'base_imponible', label: 'Base imposable', type: 'number', step: '0.01' },
         { key: 'iva_percent', label: 'IVA %', type: 'number', step: '0.01' },
         { key: 'quota_iva', label: 'Quota IVA', type: 'number', step: '0.01' },
-        { key: 'total', label: 'Total', type: 'number', step: '0.01', required: true },
+        { key: 'retencio_percent', label: 'Retenció IRPF %', type: 'number', step: '0.01', hint: 'professionals (gestoria, advocats…): normalment 15 %; lloguer d’un local o magatzem: 19 % (va al model 115)' },
+        { key: 'retencio', label: 'Retenció IRPF (import)', type: 'number', step: '0.01', hint: 'buit = la base pel percentatge' },
+        { key: 'total', label: 'Total', type: 'number', step: '0.01', required: true, hint: 'el que s’ha de pagar (amb IVA i ja sense la retenció)' },
         { key: 'compte_despesa_id', label: 'Compte de despesa', type: 'ref', ref: 'comptes_despesa', optionLabel: compteLabel, hint: 'el de la conformitat manuscrita: CXA · 6001001 · 21/04/2026' },
         { key: 'conforme_treballador_id', label: 'Conforme per', type: 'ref', ref: 'treballadors', filter: r => potConformar(r), optionLabel: r => inicialsTreballador(r) + ' — ' + nomTreballador(r), hint: 'les inicials que van després de la C' },
         { key: 'conforme_data', label: 'Data de la conformitat', type: 'date' },
         { key: 'conformitat_llegida', label: 'Conformitat llegida al PDF', type: 'info', fmt: r => r.conformitat_llegida || '(cap)' },
         { key: 'forma_pagament', label: 'Forma de pagament', type: 'select', options: OPT.forma_pagament_prov },
-        { key: 'pagada', label: 'Pagada', type: 'boolean' },
-        { key: 'data_pagament', label: 'Data de pagament', type: 'date' },
+        { key: 'pagada', label: 'Pagada', type: 'boolean', ro: r => (r ? ambBanc(r) : bancActiu) && !esAdminCompta() },
+        { key: 'data_pagament', label: 'Data de pagament', type: 'date', ro: r => (r ? ambBanc(r) : bancActiu) && !esAdminCompta(), hint: 'des de l’inici de la comptabilitat, es marca sola en conciliar el pagament al banc (Comptabilitat → Banc)' },
         { key: 'dubtosa', label: 'De cobrament dubtós', type: 'boolean' },
         { key: 'estat', label: 'Estat', type: 'select', options: OPT.estat_fp, required: true, default: 'ok' },
         { key: 'pdf', label: 'PDF', type: 'file', folder: 'proveidors' },
@@ -1830,11 +1891,58 @@ const SCHEMA = {
         { key: 'albara_id', label: 'Albarà', type: 'ref', ref: 'albarans' },
       ],
     },
+    comptes: {
+      label: 'Pla de comptes', nou: 'Nou subcompte', order: 'codi',
+      display: r => r.codi + ' — ' + r.nom,
+      list: ['codi', 'nom', 'tipus_compte', 'centre_cost'],
+      computed: { tipus_compte: { label: 'Tipus', fn: r => r.imputable ? ({ client: 'client', proveidor: 'proveïdor', banc: 'banc', despesa: 'despesa' }[r.origen] || 'subcompte') : (['', 'grup', 'subgrup', 'compte', 'compte'][String(r.codi).length] || 'compte') } },
+      canBaixa: r => !!r.imputable,
+      validate: (p, id) => {
+        const r = id ? C.get('comptes', id) : null;
+        if (r && !r.imputable) return p.codi === r.codi ? null : 'El codi dels comptes del pla (grups, subgrups i comptes de 3 xifres) no es pot canviar.';
+        if (r && r.origen === 'despesa' && p.codi !== r.codi) return 'El codi d’un compte de despesa es canvia a «Comptes de despesa» (FACTURES DE PROVEÏDOR).';
+        if (!/^[0-9]{7}$/.test(p.codi || '')) return 'Els subcomptes tenen 7 xifres; les tres primeres són el compte del pla (p. ex. 6290001).';
+        if (!C.rows('comptes').some(c => c.codi === String(p.codi).slice(0, 3))) return 'El compte ' + String(p.codi).slice(0, 3) + ' no és al pla.';
+        return null;
+      },
+      fields: [
+        { key: 'codi', label: 'Codi', type: 'text', required: true, dup: 'exact', hint: '7 xifres; les 3 primeres són el compte del pla: 6290001, 4300123…' },
+        { key: 'nom', label: 'Nom', type: 'text', required: true },
+        { key: 'centre_cost', label: 'Centre de cost', type: 'select', options: OPT.centre_cost, hint: 'per als informes de rendibilitat (ingressos i despeses)' },
+        { key: 'origen_info', label: 'D’on surt', type: 'info', fmt: r => !r ? 'subcompte nou' : r.client_id ? 'compte del client ' + L('clients', r.client_id) : r.proveidor_id ? 'compte del proveïdor ' + L('proveidors', r.proveidor_id) : r.compte_bancari_id ? 'compte bancari ' + L('comptes_bancaris', r.compte_bancari_id) : r.compte_despesa_id ? 'compte de despesa (es manté igual que a «Comptes de despesa»)' : r.imputable ? 'subcompte' : 'pla general comptable' },
+        { key: 'observacions', label: 'Observacions', type: 'textarea' },
+      ],
+    },
+    immobilitzat: {
+      label: 'Immobilitzat (béns)', nou: 'Nou bé de l’immobilitzat', order: 'data_compra',
+      display: r => r.descripcio,
+      list: ['descripcio', 'compte_id', 'data_compra', 'valor', 'percentatge', 'amortitzat_inicial', 'amortitzat_fins', 'data_baixa'],
+      extras: () => '<p><a href="#" data-torna-immob>← Immobilitzat i amortitzacions</a></p>',
+      bindExtras: () => { const a = document.querySelector('[data-torna-immob]'); if (a) a.addEventListener('click', e => { e.preventDefault(); state.table = 'compta_immobilitzat'; state.editing = null; renderApp(); }); },
+      validate: p => Number(p.amortitzat_inicial) > 0 && !p.amortitzat_fins ? 'Si hi ha amortització acumulada d’abans, cal dir fins quan (l’últim dia d’un mes).'
+        : Number(p.amortitzat_inicial || 0) + Number(p.valor_residual || 0) > Number(p.valor || 0) ? 'L’acumulat d’abans i el valor residual no poden passar del valor del bé.' : null,
+      fields: [
+        { key: 'descripcio', label: 'Descripció', type: 'text', required: true, hint: 'furgoneta Vivaro 2190MKM, desbrossadora…' },
+        { key: 'compte_id', label: 'Compte del bé', curt: 'Compte', type: 'ref', ref: 'comptes', required: true, filter: c => c.imputable && /^2/.test(c.codi) && !/^28/.test(c.codi), optionLabel: c => c.codi + ' — ' + c.nom, hint: '211 construccions, 213 maquinària, 214 utillatge, 216 mobiliari, 217 equips informàtics, 218 elements de transport (si no hi és, crea’l al pla de comptes)' },
+        { key: 'compte_amortitzacio_id', label: 'Compte de l’amortització acumulada', type: 'ref', ref: 'comptes', required: true, filter: c => c.imputable && /^28/.test(c.codi), optionLabel: c => c.codi + ' — ' + c.nom, hint: '281 i el mateix final que el del bé (per a un 218…, un 2818…)' },
+        { key: 'compte_dotacio_id', label: 'Compte de la dotació (la despesa de cada mes)', type: 'ref', ref: 'comptes', required: true, filter: c => c.imputable && /^68/.test(c.codi), optionLabel: c => c.codi + ' — ' + c.nom, default: () => (compteCodi('6810000') || {}).id || '' },
+        { key: 'data_compra', label: 'Data de compra (s’amortitza des d’aquell dia)', curt: 'Compra', type: 'date', required: true },
+        { key: 'valor', label: 'Valor (sense IVA)', curt: 'Valor', type: 'number', step: '0.01', required: true },
+        { key: 'percentatge', label: '% d’amortització anual (lineal)', curt: '% anual', type: 'number', step: '0.001', required: true, hint: '14 % = uns 7 anys; 10 % = 10 anys; 25 % = 4 anys…',
+          nota: vals => Number(vals.percentatge) > 0 ? { text: 'en total, unes ' + num2(100 / Number(vals.percentatge)) + ' anys' + (Number(vals.valor) > 0 ? ' · quota mensual: ' + num2(Math.round(Number(vals.valor) * Number(vals.percentatge) / 12) / 100) + ' €' : '') } : null },
+        { key: 'valor_residual', label: 'Valor residual', type: 'number', step: '0.01', default: 0, hint: 'el que no s’amortitza (normalment 0)' },
+        { key: 'amortitzat_inicial', label: 'Amortització acumulada d’abans', curt: 'Acumulat d’abans', type: 'number', step: '0.01', default: 0, hint: 'la que porta a ContaSol fins a la data de sota' },
+        { key: 'amortitzat_fins', label: 'L’acumulat d’abans arriba fins al', curt: 'Fins al', type: 'date', hint: 'l’últim dia d’un mes: es comptabilitza des del mes següent' },
+        { key: 'data_baixa', label: 'Data de baixa (venda o rebuig)', curt: 'Baixa', type: 'date', hint: 's’amortitza fins aquell dia' },
+        { key: 'observacions', label: 'Observacions', type: 'textarea' },
+      ],
+    },
     comptes_despesa: {
       label: 'Comptes de despesa', nou: 'Nou compte de despesa', order: 'codi',
       display: r => compteLabel(r),
       list: ['codi', 'nom', 'observacions'],
-      validate: p => /^[0-9]{7}$/.test(p.codi || '') ? null : 'El codi del compte ha de tenir 7 xifres (6001001).',
+      validate: p => !/^[0-9]{7}$/.test(p.codi || '') ? 'El codi del compte ha de tenir 7 xifres (6001001).'
+        : C.rows('comptes').length && !C.rows('comptes').some(c => c.codi === String(p.codi).slice(0, 3)) ? 'El compte ' + String(p.codi).slice(0, 3) + ' no és al pla general: les tres primeres xifres han de ser un compte del pla (600 compres, 621 lloguers, 628 subministraments…).' : null,
       fields: [
         { key: 'codi', label: 'Codi', type: 'text', required: true, dup: 'exact', hint: '7 xifres: 6001001' },
         { key: 'nom', label: 'Nom', type: 'text', required: true, hint: 'PLANTES, CLOR, LLOGUER MAQUINÀRIA…' },
@@ -2110,6 +2218,9 @@ function friendly(err) {
     const t = treballadorActual();
     return `No tens permís per a aquesta acció${taula ? ' (taula ' + taula + ')' : ''}. El programa et veu com a ${t ? nomTreballador(t) + ', rol ' + t.rol : 'un usuari sense fitxa de treballador (' + (user ? user.email : '') + ')'}; només oficina i administradors poden escriure. Si el rol és correcte, executa el SQL de permisos (042).`;
   }
+  if (/conciliacions_rebut/.test(m)) return 'Un rebut de la remesa ja està conciliat amb un altre moviment.';
+  if (/remeses_referencia_import/.test(m)) return 'Aquesta remesa ja s’havia importat.';
+  if (/lock timeout|could not obtain lock|canceling statement due to lock/i.test(m)) return 'Un altre procés hi estava treballant alhora: torna-ho a provar.';
   for (const k in MSG) if (m.includes(k)) return MSG[k];
   return m;
 }
@@ -2260,6 +2371,7 @@ async function start() {
   let faltes = [];
   try { faltes = await loadAll(); }
   catch (e) { renderLogin('No s’han pogut carregar les taules: ' + friendly(e)); return; }
+  await carregaComptaInici();
   recordaUsuari();
   const desDAvis = location.hash.match(/^#accio=(\d+)$|^#accions$/);   // s'ha obert des d'una notificació
   if (desDAvis) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
@@ -2268,6 +2380,1385 @@ async function start() {
   mostraFelicitacions();
   engegaAvisos();
   if (faltes.length) toastErr('Taules que la base de dades encara no té: ' + faltes.join(', ') + '. Executa el fitxer SQL que les crea (o «notify pgrst, \'reload schema\'» si acabes de fer-ho).');
+}
+
+/* =====================================================================
+   COMPTABILITAT: diari, major, sumes i saldos, assentaments manuals, conciliació bancària i remeses (075), immobilitzat, comptes de ContaSol,
+   pla de comptes i configuració.
+   Els assentaments de les factures, els cobraments i els pagaments els fa sol el motor de la base de dades (074): aquí es consulten.
+   ===================================================================== */
+const potVeureCompta = () => esOficina(treballadorActual());
+const esAdminCompta = () => (treballadorActual() || {}).rol === 'admin';
+const TIPUS_ASSENTAMENT = { factura_emesa: 'Factura emesa', factura_rebuda: 'Factura rebuda', cobrament: 'Cobrament', pagament: 'Pagament', manual: 'Manual', obertura: 'Obertura', regularitzacio: 'Regularització', tancament: 'Tancament', reversio: 'Reversió', moviment_banc: 'Moviment del banc', amortitzacio: 'Amortització' };
+const FASE_DOC = { emissio: 'Emissió', cobrament: 'Cobrament', recepcio: 'Recepció', pagament: 'Pagament', conciliacio: 'Banc', mes: 'Amortització' };
+const num2 = v => (Math.round(Number(v || 0) * 100) / 100).toLocaleString('ca-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const imp2 = v => Number(v) ? num2(v) : '';
+const saldoText = v => { const x = Math.round(Number(v || 0) * 100) / 100; return x === 0 ? '0,00' : num2(Math.abs(x)) + (x > 0 ? ' D' : ' H'); };
+const compteDe = id => { const c = id ? C.get('comptes', id) : null; return c ? c.codi + ' · ' + c.nom : ''; };
+const compteText = c => c ? c.codi + ' — ' + c.nom : '';
+const comptesImputables = () => C.rows('comptes').filter(c => c.imputable && c.actiu).sort((a, b) => String(a.codi).localeCompare(String(b.codi)));
+// el compte d'un text escrit o triat de la llista: «4300002 — Nom», el codi sol, o un nom que només encaixi amb un compte
+function compteDeText(v) {
+  const t = String(v || '').trim(); if (!t) return null;
+  const codi = (t.match(/^(\d{3,10})/) || [])[1];
+  if (codi) return C.rows('comptes').find(c => c.codi === codi) || null;
+  const q = norm(t), cands = comptesImputables().filter(c => norm(c.nom).includes(q));
+  return cands.length === 1 ? cands[0] : null;
+}
+const datalistComptes = () => `<datalist id="compta-llista">${comptesImputables().map(c => `<option value="${h(compteText(c))}"></option>`).join('')}</datalist>`;
+const noComptaHTML = () => '<div class="panel"><p class="msg err">La comptabilitat només la veu l’oficina.</p></div>';
+function comptaEstat() {
+  if (!state.compta) { const a = avui(); state.compta = { desde: a.slice(0, 8) + '01', fins: a, q: '', compteId: null, nivell: '3', edit: null, sel: null }; }
+  return state.compta;
+}
+function rangCompta(tipus) {
+  const a = new Date(), y = a.getFullYear(), m = a.getMonth();
+  if (tipus === 'mes') return [ymd(new Date(y, m, 1)), ymd(new Date(y, m + 1, 0))];
+  if (tipus === 'trimestre') { const t = Math.floor(m / 3) * 3; return [ymd(new Date(y, t, 1)), ymd(new Date(y, t + 3, 0))]; }
+  return [y + '-01-01', y + '-12-31'];
+}
+function filtresComptaHTML(st, extra) {
+  return `<div class="compta-filtres">
+    <label>Des del <input type="date" id="cf-desde" value="${h(st.desde)}"></label>
+    <label>fins al <input type="date" id="cf-fins" value="${h(st.fins)}"></label>
+    <span class="rangs"><button type="button" class="btn ghost small" data-rang="mes">Aquest mes</button><button type="button" class="btn ghost small" data-rang="trimestre">Aquest trimestre</button><button type="button" class="btn ghost small" data-rang="any">Aquest any</button></span>
+    ${extra || ''}
+  </div>`;
+}
+function bindFiltresCompta(main, refresca) {
+  const st = comptaEstat(), d = main.querySelector('#cf-desde'), f = main.querySelector('#cf-fins');
+  if (d) d.addEventListener('change', () => { if (d.value) { st.desde = d.value; refresca(); } });
+  if (f) f.addEventListener('change', () => { if (f.value) { st.fins = f.value; refresca(); } });
+  main.querySelectorAll('[data-rang]').forEach(b => b.addEventListener('click', () => { [st.desde, st.fins] = rangCompta(b.dataset.rang); refresca(); }));
+}
+// els apunts (línies amb les dades de l'assentament i del compte), per blocs de 1.000
+async function comptaApunts({ desde, fins, compteId } = {}) {
+  const tot = [], BLOC = 1000; let des = 0;
+  while (true) {
+    let q = sb.from('assentament_apunts').select('*');
+    if (desde) q = q.gte('data', desde);
+    if (fins) q = q.lte('data', fins);
+    if (compteId) q = q.eq('compte_id', compteId);
+    const { data, error } = await q.order('data').order('exercici').order('numero').order('ordre').range(des, des + BLOC - 1);
+    if (error) throw error;
+    tot.push(...(data || [])); if (!data || data.length < BLOC) break; des += BLOC;
+  }
+  return tot.sort((a, b) => String(a.data).localeCompare(String(b.data)) || a.exercici - b.exercici || a.numero - b.numero || a.ordre - b.ordre);
+}
+function agrupaAssentaments(apunts) {
+  const m = new Map();
+  apunts.forEach(l => {
+    if (!m.has(l.assentament_id)) m.set(l.assentament_id, { id: l.assentament_id, exercici: l.exercici, numero: l.numero, data: l.data, data_document: l.data_document, concepte: l.concepte_assentament, tipus: l.tipus, estat: l.estat, origen: l.origen, origen_id: l.origen_id, fase: l.fase, reverteix_id: l.reverteix_id, document: l.document || null, linies: [] });
+    m.get(l.assentament_id).linies.push(l);
+  });
+  return [...m.values()].map(a => (a.linies.sort((x, y) => x.ordre - y.ordre), a));
+}
+function bindEnllacosCompta(cont) {
+  cont.querySelectorAll('a[data-obre-taula]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); state.mode = 'consulta'; state.table = a.dataset.obreTaula; state.editing = Number(a.dataset.obreId); renderApp(); window.scrollTo({ top: 0 }); }));
+  cont.querySelectorAll('a[data-major]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); comptaEstat().compteId = Number(a.dataset.major); state.table = 'compta_major'; state.editing = null; renderApp(); window.scrollTo({ top: 0 }); }));
+  cont.querySelectorAll('a[data-obre-immob]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); state.table = 'compta_immobilitzat'; state.editing = null; renderApp(); window.scrollTo({ top: 0 }); }));
+  cont.querySelectorAll('a[data-obre-banc]').forEach(a => a.addEventListener('click', async e => {
+    e.preventDefault();
+    const { data, error } = await sb.from('banc_moviments').select('*').eq('id', Number(a.dataset.obreBanc));
+    const m = !error && (data || [])[0]; if (!m) { toastErr('No trobo el moviment del banc.'); return; }
+    Object.assign(bancEstat(), { banc: Number(m.compte_bancari_id), filtre: 'tots', desde: m.data, fins: m.data, q: '', ed: null, dades: null });
+    state.table = 'compta_banc'; state.editing = null; renderApp(); window.scrollTo({ top: 0 });
+  }));
+}
+
+/* ---------- Llibre diari ---------- */
+async function renderComptaDiari(main) {
+  if (!potVeureCompta()) { main.innerHTML = noComptaHTML(); return; }
+  const st = comptaEstat();
+  main.innerHTML = `<div class="panel compta"><div class="ph"><h2>Llibre diari</h2></div>
+    ${filtresComptaHTML(st, `<label class="cf-q">Cerca <input type="text" id="cf-q" value="${h(st.q)}" placeholder="concepte, compte, import…"></label>`)}
+    <div class="compta-accions"><button class="btn" id="cd-nou">Nou assentament</button></div>
+    <div id="cd-cos"><p class="hint">Carregant els assentaments…</p></div></div>`;
+  bindFiltresCompta(main, () => renderComptaDiari(main));
+  main.querySelector('#cd-nou').addEventListener('click', () => { st.edit = null; state.table = 'compta_nou'; renderApp(); });
+  let apunts = [];
+  const q = main.querySelector('#cf-q'); let tq = null;
+  q.addEventListener('input', () => { clearTimeout(tq); tq = setTimeout(() => { st.q = q.value; pintaDiari(main, apunts); }, 250); });
+  try { apunts = await comptaApunts({ desde: st.desde, fins: st.fins }); }
+  catch (e) { const c = main.querySelector('#cd-cos'); if (c) c.innerHTML = `<p class="msg err">${h(friendly(e))}</p>`; return; }
+  pintaDiari(main, apunts);
+}
+function pintaDiari(main, apunts) {
+  const cos = main.querySelector('#cd-cos'); if (!cos) return;
+  const st = comptaEstat(), q = norm(st.q);
+  let as = agrupaAssentaments(apunts);
+  if (q) as = as.filter(a => norm([a.concepte, a.exercici + '/' + a.numero, TIPUS_ASSENTAMENT[a.tipus], ...a.linies.map(l => [l.compte_codi, l.compte_nom, l.concepte, num2(l.deure), num2(l.haver)].join(' '))].join(' ')).includes(q));
+  if (!as.length) { cos.innerHTML = `<p class="hint">Cap assentament${st.q ? ' que coincideixi amb la cerca' : ''} del ${dmy(st.desde)} al ${dmy(st.fins)}.</p>`; return; }
+  let td = 0, th = 0;
+  const cossos = as.map(a => {
+    a.linies.forEach(l => { td += Number(l.deure) || 0; th += Number(l.haver) || 0; });
+    const manual = !a.origen && (a.tipus === 'manual' || a.tipus === 'obertura');
+    const doc = a.origen === 'factura' || a.origen === 'factura_proveidor' ? `<a href="#" data-obre-taula="${a.origen === 'factura' ? 'factures' : 'factures_proveidor'}" data-obre-id="${a.origen_id}">obre la factura</a>`
+      : a.origen === 'banc' ? `<a href="#" data-obre-banc="${a.origen_id}">obre el moviment del banc</a>` : a.origen === 'amortitzacio' ? '<a href="#" data-obre-immob>obre l’immobilitzat</a>' : '';
+    const dataDoc = a.data_document && a.data_document !== a.data ? ` <span class="sub">(document del ${dmy(a.data_document)})</span>` : '';
+    return `<tbody class="cd-a${a.estat === 'anul_lat' ? ' anul' : ''}${st.sel === a.id ? ' sel' : ''}" data-assentament="${a.id}">
+      <tr class="cd-cap"><td colspan="5"><b>${a.exercici}/${a.numero}</b> · ${dmy(a.data)}${dataDoc} · ${h(a.concepte)}${a.document ? ' <span class="sub">· doc. ' + h(a.document) + '</span>' : ''}<span class="cd-tipus t-${h(a.tipus)}">${h(TIPUS_ASSENTAMENT[a.tipus] || a.tipus)}</span>${a.estat === 'anul_lat' ? '<span class="cd-tipus t-anul">anul·lat</span>' : ''}
+        <span class="cd-ops">${doc}${manual ? `<button type="button" class="btn ghost small" data-cd-edita="${a.id}">Modifica</button><button type="button" class="btn ghost small" data-cd-esborra="${a.id}">Esborra</button>` : ''}</span></td></tr>
+      ${a.linies.map(l => `<tr><td></td><td><a href="#" data-major="${l.compte_id}" title="Llibre major d’aquest compte">${h(l.compte_codi)}</a> ${h(l.compte_nom)}</td><td>${h(l.concepte || '')}</td><td class="num">${imp2(l.deure)}</td><td class="num">${imp2(l.haver)}</td></tr>`).join('')}
+    </tbody>`;
+  }).join('');
+  cos.innerHTML = `<table class="tbl compta-t"><thead><tr><th>Assentament</th><th>Compte</th><th>Concepte</th><th class="num">Deure</th><th class="num">Haver</th></tr></thead>${cossos}
+    <tfoot><tr class="total"><td colspan="3">${as.length} assentament${as.length === 1 ? '' : 's'} · del ${dmy(st.desde)} al ${dmy(st.fins)}</td><td class="num">${num2(td)}</td><td class="num">${num2(th)}</td></tr></tfoot></table>`;
+  bindEnllacosCompta(cos);
+  cos.querySelectorAll('[data-cd-edita]').forEach(b => b.addEventListener('click', () => {
+    const a = as.find(x => x.id === Number(b.dataset.cdEdita)); if (!a) return;
+    st.edit = { id: a.id, ref: a.exercici + '/' + a.numero, data: a.data, concepte: a.concepte, tipus: a.tipus, document: a.document || '',
+                linies: a.linies.map(l => ({ compte: compteText(C.get('comptes', l.compte_id)) || l.compte_codi, concepte: l.concepte || '', deure: importText(l.deure), haver: importText(l.haver) })) };
+    state.table = 'compta_nou'; renderApp(); window.scrollTo({ top: 0 });
+  }));
+  cos.querySelectorAll('[data-cd-esborra]').forEach(b => b.addEventListener('click', async () => {
+    const a = as.find(x => x.id === Number(b.dataset.cdEsborra)); if (!a) return;
+    if (!confirm(`Esborrar l’assentament ${a.exercici}/${a.numero} («${a.concepte}»)? Quedarà a l’historial.`)) return;
+    const { error } = await sb.rpc('compta_esborra_manual', { p_id: a.id });
+    if (error) { toastErr(friendly(error)); return; }
+    toast('Assentament esborrat'); renderComptaDiari(main);
+  }));
+  if (st.sel) { const t = cos.querySelector(`tbody[data-assentament="${st.sel}"]`); if (t && t.scrollIntoView) t.scrollIntoView({ block: 'center' }); }
+}
+
+/* ---------- Llibre major ---------- */
+async function renderComptaMajor(main) {
+  if (!potVeureCompta()) { main.innerHTML = noComptaHTML(); return; }
+  const st = comptaEstat(), c = st.compteId ? C.get('comptes', st.compteId) : null;
+  main.innerHTML = `<div class="panel compta"><div class="ph"><h2>Llibre major</h2></div>
+    ${filtresComptaHTML(st, `<label class="cf-compte">Compte <input type="text" id="cf-compte" list="compta-llista" value="${h(compteText(c))}" placeholder="codi o nom: 4300…, banc, clor…"></label>`)}
+    ${datalistComptes()}
+    <div id="cm-cos">${c ? '<p class="hint">Carregant…</p>' : '<p class="hint">Tria un compte: escriu-ne el codi o el nom i tria’l de la llista.</p>'}</div></div>`;
+  bindFiltresCompta(main, () => renderComptaMajor(main));
+  const inp = main.querySelector('#cf-compte');
+  inp.addEventListener('change', () => { const x = compteDeText(inp.value); if (x) { st.compteId = x.id; renderComptaMajor(main); } else if (inp.value.trim()) toastErr('No trobo aquest compte: escriu-ne el codi o tria’l de la llista.'); });
+  if (!c) return;
+  let apunts; try { apunts = await comptaApunts({ desde: String(st.desde).slice(0, 4) + '-01-01', fins: st.fins, compteId: c.id }); } catch (e) { const x = main.querySelector('#cm-cos'); if (x) x.innerHTML = `<p class="msg err">${h(friendly(e))}</p>`; return; }
+  const cos = main.querySelector('#cm-cos'); if (!cos) return;
+  // el saldo anterior: el de l'exercici fins al dia abans (cada exercici comença amb el seu assentament d'obertura)
+  const ex = Number(String(st.desde).slice(0, 4));
+  const abans = apunts.filter(l => l.data < st.desde && Number(l.exercici) === ex), dins = apunts.filter(l => l.data >= st.desde);
+  let saldo = abans.reduce((t, l) => t + Number(l.deure) - Number(l.haver), 0), td = 0, th = 0;
+  const files = dins.map(l => {
+    td += Number(l.deure) || 0; th += Number(l.haver) || 0; saldo += Number(l.deure) - Number(l.haver);
+    return `<tr class="${l.estat === 'anul_lat' ? 'off' : ''}"><td>${dmy(l.data)}</td><td><a href="#" data-cd-veure="${l.assentament_id}" data-cd-data="${l.data}">${l.exercici}/${l.numero}</a></td><td>${h(l.concepte_assentament)}${l.concepte ? ' · ' + h(l.concepte) : ''}${l.document ? ' <span class="sub">· doc. ' + h(l.document) + '</span>' : ''}</td><td class="num">${imp2(l.deure)}</td><td class="num">${imp2(l.haver)}</td><td class="num">${saldoText(saldo)}</td></tr>`;
+  }).join('');
+  const sa = abans.reduce((t, l) => t + Number(l.deure) - Number(l.haver), 0);
+  cos.innerHTML = `<h3 style="margin:4px 0 10px">${h(compteText(c))}</h3>
+    <table class="tbl compta-t"><thead><tr><th>Data</th><th>Assentament</th><th>Concepte</th><th class="num">Deure</th><th class="num">Haver</th><th class="num">Saldo</th></tr></thead><tbody>
+      <tr class="saldo-ant"><td>${dmy(st.desde)}</td><td></td><td>Saldo anterior</td><td></td><td></td><td class="num">${saldoText(sa)}</td></tr>
+      ${files || '<tr><td colspan="6" class="hint">Cap moviment en aquestes dates.</td></tr>'}</tbody>
+      <tfoot><tr class="total"><td colspan="3">Total del període</td><td class="num">${num2(td)}</td><td class="num">${num2(th)}</td><td class="num">${saldoText(saldo)}</td></tr></tfoot></table>`;
+  cos.querySelectorAll('[data-cd-veure]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); st.desde = st.fins = a.dataset.cdData; st.q = ''; st.sel = Number(a.dataset.cdVeure); state.table = 'compta_diari'; renderApp(); }));
+}
+
+/* ---------- Sumes i saldos, a l'estil de ContaSol: saldo anterior, deure i haver del període, i saldo ---------- */
+async function renderComptaSumes(main) {
+  if (!potVeureCompta()) { main.innerHTML = noComptaHTML(); return; }
+  const st = comptaEstat();
+  const nivells = [['1', 'Grups'], ['2', 'Subgrups'], ['3', 'Comptes (3 xifres)'], ['7', 'Subcomptes']];
+  main.innerHTML = `<div class="panel compta"><div class="ph"><h2>Balanç de sumes i saldos</h2></div>
+    ${filtresComptaHTML(st, `<label>Nivell <select id="cs-nivell">${nivells.map(o => `<option value="${o[0]}" ${st.nivell === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('')}</select></label>`)}
+    <div id="cs-cos"><p class="hint">Carregant…</p></div></div>`;
+  bindFiltresCompta(main, () => renderComptaSumes(main));
+  main.querySelector('#cs-nivell').addEventListener('change', e => { st.nivell = e.target.value; renderComptaSumes(main); });
+  const ex = String(st.desde).slice(0, 4), iniEx = ex + '-01-01';
+  let apunts; try { apunts = await comptaApunts({ desde: iniEx < st.desde ? iniEx : st.desde, fins: st.fins }); } catch (e) { const x = main.querySelector('#cs-cos'); if (x) x.innerHTML = `<p class="msg err">${h(friendly(e))}</p>`; return; }
+  const cos = main.querySelector('#cs-cos'); if (!cos) return;
+  const files = sumesISaldos(apunts.filter(l => String(l.exercici) === ex || l.data >= st.desde), Number(st.nivell), st.desde);
+  if (!files.length) { cos.innerHTML = `<p class="hint">Cap apunt fins al ${dmy(st.fins)} en l’exercici ${h(ex)}.</p>`; return; }
+  const t = files.reduce((a, f) => ({ ad: a.ad + Math.max(f.ant, 0), ah: a.ah + Math.max(-f.ant, 0), d: a.d + f.deure, h: a.h + f.haver, sd: a.sd + Math.max(f.saldo, 0), sh: a.sh + Math.max(-f.saldo, 0) }), { ad: 0, ah: 0, d: 0, h: 0, sd: 0, sh: 0 });
+  const quadra = Math.abs(t.d - t.h) < 0.005 && Math.abs(t.sd - t.sh) < 0.005;
+  const dh = v => Math.abs(v) < 0.005 ? '' : num2(Math.abs(v));
+  cos.innerHTML = `${String(st.fins).slice(0, 4) !== ex ? '<p class="msg err">Les dates passen d’un exercici a l’altre: el saldo anterior és el de l’exercici ' + h(ex) + '.</p>' : ''}
+    <table class="tbl compta-t cs-sumes"><thead><tr><th rowspan="2">Compte</th><th rowspan="2">Nom</th><th colspan="2" class="c">Saldo anterior</th><th colspan="2" class="c">Sumes del període</th><th colspan="2" class="c">Saldo</th></tr>
+      <tr><th class="num">Deutor</th><th class="num">Creditor</th><th class="num">Deure</th><th class="num">Haver</th><th class="num">Deutor</th><th class="num">Creditor</th></tr></thead><tbody>
+    ${files.map(f => `<tr class="n${f.codi.length >= 7 ? 7 : f.codi.length}"><td>${f.compteId ? `<a href="#" data-major="${f.compteId}">${h(f.codi)}</a>` : h(f.codi)}</td><td>${h(f.nom)}</td>
+      <td class="num">${f.ant > 0 ? dh(f.ant) : ''}</td><td class="num">${f.ant < 0 ? dh(f.ant) : ''}</td><td class="num">${dh(f.deure)}</td><td class="num">${dh(f.haver)}</td>
+      <td class="num">${f.saldo > 0 ? dh(f.saldo) : ''}</td><td class="num">${f.saldo < 0 ? dh(f.saldo) : ''}</td></tr>`).join('')}
+    </tbody><tfoot><tr class="total"><td colspan="2">Total · ${quadra ? '<span style="color:var(--green)">quadra ✓</span>' : '<span class="v-no">no quadra</span>'}</td>
+      <td class="num">${num2(t.ad)}</td><td class="num">${num2(t.ah)}</td><td class="num">${num2(t.d)}</td><td class="num">${num2(t.h)}</td><td class="num">${num2(t.sd)}</td><td class="num">${num2(t.sh)}</td></tr></tfoot></table>
+    <p class="hint">Saldo anterior: el de l’exercici ${h(ex)} fins al dia abans del ${dmy(st.desde)} (l’obertura inclosa).</p>`;
+  bindEnllacosCompta(cos);
+}
+// suma els apunts per compte, al nivell triat (1 grup, 2 subgrup, 3 compte, 7 subcompte): el saldo d'abans de «desde» i el deure i l'haver d'ençà
+function sumesISaldos(apunts, nivell, desde) {
+  const m = new Map();
+  apunts.forEach(l => {
+    const codi = nivell >= 7 ? String(l.compte_codi) : String(l.compte_codi).slice(0, nivell);
+    if (!m.has(codi)) {
+      const pla = nivell >= 7 ? null : C.rows('comptes').find(c => c.codi === codi);
+      m.set(codi, { codi, nom: nivell >= 7 ? l.compte_nom : (pla ? pla.nom : ''), compteId: nivell >= 7 ? l.compte_id : null, ant: 0, deure: 0, haver: 0 });
+    }
+    const f = m.get(codi), dd = Number(l.deure) || 0, hh = Number(l.haver) || 0;
+    if (desde && l.data < desde) f.ant += dd - hh; else { f.deure += dd; f.haver += hh; }
+  });
+  return [...m.values()].map(f => { const ant = r2(f.ant), deure = r2(f.deure), haver = r2(f.haver); return { ...f, ant, deure, haver, saldo: r2(ant + deure - haver) }; })
+    .filter(f => f.ant || f.deure || f.haver).sort((a, b) => a.codi.localeCompare(b.codi));
+}
+
+/* ---------- Assentament manual, a l'estil de ContaSol ---------- */
+const liniaBuida = () => ({ compte: '', concepte: '', deure: '', haver: '' });
+// un import escrit a la catalana o a l'anglesa: 1.234,56 · 1234,56 · 1234.56
+function llegeixImport(v) {
+  let s = String(v ?? '').trim().replace(/[\s€]/g, ''); if (!s) return 0;
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  const n = Number(s); return isNaN(n) ? NaN : Math.round(n * 100) / 100;
+}
+const importText = v => { const n = Number(v); return n ? (Math.round(n * 100) / 100).toFixed(2).replace('.', ',') : ''; };
+// el codi d'un compte escrit amb punt, com a ContaSol: 572.2 = 5720002; 43.15 = 4300015; 6.1 = 6000001
+function expandeixCodi(v) {
+  const t = String(v || '').trim(), m = t.match(/^(\d+)\.(\d+)$/);
+  if (!m || m[1].length + m[2].length > 7) return t;
+  return m[1] + '0'.repeat(7 - m[1].length - m[2].length) + m[2];
+}
+function renderComptaNou(main) {
+  if (!potVeureCompta()) { main.innerHTML = noComptaHTML(); return; }
+  const st = comptaEstat();
+  const ed = st.edit || (st.edit = { id: null, data: avui(), concepte: '', document: '', tipus: 'manual', linies: [liniaBuida(), liniaBuida()] });
+  main.innerHTML = `<div class="panel compta ca"><div class="ph"><h2>${ed.id ? 'Modifica l’assentament ' + h(ed.ref || '') : 'Nou assentament'}</h2></div>
+    <p class="hint">Per a nòmines, ajustos, periodificacions, l’obertura… (les factures, els cobraments, els pagaments i les amortitzacions ja s’assenten sols). Com a ContaSol: el compte es pot escriure amb un punt (572.2 = 5720002; 43.15 = 4300015) o pel nom; amb Intro es passa a la casella següent, i a l’última línia Intro n’obre una de nova amb el que falta per quadrar. El concepte es copia de la línia de dalt.</p>
+    <div class="cam-cap">
+      <label class="f"><span class="l">Data <b>*</b></span><input type="date" id="ca-data" value="${h(ed.data)}"></label>
+      <label class="f ca-cpt"><span class="l">Concepte <b>*</b></span><input type="text" id="ca-concepte" value="${h(ed.concepte)}" placeholder="p. ex. Nòmines d’octubre"></label>
+      <label class="f"><span class="l">Document</span><input type="text" id="ca-doc" value="${h(ed.document || '')}" placeholder="número o justificant"></label>
+      <label class="f"><span class="l">Tipus</span><select id="ca-tipus"><option value="manual" ${ed.tipus !== 'obertura' ? 'selected' : ''}>Normal</option><option value="obertura" ${ed.tipus === 'obertura' ? 'selected' : ''}>Obertura (saldos inicials)</option></select></label>
+    </div>
+    <table class="tbl compta-t ca-linies ca-grid"><thead><tr><th class="ca-n">#</th><th style="width:34%">Compte</th><th>Concepte</th><th class="num" style="width:14%">Deure</th><th class="num" style="width:14%">Haver</th><th style="width:34px"></th></tr></thead>
+      <tbody id="ca-cos">${ed.linies.map((l, i) => liniaManualHTML(l, i)).join('')}</tbody>
+      <tfoot><tr class="total"><td></td><td colspan="2"><button type="button" class="btn ghost small" id="ca-mes">+ Línia</button> <span id="ca-dif" class="ca-dif"></span></td><td class="num" id="ca-td"></td><td class="num" id="ca-th"></td><td></td></tr></tfoot></table>
+    ${datalistComptes()}
+    <div id="ca-err"></div>
+    <div class="actions"><button class="btn" type="button" id="ca-desa">Desa l’assentament</button> <button class="btn ghost" type="button" id="ca-cancel">Cancel·la</button> <span class="hint">Ctrl + Intro: desa</span></div></div>`;
+  const llegeix = () => {
+    ed.data = main.querySelector('#ca-data').value; ed.tipus = main.querySelector('#ca-tipus').value; ed.concepte = main.querySelector('#ca-concepte').value; ed.document = main.querySelector('#ca-doc').value;
+    main.querySelectorAll('#ca-cos tr').forEach(tr => { const l = ed.linies[Number(tr.dataset.i)]; if (!l) return; tr.querySelectorAll('[data-k]').forEach(inp => { l[inp.dataset.k] = inp.value; }); });
+  };
+  const totals = () => { let d = 0, hv = 0; ed.linies.forEach(l => { d += llegeixImport(l.deure) || 0; hv += llegeixImport(l.haver) || 0; }); return [r2(d), r2(hv)]; };
+  const nomLinia = tr => {
+    const inp = tr.querySelector('[data-k="compte"]'), v = inp.value.trim(), c = v ? compteDeText(expandeixCodi(v)) : null, nom = tr.querySelector('.ca-nom');
+    nom.textContent = !v ? '' : !c ? 'compte desconegut' : !c.imputable ? 'compte del pla: cal un subcompte de 7 xifres' : (inp.value.startsWith(c.codi + ' ') ? '' : c.nom);
+    nom.classList.toggle('err', !!v && (!c || !c.imputable));
+  };
+  const sumes = () => {
+    llegeix();
+    const [d, hv] = totals();
+    main.querySelector('#ca-td').textContent = num2(d); main.querySelector('#ca-th').textContent = num2(hv);
+    const dif = main.querySelector('#ca-dif');
+    dif.textContent = d === hv ? (d > 0 ? 'quadra ✓' : '') : 'descuadre: ' + num2(Math.abs(d - hv)) + (d > hv ? ' més al deure' : ' més a l’haver');
+    dif.className = 'ca-dif ' + (d === hv ? (d > 0 ? 'ok' : '') : 'err');
+    main.querySelectorAll('#ca-cos tr').forEach(nomLinia);
+  };
+  // una línia nova al final amb el que falta per quadrar, i el cursor al seu compte
+  const novaLinia = () => {
+    llegeix(); const [d, hv] = totals(), l = liniaBuida();
+    if (d > hv) l.haver = importText(d - hv); else if (hv > d) l.deure = importText(hv - d);
+    ed.linies.push(l); st.focus = { i: ed.linies.length - 1, k: 'compte' }; renderComptaNou(main);
+  };
+  const vesA = (i, k) => { const x = main.querySelector(`#ca-cos tr[data-i="${i}"] [data-k="${k}"]`); if (x) { x.focus(); if (x.select) x.select(); } };
+  const cos = main.querySelector('#ca-cos');
+  cos.addEventListener('input', sumes);
+  cos.addEventListener('focusin', e => {
+    const inp = e.target; if (inp.dataset.k !== 'concepte' || inp.value) return;
+    const i = Number(inp.closest('tr').dataset.i); llegeix();
+    const ant = i > 0 ? ed.linies[i - 1].concepte : '';
+    inp.value = ant || main.querySelector('#ca-concepte').value || ''; if (inp.select) inp.select(); llegeix();
+  });
+  cos.addEventListener('focusout', e => {
+    const inp = e.target; if (inp.dataset.k !== 'compte') return;
+    const v = expandeixCodi(inp.value), c = v ? compteDeText(v) : null;
+    if (c && c.imputable) inp.value = compteText(c); else if (v !== inp.value.trim()) inp.value = v;
+    sumes();
+  });
+  cos.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' || e.ctrlKey || e.metaKey) return;
+    const inp = e.target, k = inp.dataset.k; if (!k) return;
+    e.preventDefault();
+    const i = Number(inp.closest('tr').dataset.i), ultima = i === ed.linies.length - 1;
+    if (k === 'compte') { inp.blur(); vesA(i, 'concepte'); return; }
+    if (k === 'concepte') { vesA(i, 'deure'); return; }
+    if (k === 'deure' && !String(inp.value).trim()) { vesA(i, 'haver'); return; }
+    llegeix(); const [d, hv] = totals();
+    if (ultima) { if (d !== hv || !d) novaLinia(); else main.querySelector('#ca-desa').focus(); }
+    else vesA(i + 1, 'compte');
+  });
+  main.querySelector('.panel.ca').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); main.querySelector('#ca-desa').click(); } });
+  ['#ca-data', '#ca-tipus', '#ca-concepte', '#ca-doc'].forEach(k => main.querySelector(k).addEventListener('change', llegeix));
+  main.querySelector('#ca-mes').addEventListener('click', novaLinia);
+  main.querySelectorAll('[data-treu]').forEach(b => b.addEventListener('click', () => { llegeix(); ed.linies.splice(Number(b.dataset.treu), 1); if (ed.linies.length < 2) ed.linies.push(liniaBuida()); renderComptaNou(main); }));
+  main.querySelector('#ca-cancel').addEventListener('click', () => { st.edit = null; state.table = 'compta_diari'; renderApp(); });
+  main.querySelector('#ca-desa').addEventListener('click', async () => {
+    llegeix();
+    const err = msg => { main.querySelector('#ca-err').innerHTML = `<p class="msg err">${h(msg)}</p>`; };
+    const linies = [];
+    for (const l of ed.linies) {
+      const d = llegeixImport(l.deure), hv = llegeixImport(l.haver);
+      if (isNaN(d) || isNaN(hv)) return err('Hi ha un import que no s’entén: ' + (isNaN(d) ? l.deure : l.haver));
+      if (!d && !hv && !String(l.compte).trim()) continue;
+      const c = compteDeText(expandeixCodi(l.compte));
+      if (!c) return err('Hi ha una línia sense compte (o amb un compte que no existeix): ' + (l.compte || '(buit)'));
+      if (!c.imputable) return err('El compte ' + c.codi + ' és del pla general: cal fer servir un subcompte de 7 xifres.');
+      if (d < 0 || hv < 0 || (d && hv)) return err('Cada línia porta l’import al deure o a l’haver (no tots dos, ni negatius).');
+      if (!d && !hv) return err('La línia del compte ' + c.codi + ' no té import.');
+      linies.push({ compte_id: c.id, deure: d, haver: hv, concepte: String(l.concepte || '').trim() || null });
+    }
+    if (!ed.data) return err('Falta la data.');
+    if (!String(ed.concepte).trim()) return err('Falta el concepte.');
+    if (linies.length < 2) return err('Calen almenys dues línies amb import.');
+    const d = r2(linies.reduce((t, l) => t + l.deure, 0)), hv = r2(linies.reduce((t, l) => t + l.haver, 0));
+    if (d !== hv) return err('No quadra: el deure suma ' + num2(d) + ' i l’haver ' + num2(hv) + '.');
+    const b = main.querySelector('#ca-desa'); b.disabled = true;
+    const { data, error } = await sb.rpc('compta_desa_manual', { p: { id: ed.id, data: ed.data, concepte: String(ed.concepte).trim(), document: String(ed.document || '').trim() || null, tipus: ed.tipus, linies } });
+    b.disabled = false;
+    if (error) return err(friendly(error));
+    toast(ed.id ? 'Assentament modificat' : 'Assentament desat');
+    st.sel = Number(data) || ed.id; if (ed.data < st.desde || ed.data > st.fins) { st.desde = ed.data.slice(0, 8) + '01'; st.fins = ed.data > avui() ? ed.data : avui(); }
+    st.edit = null; state.table = 'compta_diari'; renderApp();
+  });
+  sumes();
+  if (st.focus) { const f = st.focus; st.focus = null; vesA(f.i, f.k); }
+}
+function liniaManualHTML(l, i) {
+  return `<tr data-i="${i}"><td class="ca-n">${i + 1}</td>
+    <td><input type="text" list="compta-llista" data-k="compte" value="${h(l.compte)}" placeholder="572.2, 6260000 o nom" autocomplete="off"><div class="hint ca-nom"></div></td>
+    <td><input type="text" data-k="concepte" value="${h(l.concepte)}"></td>
+    <td><input type="text" inputmode="decimal" data-k="deure" value="${h(l.deure)}" class="num" autocomplete="off"></td>
+    <td><input type="text" inputmode="decimal" data-k="haver" value="${h(l.haver)}" class="num" autocomplete="off"></td>
+    <td><button type="button" class="btn ghost small" data-treu="${i}" title="Treu la línia" tabindex="-1">✕</button></td></tr>`;
+}
+
+/* ---------- Configuració i pendents ---------- */
+async function renderComptaConfig(main) {
+  if (!potVeureCompta()) { main.innerHTML = noComptaHTML(); return; }
+  main.innerHTML = '<div class="panel compta"><div class="ph"><h2>Comptabilitat: configuració i pendents</h2></div><p class="hint">Carregant…</p></div>';
+  const [cfg, def, pend, exs] = await Promise.all([
+    sb.from('comptabilitat_config').select('*'), sb.from('comptes_defecte').select('*'), sb.from('compta_pendents').select('*'), sb.from('exercicis').select('*') ]);
+  const errada = [cfg, def, pend, exs].find(r => r.error);
+  if (errada) { main.innerHTML = `<div class="panel"><p class="msg err">${h(friendly(errada.error))}</p><p class="hint">Si encara no l’has executat, cal el fitxer 074_comptabilitat.sql.</p></div>`; return; }
+  const c = (cfg.data || [])[0] || {}, admin = esAdminCompta(), dis = admin ? '' : 'disabled';
+  const defs = (def.data || []).slice().sort((a, b) => (a.ordre || 0) - (b.ordre || 0)), pendents = (pend.data || []).slice().sort((a, b) => String(b.quan).localeCompare(String(a.quan)));
+  const opcions = sel => `<option value="">(cap)</option>` + comptesImputables().map(x => `<option value="${x.id}" ${Number(sel) === x.id ? 'selected' : ''}>${h(compteText(x))}</option>`).join('');
+  const docPendent = p => p.origen === 'banc' ? `<a href="#" data-obre-banc="${p.origen_id}">Moviment del banc #${p.origen_id}</a>` : p.origen === 'factura'
+    ? (() => { const f = C.get('factures', p.origen_id); return `<a href="#" data-obre-taula="factures" data-obre-id="${p.origen_id}">Factura ${h(f ? f.numero_complet || 'esborrany' : '#' + p.origen_id)}</a>${f ? ' · ' + h(L('clients', f.client_id)) : ''}`; })()
+    : (() => { const f = C.get('factures_proveidor', p.origen_id); return `<a href="#" data-obre-taula="factures_proveidor" data-obre-id="${p.origen_id}">Factura de proveïdor ${h(f ? f.numero || 's/n' : '#' + p.origen_id)}</a>${f ? ' · ' + h(L('proveidors', f.proveidor_id)) + ' · ' + dmy(f.data_factura) : ''}`; })();
+  const perRevisar = C.rows('factures_proveidor').filter(f => f.actiu && f.estat === 'revisar' && c.data_inici && f.data_factura >= c.data_inici).length;
+  main.innerHTML = `<div class="panel compta compta-cfg"><div class="ph"><h2>Comptabilitat: configuració i pendents</h2></div>
+    <p class="hint">Les factures emeses i rebudes s’assenten soles en desar-les; els cobraments i els pagaments, en conciliar el banc; les amortitzacions, des de «Immobilitzat». Un assentament ja fet només canvia si canvia el seu document. ${admin ? '' : 'Només l’administrador pot canviar la configuració.'}</p>
+    <h3>Dates</h3>
+    <div class="fila"><span>Es comptabilitza des del</span><span><input type="date" id="cc-inici" value="${h(c.data_inici || '')}" ${dis}> <span class="hint">els documents d’abans no (van amb el saldo d’obertura)</span></span></div>
+    <div class="fila"><span>Bloquejat fins al</span><span><input type="date" id="cc-bloq" value="${h(c.bloquejat_fins || '')}" ${dis}> <span class="hint">fins aquí no es pot canviar res (p. ex. quan ja s’ha presentat l’IVA del trimestre); un canvi d’un document fa un assentament de rectificació</span></span></div>
+    <h3>Comptes per defecte</h3>
+    <p class="hint">Valen per als documents que es comptabilitzin a partir d’ara: els ja comptabilitzats no canvien (si cal, a sota: «torna a fer també els ja fets»).</p>
+    ${defs.map(d => `<div class="fila"><span>${h(d.descripcio)}</span><select data-defecte="${h(d.clau)}" ${dis}>${opcions(d.compte_id)}</select></div>`).join('')}
+    ${admin ? '<div class="actions"><button class="btn" id="cc-desa">Desa la configuració</button></div>' : ''}
+    <h3>Comptabilitzar</h3>
+    <p>Comptabilitza les factures des de la data d’inici que encara no tenen assentament, posa al dia les que han canviat i treu les que ja no toca (també els moviments del banc conciliats: p. ex. si canvia la data d’inici). Les que no han canviat, no es toquen.</p>
+    ${admin ? '<label class="chk"><input type="checkbox" id="cc-refes"> Torna a fer també els assentaments ja fets del període obert, amb la configuració d’ara (comptes per defecte i dels contractes)</label>' : ''}
+    <div class="actions"><button class="btn" id="cc-tot">Comptabilitza</button> <span id="cc-res" class="hint"></span></div>
+    <h3>Pendents (${pendents.length})</h3>
+    ${pendents.length ? `<table class="tbl"><thead><tr><th>Document</th><th>Per què no s’ha pogut comptabilitzar</th><th>Des de</th><th></th></tr></thead><tbody>
+      ${pendents.map(p => `<tr><td>${docPendent(p)}</td><td>${h(p.missatge)}</td><td>${dmyhm(p.quan)}</td><td><button class="btn ghost small" data-reintenta="${h(p.origen)}:${p.origen_id}">Torna-ho a provar</button></td></tr>`).join('')}</tbody></table>`
+      : '<p class="hint">Cap document pendent: tot el que toca està comptabilitzat.</p>'}
+    ${perRevisar ? `<p class="hint">A més, ${perRevisar} factura${perRevisar === 1 ? '' : 'es'} de proveïdor per revisar: s’assentaran quan estiguin revisades.</p>` : ''}
+    <h3>Exercicis</h3>
+    <table class="tbl"><thead><tr><th>Exercici</th><th>Des del</th><th>Fins al</th><th>Estat</th><th></th></tr></thead><tbody>
+      ${(exs.data || []).slice().sort((a, b) => a.exercici - b.exercici).map(e => `<tr><td>${e.exercici}</td><td>${dmy(e.data_inici)}</td><td>${dmy(e.data_fi)}</td><td>${e.estat === 'tancat' ? 'tancat' : 'obert'}</td><td>${admin && e.estat !== 'tancat' ? `<button class="btn ghost small" data-renumera="${e.exercici}">Renumera per dates</button>` : ''}</td></tr>`).join('')}</tbody></table>
+    ${admin ? '<p class="hint">Renumerar torna a posar els números dels assentaments de l’exercici per ordre de data (l’obertura, el primer). Es fa abans de tancar l’exercici; els imports no canvien.</p>' : ''}
+  </div>`;
+  bindEnllacosCompta(main);
+  const desa = main.querySelector('#cc-desa');
+  if (desa) desa.addEventListener('click', async () => {
+    desa.disabled = true;
+    try {
+      const r = await sb.from('comptabilitat_config').update({ data_inici: main.querySelector('#cc-inici').value || null, bloquejat_fins: main.querySelector('#cc-bloq').value || null }).eq('id', 1);
+      if (r.error) throw r.error;
+      for (const sel of main.querySelectorAll('[data-defecte]')) {
+        const d = defs.find(x => x.clau === sel.dataset.defecte), v = sel.value ? Number(sel.value) : null;
+        if (d && (d.compte_id || null) !== v) { const r2 = await sb.from('comptes_defecte').update({ compte_id: v }).eq('clau', d.clau); if (r2.error) throw r2.error; }
+      }
+      await carregaComptaInici();
+      toast((c.data_inici || '') !== (main.querySelector('#cc-inici').value || '') ? 'Configuració desada. Ara prem «Comptabilitza» perquè s’apliqui als documents.' : 'Configuració desada', 7000);
+      renderComptaConfig(main);
+    } catch (e) { desa.disabled = false; toastErr(friendly(e)); }
+  });
+  // per blocs: cada crida en fa uns quants (les crides des del programa tenen un límit de temps) i diu per on continuar
+  main.querySelector('#cc-tot').addEventListener('click', async () => {
+    const b = main.querySelector('#cc-tot'), res = main.querySelector('#cc-res'), refes = !!(main.querySelector('#cc-refes') || {}).checked;
+    if (refes && !confirm('Es tornaran a fer els assentaments automàtics del període obert amb la configuració d’ara (els canvis queden a l’historial). Continuar?')) return;
+    b.disabled = true;
+    let pas = { origen: 'factura', despres: 0 }, fets = 0, d = {};
+    try {
+      for (let i = 0; i < 2000; i++) {
+        res.textContent = (pas.origen === 'banc' ? 'Comptabilitzant el banc… ' : 'Comptabilitzant… ') + fets + ' documents';
+        const { data, error } = await sb.rpc('compta_comptabilitza', { p_origen: pas.origen, p_despres: pas.despres, p_limit: 150, p_refes: refes });
+        if (error) throw error;
+        d = data || {}; fets += Number(d.fets) || 0;
+        if (d.acabat || !d.origen) break;
+        pas = { origen: d.origen, despres: Number(d.despres) || 0 };
+      }
+    } catch (e) { b.disabled = false; res.textContent = ''; toastErr(friendly(e)); return; }
+    b.disabled = false; res.textContent = '';
+    toast(`Fet: ${fets} documents revisats · ${d.assentaments || 0} assentaments vigents${d.pendents ? ' · ' + d.pendents + ' pendents' : ''}`, 8000);
+    renderComptaConfig(main);
+  });
+  main.querySelectorAll('[data-renumera]').forEach(b => b.addEventListener('click', async () => {
+    const ex = Number(b.dataset.renumera);
+    if (!confirm(`Renumerar els assentaments de ${ex} per ordre de data?`)) return;
+    b.disabled = true;
+    const { data, error } = await sb.rpc('compta_renumera', { p_exercici: ex });
+    b.disabled = false;
+    if (error) { toastErr(friendly(error)); return; }
+    toast(`Exercici ${ex} renumerat: ${Number(data) || 0} assentaments`);
+  }));
+  main.querySelectorAll('[data-reintenta]').forEach(b => b.addEventListener('click', async () => {
+    const [origen, id] = b.dataset.reintenta.split(':');
+    const { data, error } = await sb.rpc('compta_reintenta', { p_origen: origen, p_id: Number(id) });
+    if (error) { toastErr(friendly(error)); return; }
+    toast(data ? 'Comptabilitzat' : 'Encara no s’ha pogut: mira el motiu'); renderComptaConfig(main);
+  }));
+}
+
+/* ---------- Fitxers del banc: extractes (Norma 43) i remeses de rebuts (XML SEPA o quadern 19.14), llegits al navegador ---------- */
+// un fitxer de text del banc: UTF-8 si ho és; si no, Windows-1252 (Latin-1), que és com solen venir
+async function llegeixTextBanc(file) {
+  const buf = await file.arrayBuffer();
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(buf); } catch (e) { return new TextDecoder('windows-1252').decode(buf); }
+}
+// les línies d'un fitxer de registres de longitud fixa (si no té salts de línia, es talla cada «llarg» caràcters)
+function liniesFixes(text, llarg) {
+  const out = [];
+  String(text || '').replace(/\r/g, '').split('\n').forEach(l => {
+    if (!l.trim()) return;
+    if (l.length > llarg + 2 && l.length % llarg === 0) { for (let i = 0; i < l.length; i += llarg) out.push(l.slice(i, i + llarg)); }
+    else out.push(l);
+  });
+  return out;
+}
+const CONCEPTES_N43 = { '01': 'Talons i reintegraments', '02': 'Ingressos', '03': 'Rebuts domiciliats', '04': 'Transferències', '05': 'Préstecs i crèdits', '06': 'Remeses',
+  '07': 'Subscripcions', '08': 'Dividends', '09': 'Borsa', '10': 'Xecs de gasolina', '11': 'Caixer', '12': 'Targetes', '13': 'Estranger', '14': 'Devolucions i impagats',
+  '15': 'Nòmines i Seguretat Social', '16': 'Timbres i pòlisses', '17': 'Interessos, comissions i despeses', '98': 'Anul·lacions', '99': 'Altres' };
+
+// Norma 43 (AEB, quadern 43): registres de 80 posicions. 11 capçalera del compte, 22 moviment, 23 conceptes complementaris,
+// 33 final del compte, 88 final del fitxer. Un fitxer pot portar diversos comptes. Els imports, en cèntims; 1 = deure (surt), 2 = haver (entra).
+function llegeixN43(text) {
+  const data = s => { s = String(s || ''); if (!/^\d{6}$/.test(s) || s === '000000') return null; const a = Number(s.slice(0, 2)); return (a < 80 ? 2000 + a : 1900 + a) + '-' + s.slice(2, 4) + '-' + s.slice(4, 6); };
+  const imp = (s, dh) => { const n = Math.round(Number(String(s).trim() || 'x')) / 100; return dh === '1' ? -n : n; };
+  const net = s => String(s || '').trim().replace(/^0+$/, '');
+  const comptes = []; let c = null, m = null, saldo = 0, nRegistres = 0, fi88 = null;
+  for (const raw of liniesFixes(text, 80)) {
+    const l = raw.padEnd(80, ' '), tipus = l.slice(0, 2); nRegistres++;
+    if (tipus === '11') {
+      c = { entitat: l.slice(2, 6), oficina: l.slice(6, 10), compte: l.slice(10, 20), data_inici: data(l.slice(20, 26)), data_fi: data(l.slice(26, 32)),
+            saldo_inicial: imp(l.slice(33, 47), l.slice(32, 33)), divisa: l.slice(47, 50), nom: l.slice(51, 77).trim(), moviments: [], avisos: [] };
+      if (!/^\d{4}$/.test(c.entitat) || !/^\d{10}$/.test(c.compte) || isNaN(c.saldo_inicial)) throw new Error('El fitxer no sembla un extracte en Norma 43 (la capçalera del compte no s’entén).');
+      saldo = c.saldo_inicial; comptes.push(c); m = null;
+    } else if (tipus === '22' && c) {
+      m = { data: data(l.slice(10, 16)), data_valor: data(l.slice(16, 22)), concepte_comu: l.slice(22, 24), concepte_propi: l.slice(24, 27),
+            import: imp(l.slice(28, 42), l.slice(27, 28)), document: net(l.slice(42, 52)), referencia1: net(l.slice(52, 64)), referencia2: net(l.slice(64, 80)), concepte: '' };
+      if (!m.data || isNaN(m.import) || !/^[12]$/.test(l.slice(27, 28))) throw new Error('Un moviment del fitxer no s’entén (línia ' + nRegistres + ').');
+      saldo = Math.round((saldo + m.import) * 100) / 100; m.saldo = saldo;
+      c.moviments.push(m);
+    } else if (tipus === '23' && m) {
+      const t = [l.slice(4, 42).trim(), l.slice(42, 80).trim()].filter(Boolean).join(' ');
+      if (t) m.concepte = (m.concepte ? m.concepte + ' ' : '') + t;
+    } else if (tipus === '33' && c) {
+      const nD = Number(l.slice(20, 25)), tD = Number(l.slice(25, 39)) / 100, nH = Number(l.slice(39, 44)), tH = Number(l.slice(44, 58)) / 100;
+      c.saldo_final = imp(l.slice(59, 73), l.slice(58, 59));
+      const deure = c.moviments.filter(x => x.import < 0), haver = c.moviments.filter(x => x.import > 0);
+      const suma = arr => Math.round(arr.reduce((t, x) => t + Math.abs(x.import), 0) * 100) / 100;
+      if (nD !== deure.length || nH !== haver.length || Math.abs(tD - suma(deure)) > 0.004 || Math.abs(tH - suma(haver)) > 0.004)
+        c.avisos.push('Els totals del final del compte no coincideixen amb els moviments (potser el fitxer és incomplet).');
+      if (!isNaN(c.saldo_final) && Math.abs(c.saldo_final - saldo) > 0.004) c.avisos.push('El saldo final del fitxer (' + num2(c.saldo_final) + ') no és el saldo inicial més els moviments (' + num2(saldo) + ').');
+      c = null; m = null;
+    } else if (tipus === '88') {
+      fi88 = Number(l.slice(20, 26));
+    }
+  }
+  if (!comptes.length) throw new Error('El fitxer no sembla un extracte en Norma 43 (no hi ha cap capçalera de compte, registre 11).');
+  if (fi88 != null && fi88 !== nRegistres - 1 && fi88 !== nRegistres) comptes[0].avisos.push('El fitxer diu que té ' + fi88 + ' registres i n’hi ha ' + (nRegistres - 1) + '.');
+  comptes.forEach(x => { if (x.saldo_final == null) x.avisos.push('Falta el final del compte (registre 33): potser el fitxer està tallat.'); });
+  return comptes;
+}
+
+// remesa de rebuts: XML SEPA (pain.008) o quadern 19.14 / 19.44 (registres de 600 posicions). Torna
+// { format, referencia, data_creacio, iban, rebuts: [{ data_cobrament, bloc, referencia, ref_mandat_sepa, deutor, iban, import, concepte }] }
+function llegeixRemesa(text) {
+  const t = String(text || '').replace(/^﻿/, '').trim();
+  if (t.startsWith('<')) return llegeixRemesaSEPA(t);
+  if (/^01(1914|1944)/.test(t)) return llegeixRemesaC19(t);
+  throw new Error('No reconec el fitxer: ha de ser una remesa de rebuts en XML SEPA (pain.008) o en quadern 19.14, el que s’envia al banc.');
+}
+function llegeixRemesaSEPA(text) {
+  const doc = new DOMParser().parseFromString(text, 'application/xml');
+  if (doc.getElementsByTagName('parsererror').length) throw new Error('El fitxer XML no és vàlid.');
+  const tots = (el, nom) => el ? [...el.getElementsByTagNameNS('*', nom)] : [];
+  const un = (el, nom) => tots(el, nom)[0] || null;
+  const txt = (el, nom) => { const x = un(el, nom); return x ? x.textContent.trim() : ''; };
+  const arrel = un(doc, 'CstmrDrctDbtInitn');
+  if (!arrel) throw new Error('L’XML no és una remesa de rebuts SEPA (pain.008): potser és una de transferències o un altre document.');
+  const cap = un(arrel, 'GrpHdr');
+  const r = { format: 'sepa', referencia: txt(cap, 'MsgId'), data_creacio: txt(cap, 'CreDtTm').slice(0, 10) || null, iban: '', rebuts: [],
+              n_declarat: Number(txt(cap, 'NbOfTxs')) || null, total_declarat: txt(cap, 'CtrlSum') ? Number(txt(cap, 'CtrlSum')) : null };
+  for (const pi of tots(arrel, 'PmtInf')) {
+    const dc = txt(pi, 'ReqdColltnDt'), data = (un(un(pi, 'ReqdColltnDt'), 'Dt') ? txt(un(pi, 'ReqdColltnDt'), 'Dt') : dc).slice(0, 10) || null;
+    const iban = txt(un(pi, 'CdtrAcct'), 'IBAN'); if (!r.iban) r.iban = iban;
+    const bloc = txt(pi, 'PmtInfId');
+    for (const tx of tots(pi, 'DrctDbtTxInf')) {
+      r.rebuts.push({ data_cobrament: data, bloc, referencia: txt(tx, 'EndToEndId'), ref_mandat_sepa: txt(tx, 'MndtId'), deutor: txt(un(tx, 'Dbtr'), 'Nm'),
+                      iban: txt(un(tx, 'DbtrAcct'), 'IBAN'), import: Math.round(Number(txt(tx, 'InstdAmt')) * 100) / 100,
+                      concepte: tots(un(tx, 'RmtInf'), 'Ustrd').map(x => x.textContent.trim()).join(' ') });
+    }
+  }
+  return validaRemesa(r);
+}
+function llegeixRemesaC19(text) {
+  const d8 = s => /^\d{8}$/.test(s) ? s.slice(0, 4) + '-' + s.slice(4, 6) + '-' + s.slice(6, 8) : null;
+  const r = { format: 'c19', referencia: '', data_creacio: null, iban: '', rebuts: [], n_declarat: null, total_declarat: null };
+  let dataC = null, nBloc = 0;
+  for (const raw of liniesFixes(text, 600)) {
+    const l = raw.padEnd(600, ' '), t = l.slice(0, 2);
+    if (t === '01') { r.data_creacio = d8(l.slice(115, 123)); r.referencia = l.slice(123, 158).trim(); }
+    else if (t === '02') { dataC = d8(l.slice(45, 53)); nBloc++; if (!r.iban) r.iban = l.slice(265, 299).trim(); }
+    else if (t === '03') r.rebuts.push({ data_cobrament: dataC, bloc: String(nBloc), referencia: l.slice(10, 45).trim(), ref_mandat_sepa: l.slice(45, 80).trim(),
+                                          import: Number(l.slice(88, 99)) / 100, deutor: l.slice(118, 188).trim(), iban: l.slice(403, 437).trim(), concepte: l.slice(441, 581).trim() });
+    else if (t === '99') { r.total_declarat = Number(l.slice(2, 19)) / 100; r.n_declarat = Number(l.slice(19, 27)); }
+  }
+  return validaRemesa(r);
+}
+function validaRemesa(r) {
+  if (!r.rebuts.length) throw new Error('La remesa no té cap rebut.');
+  if (r.rebuts.some(x => !(x.import > 0))) throw new Error('Hi ha rebuts sense import: el fitxer no s’ha entès bé.');
+  const total = Math.round(r.rebuts.reduce((t, x) => t + x.import, 0) * 100) / 100;
+  if (r.total_declarat != null && Math.abs(total - r.total_declarat) > 0.004) throw new Error('Els rebuts sumen ' + num2(total) + ' i el fitxer diu ' + num2(r.total_declarat) + ': no s’ha entès bé.');
+  if (r.n_declarat && r.n_declarat !== r.rebuts.length) throw new Error('El fitxer diu que té ' + r.n_declarat + ' rebuts i se n’han llegit ' + r.rebuts.length + '.');
+  r.total = total;
+  return r;
+}
+
+/* ---------- Aparellar noms (clients i proveïdors amb ContaSol, deutors de les remeses, conceptes del banc) ---------- */
+const SA_FORMES = new Set('SL SA SLU SAU SCCL SCP CB SLL SLP COOP SC SCOOP REBUT TRANSFERENCIA TRANSF DOMICILIACIO LTD GMBH SRL SAS INC'.split(' '));
+const SA_BUIDES = new Set('DE DEL LA LES EL ELS I Y D L C ST STA SANT SANTA SAN CARRER CALLE AV AVDA AVINGUDA PG PASSEIG PL PLACA CTRA CARRETERA CAMI N NUM NO'.split(' '));
+const SA_COMUNITAT = [/\bCOMUNITAT DE PROPIETARIS\b/g, /\bCOMUNIDAD DE PROPIETARIOS\b/g, /\bCOMUNIDAD PROPIETARIOS\b/g, /\bCOMUNITAT PROPIETARIS\b/g, /\bMANCOMUNITAT DE PROPIETARIS\b/g,
+  /\bMANCOMUNITAT PROP\b/g, /\bMANC PROP\b/g, /\bMAN PROP\b/g, /\bMANCOMUNITAT\b/g, /\bMACRO COMUNITAT\b/g, /\bCOM GENERAL\b/g, /\bCOM GRAL\b/g, /\bCOMUNITAT GENERAL\b/g,
+  /\bCOM PROP\b/g, /\bCOM PRO\b/g, /\bCDAD PROP\b/g, /\bCOMUNIDAD PROP\b/g, /\bCOMUNITAT\b/g, /\bCOMUNIDAD\b/g, /\bCOM\b/g, /\bC P\b/g, /\bCP\b/g, /\bPROP\b/g, /\bCONJ\b/g, /\bRESID\b/g];
+// (senseAccents: la del programa, a dalt)
+// el nom en paraules significatives (sense formes jurídiques, articles ni «comunitat de propietaris»), com el que es va fer servir per aparellar amb ContaSol
+function paraulesNom(s) {
+  s = senseAccents(String(s || '').toUpperCase());
+  s = s.replace(/\(REBUT\)|\(TRANSF[^)]*\)/g, ' ').replace(/([A-Z0-9.\s])\([^)]*\)?\s*$/, '$1 ').replace(/([A-Z])\(([^)]*)\)/g, '$1 ').replace(/^\s*\(?[0-9][0-9\- ]*\)\s*/, ' ');
+  s = s.replace(/[.,/]/g, ' ').replace(/[^A-Z0-9 ]/g, ' ');
+  s = s.replace(/\bS\s+L\s+U\b/g, ' SLU ').replace(/\bS\s+L\b/g, ' SL ').replace(/\bS\s+A\b/g, ' SA ').replace(/\bS\s+C\s+C\s+L\b/g, ' SCCL ');
+  s = s.replace(/(\d)\s*-\s*(\d)/g, '$1 $2').replace(/([A-Z])(\d)/g, '$1 $2').replace(/(\d)([A-Z])/g, '$1 $2');
+  SA_COMUNITAT.forEach(p => { s = s.replace(p, ' '); });
+  return s.split(/\s+/).filter(t => t && !SA_FORMES.has(t) && !SA_BUIDES.has(t));
+}
+// la semblança de Ratcliff i Obershelp (la de difflib de Python): 2 × lletres en comú / lletres de tots dos
+function semblancaText(a, b) {
+  if (!a.length && !b.length) return 1;
+  const comu = (x, y) => {
+    let best = 0, ix = 0, iy = 0; const prev = new Array(y.length + 1).fill(0);
+    for (let i = 1; i <= x.length; i++) {
+      let diag = 0;
+      for (let j = 1; j <= y.length; j++) { const tmp = prev[j]; prev[j] = x[i - 1] === y[j - 1] ? diag + 1 : 0; if (prev[j] > best) { best = prev[j]; ix = i - best; iy = j - best; } diag = tmp; }
+    }
+    return best ? best + comu(x.slice(0, ix), y.slice(0, iy)) + comu(x.slice(ix + best), y.slice(iy + best)) : 0;
+  };
+  return 2 * comu(a, b) / (a.length + b.length);
+}
+// com s'assemblen dos noms (0…1 i escaig): les paraules i, si n'hi ha, els números de l'adreça (una altra comunitat del mateix carrer, no)
+function semblancaNom(a, b, extra = {}) {
+  const ta = paraulesNom(a), tb = paraulesNom(b);
+  if (!ta.length || !tb.length) return 0;
+  const pa = ta.filter(x => !/^\d+$/.test(x)), pb = tb.filter(x => !/^\d+$/.test(x));
+  const r = pa.length && pb.length ? semblancaText(pa.join(' '), pb.join(' ')) : 0;
+  const sa = new Set(pa), sb2 = new Set(pb), uni = new Set([...pa, ...pb]);
+  const j = [...sa].filter(x => sb2.has(x)).length / Math.max(1, uni.size);
+  let s = Math.max(r, j);
+  const na = new Set(ta.filter(x => /^\d+$/.test(x))), nb = new Set(tb.filter(x => /^\d+$/.test(x)));
+  if (na.size && nb.size) {
+    const iguals = na.size === nb.size && [...na].every(x => nb.has(x)), algun = [...na].some(x => nb.has(x));
+    s += iguals ? 0.05 : algun ? -0.10 : -0.35;
+  }
+  if (extra.cpA && extra.cpA === extra.cpB) s += 0.05;
+  const tel = x => String(x || '').replace(/\D/g, '').slice(-9);
+  if (tel(extra.telA) && tel(extra.telA) === tel(extra.telB)) s += 0.10;
+  return Math.round(s * 1000) / 1000;
+}
+// un text (concepte del banc, d'un rebut…) en majúscules, sense accents i amb espais simples
+const textBanc = s => senseAccents(String(s || '').toUpperCase()).replace(/[^A-Z0-9]+/g, ' ').trim();
+// si al text hi surt el número d'una factura emesa (0012/26, 12/26, 0012-26, 260012, F0012…)
+function surtNumFactura(text, f) {
+  if (!f || !f.numero_complet) return false;
+  const T = ' ' + textBanc(text) + ' ', compacte = T.replace(/ /g, '');
+  const m = String(f.numero_complet).match(/^(\D*)0*(\d+)\D+(\d{2,4})$/);
+  if (!m) return T.includes(' ' + textBanc(f.numero_complet) + ' ');
+  const num = m[2], any = m[3].slice(-2), num4 = num.padStart(4, '0');
+  if (new RegExp('(^|[^0-9])0*' + num + ' ' + any + '([^0-9]|$)').test(T.trim())) return true;   // «12 26», «0012 26»
+  return [any + num4, num4 + any, '20' + any + num4].some(v => compacte.includes(v)) && !/^0+$/.test(num4);
+}
+// si al text hi surt un nom (amb paraules de 3 lletres o més): proporció de paraules del nom que hi surten
+function surtNom(text, nom) {
+  const T = ' ' + textBanc(text) + ' ', ps = paraulesNom(nom).filter(p => p.length >= 3 && !/^\d+$/.test(p));
+  if (!ps.length) return 0;
+  return ps.filter(p => T.includes(' ' + p + ' ')).length / ps.length;
+}
+// el concepte d'un moviment sense números ni dates, per reconèixer els que es repeteixen (la quota del telèfon, la comissió del mes…)
+const clauConcepte = m => textBanc((m.concepte || '') + ' ' + (m.referencia2 || '')).replace(/\b\d[\d ]*\b/g, ' ').replace(/\s+/g, ' ').trim().split(' ').slice(0, 5).join(' ');
+
+/* ---------- Banc: importar extractes i remeses, i conciliar cada moviment (cobraments, pagaments, comissions, traspassos…) ---------- */
+// des de la data d'inici de la comptabilitat, una factura només queda cobrada o pagada en conciliar el banc (amb el 075 instal·lat)
+let comptaInici = null, bancActiu = false;
+async function carregaComptaInici() {
+  comptaInici = null; bancActiu = false;
+  if (!potVeureCompta()) return;
+  try {
+    const [cfg, mov] = await Promise.all([sb.from('comptabilitat_config').select('*').eq('id', 1), sb.from('banc_moviments').select('id').limit(1)]);
+    comptaInici = cfg && !cfg.error ? ((cfg.data || [])[0] || {}).data_inici || null : null;
+    bancActiu = !!comptaInici && !!mov && !mov.error;
+  } catch (e) { /* sense comptabilitat: com abans */ }
+}
+const ambBanc = r => bancActiu && !!r && !!r.data_factura && String(r.data_factura).slice(0, 10) >= comptaInici;
+const TIPUS_LINIA_BANC = [['factura', 'Cobrament'], ['retorn', 'Rebut retornat'], ['factura_proveidor', 'Pagament'], ['compte', 'Un altre compte']];
+const impText2 = v => v === '' || v == null || isNaN(Number(v)) ? (v ?? '') : (Math.round(Number(v) * 100) / 100).toFixed(2).replace('.', ',');
+function bancEstat() {
+  if (!state.banc) state.banc = { banc: null, filtre: 'pendent', desde: '', fins: '', q: '', ed: null, dades: null, extractes: false };
+  return state.banc;
+}
+const bancsActius = () => C.rows('comptes_bancaris').filter(b => b.actiu).sort((a, b) => String(a.alies || '').localeCompare(String(b.alies || ''), 'ca'));
+const ibanNet = s => String(s || '').replace(/\s/g, '').toUpperCase();
+const compteCodi = codi => C.rows('comptes').find(c => c.codi === codi) || null;
+const r2 = v => Math.round(Number(v || 0) * 100) / 100;
+const agrupa = (arr, f) => { const m = new Map(); arr.forEach(x => { const k = f(x); if (!m.has(k)) m.set(k, []); m.get(k).push(x); }); return m; };
+// totes les files d'una taula o vista (per blocs de 1.000)
+async function totesLesFiles(taula, filtre, ordre = 'id') {
+  const tot = []; let des = 0;
+  while (true) {
+    let q = sb.from(taula).select('*'); if (filtre) q = filtre(q);
+    const { data, error } = await q.order(ordre).range(des, des + 999);
+    if (error) throw error;
+    tot.push(...(data || [])); if (!data || data.length < 1000) break; des += 1000;
+  }
+  return tot;
+}
+// torna a llegir unes quantes files de la memòria del programa (p. ex. les factures que una conciliació ha deixat cobrades)
+async function refrescaFiles(taula, ids) {
+  ids = [...new Set((ids || []).filter(Boolean).map(Number))]; if (!ids.length) return;
+  const { data, error } = await sb.from(taula).select('*').in('id', ids);
+  if (error || !data) return;
+  const rows = cache[taula] || (cache[taula] = []);
+  data.forEach(r => { const i = rows.findIndex(x => x.id === r.id); if (i >= 0) rows[i] = r; else rows.push(r); });
+}
+async function carregaBanc(st) {
+  const b = C.get('comptes_bancaris', st.banc);
+  const [movs, conc, pendFac, pendFp, remeses, rebuts, as, extractes] = await Promise.all([
+    totesLesFiles('banc_moviments', q => q.eq('compte_bancari_id', st.banc)), totesLesFiles('conciliacions'),
+    totesLesFiles('banc_factures_pendents'), totesLesFiles('banc_factures_proveidor_pendents'),
+    totesLesFiles('remeses'), totesLesFiles('remesa_rebuts'), totesLesFiles('assentaments', q => q.eq('origen', 'banc')),
+    totesLesFiles('banc_extractes', q => q.eq('compte_bancari_id', st.banc))]);
+  let saldoCompta = null;
+  if (b && b.compte_id) { const ls = await totesLesFiles('assentament_linies', q => q.eq('compte_id', b.compte_id)); saldoCompta = r2(ls.reduce((t, l) => t + Number(l.deure) - Number(l.haver), 0)); }
+  st.dades = { banc: st.banc, movs, conc, pendFac, pendFp, remeses, rebuts, as, extractes, saldoCompta };
+}
+const assentamentDeMoviment = (d, id) => d.as.find(a => Number(a.origen_id) === id && a.estat === 'vigent' && !a.reverteix_id) || null;
+const cobratAmbBanc = (d, facturaId) => r2(d.conc.filter(c => Number(c.factura_id) === facturaId && (c.tipus === 'factura' || c.tipus === 'retorn')).reduce((t, c) => t + Number(c.import), 0));
+
+// el text i les opcions de cada tipus de línia (per a la llista de tria)
+function opcionsLiniaBanc(tipus, d) {
+  if (tipus === 'factura') return d.pendFac.slice().sort((a, b) => String(a.data_factura).localeCompare(String(b.data_factura)))
+    .map(f => ({ id: f.id, text: `${f.numero_complet} · ${f.client || ''} · pendent ${num2(f.pendent)}`, pendent: Number(f.pendent) }));
+  if (tipus === 'retorn') {
+    const ids = [...new Set(d.conc.filter(c => c.tipus === 'factura').map(c => Number(c.factura_id)))];
+    return ids.map(id => { const f = C.get('factures', id) || {}; return { id, text: `${f.numero_complet || '#' + id} · ${f.client_nom || L('clients', f.client_id)} · cobrada ${num2(cobratAmbBanc(d, id))}`, pendent: cobratAmbBanc(d, id) }; })
+      .filter(o => o.pendent > 0);
+  }
+  if (tipus === 'factura_proveidor') return d.pendFp.slice().sort((a, b) => String(a.data_factura).localeCompare(String(b.data_factura)))
+    .map(f => ({ id: f.id, text: `${f.numero || 's/n'} · ${f.proveidor || ''} · ${dmy(f.data_factura)} · pendent ${num2(f.pendent)}`, pendent: Number(f.pendent) }));
+  return comptesImputables().map(c => ({ id: c.id, text: compteText(c), pendent: null }));
+}
+function textLiniaBanc(tipus, id, d) {
+  if (!id) return '';
+  if (tipus === 'compte') return compteText(C.get('comptes', id));
+  const o = opcionsLiniaBanc(tipus, d).find(x => x.id === Number(id));
+  if (o) return o.text;
+  if (tipus === 'factura_proveidor') { const f = C.get('factures_proveidor', id) || {}; return `${f.numero || 's/n'} · ${L('proveidors', f.proveidor_id)} · ${dmy(f.data_factura)}`; }
+  const f = C.get('factures', id) || {}; return `${f.numero_complet || '#' + id} · ${f.client_nom || L('clients', f.client_id)}`;
+}
+// la combinació de factures que fa exactament un import (com a molt 14 factures; la de menys factures)
+function combinacioQueSuma(items, objectiu) {
+  const xs = items.slice(0, 14), cents = xs.map(x => Math.round(Math.abs(x.v) * 100)), obj = Math.round(Math.abs(objectiu) * 100);
+  let millor = null;
+  for (let mask = 1; mask < (1 << xs.length); mask++) {
+    let s = 0, n = 0; for (let i = 0; i < xs.length; i++) if (mask & (1 << i)) { s += cents[i]; n++; }
+    if (s === obj && n >= 2 && (!millor || n < millor.n)) millor = { n, mask };
+  }
+  return millor ? xs.filter((x, i) => millor.mask & (1 << i)) : null;
+}
+// les propostes per conciliar un moviment, de la més probable a la menys: [{ etiqueta, punts, linies: [{ tipus, id, imp, concepte, rebut }] }]
+// (l'import de cada línia va en el sentit del moviment)
+function propostesMoviment(m, d) {
+  const out = [], abs = r2(Math.abs(m.import)), entra = Number(m.import) > 0;
+  const text = [m.concepte, m.referencia1, m.referencia2, m.document].filter(Boolean).join(' '), T = textBanc(text), Tc = T.replace(/ /g, '');
+  const igual = (a, b) => Math.abs(Math.abs(Number(a)) - Math.abs(Number(b))) < 0.005;
+  const dies = (a, b) => Math.abs((new Date(a) - new Date(b)) / 86400000);
+  const ambNif = nif => { const n = String(nif || '').replace(/\W/g, '').toUpperCase(); return n.length >= 8 && Tc.includes(n); };
+  const usats = new Set(d.conc.filter(c => c.remesa_rebut_id).map(c => Number(c.remesa_rebut_id)));
+  const cpt = codi => { const c = compteCodi(codi); return c ? c.id : null; };
+  const afegeix = (etiqueta, punts, linies) => { if (linies.length && linies.every(l => l.imp)) out.push({ etiqueta, punts: Math.min(99, punts), linies }); };
+  if (entra) {
+    // una remesa: un lot (els rebuts d'un mateix dia) o la remesa sencera, del mateix import i de dates properes
+    for (const [rid, rs] of agrupa(d.rebuts.filter(r => !usats.has(r.id)), r => r.remesa_id)) {
+      const rem = d.remeses.find(x => x.id === Number(rid)) || {};
+      const grups = [...agrupa(rs, r => r.data_cobrament || '')].map(([data, x]) => ({ data, rebuts: x }));
+      if (grups.length > 1) grups.push({ data: null, rebuts: rs });
+      for (const g of grups) {
+        if (!igual(g.rebuts.reduce((t, r) => t + Number(r.import), 0), abs) || (g.data && dies(g.data, m.data) > 10)) continue;
+        afegeix(`Remesa ${rem.referencia || ''}${g.data ? ' del ' + dmy(g.data) : ''}: ${g.rebuts.length} rebuts`, 96, g.rebuts.map(r => {
+          // la factura del rebut, si encara es pot cobrar amb el banc; si no (marcada a mà, ja cobrada…), al compte del client
+          if (r.factura_id && d.pendFac.some(f => f.id === Number(r.factura_id))) return { tipus: 'factura', id: Number(r.factura_id), imp: Number(r.import), rebut: r.id };
+          const fr = r.factura_id && C.get('factures', r.factura_id);
+          const cl = (r.client_id && C.get('clients', r.client_id)) || (fr && C.get('clients', fr.client_id));
+          return cl && cl.compte_id ? { tipus: 'compte', id: Number(cl.compte_id), imp: Number(r.import), rebut: r.id, concepte: 'Rebut ' + (r.referencia || '') + ' · ' + (r.deutor || '') }
+                                    : { tipus: 'factura', id: null, imp: Number(r.import), rebut: r.id, concepte: r.deutor || '' };
+        }));
+      }
+    }
+    // una factura emesa pendent d'aquest import (el número, el nom o el NIF del client al concepte la fan més segura)
+    for (const f of d.pendFac) {
+      if (Number(f.pendent) <= 0 || !igual(f.pendent, abs)) continue;
+      const p = 40 + (surtNumFactura(text, f) ? 45 : 0) + Math.round(surtNom(text, f.client) * 30) + (ambNif(f.nif) ? 30 : 0) + (f.data_venciment && dies(f.data_venciment, m.data) <= 7 ? 5 : 0);
+      afegeix(`Factura ${f.numero_complet} · ${f.client || ''}`, p, [{ tipus: 'factura', id: f.id, imp: abs }]);
+    }
+    // diverses factures del mateix client (que surt al concepte) que sumen l'import
+    for (const [cid, fs] of agrupa(d.pendFac.filter(f => Number(f.pendent) > 0), f => f.client_id)) {
+      if (fs.length < 2 || !(surtNom(text, fs[0].client) >= 0.6 || ambNif(fs[0].nif))) continue;
+      const comb = combinacioQueSuma(fs.map(f => ({ f, v: Number(f.pendent) })), abs);
+      if (comb) afegeix(`${comb.length} factures de ${fs[0].client}: ${comb.map(x => x.f.numero_complet).join(', ')}`, 80, comb.map(x => ({ tipus: 'factura', id: x.f.id, imp: Number(x.f.pendent) })));
+    }
+  } else {
+    // un rebut retornat (amb la comissió de la devolució, si va al mateix càrrec)
+    if (m.concepte_comu === '14' || /DEVOL|RETORN|IMPAG|RECHAZ|RETROC/.test(T)) {
+      const ids = [...new Set(d.conc.filter(c => c.tipus === 'factura').map(c => Number(c.factura_id)))];
+      for (const id of ids) {
+        const f = C.get('factures', id); if (!f) continue;
+        const cobrat = cobratAmbBanc(d, id), dif = r2(abs - cobrat);
+        if (cobrat <= 0 || dif < -0.005 || dif > 15) continue;
+        const nom = f.client_nom || L('clients', f.client_id);
+        afegeix(`Retorn de la factura ${f.numero_complet} · ${nom}${dif > 0 ? ' + comissió ' + num2(dif) : ''}`, 55 + (surtNumFactura(text, f) ? 35 : 0) + Math.round(surtNom(text, nom) * 30),
+          [{ tipus: 'retorn', id, imp: cobrat }].concat(dif > 0.005 && cpt('6260000') ? [{ tipus: 'compte', id: cpt('6260000'), imp: dif, concepte: 'Comissió de la devolució' }] : []));
+      }
+    }
+    // una factura de proveïdor pendent d'aquest import
+    for (const f of d.pendFp) {
+      if (Number(f.pendent) <= 0 || !igual(f.pendent, abs)) continue;
+      const num = textBanc(f.numero);
+      const p = 40 + (num.length >= 3 && T.includes(num) ? 40 : 0) + Math.round(surtNom(text, f.proveidor) * 35) + (ambNif(f.nif) ? 30 : 0)
+        + ((f.forma_pagament === 'domiciliacio' && m.concepte_comu === '03') || (f.forma_pagament === 'visa' && m.concepte_comu === '12') ? 10 : f.forma_pagament === 'transferencia' && m.concepte_comu === '04' ? 5 : 0)
+        + (f.data_venciment && dies(f.data_venciment, m.data) <= 7 ? 5 : 0);
+      afegeix(`Factura ${f.numero || 's/n'} · ${f.proveidor || ''}`, p, [{ tipus: 'factura_proveidor', id: f.id, imp: abs }]);
+    }
+    // diverses factures del mateix proveïdor (que surt al concepte), o les de targeta del mes, que sumen l'import
+    for (const [pid, fs] of agrupa(d.pendFp.filter(f => Number(f.pendent) > 0), f => f.proveidor_id)) {
+      if (fs.length < 2 || !(surtNom(text, fs[0].proveidor) >= 0.6 || ambNif(fs[0].nif))) continue;
+      const comb = combinacioQueSuma(fs.map(f => ({ f, v: Number(f.pendent) })), abs);
+      if (comb) afegeix(`${comb.length} factures de ${fs[0].proveidor}`, 80, comb.map(x => ({ tipus: 'factura_proveidor', id: x.f.id, imp: Number(x.f.pendent) })));
+    }
+    if (m.concepte_comu === '12' || /TARJ|TARGETA|VISA|MASTERCARD/.test(T)) {
+      const fs = d.pendFp.filter(f => Number(f.pendent) > 0 && f.forma_pagament === 'visa' && f.data_factura <= m.data && dies(f.data_factura, m.data) <= 45);
+      const comb = fs.length >= 2 ? combinacioQueSuma(fs.map(f => ({ f, v: Number(f.pendent) })), abs) : null;
+      if (comb) afegeix(`${comb.length} factures pagades amb targeta`, 60, comb.map(x => ({ tipus: 'factura_proveidor', id: x.f.id, imp: Number(x.f.pendent) })));
+    }
+  }
+  // els que es repeteixen: com l'última vegada que va sortir el mateix concepte
+  const clau = clauConcepte(m);
+  if (clau) {
+    const anteriors = d.movs.filter(x => x.id !== m.id && x.estat === 'conciliat' && Math.sign(x.import) === Math.sign(m.import) && clauConcepte(x) === clau)
+      .sort((a, b) => String(b.data).localeCompare(String(a.data)) || b.id - a.id);
+    for (const x of anteriors.slice(0, 6)) {
+      const ls = d.conc.filter(c => Number(c.moviment_id) === x.id);
+      if (ls.length === 1 && ls[0].tipus === 'compte') {
+        afegeix(`Com el ${dmy(x.data)}: ${compteText(C.get('comptes', ls[0].compte_id))}`, 62 + (igual(x.import, m.import) ? 15 : 0), [{ tipus: 'compte', id: Number(ls[0].compte_id), imp: abs, concepte: ls[0].concepte || '' }]);
+        break;
+      }
+      if (ls.length && ls.every(c => c.tipus === 'factura_proveidor')) {
+        const prov = (C.get('factures_proveidor', ls[0].factura_proveidor_id) || {}).proveidor_id;
+        const fs = d.pendFp.filter(f => Number(f.proveidor_id) === Number(prov) && Number(f.pendent) > 0 && igual(f.pendent, abs));
+        fs.forEach(f => afegeix(`Factura ${f.numero || 's/n'} · ${f.proveidor} (com el ${dmy(x.data)})`, 78, [{ tipus: 'factura_proveidor', id: f.id, imp: abs }]));
+        break;
+      }
+    }
+  }
+  // segons el tipus de moviment: comissions, interessos, traspassos, nòmines, Seguretat Social, impostos
+  const altresBancs = bancsActius().filter(b => b.id !== m.compte_bancari_id && ibanNet(b.iban).length >= 20);
+  if (/TRASPAS|TRASPASO|TRANSFER.* PROPI|ENTRE CUENTAS/.test(T) || altresBancs.some(b => Tc.includes(ibanNet(b.iban).slice(-10))))
+    afegeix('Traspàs entre bancs (compte pont 555)', 58, [{ tipus: 'compte', id: cpt('5550000'), imp: abs, concepte: 'Traspàs entre bancs' }]);
+  if (m.concepte_comu === '17' || /COMISI|MANTENIM|CUOTA|QUOTA|GASTOS|INTERES/.test(T)) {
+    const codi17 = m.concepte_comu === '17';   // (el codi de la Norma 43 per a interessos, comissions i despeses: força segur)
+    if (entra) afegeix('Interessos a favor (769)', codi17 ? 60 : 42, [{ tipus: 'compte', id: cpt('7690000'), imp: abs }]);
+    else afegeix('Comissions i despeses del banc (626)', /INTERES/.test(T) ? 30 : codi17 ? 62 : 48, [{ tipus: 'compte', id: cpt('6260000'), imp: abs }]);
+    if (!entra && /INTERES/.test(T)) afegeix('Interessos de deutes (662)', 46, [{ tipus: 'compte', id: cpt('6620000'), imp: abs }]);
+  }
+  if (!entra && /SEGURIDAD SOCIAL|TGSS|SEG SOCIAL|TESORERIA GENERAL/.test(T)) afegeix('Seguretat Social (476)', 50, [{ tipus: 'compte', id: cpt('4760000'), imp: abs }]);
+  if (!entra && (m.concepte_comu === '15' || /NOMINA/.test(T))) afegeix('Nòmines (465)', 44, [{ tipus: 'compte', id: cpt('4650000'), imp: abs }]);
+  if (/AEAT|AGENCIA TRIBUTARIA|HACIENDA|IMPUESTO|MODELO|AGENCIA ESTATAL/.test(T)) {
+    const codi = /\b111\b/.test(T) ? '4751001' : /\b115\b/.test(T) ? '4751002' : /\b20[02]\b/.test(T) ? (entra ? '4709000' : '4752000') : (entra ? '4700000' : '4750000');
+    afegeix('Impostos (' + codi + ')', 50, [{ tipus: 'compte', id: cpt(codi), imp: abs }]);
+  }
+  // de més probable a menys, sense repetir-ne cap
+  const vistes = new Set();
+  return out.filter(p => p.linies.every(l => l.tipus !== 'compte' || l.id) && !vistes.has(JSON.stringify(p.linies.map(l => [l.tipus, l.id, l.imp])))
+                        && vistes.add(JSON.stringify(p.linies.map(l => [l.tipus, l.id, l.imp]))))
+            .sort((a, b) => b.punts - a.punts).slice(0, 6);
+}
+const propostaSegura = ps => ps.length && ps[0].punts >= 90 && !(ps[1] && ps[1].punts >= 80) && ps[0].linies.every(l => l.id) ? ps[0] : null;
+
+async function renderComptaBanc(main) {
+  if (!potVeureCompta()) { main.innerHTML = noComptaHTML(); return; }
+  const st = bancEstat(), bancs = bancsActius();
+  if (!st.banc) { try { st.banc = Number(localStorage.getItem('gestio_compta_banc')) || null; } catch (e) { /* (el darrer compte triat, si se'n recorda) */ } }
+  if (!st.banc || !bancs.some(b => b.id === st.banc)) st.banc = bancs.length ? bancs[0].id : null;
+  const filtres = [['pendent', 'Pendents de conciliar'], ['conciliat', 'Conciliats'], ['ignorat', 'Ignorats'], ['tots', 'Tots']];
+  main.innerHTML = `<div class="panel compta banc"><div class="ph"><h2>Banc: conciliació</h2></div>
+    <p class="hint">Importa l’extracte del banc (fitxer Norma 43) i concilia cada moviment: els cobraments i els pagaments es comptabilitzen aquí, amb la data del banc, i la factura queda cobrada o pagada sola. Les remeses de rebuts diuen quines factures hi ha dins d’un abonament agrupat.</p>
+    ${bancs.length ? '' : '<p class="msg err">No hi ha cap compte bancari: crea’l a ALTRES → Comptes bancaris, amb l’IBAN.</p>'}
+    <div class="compta-filtres">
+      <label>Compte <select id="bc-banc">${bancs.map(b => `<option value="${b.id}" ${b.id === st.banc ? 'selected' : ''}>${h(b.alies + (b.compte_id ? ' · ' + ((C.get('comptes', b.compte_id) || {}).codi || '') : ''))}</option>`).join('')}</select></label>
+      <label>Mostra <select id="bc-filtre">${filtres.map(f => `<option value="${f[0]}" ${st.filtre === f[0] ? 'selected' : ''}>${f[1]}</option>`).join('')}</select></label>
+      <label>Des del <input type="date" id="bc-desde" value="${h(st.desde)}"></label>
+      <label>fins al <input type="date" id="bc-fins" value="${h(st.fins)}"></label>
+      <label class="cf-q">Cerca <input type="text" id="bc-q" value="${h(st.q)}" placeholder="concepte, import…"></label>
+    </div>
+    <div class="compta-accions">
+      <label class="btn">Importa l’extracte (Norma 43)<input type="file" id="bc-n43" accept=".n43,.q43,.aeb,.txt,.csb,text/plain" hidden></label>
+      <label class="btn ghost">Importa una remesa de rebuts<input type="file" id="bc-rem" accept=".xml,.txt,.c19,.q19,text/xml,text/plain" hidden></label>
+      <button type="button" class="btn ghost" id="bc-auto">Concilia els segurs</button>
+    </div>
+    <div id="bc-resum" class="banc-resum"></div>
+    <div id="bc-cos"><p class="hint">${st.banc ? 'Carregant els moviments…' : ''}</p></div></div>`;
+  const refresca = () => renderComptaBanc(main);
+  main.querySelector('#bc-banc') && main.querySelector('#bc-banc').addEventListener('change', e => { st.banc = Number(e.target.value); st.ed = null; st.dades = null; try { localStorage.setItem('gestio_compta_banc', String(st.banc)); } catch (x) { /* res */ } refresca(); });
+  main.querySelector('#bc-filtre').addEventListener('change', e => { st.filtre = e.target.value; st.ed = null; pintaBanc(main); });
+  main.querySelector('#bc-desde').addEventListener('change', e => { st.desde = e.target.value; pintaBanc(main); });
+  main.querySelector('#bc-fins').addEventListener('change', e => { st.fins = e.target.value; pintaBanc(main); });
+  const q = main.querySelector('#bc-q'); let tq = null;
+  q.addEventListener('input', () => { clearTimeout(tq); tq = setTimeout(() => { st.q = q.value; pintaBanc(main); }, 250); });
+  main.querySelector('#bc-n43').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) importaN43(main, f); });
+  main.querySelector('#bc-rem').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) importaRemesa(f, refresca); });
+  main.querySelector('#bc-auto').addEventListener('click', () => conciliaSegurs(main));
+  if (!st.banc) return;
+  if (!st.dades || st.dades.banc !== st.banc) {
+    try { await carregaBanc(st); }
+    catch (e) { const c = main.querySelector('#bc-cos'); if (c) c.innerHTML = `<p class="msg err">${h(friendly(e))}</p><p class="hint">Si encara no l’has executat, cal el fitxer 075_conciliacio_bancaria.sql.</p>`; return; }
+  }
+  if (main.isConnected === false) return;
+  pintaBanc(main);
+}
+
+function pintaBanc(main) {
+  const st = bancEstat(), d = st.dades, cos = main.querySelector('#bc-cos'), resum = main.querySelector('#bc-resum');
+  if (!cos || !d) return;
+  const b = C.get('comptes_bancaris', st.banc) || {}, cb = b.compte_id ? C.get('comptes', b.compte_id) : null;
+  const movs = d.movs.slice().sort((x, y) => String(x.data).localeCompare(String(y.data)) || x.id - y.id);
+  const darrer = movs.filter(m => m.saldo != null).slice(-1)[0];
+  const pendents = movs.filter(m => m.estat === 'pendent');
+  resum.innerHTML = `<span>Saldo segons el banc: <b>${darrer ? fmtEur(darrer.saldo) + '</b> el ' + dmy(darrer.data) : '—</b>'}</span>
+    <span>Saldo a la comptabilitat${cb ? ' (' + h(cb.codi) + ')' : ''}: <b>${d.saldoCompta == null ? '—' : fmtEur(d.saldoCompta)}</b></span>
+    <span>Pendents de conciliar: <b>${pendents.length}</b>${pendents.length ? ' (' + fmtEur(pendents.reduce((t, m) => t + Number(m.import), 0)) + ')' : ''}</span>
+    <span class="hint">Fins que no hi hagi l’assentament d’obertura, la comptabilitat del banc comença de zero a la data d’inici.</span>`;
+  const qq = norm(st.q);
+  let llista = movs.filter(m => (st.filtre === 'tots' || m.estat === st.filtre) && (!st.desde || m.data >= st.desde) && (!st.fins || m.data <= st.fins));
+  if (qq) llista = llista.filter(m => norm([m.concepte, m.referencia1, m.referencia2, m.document, num2(Math.abs(m.import)), m.observacions].join(' ')).includes(qq));
+  if (!d.movs.length) { cos.innerHTML = '<p class="hint">Encara no hi ha cap moviment d’aquest compte: importa’n l’extracte (el fitxer Norma 43 que es descarrega de la banca electrònica).</p>' + extractesHTML(d); bindExtractes(main); return; }
+  if (!llista.length) { cos.innerHTML = `<p class="hint">Cap moviment ${st.filtre === 'pendent' ? 'pendent de conciliar' : st.filtre === 'ignorat' ? 'ignorat' : st.filtre === 'conciliat' ? 'conciliat' : ''}${st.q || st.desde || st.fins ? ' amb aquests filtres' : ''}.</p>` + extractesHTML(d); bindExtractes(main); return; }
+  const files = llista.map(m => {
+    const conc = d.conc.filter(c => Number(c.moviment_id) === m.id).sort((a, b) => a.ordre - b.ordre), a = assentamentDeMoviment(d, m.id);
+    const ps = m.estat === 'pendent' && st.ed && st.ed.mov === m.id ? null : (m.estat === 'pendent' ? propostesMoviment(m, d) : null);
+    const que = m.estat === 'conciliat'
+      ? `<div class="bc-conc">${conc.map(c => `<div>${h(textLiniaBanc(c.tipus, c.factura_id || c.factura_proveidor_id || c.compte_id, d).replace(/ · (pendent|cobrada) [\d.,-]+$/, ''))}${conc.length > 1 ? ' · ' + num2(Math.abs(c.import)) : ''}${c.concepte ? ' <span class="sub">' + h(c.concepte) + '</span>' : ''}</div>`).join('')}
+           <div class="sub">${a ? `<a href="#" data-cd-veure="${a.id}" data-cd-data="${a.data}">assentament ${a.exercici}/${a.numero}</a>` : (m.data < (comptaInici || '') ? 'd’abans de l’inici: sense assentament' : 'sense assentament')}${m.conciliat_per ? ' · ' + h(m.conciliat_per) : ''}</div></div>`
+      : m.estat === 'ignorat' ? `<span class="sub">ignorat${m.data < (comptaInici || '') ? ' (d’abans de l’inici de la comptabilitat)' : ''}</span>`
+      : st.ed && st.ed.mov === m.id ? '' : (ps && ps.length ? `<div class="bc-prop"><span class="sub">Proposta:</span> ${h(ps[0].etiqueta)}${ps[0].linies.every(l => l.id) ? ` <button type="button" class="btn small" data-bc-accepta="${m.id}">Accepta</button>` : ''}</div>` : '<span class="sub">sense proposta</span>');
+    const ops = m.estat === 'pendent' ? `<button type="button" class="btn ghost small" data-bc-obre="${m.id}">Concilia…</button>`
+      : m.estat === 'conciliat' ? `<button type="button" class="btn ghost small" data-bc-obre="${m.id}">Canvia</button> <button type="button" class="btn ghost small" data-bc-desfes="${m.id}">Desfés</button>`
+      : `<button type="button" class="btn ghost small" data-bc-pendent="${m.id}">Torna a pendent</button>`;
+    const fila = `<tr class="bc-mov ${m.estat}${st.ed && st.ed.mov === m.id ? ' obert' : ''}" data-mov="${m.id}"><td>${dmy(m.data)}${m.data_valor && m.data_valor !== m.data ? `<div class="sub">valor ${dmy(m.data_valor)}</div>` : ''}</td>
+      <td>${h(m.concepte || CONCEPTES_N43[m.concepte_comu] || '(sense concepte)')}<div class="sub">${h([CONCEPTES_N43[m.concepte_comu], m.referencia1, m.referencia2, m.document ? 'doc. ' + m.document : ''].filter(Boolean).join(' · '))}</div>${m.observacions ? `<div class="sub">📝 ${h(m.observacions)}</div>` : ''}</td>
+      <td class="num ${Number(m.import) < 0 ? 'neg' : 'pos'}">${num2(m.import)}</td><td>${que}</td><td class="bc-ops">${ops}</td></tr>`;
+    return fila + (st.ed && st.ed.mov === m.id ? `<tr class="bc-editor"><td colspan="5">${editorBancHTML(m, d)}</td></tr>` : '');
+  }).join('');
+  cos.innerHTML = `<table class="tbl compta-t bc-t"><thead><tr><th style="width:92px">Data</th><th>Concepte del banc</th><th class="num" style="width:110px">Import</th><th>Conciliació</th><th style="width:150px"></th></tr></thead><tbody>${files}</tbody></table>` + extractesHTML(d);
+  bindBanc(main); bindExtractes(main);
+}
+
+function extractesHTML(d) {
+  const st = bancEstat(); if (!d.extractes.length) return '';
+  const ex = d.extractes.slice().sort((a, b) => String(b.importat_el).localeCompare(String(a.importat_el)));
+  return `<details class="bc-extractes" ${st.extractes ? 'open' : ''}><summary>Extractes importats (${ex.length})</summary>
+    <table class="tbl"><thead><tr><th>Importat</th><th>Fitxer</th><th>Període</th><th class="num">Nous</th><th class="num">Ja hi eren</th><th></th></tr></thead><tbody>
+    ${ex.map(e => `<tr><td>${dmyhm(e.importat_el)}</td><td>${h(e.fitxer || '')}</td><td>${dmy(e.data_inici)}${e.data_fi ? ' – ' + dmy(e.data_fi) : ''}</td><td class="num">${e.moviments_nous}</td><td class="num">${e.moviments_repetits}</td>
+      <td><button type="button" class="btn ghost small" data-bc-esborra-ext="${e.id}">Esborra’l</button></td></tr>`).join('')}</tbody></table>
+    <p class="hint">Si un extracte s’ha importat al compte que no tocava, s’esborra amb els seus moviments (si cap no està conciliat) i es torna a importar. Els moviments que també porta un altre extracte es queden.</p></details>`;
+}
+function bindExtractes(main) {
+  const st = bancEstat(), det = main.querySelector('.bc-extractes');
+  if (det) det.addEventListener('toggle', () => { st.extractes = det.open; });
+  main.querySelectorAll('[data-bc-esborra-ext]').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('Esborrar aquest extracte i els seus moviments? (Els que també són en un altre extracte es queden; si n’hi ha de conciliats, primer cal desfer-los.)')) return;
+    const { data, error } = await sb.rpc('banc_esborra_extracte', { p_extracte: Number(b.dataset.bcEsborraExt) });
+    if (error) { toastErr(friendly(error)); return; }
+    toast((Number(data) || 0) + ' moviments esborrats'); st.dades = null; renderComptaBanc(main);
+  }));
+}
+
+// l'editor de la conciliació d'un moviment: propostes i línies (l'import de cada línia, en el sentit del moviment)
+function editorBancHTML(m, d) {
+  const st = bancEstat(), ed = st.ed, ps = propostesMoviment(m, d), abs = r2(Math.abs(m.import));
+  const suma = r2(ed.linies.reduce((t, l) => t + (llegeixImport(l.imp) || 0), 0)), falta = r2(abs - suma);
+  const llistes = TIPUS_LINIA_BANC.map(([t]) => `<datalist id="bc-ll-${t}">${opcionsLiniaBanc(t, d).map(o => `<option value="${h(o.text)}"></option>`).join('')}</datalist>`).join('');
+  return `<div class="bc-ed">
+    ${ps.length ? `<div class="bc-props"><span class="sub">Propostes:</span> ${ps.map((p, i) => `<button type="button" class="bc-pr" data-bc-proposta="${i}" title="${h(p.linies.length + ' línia' + (p.linies.length === 1 ? '' : 'es'))}">${h(p.etiqueta)}</button>`).join('')}</div>` : '<p class="sub">Cap proposta: tria a sota què és el moviment.</p>'}
+    <table class="tbl compta-t bc-lin"><thead><tr><th style="width:190px">Què és</th><th>Factura o compte</th><th>Concepte (opcional)</th><th class="num" style="width:120px">Import</th><th style="width:34px"></th></tr></thead><tbody>
+      ${ed.linies.map((l, i) => `<tr data-i="${i}"><td><select data-k="tipus">${TIPUS_LINIA_BANC.map(([v, t]) => `<option value="${v}" ${l.tipus === v ? 'selected' : ''}>${t}</option>`).join('')}</select></td>
+        <td><input type="text" data-k="text" list="bc-ll-${l.tipus}" value="${h(l.text || textLiniaBanc(l.tipus, l.id, d))}" placeholder="${l.tipus === 'compte' ? 'codi o nom del compte: 626, comissions…' : 'número, client o proveïdor…'}">${l.rebut ? '<div class="sub">rebut de la remesa</div>' : ''}</td>
+        <td><input type="text" data-k="concepte" value="${h(l.concepte || '')}"></td>
+        <td><input type="text" inputmode="decimal" data-k="imp" class="num" value="${h(l.imp === '' || l.imp == null ? '' : String(l.imp))}"></td>
+        <td><button type="button" class="btn ghost small" data-bc-treu="${i}" title="Treu la línia">✕</button></td></tr>`).join('')}
+    </tbody><tfoot><tr class="total"><td colspan="3"><button type="button" class="btn ghost small" data-bc-mes>+ Afegeix una línia</button>
+      <span class="ca-dif ${falta === 0 ? 'ok' : 'err'}">${falta === 0 ? 'quadra ✓' : (falta > 0 ? 'falten ' : 'sobren ') + num2(Math.abs(falta)) + ' €'}</span></td>
+      <td class="num">${num2(suma)} de ${num2(abs)}</td><td></td></tr></tfoot></table>${llistes}
+    <p class="hint">Un import negatiu va en sentit contrari del moviment (p. ex. la comissió que el banc descompta d’una remesa).</p>
+    <div class="bc-err"></div>
+    <div class="actions"><button type="button" class="btn" data-bc-desa>Concilia</button> <button type="button" class="btn ghost" data-bc-ignora>Ignora el moviment</button>
+      <button type="button" class="btn ghost" data-bc-tanca>Tanca</button>
+      <label class="bc-obs">Observacions <input type="text" data-bc-obs value="${h(m.observacions || '')}" placeholder="una nota per a més endavant"></label></div></div>`;
+}
+function liniaBancDesDe(d, l) { return { tipus: l.tipus, id: l.id || null, text: textLiniaBanc(l.tipus, l.id, d), concepte: l.concepte || '', imp: l.imp != null && l.imp !== '' ? impText2(r2(l.imp)) : '', rebut: l.rebut || null }; }
+function obreEditorBanc(m, d, linies) {
+  const st = bancEstat();
+  const conc = d.conc.filter(c => Number(c.moviment_id) === m.id).sort((a, b) => a.ordre - b.ordre);
+  if (!linies) linies = conc.length ? conc.map(c => ({ tipus: c.tipus, id: Number(c.factura_id || c.factura_proveidor_id || c.compte_id), concepte: c.concepte, imp: Math.abs(c.import) * Math.sign(c.import) * Math.sign(m.import), rebut: c.remesa_rebut_id }))
+    : (() => { const ps = propostesMoviment(m, d); return ps.length && ps[0].punts >= 60 ? ps[0].linies : [{ tipus: Number(m.import) > 0 ? 'factura' : 'factura_proveidor', id: null, imp: r2(Math.abs(m.import)) }]; })();
+  st.ed = { mov: m.id, linies: linies.map(l => liniaBancDesDe(d, l)) };
+}
+function llegeixEditorBanc(main) {
+  const st = bancEstat(); if (!st.ed) return;
+  main.querySelectorAll('.bc-lin tbody tr').forEach(tr => { const l = st.ed.linies[Number(tr.dataset.i)]; if (!l) return; tr.querySelectorAll('[data-k]').forEach(inp => { l[inp.dataset.k] = inp.value; }); });
+}
+// resol el text escrit a cada línia (la factura o el compte de la llista)
+function resolLiniaBanc(l, d) {
+  const t = String(l.text || '').trim(); if (!t) { l.id = null; return; }
+  if (l.tipus === 'compte') { const c = compteDeText(t); l.id = c && c.imputable ? c.id : null; return; }
+  const ops = opcionsLiniaBanc(l.tipus, d), o = ops.find(x => x.text === t) || (() => { const q = norm(t), xs = ops.filter(x => norm(x.text).includes(q)); return xs.length === 1 ? xs[0] : null; })();
+  l.id = o ? o.id : (l.id && textLiniaBanc(l.tipus, l.id, d) === t ? l.id : null);
+}
+
+function bindBanc(main) {
+  const st = bancEstat(), d = st.dades;
+  const mov = id => d.movs.find(m => m.id === Number(id));
+  main.querySelectorAll('[data-cd-veure]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); const sc = comptaEstat(); sc.desde = sc.fins = a.dataset.cdData; sc.q = ''; sc.sel = Number(a.dataset.cdVeure); state.table = 'compta_diari'; state.editing = null; renderApp(); window.scrollTo({ top: 0 }); }));
+  main.querySelectorAll('[data-bc-obre]').forEach(b => b.addEventListener('click', () => { obreEditorBanc(mov(b.dataset.bcObre), d); pintaBanc(main); }));
+  main.querySelectorAll('[data-bc-accepta]').forEach(b => b.addEventListener('click', async () => {
+    const m = mov(b.dataset.bcAccepta), p = propostesMoviment(m, d)[0]; if (!p) return;
+    b.disabled = true; await conciliaMoviment(main, m, p.linies.map(l => liniaBancDesDe(d, l)));
+  }));
+  main.querySelectorAll('[data-bc-desfes]').forEach(b => b.addEventListener('click', async () => {
+    const m = mov(b.dataset.bcDesfes);
+    if (!confirm('Desfer la conciliació d’aquest moviment? L’assentament s’esborra (o es reverteix, si el període és bloquejat) i les factures tornen a estar pendents.')) return;
+    const { error } = await sb.rpc('banc_desfes', { p_moviment: m.id });
+    if (error) { toastErr(friendly(error)); return; }
+    await despresDeConciliar(main, m); toast('Conciliació desfeta');
+  }));
+  main.querySelectorAll('[data-bc-pendent]').forEach(b => b.addEventListener('click', async () => {
+    const { error } = await sb.rpc('banc_ignora', { p_moviment: Number(b.dataset.bcPendent), p_ignora: false });
+    if (error) { toastErr(friendly(error)); return; }
+    st.dades = null; renderComptaBanc(main);
+  }));
+  const ed = main.querySelector('.bc-ed'); if (!ed || !st.ed) return;
+  const m = mov(st.ed.mov);
+  const repinta = () => { llegeixEditorBanc(main); pintaBanc(main); const x = main.querySelector('.bc-ed'); if (x && x.scrollIntoView) x.scrollIntoView({ block: 'nearest' }); };
+  ed.querySelectorAll('[data-bc-proposta]').forEach(b => b.addEventListener('click', () => { const p = propostesMoviment(m, d)[Number(b.dataset.bcProposta)]; if (p) { st.ed.linies = p.linies.map(l => liniaBancDesDe(d, l)); pintaBanc(main); } }));
+  ed.querySelectorAll('select[data-k="tipus"]').forEach(s => s.addEventListener('change', () => { llegeixEditorBanc(main); const l = st.ed.linies[Number(s.closest('tr').dataset.i)]; l.id = null; l.text = ''; l.rebut = null; pintaBanc(main); }));
+  ed.querySelectorAll('input[data-k="text"]').forEach(inp => inp.addEventListener('change', () => {
+    llegeixEditorBanc(main);
+    const i = Number(inp.closest('tr').dataset.i), l = st.ed.linies[i];
+    resolLiniaBanc(l, d);
+    if (l.id && l.tipus !== 'compte') {
+      const o = opcionsLiniaBanc(l.tipus, d).find(x => x.id === l.id), altres = r2(st.ed.linies.reduce((t, x, j) => t + (j === i ? 0 : llegeixImport(x.imp) || 0), 0));
+      const resta = r2(Math.abs(m.import) - altres);
+      if (o && o.pendent != null && (l.imp === '' || st.ed.linies.length === 1 || llegeixImport(l.imp) === 0)) l.imp = impText2(Math.min(Math.abs(o.pendent), resta > 0 ? resta : Math.abs(o.pendent)));
+    }
+    repinta();
+  }));
+  ed.querySelectorAll('input[data-k="imp"]').forEach(inp => inp.addEventListener('change', repinta));
+  ed.querySelector('[data-bc-mes]').addEventListener('click', () => {
+    llegeixEditorBanc(main);
+    const suma = r2(st.ed.linies.reduce((t, l) => t + (llegeixImport(l.imp) || 0), 0)), falta = r2(Math.abs(m.import) - suma);
+    st.ed.linies.push({ tipus: 'compte', id: null, text: '', concepte: '', imp: falta > 0 ? impText2(falta) : '', rebut: null }); pintaBanc(main);
+  });
+  ed.querySelectorAll('[data-bc-treu]').forEach(b => b.addEventListener('click', () => { llegeixEditorBanc(main); st.ed.linies.splice(Number(b.dataset.bcTreu), 1); if (!st.ed.linies.length) st.ed.linies.push({ tipus: 'compte', id: null, text: '', concepte: '', imp: '' }); pintaBanc(main); }));
+  ed.querySelector('[data-bc-tanca]').addEventListener('click', () => { st.ed = null; pintaBanc(main); });
+  ed.querySelector('[data-bc-ignora]').addEventListener('click', async () => {
+    if (m.estat === 'conciliat') { toastErr('Primer desfés la conciliació.'); return; }
+    const { error } = await sb.rpc('banc_ignora', { p_moviment: m.id, p_ignora: true });
+    if (error) { toastErr(friendly(error)); return; }
+    st.ed = null; st.dades = null; toast('Moviment ignorat: no es comptabilitzarà'); renderComptaBanc(main);
+  });
+  const obs = ed.querySelector('[data-bc-obs]');
+  obs.addEventListener('change', async () => {
+    const { error } = await sb.from('banc_moviments').update({ observacions: obs.value.trim() || null }).eq('id', m.id);
+    if (error) { toastErr(friendly(error)); return; }
+    m.observacions = obs.value.trim() || null; toast('Observació desada');
+  });
+  ed.querySelector('[data-bc-desa]').addEventListener('click', async () => {
+    llegeixEditorBanc(main);
+    st.ed.linies.forEach(l => { if (!l.id || textLiniaBanc(l.tipus, l.id, d) !== String(l.text || '').trim()) resolLiniaBanc(l, d); });
+    const err = msg => { ed.querySelector('.bc-err').innerHTML = `<p class="msg err">${h(msg)}</p>`; };
+    const ls = st.ed.linies.filter(l => String(l.text || '').trim() || llegeixImport(l.imp));
+    const dolenta = ls.find(l => !l.id);
+    if (!ls.length) return err('Cal almenys una línia.');
+    if (dolenta) return err('No trobo «' + (dolenta.text || '(buit)') + '»: tria-ho de la llista' + (dolenta.tipus === 'compte' ? ' (cal un subcompte de 7 xifres).' : '.'));
+    if (ls.some(l => isNaN(llegeixImport(l.imp)))) return err('Hi ha un import que no s’entén (escriu-lo com 1234,56).');
+    if (ls.some(l => !llegeixImport(l.imp))) return err('Hi ha una línia sense import.');
+    const suma = r2(ls.reduce((t, l) => t + llegeixImport(l.imp), 0));
+    if (suma !== r2(Math.abs(m.import))) return err('Les línies sumen ' + num2(suma) + ' i el moviment és de ' + num2(Math.abs(m.import)) + '.');
+    const b = ed.querySelector('[data-bc-desa]'); b.disabled = true;
+    const ok = await conciliaMoviment(main, m, ls, err);
+    if (!ok) b.disabled = false;
+  });
+}
+async function conciliaMoviment(main, m, linies, err) {
+  const sig = Math.sign(Number(m.import));
+  const p = linies.map(l => {
+    const x = { tipus: l.tipus, import: r2(llegeixImport(l.imp) * sig), concepte: String(l.concepte || '').trim() || null, remesa_rebut_id: l.rebut || null };
+    x[l.tipus === 'factura_proveidor' ? 'factura_proveidor_id' : l.tipus === 'compte' ? 'compte_id' : 'factura_id'] = l.id;
+    return x;
+  });
+  const { data, error } = await sb.rpc('banc_concilia', { p_moviment: m.id, p_linies: p });
+  if (error) { if (err) err(friendly(error)); else toastErr(friendly(error)); return false; }
+  const st = bancEstat(); st.ed = null;
+  await despresDeConciliar(main, m, linies);
+  const a = st.dades ? assentamentDeMoviment(st.dades, m.id) : null;
+  toast('Conciliat' + (a ? ' · assentament ' + a.exercici + '/' + a.numero : (data ? '' : ' (sense assentament: d’abans de l’inici)')));
+  return true;
+}
+// després de conciliar o desfer: les factures tocades, al dia a la memòria, i els moviments, tornats a llegir
+async function despresDeConciliar(main, m, linies) {
+  const st = bancEstat(), d = st.dades;
+  const abans = d ? d.conc.filter(c => Number(c.moviment_id) === m.id) : [];
+  const fac = [...abans.map(c => c.factura_id), ...(linies || []).filter(l => l.tipus === 'factura' || l.tipus === 'retorn').map(l => l.id)];
+  const fp = [...abans.map(c => c.factura_proveidor_id), ...(linies || []).filter(l => l.tipus === 'factura_proveidor').map(l => l.id)];
+  await Promise.all([refrescaFiles('factures', fac), refrescaFiles('factures_proveidor', fp)]);
+  st.dades = null;
+  if (main && main.isConnected !== false && state.table === 'compta_banc') await renderComptaBanc(main);
+}
+// concilia d'una tirada els moviments pendents amb una proposta molt segura (la remesa exacta, el número de la factura i l'import…)
+async function conciliaSegurs(main) {
+  const st = bancEstat(), d = st.dades; if (!d) return;
+  const segurs = d.movs.filter(m => m.estat === 'pendent').map(m => ({ m, p: propostaSegura(propostesMoviment(m, d)) })).filter(x => x.p);
+  if (!segurs.length) { toast('Cap moviment pendent amb una proposta prou segura: concilia’ls un per un.', 5000); return; }
+  if (!confirm(`Es conciliaran ${segurs.length} moviments amb la seva proposta (es poden desfer un per un):\n\n` + segurs.slice(0, 12).map(x => dmy(x.m.data) + ' · ' + num2(x.m.import) + ' → ' + x.p.etiqueta).join('\n') + (segurs.length > 12 ? '\n…' : ''))) return;
+  let fets = 0; const errors = [];
+  for (const x of segurs) {
+    const sig = Math.sign(Number(x.m.import));
+    const p = x.p.linies.map(l => { const y = { tipus: l.tipus, import: r2(l.imp * sig), remesa_rebut_id: l.rebut || null, concepte: l.concepte || null }; y[l.tipus === 'factura_proveidor' ? 'factura_proveidor_id' : l.tipus === 'compte' ? 'compte_id' : 'factura_id'] = l.id; return y; });
+    const { error } = await sb.rpc('banc_concilia', { p_moviment: x.m.id, p_linies: p });
+    if (error) errors.push(dmy(x.m.data) + ' ' + num2(x.m.import) + ': ' + friendly(error)); else fets++;
+  }
+  const fac = [], fp = [];
+  segurs.forEach(x => x.p.linies.forEach(l => (l.tipus === 'factura_proveidor' ? fp : fac).push(l.id)));
+  await Promise.all([refrescaFiles('factures', fac), refrescaFiles('factures_proveidor', fp)]);
+  st.dades = null; await renderComptaBanc(main);
+  if (errors.length) toastErr(`${fets} conciliats; ${errors.length} no: ${errors[0]}`); else toast(`${fets} moviments conciliats`);
+}
+
+// importa un extracte Norma 43: cada compte del fitxer, al compte bancari del programa que té aquest número
+async function importaN43(main, file) {
+  const st = bancEstat();
+  let comptes; try { comptes = llegeixN43(await llegeixTextBanc(file)); } catch (e) { toastErr(e.message); return; }
+  const msgs = [];
+  for (const c of comptes) {
+    const perNum = bancsActius().find(b => ibanNet(b.iban).slice(4, 12) === c.entitat + c.oficina && ibanNet(b.iban).slice(14, 24) === c.compte);
+    const triat = C.get('comptes_bancaris', st.banc);
+    const b = perNum || (comptes.length === 1 && triat && !/^ES\d{22}$/.test(ibanNet(triat.iban)) ? triat : null);
+    if (!b) { msgs.push(`El compte ${c.entitat} ${c.oficina} ${c.compte} no és cap dels comptes bancaris del programa (mira’n l’IBAN a ALTRES → Comptes bancaris).`); continue; }
+    const { data, error } = await sb.rpc('banc_importa_extracte', { p: { banc: b.id, fitxer: file.name, entitat: c.entitat, oficina: c.oficina, compte: c.compte, data_inici: c.data_inici,
+      data_fi: c.data_fi, saldo_inicial: c.saldo_inicial, saldo_final: c.saldo_final, moviments: c.moviments } });
+    if (error) { msgs.push(b.alies + ': ' + friendly(error)); continue; }
+    msgs.push(`${b.alies}: ${data.nous} moviments nous${data.repetits ? ', ' + data.repetits + ' que ja hi eren' : ''}${data.ignorats ? ', ' + data.ignorats + ' d’abans de l’inici de la comptabilitat (ignorats)' : ''}${c.avisos.length ? '. Atenció: ' + c.avisos.join(' ') : ''}`);
+    st.banc = b.id;
+  }
+  st.dades = null; st.ed = null; await renderComptaBanc(main);
+  const greu = msgs.some(x => /no és cap|Atenció|ERROR|no existeix|permís/i.test(x));
+  (greu ? toastErr : t => toast(t, 9000))(msgs.join(' · '));
+}
+// importa una remesa de rebuts: cada rebut amb la seva factura (pel número, pel client i l'import, o pel nom del deutor)
+function facturaDelRebut(x, facts, usades) {
+  const text = [x.referencia, x.concepte].filter(Boolean).join(' ');
+  const amb = facts.filter(f => !usades.has(f.id) && Math.abs(Number(f.total) - x.import) < 0.005);
+  const perNum = amb.filter(f => surtNumFactura(text, f));
+  if (perNum.length === 1) return perNum[0];
+  const cli = C.rows('clients').filter(c => (x.ref_mandat_sepa && c.ref_mandat_sepa === x.ref_mandat_sepa) || (x.iban && ibanNet(c.iban) === ibanNet(x.iban)));
+  const delClient = (perNum.length ? perNum : amb).filter(f => f.estat === 'emesa' && cli.some(c => c.id === Number(f.client_id)));
+  if (delClient.length === 1) return delClient[0];
+  const perNom = (perNum.length ? perNum : amb).filter(f => f.estat === 'emesa' && semblancaNom(x.deutor, f.client_nom || L('clients', f.client_id)) >= 0.85);
+  return perNom.length === 1 ? perNom[0] : null;
+}
+async function importaRemesa(file, despres) {
+  let r; try { r = llegeixRemesa(await llegeixTextBanc(file)); } catch (e) { toastErr(e.message); return; }
+  const facts = C.rows('factures').filter(f => f.actiu && (f.estat === 'emesa' || f.estat === 'cobrada') && f.numero_complet);
+  const usades = new Set();
+  r.rebuts.forEach(x => { const f = facturaDelRebut(x, facts, usades); if (f) { x.factura_id = f.id; usades.add(f.id); } });
+  const { data, error } = await sb.rpc('banc_importa_remesa', { p: { format: r.format, fitxer: file.name, referencia: r.referencia, data_creacio: r.data_creacio, iban: r.iban, rebuts: r.rebuts } });
+  if (error) { toastErr(friendly(error)); return; }
+  const n = Number(data.rebuts) || 0, ok = Number(data.amb_factura) || 0;
+  toast(`Remesa importada: ${n} rebuts (${fmtEur(data.import)}), ${ok} amb la seva factura${n - ok ? '. Els altres ' + (n - ok) + ', a «Remeses de rebuts»' : ''}`, 9000);
+  const st = bancEstat(); st.dades = null; state.remeses = Object.assign(state.remeses || {}, { dades: null });
+  if (despres) despres();
+}
+
+/* ---------- Remeses de rebuts: quines factures hi ha dins de cada abonament agrupat del banc (no fan cap assentament) ---------- */
+function remesesEstat() { if (!state.remeses) state.remeses = { obert: null, dades: null }; return state.remeses; }
+async function renderComptaRemeses(main) {
+  if (!potVeureCompta()) { main.innerHTML = noComptaHTML(); return; }
+  const st = remesesEstat();
+  main.innerHTML = `<div class="panel compta"><div class="ph"><h2>Remeses de rebuts</h2></div>
+    <p class="hint">Una remesa és el fitxer de rebuts que s’envia al banc (XML SEPA o quadern 19.14). No fa cap assentament: només diu quines factures hi ha dins de l’abonament del banc. En conciliar aquell abonament, el programa ja proposa els rebuts de la remesa.</p>
+    <div class="compta-accions"><label class="btn">Importa una remesa de rebuts<input type="file" id="rm-fitxer" accept=".xml,.txt,.c19,.q19,text/xml,text/plain" hidden></label></div>
+    <div id="rm-cos"><p class="hint">Carregant…</p></div></div>`;
+  main.querySelector('#rm-fitxer').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) importaRemesa(f, () => { st.dades = null; renderComptaRemeses(main); }); });
+  if (!st.dades) {
+    try { const [remeses, rebuts, conc, movs] = await Promise.all([totesLesFiles('remeses'), totesLesFiles('remesa_rebuts'), totesLesFiles('conciliacions'), totesLesFiles('banc_moviments', q => q.eq('estat', 'conciliat'))]); st.dades = { remeses, rebuts, conc, movs }; }
+    catch (e) { const c = main.querySelector('#rm-cos'); if (c) c.innerHTML = `<p class="msg err">${h(friendly(e))}</p><p class="hint">Si encara no l’has executat, cal el fitxer 075_conciliacio_bancaria.sql.</p>`; return; }
+  }
+  pintaRemeses(main);
+}
+function pintaRemeses(main) {
+  const st = remesesEstat(), d = st.dades, cos = main.querySelector('#rm-cos'); if (!cos || !d) return;
+  if (!d.remeses.length) { cos.innerHTML = '<p class="hint">Encara no s’ha importat cap remesa.</p>'; return; }
+  const usat = new Map(d.conc.filter(c => c.remesa_rebut_id).map(c => [Number(c.remesa_rebut_id), c]));
+  const movDe = c => d.movs.find(m => m.id === Number(c.moviment_id));
+  const facts = C.rows('factures').filter(f => f.actiu && (f.estat === 'emesa' || f.estat === 'cobrada') && f.numero_complet)
+    .sort((a, b) => String(b.data_factura).localeCompare(String(a.data_factura)));
+  const textFac = f => `${f.numero_complet} · ${f.client_nom || L('clients', f.client_id)} · ${num2(f.total)}${f.estat === 'cobrada' ? ' · cobrada' : ''}`;
+  const files = d.remeses.slice().sort((a, b) => String(b.importat_el).localeCompare(String(a.importat_el))).map(r => {
+    const rs = d.rebuts.filter(x => Number(x.remesa_id) === r.id).sort((a, b) => String(a.data_cobrament).localeCompare(String(b.data_cobrament)) || a.id - b.id);
+    const facDe = x => x.factura_id || (usat.get(x.id) || {}).factura_id || null;   // (la del rebut o, si no en té, la de la conciliació)
+    const amb = rs.filter(facDe).length, conc = rs.filter(x => usat.has(x.id)).length;
+    const dates = [...new Set(rs.map(x => x.data_cobrament).filter(Boolean))].map(dmy).join(', ');
+    const obert = st.obert === r.id;
+    return `<tbody class="rm-r${obert ? ' sel' : ''}"><tr class="cd-cap row" data-rm-obre="${r.id}"><td>${dmyhm(r.importat_el)}</td><td>${h(r.fitxer || '')}<div class="sub">${h(r.referencia)}</div></td><td>${h(L('comptes_bancaris', r.compte_bancari_id) || '')}</td><td>${dates}</td>
+        <td class="num">${rs.length}</td><td class="num">${num2(r.import)}</td><td>${amb === rs.length ? 'totes ✓' : `<span class="v-no">${rs.length - amb} sense factura</span>`}</td><td>${conc ? conc + ' de ' + rs.length : '—'}</td></tr>
+      ${obert ? `<tr><td colspan="8"><table class="tbl compta-t"><thead><tr><th>Cobrament</th><th>Deutor</th><th>Referència · concepte</th><th class="num">Import</th><th style="width:38%">Factura</th><th>Conciliat</th></tr></thead><tbody>
+        ${rs.map(x => { const c = usat.get(x.id), m = c && movDe(c), f = facDe(x) ? C.get('factures', facDe(x)) : null;
+          return `<tr><td>${dmy(x.data_cobrament)}</td><td>${h(x.deutor || '')}</td><td>${h([x.referencia, x.concepte].filter(Boolean).join(' · '))}</td><td class="num">${num2(x.import)}</td>
+            <td>${c ? h(f ? textFac(f) : '—') : `<input type="text" list="rm-ll" data-rm-rebut="${x.id}" value="${h(f ? textFac(f) : '')}" placeholder="tria la factura…">`}</td>
+            <td>${c ? (m ? dmy(m.data) : 'sí') : ''}</td></tr>`; }).join('')}
+        </tbody></table>${conc ? '' : `<div class="actions"><button type="button" class="btn ghost small" data-rm-esborra="${r.id}">Esborra la remesa</button></div>`}</td></tr>` : ''}</tbody>`;
+  }).join('');
+  cos.innerHTML = `<table class="tbl compta-t rm-t"><thead><tr><th>Importada</th><th>Fitxer</th><th>Banc</th><th>Cobrament</th><th class="num">Rebuts</th><th class="num">Import</th><th>Factures</th><th>Conciliats</th></tr></thead>${files}</table>
+    <datalist id="rm-ll">${facts.map(f => `<option value="${h(textFac(f))}"></option>`).join('')}</datalist>`;
+  cos.querySelectorAll('[data-rm-obre]').forEach(tr => tr.addEventListener('click', () => { const id = Number(tr.dataset.rmObre); st.obert = st.obert === id ? null : id; pintaRemeses(main); }));
+  cos.querySelectorAll('[data-rm-rebut]').forEach(inp => inp.addEventListener('change', async () => {
+    const t = inp.value.trim(), f = t ? facts.find(x => textFac(x) === t) : null;
+    if (t && !f) { toastErr('Tria la factura de la llista.'); return; }
+    const { error } = await sb.rpc('banc_rebut_factura', { p_rebut: Number(inp.dataset.rmRebut), p_factura: f ? f.id : null });
+    if (error) { toastErr(friendly(error)); return; }
+    const x = d.rebuts.find(y => y.id === Number(inp.dataset.rmRebut)); if (x) { x.factura_id = f ? f.id : null; if (f) x.client_id = f.client_id; }
+    bancEstat().dades = null; toast(f ? 'Factura posada al rebut' : 'Rebut sense factura'); pintaRemeses(main);
+  }));
+  cos.querySelectorAll('[data-rm-esborra]').forEach(b => b.addEventListener('click', async e => {
+    e.stopPropagation();
+    if (!confirm('Esborrar aquesta remesa? (Es pot tornar a importar el fitxer.)')) return;
+    const { error } = await sb.rpc('banc_esborra_remesa', { p_remesa: Number(b.dataset.rmEsborra) });
+    if (error) { toastErr(friendly(error)); return; }
+    st.dades = null; st.obert = null; bancEstat().dades = null; toast('Remesa esborrada'); renderComptaRemeses(main);
+  }));
+}
+
+/* ---------- Immobilitzat: els béns, el que porten amortitzat i les amortitzacions de cada mes ---------- */
+function immobEstat() {
+  if (!state.immob) { const a = new Date(); state.immob = { fins: ymd(new Date(a.getFullYear(), a.getMonth() + 1, 0)), baixes: false }; }   // (l'últim dia d'aquest mes)
+  return state.immob;
+}
+async function renderComptaImmobilitzat(main) {
+  if (!potVeureCompta()) { main.innerHTML = noComptaHTML(); return; }
+  const st = immobEstat();
+  main.innerHTML = `<div class="panel compta"><div class="ph"><h2>Immobilitzat i amortitzacions</h2></div>
+    <p class="hint">Cada bé amb la data de compra, el valor, el percentatge anual (amortització lineal) i l’acumulat d’abans (el de ContaSol). Les amortitzacions es comptabilitzen per mesos, l’últim dia de cada mes: la dotació (681…) al deure i l’amortització acumulada (281…) a l’haver. Es pot tornar a fer: els mesos que no han canviat no es toquen.</p>
+    <div class="compta-accions"><button type="button" class="btn" id="im-nou">Nou bé</button>
+      <span class="im-amort">Comptabilitza les amortitzacions fins al <input type="date" id="im-fins" value="${h(st.fins)}"> <button type="button" class="btn ghost" id="im-fes">Comptabilitza</button></span>
+      <label class="chk"><input type="checkbox" id="im-baixes" ${st.baixes ? 'checked' : ''}> amb els donats de baixa</label></div>
+    <div id="im-cos"><p class="hint">Carregant…</p></div></div>`;
+  main.querySelector('#im-nou').addEventListener('click', () => { state.mode = 'entrada'; state.table = 'immobilitzat'; state.editing = null; renderApp(); window.scrollTo({ top: 0 }); });
+  main.querySelector('#im-fins').addEventListener('change', e => { st.fins = e.target.value || st.fins; });
+  main.querySelector('#im-baixes').addEventListener('change', e => { st.baixes = e.target.checked; renderComptaImmobilitzat(main); });
+  main.querySelector('#im-fes').addEventListener('click', async () => {
+    const b = main.querySelector('#im-fes'); if (!st.fins) { toastErr('Tria fins a quin mes.'); return; }
+    b.disabled = true;
+    const { data, error } = await sb.rpc('compta_amortitza', { p_fins: st.fins });
+    b.disabled = false;
+    if (error) { toastErr(friendly(error)); return; }
+    toast(`Amortitzacions fins al ${dmy(st.fins)}: ${Number((data || {}).mesos) || 0} mesos, ${fmtEur((data || {}).import || 0)}`, 7000);
+    renderComptaImmobilitzat(main);
+  });
+  let bens; try { bens = await totesLesFiles('immobilitzat_estat'); } catch (e) { const c = main.querySelector('#im-cos'); if (c) c.innerHTML = `<p class="msg err">${h(friendly(e))}</p>`; return; }
+  const cos = main.querySelector('#im-cos'); if (!cos) return;
+  const llista = bens.filter(x => st.baixes || x.actiu).sort((a, b) => String(a.data_compra).localeCompare(String(b.data_compra)));
+  if (!llista.length) { cos.innerHTML = '<p class="hint">Cap bé a l’immobilitzat.</p>'; return; }
+  const t = llista.reduce((a, x) => ({ v: a.v + Number(x.valor), q: a.q + (x.actiu && !x.data_baixa && Number(x.valor_net) > Number(x.valor_residual) ? Number(x.quota_mensual) : 0), ac: a.ac + Number(x.acumulat), n: a.n + Number(x.valor_net) }), { v: 0, q: 0, ac: 0, n: 0 });
+  const codi = id => (C.get('comptes', id) || {}).codi || '';
+  cos.innerHTML = `<table class="tbl compta-t im-t"><thead><tr><th>Bé</th><th>Comptes</th><th>Compra</th><th class="num">Valor</th><th class="num">% anual</th><th class="num">Quota mensual</th><th class="num">Amortitzat</th><th class="num">Valor net</th><th>Comptabilitzat fins</th></tr></thead><tbody>
+    ${llista.map(x => { const acabat = Number(x.valor_net) <= Number(x.valor_residual) + 0.004;
+      return `<tr class="row ${x.actiu ? '' : 'off'}" data-im="${x.id}"><td>${h(x.descripcio)}${x.data_baixa ? `<div class="sub">baixa el ${dmy(x.data_baixa)}</div>` : ''}</td>
+      <td class="sub">${h(codi(x.compte_id))} · ${h(codi(x.compte_amortitzacio_id))} · ${h(codi(x.compte_dotacio_id))}</td><td>${dmy(x.data_compra)}</td><td class="num">${num2(x.valor)}</td>
+      <td class="num">${num2(x.percentatge)}</td><td class="num">${acabat ? '—' : num2(x.quota_mensual)}</td>
+      <td class="num">${num2(x.acumulat)}${Number(x.amortitzat_inicial) ? `<div class="sub">${num2(x.amortitzat_inicial)} d’abans</div>` : ''}</td><td class="num">${num2(x.valor_net)}${acabat ? '<div class="sub">amortitzat</div>' : ''}</td>
+      <td>${x.darrer_mes ? dmy(x.darrer_mes) : x.amortitzat_fins ? `<span class="sub">l’acumulat d’abans, fins al ${dmy(x.amortitzat_fins)}</span>` : '<span class="sub">encara res</span>'}</td></tr>`; }).join('')}
+    </tbody><tfoot><tr class="total"><td colspan="3">${llista.length} bé${llista.length === 1 ? '' : 's'}</td><td class="num">${num2(t.v)}</td><td></td><td class="num">${num2(t.q)}</td><td class="num">${num2(t.ac)}</td><td class="num">${num2(t.n)}</td><td></td></tr></tfoot></table>
+    <p class="hint">Clica un bé per modificar-lo o donar-lo de baixa (si es ven o es llença, posa-hi la data de baixa: s’amortitza fins aquell dia).</p>`;
+  cos.querySelectorAll('[data-im]').forEach(tr => tr.addEventListener('click', () => { state.mode = 'consulta'; state.table = 'immobilitzat'; state.editing = Number(tr.dataset.im); renderApp(); window.scrollTo({ top: 0 }); }));
+}
+
+/* ---------- Comptes de ContaSol: el codi de ContaSol de cada client i proveïdor de l'ERP ---------- */
+const taulaContaSol = tipus => tipus === 'client' ? 'clients' : tipus === 'proveidor' ? 'proveidors' : 'comptes_bancaris';
+const nomContaSol = (tipus, r) => tipus === 'banc' ? [r.alies, r.banc].filter(Boolean).join(' · ') : r.nom;
+function contasolEstat() { if (!state.contasol) state.contasol = { tipus: 'client', vista: 'revisar', ambFactures: true, q: '', dades: null, cand: {} }; return state.contasol; }
+// els candidats de ContaSol d'un client o proveïdor de l'ERP, del més semblant al menys (els clients, també pel codi d'Access, que és el final del de ContaSol)
+function candidatsContaSol(st, tipus, r) {
+  const k = tipus + ':' + r.id + ':' + nomContaSol(tipus, r); if (st.cand[k]) return st.cand[k];
+  const d = st.dades, idx = d.index[tipus], llista = d.llistes[tipus];
+  const nom = nomContaSol(tipus, r), paraules = paraulesNom(nom).filter(p => p.length >= 3 && !/^\d+$/.test(p));
+  let pool = new Set(); paraules.forEach(p => (idx.get(p) || []).forEach(x => pool.add(x)));
+  if (!pool.size || tipus === 'banc') pool = new Set(llista);
+  const out = [...pool].map(c => ({ c, s: semblancaNom(nom, c.nom, { cpA: r.cp, cpB: c.cp, telA: r.telefon, telB: c.telefon }), via: 'nom' }));
+  if (tipus === 'client' && /^\d+$/.test(String(r.codi_client || ''))) {
+    const codi = '430' + String(r.codi_client).padStart(4, '0'), c = llista.find(x => x.codi === codi);
+    if (c) { const s = semblancaNom(r.nom, c.nom); const ja = out.find(x => x.c === c); if (s >= 0.45) { if (ja) { ja.s = Math.max(ja.s, 0.95); ja.via = 'codi'; } else out.push({ c, s: Math.max(s, 0.95), via: 'codi' }); } }
+  }
+  return (st.cand[k] = out.sort((a, b) => b.s - a.s || a.c.codi.localeCompare(b.c.codi)).slice(0, 5));
+}
+async function renderComptaContaSol(main) {
+  if (!potVeureCompta()) { main.innerHTML = noComptaHTML(); return; }
+  const st = contasolEstat();
+  main.innerHTML = `<div class="panel compta"><div class="ph"><h2>Comptes de ContaSol</h2></div>
+    <p class="hint">Cada client i cada proveïdor de l’ERP ha de tenir el mateix codi de compte que té a ContaSol. Els que es reconeixien amb seguretat ja el tenen; aquí es revisen els altres. Un client nou té compte des que es crea (amb un codi que no és de ningú a ContaSol), i un proveïdor nou, amb la primera factura.</p>
+    <div class="compta-filtres">
+      <label>Tipus <select id="cs-tipus"><option value="client" ${st.tipus === 'client' ? 'selected' : ''}>Clients</option><option value="proveidor" ${st.tipus === 'proveidor' ? 'selected' : ''}>Proveïdors</option><option value="banc" ${st.tipus === 'banc' ? 'selected' : ''}>Bancs</option></select></label>
+      <label>Mostra <select id="cs-vista"><option value="revisar" ${st.vista === 'revisar' ? 'selected' : ''}>Sense codi de ContaSol</option><option value="aparellats" ${st.vista === 'aparellats' ? 'selected' : ''}>Amb codi de ContaSol</option><option value="tots" ${st.vista === 'tots' ? 'selected' : ''}>Tots</option></select></label>
+      ${st.tipus === 'proveidor' ? `<label class="chk" style="flex-direction:row;align-items:center"><input type="checkbox" id="cs-fact" ${st.ambFactures ? 'checked' : ''}> només els que tenen factures des de l’inici</label>` : ''}
+      <label class="cf-q">Cerca <input type="text" id="cs-q" value="${h(st.q)}" placeholder="nom o codi"></label>
+    </div>
+    <div id="cs-cos"><p class="hint">Carregant els llistats de ContaSol…</p></div></div>`;
+  main.querySelector('#cs-tipus').addEventListener('change', e => { st.tipus = e.target.value; renderComptaContaSol(main); });
+  main.querySelector('#cs-vista').addEventListener('change', e => { st.vista = e.target.value; pintaContaSol(main); });
+  const fct = main.querySelector('#cs-fact'); if (fct) fct.addEventListener('change', e => { st.ambFactures = e.target.checked; pintaContaSol(main); });
+  const q = main.querySelector('#cs-q'); let tq = null; q.addEventListener('input', () => { clearTimeout(tq); tq = setTimeout(() => { st.q = q.value; pintaContaSol(main); }, 250); });
+  if (!st.dades) {
+    let rows; try { rows = await totesLesFiles('compta_contasol', null, 'codi'); } catch (e) { const c = main.querySelector('#cs-cos'); if (c) c.innerHTML = `<p class="msg err">${h(friendly(e))}</p>`; return; }
+    const llistes = { client: rows.filter(x => x.tipus === 'client'), proveidor: rows.filter(x => x.tipus === 'proveidor'), banc: rows.filter(x => x.tipus === 'banc') }, index = {};
+    for (const t of ['client', 'proveidor', 'banc']) { const m = new Map(); llistes[t].forEach(c => paraulesNom(c.nom).filter(p => p.length >= 3 && !/^\d+$/.test(p)).forEach(p => { if (!m.has(p)) m.set(p, []); m.get(p).push(c); })); index[t] = m; }
+    st.dades = { codis: new Map(rows.map(x => [x.codi, x])), llistes, index }; st.cand = {};
+  }
+  pintaContaSol(main);
+}
+function pintaContaSol(main) {
+  const st = contasolEstat(), d = st.dades, cos = main.querySelector('#cs-cos'); if (!cos || !d) return;
+  const taula = taulaContaSol(st.tipus), qq = norm(st.q);
+  const ambFact = new Set(C.rows('factures_proveidor').filter(f => f.actiu && (!comptaInici || String(f.data_factura) >= comptaInici)).map(f => Number(f.proveidor_id)));
+  const usats = new Map(); C.rows(taula).forEach(r => { const c = r.compte_id && C.get('comptes', r.compte_id); if (c) { if (!usats.has(c.codi)) usats.set(c.codi, []); usats.get(c.codi).push(r); } });
+  let llista = C.rows(taula).filter(r => r.actiu).map(r => {
+    const c = r.compte_id ? C.get('comptes', r.compte_id) : null, cs = c && d.codis.get(c.codi);
+    return { r, c, cs: cs && cs.tipus === st.tipus ? cs : null };
+  });
+  if (st.vista === 'revisar') llista = llista.filter(x => !x.cs);
+  if (st.vista === 'aparellats') llista = llista.filter(x => x.cs);
+  if (st.tipus === 'proveidor' && st.ambFactures) llista = llista.filter(x => ambFact.has(x.r.id));
+  if (qq) llista = llista.filter(x => norm([nomContaSol(st.tipus, x.r), x.c && x.c.codi, x.cs && x.cs.nom].join(' ')).includes(qq));
+  llista.sort((a, b) => String(nomContaSol(st.tipus, a.r)).localeCompare(String(nomContaSol(st.tipus, b.r)), 'ca'));
+  if (!llista.length) { cos.innerHTML = `<p class="hint">${st.vista === 'revisar' ? 'Tots tenen el seu codi de ContaSol ✓' : 'Cap.'}</p>`; return; }
+  const mostra = llista.slice(0, 200);
+  const segurs = st.vista === 'revisar' ? mostra.filter(x => !x.cs).map(x => ({ x, k: candidatsContaSol(st, st.tipus, x.r) }))
+    .filter(({ x, k }) => k[0] && k[0].s >= 0.9 && (!k[1] || k[1].s <= k[0].s - 0.1) && !(usats.get(k[0].c.codi) || []).some(o => o.id !== x.r.id)) : [];
+  st.segurs = segurs.map(({ x, k }) => ({ id: x.r.id, nom: nomContaSol(st.tipus, x.r), codi: k[0].c.codi, nomCs: k[0].c.nom }));
+  cos.innerHTML = `<p class="sub">${llista.length} ${st.tipus === 'client' ? 'client' : st.tipus === 'banc' ? 'banc' : 'proveïdor'}${llista.length === 1 ? '' : 's'}${llista.length > mostra.length ? ' (se’n mostren 200: filtra-ho amb la cerca)' : ''}
+      ${segurs.length ? ` · <button type="button" class="btn ghost small" id="cs-segurs">Assigna els ${segurs.length} molt semblants (90 % o més)</button>` : ''}</p>
+    <table class="tbl compta-t cs-t"><thead><tr><th>A l’ERP</th><th>Compte ara</th><th>A ContaSol</th><th style="width:150px"></th></tr></thead><tbody>
+    ${mostra.map(x => {
+      const cands = x.cs ? [] : candidatsContaSol(st, st.tipus, x.r);
+      const ops = cands.map((k, i) => { const altres = (usats.get(k.c.codi) || []).filter(o => o.id !== x.r.id);
+        return `<option value="${h(k.c.codi)}" ${i === 0 && k.s >= 0.75 ? 'selected' : ''}>${h(k.c.codi)} · ${h(k.c.nom)} (${Math.round(Math.min(k.s, 1) * 100)} %${k.via === 'codi' ? ', pel codi d’Access' : ''}${altres.length ? ', ja és de ' + altres.map(o => nomContaSol(st.tipus, o)).join(', ') : ''})</option>`; }).join('');
+      return `<tr data-cs="${x.r.id}"><td>${h(nomContaSol(st.tipus, x.r))}<div class="sub">${h([x.r.nif, x.r.poblacio, st.tipus === 'client' && x.r.codi_client ? 'codi ' + x.r.codi_client : '', st.tipus === 'banc' ? x.r.iban : ''].filter(Boolean).join(' · '))}</div></td>
+        <td>${x.c ? h(x.c.codi) + (x.cs ? '' : ' <span class="sub">(no és de ContaSol)</span>') : '<span class="sub">encara cap</span>'}</td>
+        <td>${x.cs ? h(x.cs.nom) + `<div class="sub">${h([x.cs.adreca, x.cs.poblacio].filter(Boolean).join(' · '))}</div>`
+                   : `<select data-cs-tria><option value="">${cands.length ? 'Tria el de ContaSol…' : 'cap semblant'}</option>${ops}<option value="__">Un altre codi…</option></select><input type="text" data-cs-codi placeholder="codi de 7 xifres" hidden>`}</td>
+        <td>${x.cs ? `<button type="button" class="btn ghost small" data-cs-canvia>Canvia</button>` : `<button type="button" class="btn small" data-cs-assigna>Assigna</button>`}</td></tr>`;
+    }).join('')}</tbody></table>
+    <p class="hint">Si dos registres de l’ERP són el mateix de ContaSol (un proveïdor repetit), poden compartir el codi: tots dos aniran al mateix compte. El compte que tenien abans s’esborra si era buit.</p>`;
+  cos.querySelectorAll('[data-cs-tria]').forEach(s => s.addEventListener('change', () => { const inp = s.parentElement.querySelector('[data-cs-codi]'); inp.hidden = s.value !== '__'; if (!inp.hidden) inp.focus(); }));
+  cos.querySelectorAll('[data-cs-canvia]').forEach(b => b.addEventListener('click', () => {
+    const tr = b.closest('tr'), r = C.get(taula, Number(tr.dataset.cs)), cands = candidatsContaSol(st, st.tipus, r);
+    tr.cells[2].innerHTML = `<select data-cs-tria><option value="">Tria el de ContaSol…</option>${cands.map(k => `<option value="${h(k.c.codi)}">${h(k.c.codi)} · ${h(k.c.nom)} (${Math.round(Math.min(k.s, 1) * 100)} %)</option>`).join('')}<option value="__">Un altre codi…</option></select><input type="text" data-cs-codi placeholder="codi de 7 xifres" hidden>`;
+    tr.cells[3].innerHTML = '<button type="button" class="btn small" data-cs-assigna>Assigna</button>';
+    tr.querySelector('[data-cs-tria]').addEventListener('change', e => { const inp = tr.querySelector('[data-cs-codi]'); inp.hidden = e.target.value !== '__'; });
+    tr.querySelector('[data-cs-assigna]').addEventListener('click', () => assignaContaSol(main, tr));
+  }));
+  cos.querySelectorAll('[data-cs-assigna]').forEach(b => b.addEventListener('click', () => assignaContaSol(main, b.closest('tr'))));
+  const bs = cos.querySelector('#cs-segurs');
+  if (bs) bs.addEventListener('click', async () => {
+    const ss = st.segurs || []; if (!ss.length) return;
+    if (!confirm(`Es posarà a cadascun el codi de ContaSol més semblant:\n\n` + ss.slice(0, 15).map(s => s.nom + ' → ' + s.codi + ' ' + s.nomCs).join('\n') + (ss.length > 15 ? '\n…' : ''))) return;
+    bs.disabled = true; let fets = 0; const errors = [];
+    for (const s of ss) { const { error } = await sb.rpc('compta_assigna_codi', { p_tipus: st.tipus, p_id: s.id, p_codi: s.codi }); if (error) errors.push(s.nom + ': ' + friendly(error)); else fets++; }
+    await Promise.all([loadTable('comptes'), loadTable(taulaContaSol(st.tipus))]);
+    if (errors.length) toastErr(`${fets} assignats; ${errors.length} no: ${errors[0]}`); else toast(`${fets} codis de ContaSol assignats`);
+    pintaContaSol(main);
+  });
+}
+async function assignaContaSol(main, tr) {
+  const st = contasolEstat(), taula = taulaContaSol(st.tipus), id = Number(tr.dataset.cs), r = C.get(taula, id), nom = nomContaSol(st.tipus, r);
+  const s = tr.querySelector('[data-cs-tria]'), codi = s && s.value === '__' ? tr.querySelector('[data-cs-codi]').value.trim() : (s ? s.value : '');
+  if (!/^\d{7}$/.test(codi)) { toastErr('Tria el codi de ContaSol (7 xifres).'); return; }
+  const cs = st.dades.codis.get(codi);
+  if (!cs && !confirm(`El codi ${codi} no és als llistats de ContaSol. Posar-lo igualment a ${nom}?`)) return;
+  if (cs && cs.tipus !== st.tipus) { toastErr(`El ${codi} és ${cs.tipus === 'client' ? 'un client' : cs.tipus === 'banc' ? 'un banc' : 'un proveïdor'} de ContaSol.`); return; }
+  const altres = C.rows(taula).filter(o => o.id !== id && o.compte_id && (C.get('comptes', o.compte_id) || {}).codi === codi);
+  if (altres.length && !confirm(`El ${codi} ja és de ${altres.map(o => nomContaSol(st.tipus, o)).join(', ')}. Són el mateix i han de compartir el compte?`)) return;
+  const { error } = await sb.rpc('compta_assigna_codi', { p_tipus: st.tipus, p_id: id, p_codi: codi });
+  if (error) { toastErr(friendly(error)); return; }
+  await Promise.all([loadTable('comptes'), loadTable(taula)]);
+  toast(`${nom}: compte ${codi}`); pintaContaSol(main);
+}
+
+/* ---------- el bloc «Comptabilitat» de cada factura ---------- */
+function comptaDocHTML(origen, row) {
+  return potVeureCompta() && row && row.id ? `<div class="compta-doc" data-compta-origen="${h(origen)}" data-compta-id="${row.id}"><span class="hint">Comptabilitat: consultant…</span></div>` : '';
+}
+async function ompleComptaDoc(main) {
+  const el = main.querySelector('.compta-doc'); if (!el) return;
+  const origen = el.dataset.comptaOrigen, id = Number(el.dataset.comptaId);
+  try {
+    const [as, pe] = await Promise.all([sb.from('assentaments').select('*').eq('origen', origen).eq('origen_id', id), sb.from('compta_pendents').select('*').eq('origen', origen).eq('origen_id', id)]);
+    if (as.error) throw as.error;
+    if (!el.isConnected) return;
+    const vig = (as.data || []).filter(a => a.estat === 'vigent' && !a.reverteix_id).sort((a, b) => String(a.data).localeCompare(String(b.data)));
+    const anul = (as.data || []).filter(a => a.estat === 'anul_lat').length;
+    const p = ((pe && pe.data) || [])[0];
+    const r = C.get(origen === 'factura' ? 'factures' : 'factures_proveidor', id) || {};
+    const perque = origen === 'factura' ? (r.estat === 'esborrany' ? 's’assentarà en emetre-la' : r.estat === 'anul_lada' ? 'anul·lada: sense assentament (si té una rectificativa, en manté l’emissió)' : 'sense assentament (anterior a la data d’inici de la comptabilitat?)')
+                                        : (r.estat === 'revisar' ? 's’assentarà quan estigui revisada' : 'sense assentament (anterior a la data d’inici de la comptabilitat?)');
+    let banc = '';
+    try {
+      const cc = await sb.from('conciliacions').select('*').eq(origen === 'factura' ? 'factura_id' : 'factura_proveidor_id', id);
+      if (!cc.error && (cc.data || []).length) {
+        const ids = [...new Set(cc.data.map(x => Number(x.moviment_id)))];
+        const [mv, ab] = await Promise.all([sb.from('banc_moviments').select('*').in('id', ids), sb.from('assentaments').select('*').eq('origen', 'banc').in('origen_id', ids)]);
+        banc = cc.data.map(x => { const m = ((mv && mv.data) || []).find(y => y.id === Number(x.moviment_id)), a = ((ab && ab.data) || []).find(y => Number(y.origen_id) === Number(x.moviment_id) && y.estat === 'vigent' && !y.reverteix_id);
+          return `${x.tipus === 'retorn' ? 'Rebut retornat' : origen === 'factura' ? 'Cobrament' : 'Pagament'} de ${num2(Math.abs(x.import))} € el ${dmy(m && m.data)}${m ? ' (' + h(L('comptes_bancaris', m.compte_bancari_id)) + ')' : ''}${a ? `: <a href="#" data-cd-veure="${a.id}" data-cd-data="${a.data}">assentament ${a.exercici}/${a.numero}</a>` : ''}`; }).join(' · ');
+      } else if (ambBanc(r) && (origen === 'factura' ? r.estat === 'emesa' : !r.pagada)) banc = origen === 'factura' ? 'Encara no s’ha cobrat amb el banc.' : 'Encara no s’ha pagat amb el banc.';
+    } catch (e) { /* sense el 075 */ }
+    if (!el.isConnected) return;
+    el.innerHTML = `<b>Comptabilitat</b> · ${vig.length ? vig.map(a => `${FASE_DOC[a.fase] || a.fase}: <a href="#" data-cd-veure="${a.id}" data-cd-data="${a.data}">assentament ${a.exercici}/${a.numero}</a> del ${dmy(a.data)}`).join(' · ') : (p ? '' : h(perque))}${anul ? ` <span class="hint">(${anul === 1 ? 'un assentament anul·lat' : anul + ' assentaments anul·lats'} amb reversió: el document va canviar amb el període bloquejat)</span>` : ''}${p ? ` <span class="v-no">no s’ha pogut comptabilitzar: ${h(p.missatge)}</span>` : ''}${banc ? '<br>' + banc : ''}`;
+    el.querySelectorAll('[data-cd-veure]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); const st = comptaEstat(); st.desde = st.fins = a.dataset.cdData; st.q = ''; st.sel = Number(a.dataset.cdVeure); state.table = 'compta_diari'; state.editing = null; renderApp(); window.scrollTo({ top: 0 }); }));
+  } catch (e) { if (el.isConnected) el.innerHTML = `<span class="hint">Comptabilitat: no s’ha pogut consultar (${h(friendly(e))}).</span>`; }
 }
 
 /* =====================================================================
@@ -2541,7 +4032,7 @@ function renderApp() {
     </div>
     <div class="shell">
       <nav class="side">
-        ${SCHEMA.groups.map(g => `<div class="grp" style="--gc:${g.color}; min-height:${Math.max(70, Math.round(g.label.length * 9) + 28)}px"><div class="glw"><div class="gl">${h(g.label)}</div></div><div class="gi">
+        ${SCHEMA.groups.filter(g => !g.oficina || esOficina(treballadorActual())).map(g => `<div class="grp" style="--gc:${g.color}; min-height:${Math.max(70, Math.round(g.label.length * 9) + 28)}px"><div class="glw"><div class="gl">${h(g.label)}</div></div><div class="gi">
           ${g.tables.length ? g.tables.map(t => `<button data-table="${t}" class="${state.table === t ? 'on' : ''}">${h((SCHEMA.tables[t] || SCHEMA.pages[t]).label)}</button>`).join('') : '<div class="buit">encara res</div>'}
         </div></div>`).join('')}
       </nav>
@@ -2767,6 +4258,7 @@ function formHTML(td, row) {
   const trossos = []; let grupObert = null;
   td.fields.forEach(f => {
     if (f.nomesOficina && APP_NOMES_TASQUES) return;   // camps que a l'app no toquen (p. ex. la notificació d'un report: la marca la seguidora)
+    if (f.nomesCompta && !potVeureCompta()) return;     // camps de comptabilitat: només l'oficina els veu (i, si no es pinten, no es desen)
     if (f.grup) {
       if (grupObert !== f.grup) { if (grupObert) trossos.push('</div>'); trossos.push(`<div class="f wide chks" data-grup="${f.grup}">`); grupObert = f.grup; }
       trossos.push(unCamp(f));
@@ -2794,6 +4286,7 @@ function formHTML(td, row) {
           ${editing && (!td.canBaixa || td.canBaixa(row)) ? `<button class="btn danger" type="button" id="baixa">${row.actiu ? 'Dona de baixa' : 'Reactiva'}</button>` : ''}
         </div>
       </form>
+      ${editing && td.compta ? comptaDocHTML(td.compta, row) : ''}
       ${childrenHTML(td, row)}
       ${td.extrasFinal ? `<div class="extres extres-final">${td.extrasFinal(row)}</div>` : ''}
     </div>`;
@@ -3011,6 +4504,7 @@ function bindMain(td) {
       btn.addEventListener('click', () => { inp.value = inp.value === '' ? 'true' : inp.value === 'true' ? 'false' : ''; pinta(); inp.dispatchEvent(new Event('change', { bubbles: true })); });
     });
     if (td.bindExtras) td.bindExtras(frm, td);
+    if (td.compta) ompleComptaDoc(main);
     main.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => obreFitxer(b.dataset.open)));
     main.querySelectorAll('[data-ajuda]').forEach(b => b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); obreGuia(b.dataset.ajuda); }));
     const cancel = $('#cancel'); if (cancel) cancel.addEventListener('click', () => { state.editing = null; renderMain(); });
@@ -4641,7 +6135,7 @@ function renderMarcatCobrats(main) {
   const nFets = Object.values(st.fets).filter(Boolean).length;
   main.innerHTML = `
     <h1>Marcat de cobrats/pagats</h1>
-    <p class="sub">Marca la casella quan una factura s’hagi cobrat (clients) o pagat (proveïdors): es desa a l’instant amb la data de sota. Si t’equivoques, desmarca-la.</p>
+    <p class="sub">Marca la casella quan una factura s’hagi cobrat (clients) o pagat (proveïdors): es desa a l’instant amb la data de sota. Si t’equivoques, desmarca-la.${bancActiu ? ' Les factures des del ' + dmy(comptaInici) + ' (l’inici de la comptabilitat) queden cobrades o pagades soles en conciliar el banc (Comptabilitat → Banc).' : ''}</p>
     <div class="bar">
       <span class="nota">Data de cobrament / pagament</span> <input type="date" id="mc-data" value="${st.data}" style="width:auto">
       <input type="text" id="mc-q" placeholder="Filtra per número, client, lloc, proveïdor…" value="${h(st.q || '')}">
@@ -4649,11 +6143,11 @@ function renderMarcatCobrats(main) {
     </div>
     <h2 class="grup">Clients · cobrat</h2>
     ${cob.length ? `<table class="tbl informe mc"><thead><tr><th>Factura</th><th>Data factura</th><th>Client</th><th>Lloc</th><th>Venciment</th><th class="num">Import</th><th class="mc-c">Cobrat</th></tr></thead><tbody>
-      ${cob.map(x => { const f = x.f, ok = f.estat === 'cobrada'; return `<tr class="${ok ? 'fet' : ''}"><td><a href="#" data-obre-taula="factures" data-obre-id="${f.id}">${h(f.numero_complet || '')}</a></td><td>${dmy(f.data_factura)}</td><td>${h(x.client)}</td><td>${h(x.llocs)}</td><td>${dmy(f.data_venciment)}${f.data_venciment && f.data_venciment < st.data && !ok ? ' <span class="v-no">vençuda</span>' : ''}</td><td class="num">${eur(f.total)}</td><td class="mc-c"><label class="mc-box ${ok ? 'on' : ''}"><input type="checkbox" data-marca="${f.id}" data-taula="factures" ${ok ? 'checked' : ''}> ${ok ? 'cobrada ' + dmy(f.data_cobrament) : 'cobrat'}</label></td></tr>`; }).join('')}
+      ${cob.map(x => { const f = x.f, ok = f.estat === 'cobrada'; return `<tr class="${ok ? 'fet' : ''}"><td><a href="#" data-obre-taula="factures" data-obre-id="${f.id}">${h(f.numero_complet || '')}</a></td><td>${dmy(f.data_factura)}</td><td>${h(x.client)}</td><td>${h(x.llocs)}</td><td>${dmy(f.data_venciment)}${f.data_venciment && f.data_venciment < st.data && !ok ? ' <span class="v-no">vençuda</span>' : ''}</td><td class="num">${eur(f.total)}</td><td class="mc-c">${ambBanc(f) ? `<span class="sub">${ok ? 'cobrada ' + dmy(f.data_cobrament) : 'amb el banc'}</span>` : `<label class="mc-box ${ok ? 'on' : ''}"><input type="checkbox" data-marca="${f.id}" data-taula="factures" ${ok ? 'checked' : ''}> ${ok ? 'cobrada ' + dmy(f.data_cobrament) : 'cobrat'}</label>`}</td></tr>`; }).join('')}
       <tr class="total"><td colspan="5">Pendent de cobrar</td><td class="num">${eur(totC)}</td><td></td></tr></tbody></table>` : '<div class="empty">Cap factura emesa pendent de cobrar.</div>'}
     <h2 class="grup">Proveïdors · pagat</h2>
     ${pag.length ? `<table class="tbl informe mc"><thead><tr><th>Factura</th><th>Data factura</th><th>Proveïdor</th><th>Concepte</th><th>Venciment</th><th class="num">Import</th><th class="mc-c">Pagat</th></tr></thead><tbody>
-      ${pag.map(x => { const f = x.f, ok = !!f.pagada; return `<tr class="${ok ? 'fet' : ''}"><td><a href="#" data-obre-taula="factures_proveidor" data-obre-id="${f.id}">${h(f.numero || '(sense número)')}</a></td><td>${dmy(f.data_factura)}</td><td>${h(x.prov)}${f.dubtosa ? ' <span class="cal"><span class="tipus p">dubtosa</span></span>' : ''}</td><td>${h(String(f.concepte || '').split('\n')[0].slice(0, 60))}</td><td>${dmy(f.data_venciment)}${f.data_venciment && f.data_venciment < st.data && !ok ? ' <span class="v-no">vençuda</span>' : ''}</td><td class="num">${eur(f.total)}</td><td class="mc-c"><label class="mc-box ${ok ? 'on' : ''}"><input type="checkbox" data-marca="${f.id}" data-taula="factures_proveidor" ${ok ? 'checked' : ''}> ${ok ? 'pagada ' + dmy(f.data_pagament) : 'pagat'}</label></td></tr>`; }).join('')}
+      ${pag.map(x => { const f = x.f, ok = !!f.pagada; return `<tr class="${ok ? 'fet' : ''}"><td><a href="#" data-obre-taula="factures_proveidor" data-obre-id="${f.id}">${h(f.numero || '(sense número)')}</a></td><td>${dmy(f.data_factura)}</td><td>${h(x.prov)}${f.dubtosa ? ' <span class="cal"><span class="tipus p">dubtosa</span></span>' : ''}</td><td>${h(String(f.concepte || '').split('\n')[0].slice(0, 60))}</td><td>${dmy(f.data_venciment)}${f.data_venciment && f.data_venciment < st.data && !ok ? ' <span class="v-no">vençuda</span>' : ''}</td><td class="num">${eur(f.total)}</td><td class="mc-c">${ambBanc(f) ? `<span class="sub">${ok ? 'pagada ' + dmy(f.data_pagament) : 'amb el banc'}</span>` : `<label class="mc-box ${ok ? 'on' : ''}"><input type="checkbox" data-marca="${f.id}" data-taula="factures_proveidor" ${ok ? 'checked' : ''}> ${ok ? 'pagada ' + dmy(f.data_pagament) : 'pagat'}</label>`}</td></tr>`; }).join('')}
       <tr class="total"><td colspan="5">Pendent de pagar</td><td class="num">${eur(totP)}</td><td></td></tr></tbody></table>` : '<div class="empty">Cap factura de proveïdor pendent de pagar.</div>'}`;
   $('#mc-data').addEventListener('change', e => { st.data = e.target.value || avui(); renderMain(); });
   $('#mc-q').addEventListener('input', e => { st.q = e.target.value; renderMain(); const el = $('#mc-q'); el.focus(); el.setSelectionRange(el.value.length, el.value.length); });
@@ -4985,7 +6479,7 @@ function renderPagamentsProveidor(main) {
   const totes = C.rows('factures_proveidor').filter(f => f.actiu).map(f => ({ f, prov: L('proveidors', f.proveidor_id), forma: formaFacturaProv(f) }));
   const coincideix = x => !q || [x.f.numero, x.prov, x.f.concepte, nomFormaProv(x.forma)].some(v => String(v || '').toLowerCase().includes(q));
   const perVenc = (a, b) => String(a.f.data_venciment || '9999').localeCompare(String(b.f.data_venciment || '9999')) || a.prov.localeCompare(b.prov, 'ca') || String(a.f.data_factura || '').localeCompare(String(b.f.data_factura || ''));
-  const casella = f => `<td class="mc-c"><label class="mc-box ${f.pagada ? 'on' : ''}"><input type="checkbox" data-marca="${f.id}" ${f.pagada ? 'checked' : ''}> ${f.pagada ? 'pagada ' + dmy(f.data_pagament) : 'pagat'}</label></td>`;
+  const casella = f => ambBanc(f) ? `<td class="mc-c"><span class="sub">${f.pagada ? 'pagada ' + dmy(f.data_pagament) : 'amb el banc'}</span></td>` : `<td class="mc-c"><label class="mc-box ${f.pagada ? 'on' : ''}"><input type="checkbox" data-marca="${f.id}" ${f.pagada ? 'checked' : ''}> ${f.pagada ? 'pagada ' + dmy(f.data_pagament) : 'pagat'}</label></td>`;
   const numFra = f => `<a href="#" data-obre-taula="factures_proveidor" data-obre-id="${f.id}">${h(f.numero || '(sense número)')}</a>`;
   const vencHtml = f => f.data_venciment ? (f.data_venciment < limit && !f.pagada ? `<span class="venc-passat">${dmy(f.data_venciment)}</span>` : dmy(f.data_venciment)) : '<span class="hint">sense data</span>';
   const nFets = Object.values(st.fets).filter(Boolean).length;
