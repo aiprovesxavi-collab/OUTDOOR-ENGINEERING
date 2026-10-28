@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "barcelona.outdoor.app",
+      "sha256_cert_fingerprints": [
+        "FF:F7:F3:D8:4E:CD:BE:8B:84:A1:12:37:B7:40:DB:B3:4C:C0:39:BA:4B:3C:DC:D4:D5:64:00:48:71:E3:F7:B3"
+      ]
+    }
+  }
+]
