@@ -2,8 +2,9 @@
 // («./» per a l'app i «./gestio.html» per a l'oficina), i per tant la seva pròpia subscripció d'avisos: en tocar una notificació
 // s'obre sempre la pàgina que l'ha rebuda, encara que en el mateix navegador també s'hagi obert l'altra.
 // Fa la pàgina instal·lable, en guarda una còpia per si s'obre sense xarxa (les dades sempre necessiten connexió)
-// i rep els avisos (Web Push) d'accions noves, també amb la pàgina tancada.
-const VERSIO = 5, CACHE = 'gestio-outdoor-v' + VERSIO;
+// i rep els avisos (Web Push) d'accions noves, consultes i respostes, també amb la pàgina tancada. Cada acció té la seva notificació
+// (etiqueta «accio-ID»): així el mòbil compta quantes n'hi ha per mirar; la pàgina les treu quan es miren.
+const VERSIO = 6, CACHE = 'gestio-outdoor-v' + VERSIO;
 const OFICINA = /\/gestio\.html$/.test(self.registration.scope);   // aquest registre és el de l'oficina; si no, el de l'app
 const PAGINA = self.registration.scope;                              // la pàgina que s'obre: l'arrel (app) o gestio.html (oficina)
 const esMeva = url => { let p = ''; try { p = new URL(url).pathname; } catch (x) { return false; } return OFICINA ? /\/gestio(\.html)?$/.test(p) : /\/(index(\.html)?)?$/.test(p); };
@@ -31,7 +32,8 @@ const potSonar = c => new Promise(res => {
 });
 // Un avís (enviat per l'Edge Function «avisa-accio»): es mostra la notificació i s'avisa la pàgina, si és oberta, perquè es posi al dia.
 // Si la pàgina és a la vista i pot sonar, la notificació surt en silenci i sona la melodia de la pàgina (no dos sons alhora);
-// amb la pàgina tancada o amagada, sona el so de notificacions del sistema (el web no el pot triar).
+// amb la pàgina tancada o amagada, sona el so de notificacions del sistema. A l'APK, la pàgina diu que no pot sonar: sempre sona
+// la notificació, amb la melodia del canal «Avisos» de l'app.
 self.addEventListener('push', e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (x) { d = { text: e.data ? e.data.text() : '' }; }
@@ -39,7 +41,7 @@ self.addEventListener('push', e => {
     const meves = (await self.clients.matchAll({ type: 'window', includeUncontrolled: true })).filter(c => esMeva(c.url));
     const visibles = meves.filter(c => c.visibilityState === 'visible');
     const silenci = visibles.length ? (await Promise.all(visibles.map(potSonar))).some(Boolean) : false;
-    const opcions = { body: d.text || '', icon: 'icona-192.png', badge: 'icona-192.png', tag: (d.tag || 'gestio-accions') + (OFICINA ? '-oficina' : ''), renotify: true, data: { accio_id: d.accio_id || null, prova: !!d.prova } };
+    const opcions = { body: d.text || '', icon: 'icones/icona-192.png', badge: 'icones/insignia-96.png', tag: (d.tag || 'gestio-accions') + (OFICINA ? '-oficina' : ''), renotify: true, data: { accio_id: d.accio_id || null, prova: !!d.prova } };
     if (silenci) opcions.silent = true; else opcions.vibrate = [180, 90, 180];   // (silent i vibrate no poden anar junts)
     await self.registration.showNotification(d.titol || 'Acció nova', opcions);
     meves.forEach(c => c.postMessage({ tipus: 'push', accio_id: d.accio_id || null, prova: !!d.prova }));
