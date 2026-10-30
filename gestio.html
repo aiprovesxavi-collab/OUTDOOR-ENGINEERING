@@ -706,6 +706,10 @@
   .lc-app #lc-data, .lc-app #lc-obs{ width:100%; box-sizing:border-box; font-size:17px; } .lc-app .ao-bloc .f{ margin:0 0 10px; }
   .lc-app .ao-bloc + .ao-fila{ margin-top:22px; }
   .ic-targeta.lc{ border-left:6px solid #c9935e; } .ic-targeta.lc.llegit{ opacity:.72; } .lc-app h2.grup small{ font-weight:400; color:var(--ink-2); font-size:14px; }
+  /* còpia d'un client com a proveïdor (o a l'inrevés) */
+  .copia-avis{ flex:1 1 100%; background:#f2f7fc; border:1.5px solid #a9c8e8; border-radius:10px; padding:11px 15px; line-height:1.45; }
+  .copia-avis p{ margin:0 0 7px; } .copia-avis p:last-child{ margin:0; } .copia-avis .sub{ font-size:13.5px; color:var(--ink-2); }
+  .copia-avis .btn.small{ margin-left:4px; }
 </style>
 </head>
 <body data-mode="entrada">
@@ -1263,6 +1267,7 @@ const SCHEMA = {
       label: 'Clients', nou: 'Nou client', order: 'nom',
       display: r => r.nom,
       list: ['nom', 'nif', 'tipus', 'administrador_id', 'gestor_id', 'dia_facturacio', 'forma_pagament'],
+      actions: r => accionsCopia('clients', r), extras: copiaAvisHTML, bindExtras: copiaAvisBind, despresCrear: acabaCopia,   // copiar-lo com a proveïdor
       fields: [
         { key: 'administrador_id', label: 'Administrador', type: 'ref', ref: 'administradors', required: true },
         { key: 'gestor_id', label: 'Gestor', type: 'ref', ref: 'contactes', required: true, dependsOn: 'administrador_id',
@@ -1794,6 +1799,7 @@ const SCHEMA = {
       label: 'Proveïdors', nou: 'Nou proveïdor', order: 'nom',
       display: r => r.nom,
       list: ['nom', 'nif', 'poblacio', 'telefon', 'contacte', 'forma_pagament', 'dia_pagament', 'termini_dies', 'percentatge_venda'],
+      actions: r => accionsCopia('proveidors', r), extras: copiaAvisHTML, bindExtras: copiaAvisBind, despresCrear: acabaCopia,   // copiar-lo com a client
       fields: [
         { key: 'nom', label: 'Nom o raó social', type: 'text', required: true, dup: 'similar' },
         { key: 'nif', label: 'NIF', type: 'text', dup: 'exact' },
@@ -2285,7 +2291,7 @@ const C = {
   rows: t => cache[t] || [],
   get: (t, id) => { const pk = (SCHEMA.tables[t] || {}).pk; return pk ? (cache[t] || []).find(r => String(r[pk]) === String(id)) : (cache[t] || []).find(r => r.id === Number(id)); },
 };
-const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, pagProv: { vista: 'marca', data: '', q: '', fets: {}, pagades: false }, ft: { id: null, form: null, vista: 'llista', nou: null, fets: false }, marques: {}, fac: { any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), avis: null }, ia: { missatges: [], enviant: false }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, calAcc: { vista: '', ref: '', meves: false, fetes: false, interns: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
+const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, copia: null, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, pagProv: { vista: 'marca', data: '', q: '', fets: {}, pagades: false }, ft: { id: null, form: null, vista: 'llista', nou: null, fets: false }, marques: {}, fac: { any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), avis: null }, ia: { missatges: [], enviant: false }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, calAcc: { vista: '', ref: '', meves: false, fetes: false, interns: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
 const L = (t, id) => { const r = C.get(t, id); return r ? SCHEMA.tables[t].display(r, L) : ''; };
 
 /* =====================================================================
@@ -4174,14 +4180,14 @@ function renderApp() {
       </nav>
       <div class="main" id="main"></div>
     </div>`;
-  $('#brand').addEventListener('click', () => { state.table = null; state.editing = null; renderApp(); });
+  $('#brand').addEventListener('click', () => { state.table = null; state.editing = null; state.copia = null; renderApp(); });
   $('#logout').addEventListener('click', async () => { await oblidaPush(); await sb.auth.signOut(); user = null; renderLogin(); });
   bindBotoAvisos();
   document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
-    state.mode = b.dataset.mode; state.editing = null; renderApp();
+    state.mode = b.dataset.mode; state.editing = null; state.copia = null; renderApp();
   }));
   document.querySelectorAll('.side button').forEach(b => b.addEventListener('click', () => {
-    state.table = b.dataset.table; state.editing = null; state.q = ''; renderApp();
+    state.table = b.dataset.table; state.editing = null; state.q = ''; state.copia = null; renderApp();
   }));
   renderMain();
 }
@@ -4246,7 +4252,7 @@ function renderAppOperari() {
       <span class="who">${h(t ? nomCurtTreballador(t) : user.email)} <button class="btn ghost small" id="avisos">🔕 Avisos</button> <button class="btn ghost small" id="logout">Surt</button></span>
     </div>
     <div class="shell" style="grid-template-columns:minmax(0,1fr)"><div class="main" id="main"></div></div>`;
-  $('#brand').addEventListener('click', () => { state.table = null; state.editing = null; renderApp(); });
+  $('#brand').addEventListener('click', () => { state.table = null; state.editing = null; state.copia = null; renderApp(); });
   $('#logout').addEventListener('click', async () => { await oblidaPush(); await sb.auth.signOut(); user = null; renderLogin(); });
   bindBotoAvisos();
   const main = $('#main');
@@ -4321,7 +4327,9 @@ function renderMain() {
 
 /* ---------- Formulari ---------- */
 function defaultValue(f) {
-  if (f.key in state.keep) return state.keep[f.key];
+  const copia = state.copia && state.copia.taula === state.table ? state.copia.vals : null;   // dades copiades d'un client com a proveïdor, o a l'inrevés
+  if (copia && f.key in copia) return copia[f.key] ?? '';
+  if (!copia && f.key in state.keep) return state.keep[f.key];
   if (f.default === 'avui') return avui();
   if (typeof f.default === 'function') return f.default();
   return f.default ?? '';
@@ -7080,6 +7088,129 @@ function renderLecturaComptador(main, c) {
   const bx = $('#lc-corregeix'); if (bx) bx.addEventListener('click', () => { st.avis = null; renderMain(); const i = $('#lc-index'); if (i) { i.focus(); i.select(); } });
 }
 
+/* ---------- Copiar un client com a proveïdor, o un proveïdor com a client (només a la web de l'oficina) ----------
+   A la fitxa d'un client, «Copia com a proveïdor» (i a la d'un proveïdor, «Copia com a client») obre la fitxa nova de l'altre tipus
+   amb les dades ja posades: es revisa i es desa. Si ja n'hi ha un amb el mateix NIF, el botó l'obre en lloc de copiar.
+   La forma i el termini de pagament no es copien: els d'un client són com ens paga ell, i els d'un proveïdor, com li paguem nosaltres. */
+// el tipus de client que diu el NIF: H comunitat; P, Q, S administració pública; DNI o NIE particular; la resta de lletres, empresa
+function tipusClientPerNif(nif) {
+  const c = normNif(nif).charAt(0);
+  if (!c) return 'empresa';
+  if (c === 'H') return 'comunitat';
+  if ('PQS'.includes(c)) return 'administracio_publica';
+  return /[0-9XYZKLM]/.test(c) ? 'particular' : 'empresa';
+}
+const esPersonaFisicaNif = nif => /^[0-9XYZKLM]/.test(normNif(nif));
+const esIbanCopia = v => /^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/.test(String(v || '').replace(/\s/g, '').toUpperCase());
+// la persona de contacte d'un client: la principal (o l'única que té)
+function contacteDelClient(id) {
+  const cs = C.rows('contactes').filter(c => c.actiu && Number(c.client_id) === Number(id));
+  return cs.find(c => c.principal) || (cs.length === 1 ? cs[0] : null);
+}
+// el gestor d'un administrador: la persona principal (o l'única que té)
+function gestorDeAdministrador(id) {
+  const cs = C.rows('contactes').filter(c => c.actiu && Number(c.administrador_id) === Number(id));
+  return cs.find(c => c.principal) || (cs.length === 1 ? cs[0] : null);
+}
+// el client (o el proveïdor) que ja hi ha amb aquest NIF: l'actiu, si n'hi ha
+function ambMateixNif(t, nif) {
+  const n = normNif(nif); if (!n) return null;
+  const rs = C.rows(t).filter(x => normNif(x.nif) === n);
+  return rs.find(x => x.actiu) || rs[0] || null;
+}
+// l'administrador que ja hi ha amb aquest NIF (o, si no, amb el mateix nom)
+function administradorExistent(nif, nom) {
+  const as = C.rows('administradors').filter(a => a.actiu), n = normNif(nif), nn = String(nom || '').trim().toLowerCase();
+  return (n && as.find(a => normNif(a.nif) === n)) || (nn && as.find(a => String(a.nom || '').trim().toLowerCase() === nn)) || null;
+}
+// el compte on ens paguen que porten més clients (sense clients, l'únic compte bancari actiu)
+function compteCobramentHabitual() {
+  const n = {};
+  C.rows('clients').filter(c => c.actiu && c.compte_cobrament_id).forEach(c => { n[c.compte_cobrament_id] = (n[c.compte_cobrament_id] || 0) + 1; });
+  const millor = Object.keys(n).sort((a, b) => n[b] - n[a])[0]; if (millor) return Number(millor);
+  const bs = C.rows('comptes_bancaris').filter(b => b.actiu); return bs.length === 1 ? bs[0].id : '';
+}
+// les dades de la fitxa nova: d'un client, les del proveïdor; d'un proveïdor, les del client
+function dadesCopia(desti, r) {
+  if (desti === 'proveidors') {
+    const p = contacteDelClient(r.id) || {};
+    return { nom: r.nom, nif: r.nif, adreca: r.adreca, cp: r.cp, poblacio: r.poblacio, telefon: r.telefon || p.telefon, email: r.email_facturacio || p.email,
+      contacte: p.nom, compte_bancari: r.iban, observacions: r.observacions };
+  }
+  const iban = esIbanCopia(r.compte_bancari) ? String(r.compte_bancari).trim() : '';
+  const adm = administradorExistent(r.nif, r.nom), g = adm ? gestorDeAdministrador(adm.id) : null;
+  return { tipus: tipusClientPerNif(r.nif), nom: r.nom, nif: r.nif, adreca: r.adreca, cp: r.cp, poblacio: r.poblacio, telefon: r.telefon, email_facturacio: r.email,
+    iban, forma_pagament: iban ? 'domiciliacio' : 'transferencia', compte_cobrament_id: compteCobramentHabitual(),
+    administrador_id: adm ? adm.id : '', gestor_id: g ? g.id : '', observacions: r.observacions };
+}
+// el botó de la fitxa (client o proveïdor): copiar-lo com a l'altre tipus, o obrir el que ja hi ha amb el mateix NIF
+function accionsCopia(t, r) {
+  if (APP_NOMES_TASQUES || !r || !esOficina(treballadorActual())) return [];
+  const desti = t === 'clients' ? 'proveidors' : 'clients', nom = desti === 'clients' ? 'client' : 'proveïdor', ja = ambMateixNif(desti, r.nif);
+  if (ja) return [{ label: `Ja és ${nom}: obre’l`, noDesa: true, run: () => { state.copia = null; state.mode = 'consulta'; state.table = desti; state.editing = ja.id; renderApp(); window.scrollTo({ top: 0 }); } }];
+  return [{ label: `Copia com a ${nom}`, run: () => {   // (la fitxa d'origen ja s'ha desat: es copia tal com ha quedat)
+    const font = C.get(t, r.id) || r;
+    state.copia = { taula: desti, de: { taula: t, id: font.id }, vals: dadesCopia(desti, font) };
+    state.mode = 'entrada'; state.table = desti; state.editing = null; renderApp(); window.scrollTo({ top: 0 });
+  } }];
+}
+// l'avís de dalt de la fitxa nova feta d'una còpia
+function copiaAvisHTML(row) {
+  const cp = state.copia; if (row || !cp || cp.taula !== state.table) return '';
+  const font = C.get(cp.de.taula, cp.de.id) || {}, deClient = cp.de.taula === 'clients', nom = font.nom || '';
+  const adm = deClient ? '' : cp.vals.administrador_id
+    ? `<p>Administrador: <b>${h(L('administradors', cp.vals.administrador_id))}</b> ${cp.admNou ? '(creat ara, amb el seu gestor)' : '(ja hi era)'}.</p>`
+    : `<p>Tot client ha de tenir administrador i gestor: tria’ls més avall, o <button type="button" class="btn small" id="copia-adm">Fes-lo administrador d’ell mateix</button></p>
+       <p class="sub">Es crea l’administrador «${h(nom)}» amb aquestes dades i, de gestor, ${String(font.contacte || '').trim() ? `la persona de contacte del proveïdor (${h(String(font.contacte).trim())})` : 'una persona amb el mateix nom'}.</p>`;
+  return `<div class="copia-avis">
+    <p><b>Dades copiades del ${deClient ? 'client' : 'proveïdor'} «${h(nom)}».</b> Revisa-les i prem <b>Desa</b> per crear el ${deClient ? 'proveïdor' : 'client'}.</p>
+    <p class="sub">${deClient ? 'La forma i el termini de pagament no es copien (els del client són com ens paga ell): queden els habituals.'
+      : 'La forma i el termini de pagament no es copien (els del proveïdor són com li paguem nosaltres): domiciliació si tenim el seu IBAN; si no, transferència. El tipus de client surt del NIF.'}</p>
+    ${adm}
+    <p><a href="#" id="copia-cancel">Cancel·la la còpia</a></p>
+  </div>`;
+}
+function copiaAvisBind() {
+  const c = $('#copia-cancel');
+  if (c) c.addEventListener('click', e => {
+    e.preventDefault(); const de = state.copia && state.copia.de; state.copia = null;
+    if (de) { state.mode = 'consulta'; state.table = de.taula; state.editing = de.id; }
+    renderApp(); window.scrollTo({ top: 0 });
+  });
+  const b = $('#copia-adm'); if (b) b.addEventListener('click', () => copiaCreaAdministrador(b));
+}
+// un client que ve d'un proveïdor sense administrador: el proveïdor passa a ser el seu propi administrador, amb la persona de contacte de gestor.
+// Es fa amb les dades que hi ha ara a la fitxa (si s'han corregit, amb les corregides), i el que ja s'hi ha escrit es manté.
+async function copiaCreaAdministrador(btn) {
+  const cp = state.copia, frm = $('#frm'); if (!cp || cp.taula !== 'clients' || !frm) return;
+  const font = C.get(cp.de.taula, cp.de.id) || {};
+  const ara = Object.fromEntries(Object.entries(formValues(frm)).filter(([, v]) => typeof v === 'string' || typeof v === 'boolean'));
+  const nom = String(ara.nom || '').trim(); if (!nom) { showFormError('Falta el nom o raó social.'); return; }
+  const n = v => String(v || '').trim() || null;
+  btn.disabled = true;
+  const ja = administradorExistent(ara.nif, nom);
+  let admId = ja ? ja.id : null, gestorId = ja ? (gestorDeAdministrador(ja.id) || {}).id || null : null, error = null;
+  try {
+    if (!admId) {
+      const a = await sb.from('administradors').insert({ tipus: esPersonaFisicaNif(ara.nif) ? 'persona_fisica' : 'despatx', nom, nif: n(ara.nif), telefon: n(ara.telefon),
+        email: n(ara.email_facturacio), adreca: n(ara.adreca), cp: n(ara.cp), poblacio: n(ara.poblacio) }).select('id').single();
+      if (a.error) throw a.error; admId = a.data.id;
+    }
+    if (!gestorId) {
+      const g = await sb.from('contactes').insert({ administrador_id: admId, nom: n(font.contacte) || nom, telefon: n(ara.telefon), email: n(ara.email_facturacio), principal: true }).select('id').single();
+      if (g.error) throw g.error; gestorId = g.data.id;
+    }
+  } catch (e) { error = e; }
+  try { await loadTable('administradors'); await loadTable('contactes'); } catch (e) { error = error || e; }
+  cp.vals = { ...cp.vals, ...ara, administrador_id: admId || '', gestor_id: gestorId || '' }; cp.admNou = !!admId && !ja;
+  renderMain();
+  if (error) showFormError(friendly(error)); else toast(ja ? 'Administrador triat' : 'Administrador i gestor creats');
+}
+// la fitxa nova feta d'una còpia queda oberta en desar-la, i la còpia s'oblida
+function acabaCopia(id) {
+  if (!state.copia || state.copia.taula !== state.table) return;
+  state.copia = null; state.mode = 'consulta'; state.editing = id;
+}
 async function toggleActiu(td) {
   const t = state.table, row = C.get(t, state.editing);
   const label = td.display(row, L);
