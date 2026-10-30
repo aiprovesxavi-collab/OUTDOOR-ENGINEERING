@@ -6833,12 +6833,15 @@ function renderClientsPerAdministrador(main) {
 
 /* ---------- Sal (piscines de sal, per operari) i adob (jardins, per equip) ----------
    Sal: la que falta per arribar a 6 g/l (1 g/l = 1 kg per m³), amb la darrera salinitat apuntada els últims 45 dies. Si no n'hi ha
-   cap, la salinitat surt «–» i aquella piscina no compta (no se sap). Adob: 15 g per m² de jardí (gespa + prat; els arbusts no).
+   cap, la salinitat surt «–» i aquella piscina no compta (no se sap). Adob: arrodonir(m² / 10.000 × 420 / 6 / 0,19) kg per jardí,
+   amb els m² de gespa i prat (els arbusts no).
    Cada piscina o jardí, en kg i en sacs de 25 kg (a la desena de sac, cap amunt);
    els totals, només en sacs sencers. Només les piscines i els jardins amb contracte vigent.
    Cadascú veu el seu: l'operari, les piscines que porta (és l'operari habitual); qui és d'un equip, els jardins de l'equip.
    L'oficina ho veu tot, agrupat per operari i per equip. */
-const SAL_GL = 6, SAL_DIES = 45, ADOB_G_M2 = 15, SAC_KG = 25;
+const SAL_GL = 6, SAL_DIES = 45, SAC_KG = 25;
+// els kg d'adob d'un jardí: Redondear([M2]/10000*420/6/0,19;0) (els m² en hectàrees × 420 / 6 aplicacions / adob al 19 %)
+const kgAdobJardi = m2 => Math.round(m2 / 10000 * 420 / 6 / 0.19);
 const sacsItem = kg => kg > 0 ? Math.ceil(kg / SAC_KG * 10 - 1e-9) / 10 : 0;     // una piscina o un jardí: a la desena de sac, cap amunt
 const sacsTotal = kg => kg > 0 ? Math.ceil(kg / SAC_KG - 1e-9) : 0;   // un total: sacs sencers
 const nDec = (v, dec) => Number(v).toLocaleString('ca-ES', { maximumFractionDigits: dec });
@@ -6864,7 +6867,7 @@ function dadesSal() {
 function dadesAdob() {
   return C.rows('jardins').filter(j => j.actiu && contracteVigent(j)).map(j => {
     const m2 = (Number(j.m2_gespa) || 0) + (Number(j.m2_prat) || 0);
-    return { grup: j.equip_id ? Number(j.equip_id) : null, nom: nomInstal(j, 'jardí'), m2, kg: m2 * ADOB_G_M2 / 1000 };
+    return { grup: j.equip_id ? Number(j.equip_id) : null, nom: nomInstal(j, 'jardí'), m2, kg: kgAdobJardi(m2) };
   });
 }
 
@@ -6896,7 +6899,7 @@ function renderSalAdob(main, tipus) {
   const general = ids.length > 1 ? `<table class="tbl informe sa-taula sa-general"><tbody><tr class="total"><td>${sal ? 'Total de tots els operaris' : 'Total de tots els equips'}</td><td class="num">${textSacs(sacsTots)}</td></tr></tbody></table>` : '';
   const desc = sal
     ? `La sal que falta per arribar a ${SAL_GL} g/l, en sacs de ${SAC_KG} kg. Compta la darrera salinitat apuntada els últims ${SAL_DIES} dies; si no n’hi ha, surt «–» i la piscina no compta.`
-    : `${ADOB_G_M2} g per m² de jardí (gespa i prat), en sacs de ${SAC_KG} kg.`;
+    : `Kg d’adob de cada jardí = arrodonir(m² de gespa i prat / 10.000 × 420 / 6 / 0,19), en sacs de ${SAC_KG} kg.`;
   main.innerHTML = `<div class="sa">
     <h1>${enApp ? (sal ? 'Sal' : 'Adob') : (sal ? 'Sal per operari' : 'Adob per equips')}</h1>
     <p class="sub">${desc}${oficina ? ' Només ' + (sal ? 'les piscines' : 'els jardins') + ' amb contracte vigent.' : ''}</p>
