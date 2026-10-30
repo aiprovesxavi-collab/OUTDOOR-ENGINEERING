@@ -693,6 +693,19 @@
   .sa .tbl td small{ display:block; font-size:11px; color:var(--ink-3); font-weight:400; }
   .sa .sa-general{ margin-top:18px; }
   .operari .sa .tbl{ font-size:15px; } .operari .sa .tbl th, .operari .sa .tbl td{ padding:8px 6px; }
+  /* consulta al client */
+  .boto-gran.client{ --bg-boto:#7b4fb3; } a.boto-gran{ text-decoration:none; } .boto-gran.envia{ --bg-boto:#fff; color:var(--ink); border:2px solid #7b4fb3; box-shadow:none; font-size:17px; padding:14px 12px; }
+  .ao-envia{ margin:0 0 6px; } .ao-peticio.consulta.client{ border-color:#7b4fb3; }
+  .fil-resp{ margin:4px 0 2px 14px; padding:3px 0 3px 10px; border-left:3px solid #9b6fd6; } .fil-resp.espera{ color:var(--ink-3); font-style:italic; }
+  /* lectures de comptadors (app) */
+  .lc-negres{ background:#fff8e1; border:1.5px solid #f0d27a; border-radius:12px; padding:12px 14px; margin:14px 0 0; font-size:17px; line-height:1.4; } .lc-negres p{ margin:8px 0 0; }
+  .lc-digits{ display:flex; gap:4px; } .lc-digits span, .lc-digits i{ width:30px; height:42px; border-radius:5px; display:flex; align-items:center; justify-content:center; font:700 24px/1 system-ui, sans-serif; color:#fff; background:#1b1b1b; }
+  .lc-digits i{ position:relative; background:#c62828; opacity:.8; } .lc-digits i::after{ content:''; position:absolute; left:-3px; right:-3px; top:50%; border-top:3px solid #fff; transform:rotate(-35deg); }
+  .lc-alerta{ background:#fdecea; border:2px solid #d32f2f; border-radius:12px; padding:12px 14px; margin:14px 0 0; font-size:17px; line-height:1.45; } .lc-alerta p{ margin:0 0 8px; }
+  .lc-app #lc-index{ width:100%; box-sizing:border-box; padding:12px; font-size:30px; font-weight:700; letter-spacing:.08em; }
+  .lc-app #lc-data, .lc-app #lc-obs{ width:100%; box-sizing:border-box; font-size:17px; } .lc-app .ao-bloc .f{ margin:0 0 10px; }
+  .lc-app .ao-bloc + .ao-fila{ margin-top:22px; }
+  .ic-targeta.lc{ border-left:6px solid #c9935e; } .ic-targeta.lc.llegit{ opacity:.72; } .lc-app h2.grup small{ font-weight:400; color:var(--ink-2); font-size:14px; }
 </style>
 </head>
 <body data-mode="entrada">
@@ -1202,6 +1215,7 @@ const SCHEMA = {
     incidencies: { label: 'Incidències', render: main => renderIncidencies(main) },
     accions_meves: { label: 'Les meves accions', render: main => renderAccionsMeves(main) },
     fulls_treball_app: { label: 'Fulls de treball', render: main => renderFullsOperari(main) },
+    lectures_app: { label: 'Lectures de comptadors', render: main => renderLecturesApp(main) },   // només a l'app
     calendari_accions: { label: 'Calendari d’accions', render: main => renderCalendariAccions(main) },
     codis_qr: { label: 'Codis QR dels llocs', render: main => renderCodisQR(main) },
     nomines: { label: 'Nòmines', render: main => renderNomines(main) },
@@ -4028,6 +4042,8 @@ function novetatsMeves() {
     if (meva(a) && a.estat !== 'finalitzada' && Number(a.creat_per) !== t.id) out.push({ clau: 'a' + a.id, accio: a.id, tipus: esConsulta(a) ? 'consulta' : 'nova' });
     // la resposta a la meva consulta (si es desfà i es torna a contestar, és una novetat nova)
     if (esConsulta(a) && a.estat === 'finalitzada' && Number(a.creat_per) === t.id) { const x = accs.get(Number(a.origen_accio_id)); if (x && x.actiu && x.estat !== 'finalitzada' && meva(x)) out.push({ clau: 'r' + a.id + '@' + (a.finalitzada_el || ''), accio: x.id, consulta: a.id, tipus: 'resposta' }); }
+    // la resposta del client a la meva consulta, si l'ha apuntada algú altre (si la torna a apuntar, és una novetat nova)
+    if (esConsultaClient(a) && a.estat === 'finalitzada' && Number(a.creat_per) === t.id && Number(a.finalitzada_per) !== t.id) out.push({ clau: 'k' + a.id + '@' + (a.finalitzada_el || ''), accio: a.id, tipus: 'resposta_client' });
     // la feina d'un operari que torna a qui la va encarregar (mentre l'acció d'origen és oberta): una novetat per cada feina acabada
     if (a.estat === 'finalitzada' && !a.es_peticio && a.carril === 'operari' && a.origen_accio_id && Number(a.finalitzada_per) !== t.id && Number(a.responsable_treballador_id) !== t.id) {
       const o = accs.get(Number(a.origen_accio_id)); if (o && o.actiu && meva(o) && o.estat !== 'finalitzada' && !o.es_peticio) out.push({ clau: 't' + a.id + '@' + (a.finalitzada_el || ''), accio: o.id, feina: a.id, tipus: 'torna' });
@@ -4098,6 +4114,7 @@ function textNovetat(n) {
   const inc = C.get('incidencies', a.incidencia_id) || {}, on = (inc.numero || '') + (llocInc(inc).nom ? ' · ' + llocInc(inc).nom : '');
   if (n.tipus === 'consulta') return { titol: 'Consulta de ' + nomCurtTreballador(C.get('treballadors', a.creat_per)), text: String(a.descripcio || '').slice(0, 160) + ' (' + on + ')', accio: a.id };
   if (n.tipus === 'resposta') { const c = C.get('incidencia_accions', n.consulta) || {}; return { titol: 'Resposta de ' + nomCurtTreballador(C.get('treballadors', c.finalitzada_per || c.responsable_treballador_id)), text: String(c.resultat || '').slice(0, 160) + ' (' + on + ')', accio: a.id }; }
+  if (n.tipus === 'resposta_client') return { titol: 'Resposta de ' + (nomResponsable(a) || 'el client'), text: String(a.resultat || '').slice(0, 160) + ' (' + on + ')', accio: a.id };
   if (n.tipus === 'torna') { const f = C.get('incidencia_accions', n.feina) || {}; return { titol: 'Et torna una acció', text: nomCurtTreballador(C.get('treballadors', f.finalitzada_per || f.responsable_treballador_id)) + ' ha acabat «' + (f.titol && f.titol !== nomTipus(f.tipus) ? f.titol : nomTipus(f.tipus)) + '»' + (f.resultat ? ': ' + String(f.resultat).slice(0, 120) : '') + ' (' + on + ')', accio: a.id }; }
   return { titol: 'Acció nova', text: nomTipus(a.tipus) + (a.titol && a.titol !== nomTipus(a.tipus) ? ' · ' + a.titol : '') + ' (' + on + ')', accio: a.id };
 }
@@ -4184,12 +4201,13 @@ const FOTOS_MENU = {
   vacances: 'data:image/jpeg;base64,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',
   informe_sal: 'data:image/jpeg;base64,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',
   informe_adob: 'data:image/jpeg;base64,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',
+  lectures_app: 'data:image/jpeg;base64,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',
 };
 const COLORS_MENU = {
   fitxar: '--p:#3a9a5c;--pf:#1e5c35', tasques_piscina: '--p:#3a9ad6;--pf:#0f4f73', informe_tasques_piscina: '--p:#2bb3a3;--pf:#0c5c54',
   informe_tasques_dates: '--p:#6b7fd6;--pf:#2b3c8c', incidencia_reports: '--p:#ee8a3c;--pf:#9a4410', calendari_accions: '--p:#9a6fd4;--pf:#4f2a80',
   accions_meves: '--p:#e2635f;--pf:#8c1f1f', fulls_treball_app: '--p:#6b8f9a;--pf:#2f4f5a', nomines: '--p:#d4ad45;--pf:#7a5a10', vacances: '--p:#f0d23a;--pf:#8a7600',
-  informe_sal: '--p:#9cc3d6;--pf:#3b6a80', informe_adob: '--p:#9aa83a;--pf:#4a5512',
+  informe_sal: '--p:#9cc3d6;--pf:#3b6a80', informe_adob: '--p:#9aa83a;--pf:#4a5512', lectures_app: '--p:#c9935e;--pf:#6e4219',
 };
 const estilMenu = id => COLORS_MENU[id] + (FOTOS_MENU[id] ? ';background-image:url(' + FOTOS_MENU[id] + ')' : '');
 const fonsMenu = id => FOTOS_MENU[id] ? '' : ESCENES_MENU[id];
@@ -4240,6 +4258,7 @@ function renderAppOperari() {
         <button data-go="informe_tasques_dates" style="${estilMenu('informe_tasques_dates')}"><strong>Tasques per data</strong>${fonsMenu('informe_tasques_dates')}</button>
         <button class="ample llarg" data-go="incidencia_reports" style="${estilMenu('incidencia_reports')}"><strong>Reports d’incidències</strong>${fonsMenu('incidencia_reports')}</button>
         <button class="ample" data-go="fulls_treball_app" style="${estilMenu('fulls_treball_app')}"><strong>Fulls de treball</strong>${(() => { const t = treballadorActual(); const n = t ? C.rows('fulls_treball').filter(f => f.actiu && Number(f.encarregat_id) === t.id && !f.finalitzat && f.estat !== 'anul_lat' && !fullProgramat(f)).length : 0; return n ? `<span class="pend">${n} pendent${n === 1 ? '' : 's'}</span>` : ''; })()}${fonsMenu('fulls_treball_app')}</button>
+        <button class="ample" data-go="lectures_app" style="${estilMenu('lectures_app')}"><strong>Lectures de comptadors</strong>${(() => { const n = nPerLlegir(); return n ? `<span class="pend">${n} per llegir aquest mes</span>` : ''; })()}${fonsMenu('lectures_app')}</button>
         <button data-go="calendari_accions" style="${estilMenu('calendari_accions')}"><strong>Calendari accions</strong>${fonsMenu('calendari_accions')}</button>
         <button data-go="accions_meves" style="${estilMenu('accions_meves')}"><strong>Accions pendents</strong>${(() => { const n = t ? C.rows('incidencia_accions').filter(a => a.actiu && perFer(a) && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id) && (C.get('incidencies', a.incidencia_id) || {}).estat === 'oberta').length : 0; const m = t ? C.rows('incidencies').filter(i => senseSeguent(i) && (Number(i.seguidora_id) === t.id || (!APP_NOMES_TASQUES && esOficina(t)))).length : 0; return n || m ? `<span>${n ? n + ' per fer' : ''}${n && m ? ' · ' : ''}${m ? m + ' per encarregar' : ''}</span>` : ''; })()}${insigniaHTML()}${fonsMenu('accions_meves')}</button>
         <button data-go="informe_sal" style="${estilMenu('informe_sal')}"><strong>Sal</strong>${fonsMenu('informe_sal')}</button>
@@ -4247,7 +4266,7 @@ function renderAppOperari() {
         <button data-go="nomines" style="${estilMenu('nomines')}"><strong>Nòmines</strong>${fonsMenu('nomines')}</button>
         <button data-go="vacances" style="${estilMenu('vacances')}"><strong>Vacances</strong>${fonsMenu('vacances')}</button>
       </div>`;
-    main.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { state.table = b.dataset.go; state.editing = null; if (b.dataset.go === 'fulls_treball_app') Object.assign(state.ft, { id: null, form: null, nou: null }); renderApp(); }));
+    main.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { state.table = b.dataset.go; state.editing = null; if (b.dataset.go === 'fulls_treball_app') Object.assign(state.ft, { id: null, form: null, nou: null }); if (b.dataset.go === 'lectures_app') state.lect = { id: null }; renderApp(); }));
     return;
   }
   if (SCHEMA.pages[state.table]) { SCHEMA.pages[state.table].render(main); return; }
@@ -6913,6 +6932,126 @@ function renderSalAdob(main, tipus) {
   }
 }
 
+/* ---------- Lectures de comptadors, a l'app ----------
+   Els operaris apunten el número que marca el comptador (només els números negres: els m³) dels llocs on el seu equip porta el jardí
+   (amb contracte vigent); l'oficina, de tots. Si la lectura vol dir un consum de més de 3 vegades el que preveu l'escenari tòrrid per
+   a aquells dies, abans de desar-la es pregunta si està ben feta; si es confirma, queda apuntat a les observacions. Una lectura més
+   petita que l'anterior no es pot desar (la base de dades tampoc no la deixaria). */
+const LECT_VEGADES = 3;
+const comptadorViu = c => !!c && c.actiu && (!c.data_baixa || c.data_baixa >= avui());
+const nomComptador = c => 'Comptador ' + (c.numero_serie || c.id);
+function comptadorsMeus() {
+  const t = treballadorActual(); if (!t) return [];
+  const tots = C.rows('comptadors').filter(comptadorViu);
+  if (esOficina(t)) return tots;
+  if (!t.equip_id) return [];
+  const llocs = new Set(C.rows('jardins').filter(j => j.actiu && Number(j.equip_id) === Number(t.equip_id) && contracteVigent(j)).map(j => Number(j.lloc_id)));
+  return tots.filter(c => llocs.has(Number(c.lloc_id)));
+}
+const lecturesDe = id => C.rows('lectures').filter(l => l.actiu && Number(l.comptador_id) === Number(id)).sort((a, b) => String(b.data).localeCompare(String(a.data)));   // la més nova primer
+// la lectura d'abans d'una data (o, si no n'hi ha cap, la inicial del comptador)
+function lecturaAbans(c, data) {
+  const l = lecturesDe(c.id).find(x => String(x.data) < String(data));
+  return l ? { index: Number(l.index_comptador), data: l.data } : { index: Number(c.lectura_inicial || 0), data: c.data_alta, inicial: true };
+}
+const llegitAquestMes = c => { const m = avui().slice(0, 7); return lecturesDe(c.id).some(l => String(l.data).slice(0, 7) === m); };
+const nPerLlegir = () => comptadorsMeus().filter(c => !llegitAquestMes(c)).length;
+const diesEntre = (a, b) => Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 86400000);
+// el consum que preveu l'escenari tòrrid entre dues dates: cada mes, repartit pels dies que hi cauen
+function torridEntre(esc, desde, fins) {
+  let tot = 0; const d = new Date(desde + 'T12:00:00'), f = new Date(fins + 'T12:00:00');
+  for (d.setDate(d.getDate() + 1); d <= f; d.setDate(d.getDate() + 1)) {
+    const m = d.getMonth() + 1, e = esc.find(x => Number(x.mes) === m);
+    tot += e ? Number(e.torrid) / new Date(d.getFullYear(), m, 0).getDate() : 0;
+  }
+  return tot;
+}
+const escenarisComptador = {};   // comptador → els 12 mesos dels escenaris (es demanen un cop)
+async function carregaEscenaris(id) {
+  if (escenarisComptador[id]) return escenarisComptador[id];
+  try { const r = await sb.rpc('escenaris_comptador', { p_comptador: Number(id) }); if (r.error) throw r.error; escenarisComptador[id] = Array.isArray(r.data) ? r.data : []; }
+  catch (e) { escenarisComptador[id] = []; }
+  return escenarisComptador[id];
+}
+// l'avís dels números negres, amb un comptador de mostra
+const NEGRES_HTML = `<div class="lc-negres"><div class="lc-digits" aria-hidden="true"><span>0</span><span>0</span><span>3</span><span>4</span><span>7</span><i>2</i><i>1</i><i>6</i></div>
+  <p><b>Escriu només els números negres</b> (els metres cúbics): en aquest, <b>347</b>. Els números vermells no s’escriuen.</p></div>`;
+
+function renderLecturesApp(main) {
+  const st = state.lect || (state.lect = { id: null }), t = treballadorActual();
+  if (st.id) return renderLecturaComptador(main, C.get('comptadors', st.id));
+  const cs = comptadorsMeus(), perLloc = new Map();
+  cs.forEach(c => { const k = Number(c.lloc_id); if (!perLloc.has(k)) perLloc.set(k, []); perLloc.get(k).push(c); });
+  const llocs = [...perLloc.keys()].map(id => C.get('llocs', id) || { id, nom: 'Lloc ' + id }).sort((a, b) => String(a.nom).localeCompare(String(b.nom), 'ca'));
+  const buit = !t ? 'El teu usuari no té fitxa de treballador amb aquest correu.' : !esOficina(t) && !t.equip_id ? 'No ets de cap equip: demana a l’oficina que t’hi posin.' : 'Els llocs del teu equip no tenen cap comptador.';
+  const targeta = c => { const u = lecturesDe(c.id)[0], fet = llegitAquestMes(c);
+    return `<div class="ic-targeta lc ${fet ? 'llegit' : ''}" data-comptador="${c.id}"><b>${h(nomComptador(c))}</b> · ${h(cobreixText(c))}<br><span class="hint">${u ? 'Última: ' + nDec(u.index_comptador, 3) + ' · ' + dmy(u.data) : 'Encara sense cap lectura'}</span> <span class="pill ${fet ? 'e-finalitzada' : 'dep'}">${fet ? 'llegit aquest mes' : 'per llegir'}</span></div>`; };
+  main.innerHTML = `<div class="lc-app"><h1>Lectures de comptadors</h1>
+    ${llocs.length ? llocs.map(l => `<h2 class="grup">${h(l.nom)}${l.poblacio ? ` <small>${h(l.poblacio)}</small>` : ''}</h2>${perLloc.get(Number(l.id)).map(targeta).join('')}`).join('') : `<div class="empty">${h(buit)}</div>`}</div>`;
+  main.querySelectorAll('[data-comptador]').forEach(x => x.addEventListener('click', () => { state.lect = { id: Number(x.dataset.comptador) }; renderMain(); window.scrollTo({ top: 0 }); }));
+}
+function taulaLectures(c, ls) {
+  return `<table class="tbl informe lc-taula"><thead><tr><th>Data</th><th class="num">Número</th><th class="num">Consum</th></tr></thead><tbody>${ls.map(l => { const ab = lecturaAbans(c, l.data);
+    return `<tr><td>${dmy(l.data)}</td><td class="num">${nDec(l.index_comptador, 3)}</td><td class="num">${nDec(Number(l.index_comptador) - ab.index, 0)} m³</td></tr>`; }).join('')}</tbody></table>`;
+}
+function renderLecturaComptador(main, c) {
+  const st = state.lect;
+  if (!comptadorViu(c)) { state.lect = { id: null }; return renderLecturesApp(main); }
+  const lloc = C.get('llocs', c.lloc_id) || {}, client = C.get('clients', lloc.client_id) || {}, ls = lecturesDe(c.id), u = ls[0];
+  carregaEscenaris(c.id);   // en segon pla: per comparar amb l'escenari tòrrid en desar
+  main.innerHTML = `<div class="ao lc-app">
+    <div class="bar"><button class="btn ghost" id="lc-torna">← Lectures de comptadors</button></div>
+    <div class="ao-lloc">${h(lloc.nom || '')}${client.nom ? `<span>${h(client.nom)}</span>` : ''}</div>
+    <div class="ao-titol">${h(nomComptador(c))} · ${h(cobreixText(c))}</div>
+    <div class="ao-fila"><span class="l">Última lectura</span><span class="ao-termini">${u ? nDec(u.index_comptador, 3) + ' · ' + dmy(u.data) : 'cap (la inicial: ' + nDec(c.lectura_inicial || 0, 3) + ' · ' + dmy(c.data_alta) + ')'}</span></div>
+    ${NEGRES_HTML}
+    <div class="ao-bloc">
+      <div class="f"><span class="l">Número que marca el comptador (només els negres)</span><input type="text" id="lc-index" inputmode="numeric" autocomplete="off" value="${h(st.valor || '')}" ${st.avis ? 'readonly' : ''}></div>
+      <div class="f"><span class="l">Data</span><input type="date" id="lc-data" value="${h(st.data || avui())}" max="${avui()}" ${st.avis ? 'readonly' : ''}></div>
+      <div class="f"><span class="l">Observacions (si cal)</span><input type="text" id="lc-obs" value="${h(st.obs || '')}"></div>
+      <div id="lc-err"></div>
+      ${st.avis ? `<div class="lc-alerta">${st.avis.text}<button type="button" class="boto-gran fi" id="lc-confirma">Sí, està bé</button><button type="button" class="boto-gran envia" id="lc-corregeix">La corregeixo</button></div>`
+        : `<button type="button" class="boto-gran fi" id="lc-desa">Desa la lectura</button>`}
+    </div>
+    ${ls.length ? `<div class="ao-fila"><span class="l">Lectures d’aquest comptador</span>${taulaLectures(c, ls.slice(0, 6))}</div>` : ''}
+  </div>`;
+  const llegeix = () => ({ valor: ($('#lc-index').value || '').trim(), data: $('#lc-data').value || avui(), obs: ($('#lc-obs').value || '').trim() });
+  const err = m => { $('#lc-err').innerHTML = `<div class="msg err">${h(m)}</div>`; };
+  $('#lc-torna').addEventListener('click', () => { state.lect = { id: null }; renderMain(); window.scrollTo({ top: 0 }); });
+  const desa = async (boto, confirmada) => {
+    const v = llegeix(); Object.assign(st, v);
+    if (!/^\d+$/.test(v.valor)) { err(v.valor ? 'Només els números negres, sense comes ni decimals: per exemple, 347.' : 'Escriu el número que marca el comptador.'); return; }
+    if (v.data > avui()) { err('La data no pot ser de més endavant.'); return; }
+    if (c.data_alta && v.data < c.data_alta) { err('La data és d’abans que es posés el comptador (' + dmy(c.data_alta) + ').'); return; }
+    const ja = lecturesDe(c.id).find(l => l.data === v.data);
+    if (ja) { err('Aquest comptador ja té una lectura del ' + dmy(v.data) + ' (' + nDec(ja.index_comptador, 3) + '). Si està malament, digues-ho a l’oficina.'); return; }
+    const index = Number(v.valor), ab = lecturaAbans(c, v.data), consum = index - ab.index, dies = diesEntre(ab.data, v.data);
+    if (consum < 0) { err(`El número és més petit que l’anterior (${nDec(ab.index, 3)}, del ${dmy(ab.data)}): no pot ser. Revisa’l: només els números negres.`); return; }
+    if (!confirmada) {
+      boto.disabled = true;
+      const esc = await carregaEscenaris(c.id);
+      boto.disabled = false;
+      if (esc.length) {   // sense els escenaris (paràmetres de l'aigua), no es pot comparar
+        const previst = Math.max(torridEntre(esc, ab.data, v.data), 1);   // (per poc que preveigi, almenys 1 m³: a l'hivern no ha d'avisar de cada lectura)
+        if (consum > LECT_VEGADES * previst) {
+          st.avis = { consum, previst, text: `<p><b>Està ben feta?</b> Vol dir que s’han gastat <b>${nDec(consum, 0)} m³</b> des del ${dmy(ab.data)} (${dies} ${dies === 1 ? 'dia' : 'dies'}), i per a aquests dies el màxim previst (escenari tòrrid) és d’uns <b>${nDec(previst, 0)} m³</b>: més de ${LECT_VEGADES} vegades.</p><p>Recorda: només els números negres.</p>` };
+          renderMain(); return;
+        }
+      }
+    }
+    const obs = [v.obs, confirmada && st.avis ? `Confirmada per ${nomCurtTreballador(treballadorActual())}: ${nDec(st.avis.consum, 0)} m³, més de ${LECT_VEGADES} vegades l’escenari tòrrid (${nDec(st.avis.previst, 0)} m³)` : ''].filter(Boolean).join(' · ') || null;
+    boto.disabled = true;
+    const r = await sb.from('lectures').insert({ comptador_id: c.id, data: v.data, index_comptador: index, observacions: obs });
+    if (r.error) { boto.disabled = false; err(friendly(r.error)); return; }
+    await loadTable('lectures');
+    toast(`Lectura desada: ${nDec(consum, 0)} m³ des del ${dmy(ab.data)}.`, 6000);
+    state.lect = { id: null }; renderMain(); window.scrollTo({ top: 0 });
+  };
+  const bd = $('#lc-desa'); if (bd) bd.addEventListener('click', () => desa(bd, false));
+  const bc = $('#lc-confirma'); if (bc) bc.addEventListener('click', () => desa(bc, true));
+  const bx = $('#lc-corregeix'); if (bx) bx.addEventListener('click', () => { st.avis = null; renderMain(); const i = $('#lc-index'); if (i) { i.focus(); i.select(); } });
+}
+
 async function toggleActiu(td) {
   const t = state.table, row = C.get(t, state.editing);
   const label = td.display(row, L);
@@ -6943,6 +7082,7 @@ const INC = {
     diagnosticar:         { nom: 'Anar a veure què passa', fase: 2 },
     planificar:           { nom: 'Planificar', fase: 2, ocult: true },                                               // retirat: només per a accions antigues
     consultar:            { nom: 'Consulta', fase: 2, peticio: true, visibleClient: false, ocult: true },            // la consulta de qui té una acció a qui li l'ha enviada (la fase és la de l'acció)
+    consulta_client:      { nom: 'Consulta al client', fase: 2, peticio: true, carril: 'client', senseTermini: true, ocult: true },   // una consulta o aclaració al client, en qualsevol moment (té el seu botó; la fase és la del moment)
     demanar_preu:         { nom: 'Demanar preu', fase: 2, peticio: true, carril: 'proveidor', visibleClient: false },
     autoritzar_actuacio:  { nom: 'Autoritzar actuació (sense pressupost)', fase: 2 },
     pressupost:           { nom: 'Elaborar pressupost', fase: 2 },
@@ -7033,15 +7173,26 @@ const peticionsPendents = a => peticionsObertes(a).filter(accioVisibleCapa);
 // una consulta: qui té una acció pregunta a qui li l'ha enviada. La seva feina queda aturada (esperant) i la consulta surt a dalt de tot, al carril
 // de qui l'ha de contestar; quan contesta, la feina torna a qui l'estava fent, a la mateixa acció (F2, F3, F4…).
 const esConsulta = a => !!a && a.tipus === 'consultar';
+// una consulta o aclaració al client (la fa el tècnic o la seguidora en qualsevol moment; no atura cap feina)
+const esConsultaClient = a => !!a && a.tipus === 'consulta_client';
 const consultaOberta = a => !!a && peticionsObertes(a).find(esConsulta) || null;
 // la fase d'una acció; una consulta és de la fase de la feina sobre la qual es pregunta
-const faseDe = a => { const o = esConsulta(a) && a.origen_accio_id ? C.get('incidencia_accions', a.origen_accio_id) : null; return o && !esConsulta(o) ? faseDe(o) : (INC.tipus[a.tipus] || {}).fase || ''; };
+const faseDe = a => {
+  const o = esConsulta(a) && a.origen_accio_id ? C.get('incidencia_accions', a.origen_accio_id) : null;
+  if (o && !esConsulta(o)) return faseDe(o);
+  if (esConsultaClient(a)) {   // la consulta al client: la fase de la feina més recent d'abans
+    const ant = C.rows('incidencia_accions').filter(x => x.actiu && Number(x.incidencia_id) === Number(a.incidencia_id) && x.id !== a.id && !esConsulta(x) && !esConsultaClient(x) && String(x.creat_el || '') <= String(a.creat_el || ''))
+      .sort((x, y) => String(y.creat_el || '').localeCompare(String(x.creat_el || '')))[0];
+    return ant ? faseDe(ant) : 1;
+  }
+  return (INC.tipus[a.tipus] || {}).fase || '';
+};
 // programada: té una data d'inici que encara no ha arribat (només es pot començar al març, s'ha de fer dijous vinent…); fins llavors no compta com a oberta
 const iniciFutur = a => !!a && !!a.inici && a.estat === 'pendent' && new Date(a.inici) > new Date();
-const estatEfectiu = a => a.estat === 'finalitzada' ? 'finalitzada' : (peticionsPendents(a).length ? 'esperant' : iniciFutur(a) ? 'programada' : a.estat);
+const estatEfectiu = a => a.estat === 'finalitzada' ? 'finalitzada' : (peticionsPendents(a).length || esConsultaClient(a) ? 'esperant' : iniciFutur(a) ? 'programada' : a.estat);   // la consulta al client espera el client
 const activa = a => a.estat !== 'finalitzada' && !iniciFutur(a);   // oberta i que ja toca fer
 // el que toca fer ara a qui la té: oberta, no programada per més endavant i sense esperar cap resposta
-const perFer = a => activa(a) && !peticionsObertes(a).length;
+const perFer = a => activa(a) && !peticionsObertes(a).length && !esConsultaClient(a);   // (la consulta al client no és feina per fer: espera el client)
 const textInici = a => a.inici ? 'a partir del ' + dmyhm(a.inici) : '';
 const foraTermini = a => !!a.venciment && (a.estat === 'finalitzada' ? !!a.finalitzada_el && new Date(a.finalitzada_el) > new Date(a.venciment) : new Date() > new Date(a.venciment));
 // una acció «reoberta»: la feina de l'operari ha tornat a qui la va encarregar. No es torna a finalitzar amb un resultat: s'hi encarrega el pas següent
@@ -7371,6 +7522,11 @@ function entradesFil(inc, actual, opts) {
     const tipus = nomTipus(x.tipus), fet = x.estat === 'finalitzada', adj = Array.isArray(x.adjunts) ? x.adjunts : [];
     const demanat = esConsulta(x) ? String(x.descripcio || '') : [x.titol && x.titol !== tipus ? x.titol : '', x.descripcio || ''].filter(Boolean).join(' — ');
     const vis = !!x.visible_client;
+    if (esConsulta(x) || esConsultaClient(x)) {   // amb l'hora de la resposta (o de la pregunta, mentre no n'hi ha): així, quan contesten, puja a dalt
+      e.push({ data: fet ? (x.finalitzada_el || x.creat_el) : x.creat_el, quan: x.creat_el, ...(treb(x.creat_per) || { ini: '—', nom: '' }), a: aQui(x), text: String(x.descripcio || ''), adjunts: adj, que: tipus, vis,
+        resposta: fet ? { ...quiFa(x), text: String(x.resultat || ''), data: x.finalitzada_el } : null, espera: !fet });
+      return;
+    }
     if (demanat && x.creat_per) e.push({ data: x.creat_el, ...(treb(x.creat_per) || { ini: '—', nom: '' }), a: aQui(x), text: demanat, adjunts: fet ? [] : adj, que: tipus, vis });
     if (fet && (x.resultat || x.decisio || adj.length)) e.push({ data: x.finalitzada_el || x.creat_el, ...quiFa(x), text: (x.decisio ? etiquetaOpt(INC.decisions, x.decisio) + (x.resultat ? ': ' : '') : '') + String(x.resultat || ''), adjunts: adj, que: tipus, vis });
     else if (!fet && adj.length && !demanat) e.push({ data: x.creat_el, ...quiFa(x), text: '', adjunts: adj, que: tipus + ' (en curs)', vis });
@@ -7380,7 +7536,9 @@ function entradesFil(inc, actual, opts) {
 }
 function filIncHTML(inc, actual, opts) {
   const ents = entradesFil(inc, actual, opts); if (!ents.length) return '';
-  return ents.map(x => `<div class="fil-e ${x.vis ? 'vis' : ''}"><b title="${h(x.nom || '')}">${h(x.ini)}</b>${x.a ? ` <span class="hint">→ ${h(x.a)}</span>` : ''}${x.text ? ': ' + h(x.text) : ''} <span class="fil-q">· ${h(x.que)}${x.data ? ' · ' + dmyhm(x.data) : ''}</span>${x.adjunts.length ? `<div class="ic-thumbs">${miniaturesHTML(x.adjunts)}</div>` : ''}</div>`).join('');
+  return ents.map(x => `<div class="fil-e ${x.vis ? 'vis' : ''}"><b title="${h(x.nom || '')}">${h(x.ini)}</b>${x.a ? ` <span class="hint">→ ${h(x.a)}</span>` : ''}${x.text ? ': ' + h(x.text) : ''} <span class="fil-q">· ${h(x.que)}${x.quan || x.data ? ' · ' + dmyhm(x.quan || x.data) : ''}</span>`
+    + (x.resposta ? `<div class="fil-resp"><b title="${h(x.resposta.nom || '')}">${h(x.resposta.ini)}</b>: ${h(x.resposta.text)} <span class="fil-q">· ${dmyhm(x.resposta.data)}</span></div>` : x.espera ? '<div class="fil-resp espera">esperant la resposta</div>' : '')
+    + `${x.adjunts.length ? `<div class="ic-thumbs">${miniaturesHTML(x.adjunts)}</div>` : ''}</div>`).join('');
 }
 function galeriaHTML(inc, compacta) {
   const grups = adjuntsIncidencia(inc);
@@ -7466,20 +7624,20 @@ function ordenaAccions(acc) {
   return [...acc].sort((a, b) => String(b.creat_el).localeCompare(String(a.creat_el)) || (b.id - a.id));
 }
 function caixaHTML(a, fila) {
-  const ee = estatEfectiu(a), fora = foraTermini(a), tp = INC.tipus[a.tipus] || { nom: a.tipus, fase: '' }, cons = esConsulta(a);
+  const ee = estatEfectiu(a), fora = foraTermini(a), tp = INC.tipus[a.tipus] || { nom: a.tipus, fase: '' }, cons = esConsulta(a), cc = esConsultaClient(a);
   const client = vistaExterna(); // vista externa: sense qui ho gestiona ni ampliacions
   const amp = C.rows('incidencia_ampliacions').filter(x => x.actiu && Number(x.accio_id) === a.id && x.estat === 'pendent').length;
   const col = Math.max(1, INC.carrils.findIndex(c => c[0] === a.carril) + 1);
   // què espera: la resposta a la consulta de qui la fa, o les respostes de les peticions (al client, a un proveïdor)
   const consOb = consultaOberta(a), pend = peticionsPendents(a).filter(x => !esConsulta(x)).length;
   const qui = cons ? nomCurtTreballador(C.get('treballadors', a.creat_per)) : '';
-  return `<div class="ic-caixa e-${ee} ${fora ? 'fora' : ''} ${cons ? 'consulta' : ''} ${state.inc.sel === a.id ? 'sel' : ''}" data-accio="${a.id}" style="grid-row:${fila}; grid-column:${col}; --lc:${colorCarril(a.carril)}">
+  return `<div class="ic-caixa e-${ee} ${fora ? 'fora' : ''} ${cons || cc ? 'consulta' : ''} ${state.inc.sel === a.id ? 'sel' : ''}" data-accio="${a.id}" style="grid-row:${fila}; grid-column:${col}; --lc:${colorCarril(a.carril)}">
     <div class="ic-tipus"><span class="ic-fase">F${faseDe(a)}</span> ${h(tp.nom)}${cons && qui ? ' de ' + h(qui) : ''}</div>
     ${a.titol && a.titol !== tp.nom && !cons ? `<div class="ic-titol">${h(a.titol)}</div>` : ''}
-    <div class="ic-qui">${cons ? 'contesta ' : ''}${h(nomResponsable(a))}${a.gestor_id && !client ? ` <span class="hint">· gestiona ${h(nomCurtTreballador(C.get('treballadors', a.gestor_id)))}</span>` : ''}</div>
+    <div class="ic-qui">${cons || cc ? 'contesta ' : ''}${h(nomResponsable(a)) || (cc ? 'el client' : '')}${a.gestor_id && !client ? ` <span class="hint">· gestiona ${h(nomCurtTreballador(C.get('treballadors', a.gestor_id)))}</span>` : ''}</div>
     <div class="ic-pills"><span class="pill e-${ee}">${INC.estats[ee]}</span>${esReoberta(a) ? '<span class="pill dep">ha tornat: cal el pas següent</span>' : ''}${fora ? '<span class="pill fora">Fora de termini</span>' : ''}${consOb ? `<span class="pill dep">consulta a ${h(nomCurtTreballador(C.get('treballadors', consOb.responsable_treballador_id)))}</span>` : ''}${pend ? `<span class="pill dep">espera ${pend} ${pend === 1 ? 'resposta' : 'respostes'}</span>` : ''}${amp && !client ? '<span class="pill dep">ampliació demanada</span>' : ''}${a.decisio ? `<span class="pill dec">${h(etiquetaOpt(INC.decisions, a.decisio).replace('Demana ', ''))}</span>` : ''}</div>
     <div class="ic-venc">${a.venciment ? (a.estat === 'finalitzada' ? 'feta ' + dmyhm(a.finalitzada_el) + ' · venç ' + dmyhm(a.venciment) : (a.inici ? 'del ' + dmyhm(a.inici) + ' al ' + dmyhm(a.venciment) : 'venç ' + dmyhm(a.venciment))) : (a.estat === 'finalitzada' ? dmyhm(a.finalitzada_el) : (a.carril === 'client' ? 'sense termini (client)' : 'sense termini'))}</div>
-    ${cons && a.descripcio ? `<div class="ic-res ic-preg">${h(a.descripcio.length > 110 ? a.descripcio.slice(0, 108) + '…' : a.descripcio)}</div>` : ''}
+    ${(cons || cc) && a.descripcio ? `<div class="ic-res ic-preg">${h(a.descripcio.length > 110 ? a.descripcio.slice(0, 108) + '…' : a.descripcio)}</div>` : ''}
     ${a.estat === 'finalitzada' && a.resultat ? `<div class="ic-res">${h(a.resultat.length > 110 ? a.resultat.slice(0, 108) + '…' : a.resultat)}</div>` : ''}
     ${Array.isArray(a.adjunts) && a.adjunts.length ? `<div class="ic-thumbs">${miniaturesHTML(a.adjunts, 4)}</div>` : ''}
   </div>`;
@@ -7533,6 +7691,7 @@ function renderDiagramaInc(main) {
     <div class="bar ic-bar">
       <button class="btn ghost" id="inc-torna">← Incidències</button>
       ${inc.estat === 'oberta' && t && !extern && carrilDeTreballador(t) !== 'operari' ? `<button class="btn" id="inc-accio">Nova acció</button>` : ''}
+      ${potConsultarClient(inc) ? `<button class="btn ghost" id="inc-cclient">Consulta al client</button>` : ''}
       ${inc.estat === 'oberta' && esSeguidora(inc) && !extern ? `<button class="btn danger" id="inc-tanca" style="margin-left:0">Tanca la incidència</button>` : ''}
       ${inc.estat === 'tancada' && esSeguidora(inc) && !extern ? `<button class="btn" id="inc-reobre">Reobre</button>` : ''}
       ${inc.estat === 'oberta' && (esSeguidora(inc) || esOficina(t)) && !extern ? `<button class="btn ghost" id="inc-edita">Edita la capçalera</button>` : ''}
@@ -7550,6 +7709,7 @@ function renderDiagramaInc(main) {
     <aside class="ic-panell" id="ic-panell" hidden></aside>`;
   $('#inc-torna').addEventListener('click', () => { st.vista = 'llista'; st.sel = null; st.form = null; renderMain(); });
   if ($('#inc-accio')) $('#inc-accio').addEventListener('click', () => { st.sel = null; main.querySelectorAll('.ic-caixa.sel').forEach(x => x.classList.remove('sel')); st.form = { tipus: 'accio', origen: null }; pintaPanell(inc); });
+  if ($('#inc-cclient')) $('#inc-cclient').addEventListener('click', () => { st.sel = null; main.querySelectorAll('.ic-caixa.sel').forEach(x => x.classList.remove('sel')); st.form = { tipus: 'consulta_client' }; pintaPanell(inc); const tx = $('#cc-text'); if (tx) tx.focus(); });
   if ($('#inc-tanca')) $('#inc-tanca').addEventListener('click', () => { st.form = { tipus: 'tanca' }; st.sel = null; pintaPanell(inc); });
   if ($('#inc-reobre')) $('#inc-reobre').addEventListener('click', () => { st.form = { tipus: 'reobre' }; st.sel = null; pintaPanell(inc); });
   if ($('#inc-edita')) $('#inc-edita').addEventListener('click', () => { st.form = { tipus: 'edita' }; st.sel = null; pintaPanell(inc); });
@@ -7639,7 +7799,7 @@ function renderAccioOperari(main) {
   document.body.classList.remove('ic-full');
   if (!inc) { st.vista = 'llista'; renderMain(); return; }
   const meves = accionsMevesInc(inc, t);
-  if (!st.sel || !meves.some(a => a.id === Number(st.sel))) { const ob = meves.find(perFer) || meves.find(a => a.estat !== 'finalitzada') || meves[0]; st.sel = ob ? ob.id : null; }
+  if (!st.sel || !meves.some(a => a.id === Number(st.sel))) { const ob = meves.find(perFer) || meves.find(a => a.estat !== 'finalitzada') || meves.find(a => !esConsultaClient(a)); st.sel = ob ? ob.id : null; }
   const a = st.sel ? C.get('incidencia_accions', st.sel) : null;
   if (a) { comencaSiCal(inc, a); marcaVistes(a.id); }
   const lloc = llocInc(inc), client = clientInc(inc), reports = reportsInc(inc), tot = accionsVisibles(inc);
@@ -7650,13 +7810,14 @@ function renderAccioOperari(main) {
     <div class="ao-titol">${h(inc.numero)} · ${h(inc.titol)}${inc.estat === 'tancada' ? ' · <b>tancada</b>' : ''}</div>
     ${reports.length ? `<div class="ao-report">Report de ${h(quiReporta(reports[0]))} · ${dmyhm(reports[0].data_hora)}</div>` : ''}
     ${meves.length > 1 ? `<div class="ao-tria">${meves.map(x => `<button type="button" class="${x.id === (a || {}).id ? 'on' : ''}" data-tria="${x.id}">${h(nomTipus(x.tipus))}${esConsulta(x) ? ' de ' + h(nomCurtTreballador(C.get('treballadors', x.creat_per))) : ''}${x.estat === 'finalitzada' ? ' ✓' : ''}</button>`).join('')}</div>` : ''}
-    ${a ? accioOperariHTML(inc, a) : `<div class="ao-qui"><span>Seguidora: <b>${h(nomTreballador(C.get('treballadors', inc.seguidora_id))) || '—'}</b></span></div><div class="empty">Ara mateix no tens cap acció en aquesta incidència${participaInc(inc, t) ? ', però hi has participat: a sota en tens tot el seguiment' : ''}.</div>`}
+    ${a ? accioOperariHTML(inc, a) : `<div class="ao-qui"><span>Seguidora: <b>${h(nomTreballador(C.get('treballadors', inc.seguidora_id))) || '—'}</b></span></div><div class="empty">Ara mateix no tens cap acció en aquesta incidència${participaInc(inc, t) ? ', però hi has participat: a sota en tens tot el seguiment' : ''}.</div>${potConsultarClient(inc) ? consultaClientAppHTML(inc) : ''}`}
     ${araDepenHTML(inc, tot)}
     <details class="ao-tot" ${a && a.estat !== 'finalitzada' ? '' : 'open'}><summary>Tota la incidència: ${tot.length} accions (${tot.filter(x => x.estat !== 'finalitzada').length} obertes)</summary>${liniaTempsIncHTML(inc, t)}</details>
   </div>`;
   $('#inc-torna').addEventListener('click', () => { st.vista = 'llista'; st.sel = null; st.form = null; state.table = 'accions_meves'; renderApp(); window.scrollTo({ top: 0 }); });
   main.querySelectorAll('[data-tria]').forEach(b => b.addEventListener('click', () => { st.sel = Number(b.dataset.tria); st.form = null; renderMain(); }));
   if (a) bindAccioOperari(inc, a, main);
+  bindConsultaClientApp(inc, main);
   ompleMiniatures(main);
 }
 // el cos de la pantalla d'una acció a l'app
@@ -7668,6 +7829,7 @@ function accioOperariHTML(inc, a) {
   const fo = st.form && st.form.accio === a.id ? st.form : {};
   const text = cons ? String(a.descripcio || '') : [a.titol && a.titol !== tp.nom ? a.titol : '', a.descripcio || ''].filter(Boolean).join('\n');
   const consOb = consultaOberta(a), petExt = peticionsObertes(a).filter(x => !esConsulta(x)), full = accioAmbFull(a) ? fullDeAccio(a) : null;
+  if (esConsultaClient(a)) return consultaClientAccioHTML(inc, a);
   const html = [];
   html.push(`<div class="ao-qui"><span>Seguidora: <b>${h(nomTreballador(seguidora)) || '—'}</b></span>${creador ? `<span>${cons ? 'Et pregunta' : 'Ho demana'}: <b>${h(nomTreballador(creador))}</b></span>` : ''}</div>`);
   // què et demanen, o què et pregunten (gran)
@@ -7701,6 +7863,8 @@ function accioOperariHTML(inc, a) {
       ? `<div class="ao-bloc ao-cons"><div class="f"><span class="l">Què vols preguntar a ${h(nomTreballador(dest))}?</span><textarea lang="ca" spellcheck="true" id="cons-text">${h(fo.text || '')}</textarea><span class="hint">Si li vols ensenyar alguna cosa, posa-la a les fotos i vídeos de sota: també les veurà.</span></div><button type="button" class="boto-gran consulta" id="cons-envia">Envia la consulta</button><a href="#" id="cons-cancel" class="ao-cancel">Cancel·la</a></div>`
       : `<button type="button" class="boto-gran consulta" id="cons-obre">Demana consulta</button>`);
   }
+  // CONSULTA AL CLIENT (el tècnic o la seguidora, en qualsevol moment)
+  if (potConsultarClient(inc)) html.push(consultaClientAppHTML(inc));
   // les fotos i els vídeos: un sol lloc (les antigues del full de treball s'hi veuen també)
   html.push(caixaMediaHTML(a, potPujarAdj(inc, a), { extres: full && Array.isArray(full.adjunts) ? full.adjunts : [] }));
   // FULL DE TREBALL (opcional: només si cal apuntar-hi jornades o material)
@@ -7730,7 +7894,9 @@ function bindAccioOperari(inc, a, main) {
   const st = state.inc;
   const err = (m, on) => errorAo(main, m, on);
   // el que s'ha escrit no es perd en tornar a pintar la pantalla (en pujar fotos, apuntar una jornada…)
-  const desaEscrit = () => { const v = id => { const el = $('#' + id); return el ? el.value : null; }; const r = v('fin-resultat'), c = v('cons-text'), q = v('cons-resposta'), d = v('fin-decisio');
+  const desaEscrit = () => { const v = id => { const el = $('#' + id); return el ? el.value : null; };
+    const ccT = v('cc-text'); if (ccT != null && st.form && st.form.tipus === 'consulta_client') { st.form.text = ccT; const s = $('#cc-contacte'); if (s) st.form.contacte = Number(s.value); return; }
+    const r = v('fin-resultat'), c = v('cons-text'), q = v('cons-resposta') != null ? v('cons-resposta') : v('cc-resposta'), d = v('fin-decisio');
     if (r == null && c == null && q == null) return; st.form = Object.assign(st.form && st.form.accio === a.id ? st.form : { accio: a.id }, r != null ? { resultat: r } : {}, c != null ? { text: c } : {}, q != null ? { resposta: q } : {}, d != null ? { decisio: d } : {}); };
   main.querySelectorAll('[data-retira]').forEach(el => el.addEventListener('click', async e => { e.preventDefault(); const x = C.get('incidencia_accions', Number(el.dataset.retira)); if (x) await retiraAccio(inc, x); }));
   const desf = $('#ao-desfes'); if (desf) desf.addEventListener('click', async e => { e.preventDefault(); try { await desfesFinalitzat(inc, a); st.form = null; toast(esConsulta(a) || a.es_peticio ? 'La resposta torna a estar oberta' : 'Desfet: l’acció torna a estar oberta'); renderMain(); } catch (e2) { err(friendly(e2), desf); } });
@@ -7741,6 +7907,12 @@ function bindAccioOperari(inc, a, main) {
     ce.disabled = true;
     try { const r = await creaConsulta(inc, a, text); st.form = null; toast('Consulta enviada a ' + nomCurtTreballador(r.dest) + ': quan contesti, l’acció et tornarà.', 6000); renderMain(); }
     catch (e) { ce.disabled = false; err(friendly(e), ce); }
+  });
+  const cr = $('#cc-registra'); if (cr) cr.addEventListener('click', async () => {
+    const resposta = ($('#cc-resposta').value || '').trim(); if (!resposta) { err('Escriu la resposta del client.', cr); return; }
+    cr.disabled = true;
+    try { await finalitzaAccio(inc, a, { resultat: resposta }); st.form = null; toast('Resposta del client apuntada: és a dalt de tot de l’historial.', 6000); renderMain(); }
+    catch (e) { cr.disabled = false; err(friendly(e), cr); }
   });
   const cq = $('#cons-contesta'); if (cq) cq.addEventListener('click', async () => {
     const resposta = ($('#cons-resposta').value || '').trim(); if (!resposta) { err('Escriu la resposta.', cq); return; }
@@ -7775,6 +7947,7 @@ function bindAccioOperari(inc, a, main) {
 function panellHTML(inc) {
   const st = state.inc, t = trebInc();
   if (st.form && st.form.tipus === 'accio') return formAccioHTML(inc, st.form.origen ? C.get('incidencia_accions', st.form.origen) : null);
+  if (st.form && st.form.tipus === 'consulta_client') return `<h3>Consulta al client</h3><p class="sub">Una pregunta o una aclaració al client. No atura cap feina; quan contesti, hi apuntes la resposta i queda amb la pregunta a dalt de l’historial.</p>${formConsultaClientHTML(inc)}<div class="actions"><button class="btn ghost small" id="panell-cancel">Cancel·la</button></div>`;
   if (st.form && st.form.tipus === 'tanca') { const rc = reportsInc(inc).find(x => correuReporta(x)); return `<h3>Tanca la incidència</h3><div class="f"><span class="l">Motiu</span><select id="tanca-motiu">${INC.motiusTancament.map(o => `<option value="${o[0]}">${h(o[1])}</option>`).join('')}</select></div><div class="f"><span class="l">Resultat final</span><textarea lang="ca" spellcheck="true" id="tanca-resultat"></textarea><span class="hint">és el que rebrà qui va avisar, si li envies el resum. Si cal, després es pot reobrir.</span></div>${rc ? `<label class="chk" style="padding:0"><input type="checkbox" id="tanca-correu" checked> En tancar, prepara el correu de resum per a ${h(quiReporta(rc))} (${h(correuReporta(rc))})</label>` : ''}<div class="actions"><button class="btn danger" id="tanca-ok">Tanca</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div>`; }
   if (st.form && st.form.tipus === 'tancada') { const rc = reportsInc(inc).find(x => correuReporta(x)); return `<h3>Incidència tancada</h3><div class="msg ok">${h(inc.numero)} ha quedat tancada: ${h(etiquetaOpt(INC.motiusTancament, inc.motiu_tancament))}.</div>${rc ? `<p class="sub">Resum del que s’ha fet, a punt per enviar a <b>${h(quiReporta(rc))}</b> (${h(correuReporta(rc))}). S’obre al teu programa de correu: revisa’l i envia’l.</p><a class="btn" id="tanca-mail" href="${enllacMailto(correuReporta(rc), 'Incidència ' + inc.numero + ' · ' + inc.titol + ' · resolta', cosResumTancament(inc, rc))}">Envia el resum a ${h(quiReporta(rc))}</a><details style="margin-top:12px"><summary class="hint">Veure el text</summary><pre style="white-space:pre-wrap; font:inherit; font-size:13px; color:var(--ink-2)">${h(cosResumTancament(inc, rc))}</pre></details>` : '<p class="sub">Cap persona amb correu va fer el report: no hi ha resum per enviar.</p>'}<div class="actions"><button class="btn ghost" id="panell-cancel">Tanca el panell</button></div>`; }
   if (st.form && st.form.tipus === 'edita') { const contactes = contactesDelLloc(inc.lloc_id), marcats = new Set((inc.contactes_autoritzats || []).map(Number));
@@ -7790,7 +7963,7 @@ function panellHTML(inc) {
   const ext = externDeCapa(inc);
   if (!a) return `<h3>Detall</h3><p class="sub">${ext ? 'Així ho veu ' + h(nomExtern(ext)) + ': sense observacions internes ni accions que no li corresponen. Clica una caixa per veure’n el detall.' : 'Clica una caixa del diagrama per veure’n el detall i actuar-hi (finalitzar-la, encarregar-ne una altra o fer una consulta a qui te l’ha enviada).' + (inc.estat === 'oberta' ? ' Amb «Nova acció» en crees una que no deriva de cap altra.' : '')}</p>
     <h4>Llegenda</h4><div class="ic-llegenda"><span class="pill e-pendent">Pendent</span><span class="pill e-en_curs">En curs</span><span class="pill e-esperant">Esperant</span><span class="pill e-finalitzada">Finalitzada</span><span class="pill fora">Fora de termini</span><span class="pill dep">espera una resposta</span></div><p class="sub">Fletxa contínua: derivació. Fletxa discontínua: consulta o petició que espera resposta. El més nou, sempre a dalt.</p>`;
-  const tp = INC.tipus[a.tipus] || { nom: a.tipus }, ee = estatEfectiu(a), client = !!ext, oberta = inc.estat === 'oberta', cons = esConsulta(a); // client = vista externa (client, subcontractista o proveïdor): només mira
+  const tp = INC.tipus[a.tipus] || { nom: a.tipus }, ee = estatEfectiu(a), client = !!ext, oberta = inc.estat === 'oberta', cons = esConsulta(a), cc = esConsultaClient(a); // client = vista externa (client, subcontractista o proveïdor): només mira
   const pend = peticionsPendents(a).filter(x => !esConsulta(x)), consOb = consultaOberta(a), sobre = cons && a.origen_accio_id ? C.get('incidencia_accions', a.origen_accio_id) : null;
   const amps = C.rows('incidencia_ampliacions').filter(x => x.actiu && Number(x.accio_id) === a.id).sort((x, y) => String(x.demanada_el).localeCompare(String(y.demanada_el)));
   const potActuar = !client && oberta && t && (socResponsable(a) || esSeguidora(inc) || esOficina(t));
@@ -7802,8 +7975,9 @@ function panellHTML(inc) {
   if (derivables.length && !esReoberta(a)) ops += `<button class="btn ghost small" data-op="deriva">${a.estat === 'finalitzada' ? 'Encarrega el pas següent…' : 'Deriva una acció / fes una petició…'}</button> `;
   if (!client && potConsultar(inc, a)) ops += `<button class="btn ghost small" data-op="consulta">Demana consulta a ${h(nomCurtTreballador(destinatariConsulta(inc, a)))}…</button> `;
   if (potActuar && a.venciment && a.estat !== 'finalitzada' && !esSeguidora(inc) && !cons) ops += `<button class="btn ghost small" data-op="ampliacio">Demana ampliació de termini</button> `;
-  if (!client && oberta && (esSeguidora(inc) || esOficina(t)) && !cons) ops += `<button class="btn ghost small" data-op="visible">${a.visible_client ? 'Amaga al client' : 'Mostra al client'}</button> `;
-  if (!client && oberta && potRetirarAccio(inc, a)) ops += `<button class="btn ghost small" data-op="retira" title="Si s’ha fet per error: desapareix i tot queda com abans">${cons ? 'Retira la consulta' : 'Retira l’acció (feta per error)'}</button> `;
+  if (!client && oberta && cc && a.estat !== 'finalitzada' && potActuar) ops += enllacosConsultaClient(inc, a, false) + ' ';
+  if (!client && oberta && (esSeguidora(inc) || esOficina(t)) && !cons && !cc) ops += `<button class="btn ghost small" data-op="visible">${a.visible_client ? 'Amaga al client' : 'Mostra al client'}</button> `;
+  if (!client && oberta && potRetirarAccio(inc, a)) ops += `<button class="btn ghost small" data-op="retira" title="Si s’ha fet per error: desapareix i tot queda com abans">${cons || cc ? 'Retira la consulta' : 'Retira l’acció (feta per error)'}</button> `;
   if (!client && potDesferFinalitzada(inc, a)) ops += `<button class="btn ghost small" data-op="desfes" title="Si s’ha finalitzat per error: torna a estar oberta i tot queda com abans">${a.es_peticio ? 'Desfés la resposta' : 'Desfés el finalitzat'}</button> `;
   if (!client && oberta && a.estat !== 'finalitzada' && a.responsable_proveidor_id && potActuar) { const p = C.get('proveidors', a.responsable_proveidor_id); if (p && p.email) ops += enllacCorreuProveidor(inc, a, p); }
   const formOp = st.form && st.form.accio === a.id ? st.form : null;
@@ -7834,18 +8008,18 @@ function panellHTML(inc) {
   return `<div class="ic-propi ${a.visible_client && !client ? 'vis' : ''}"><h3 class="ic-titol">${h(tp.nom)}${cons ? ' de ' + h(nomCurtTreballador(C.get('treballadors', a.creat_per))) : a.titol && a.titol !== tp.nom ? ' · ' + h(a.titol) : ''}</h3>
     <div class="capsal"><span>Fase <b>${faseDe(a)}</b></span><span>Carril <b>${h(etiquetaOpt(INC.carrils, a.carril))}</b></span><span>Estat <b>${INC.estats[ee]}</b></span>${foraTermini(a) ? '<span><b class="v-no">Fora de termini</b></span>' : ''}</div>
     <div class="ic-detall">
-      ${cons ? `<div class="ic-preg-gran"><span class="l">Pregunta</span>${h(a.descripcio || '')}</div>` : ''}
+      ${cons || cc ? `<div class="ic-preg-gran"><span class="l">Pregunta</span>${h(a.descripcio || '')}</div>` : ''}
       ${sobre ? `<div><span class="l">Sobre</span><a href="#" data-sel="${sobre.id}">${h(nomTipus(sobre.tipus))}${sobre.titol && sobre.titol !== nomTipus(sobre.tipus) ? ' · ' + h(sobre.titol) : ''}</a> (${h(nomResponsable(sobre))})${sobre.descripcio ? '<br>' + h(sobre.descripcio) : ''}${Array.isArray(sobre.adjunts) && sobre.adjunts.length ? `<div class="ic-thumbs gran">${miniaturesHTML(sobre.adjunts)}</div>` : ''}</div>` : ''}
-      <div><span class="l">${cons ? 'L’ha de contestar' : 'Responsable'}</span>${h(nomResponsable(a)) || '—'}${a.gestor_id && !client ? ` <span class="hint">· ho gestiona ${h(nomTreballador(C.get('treballadors', a.gestor_id)))}</span>` : ''}</div>
+      <div><span class="l">${cons ? 'L’ha de contestar' : cc ? 'Al client' : 'Responsable'}</span>${h(nomResponsable(a)) || '—'}${a.gestor_id && !client ? ` <span class="hint">· ho gestiona ${h(nomTreballador(C.get('treballadors', a.gestor_id)))}</span>` : ''}</div>
       ${a.inici ? `<div><span class="l">Es pot començar</span>${dmyhm(a.inici)}${iniciFutur(a) ? ' · <b>programada</b>: fins llavors no compta com a oberta' : ''}</div>` : ''}
       <div><span class="l">${a.inici ? 'Termini final' : 'Termini'}</span>${a.venciment ? dmyhm(a.venciment) + (a.grup_termini ? ' · ' + h(etiquetaOpt(INC.grups, a.grup_termini)) : '') : (a.carril === 'client' ? 'sense termini (acció del client)' : '—')}</div>
       ${(() => { const f = fullDeAccio(a); return f ? `<div><span class="l">Full de treball</span><a href="#" data-obre-full="${f.id}">${h(f.numero || 'full')}</a> · ${h(ESTATS_FULL[f.estat] || f.estat)} · ${jornadesFull(f.id).length} jornad${jornadesFull(f.id).length === 1 ? 'a' : 'es'} (${String(horesFull(f.id)).replace('.', ',')} h × persones) · ${materialFull(f.id).length} de material${f.albara_id ? ' · albarà ' + h((C.get('albarans', f.albara_id) || {}).numero_complet || '') : ''}</div>` : (!client && accioAmbFull(a) && potCrearFullDe(a) && oberta ? `<div><span class="l">Full de treball</span><a href="#" data-crea-full="${a.id}">obre’n un</a> <span class="hint">(opcional: només si cal apuntar-hi jornades o material)</span></div>` : ''); })()}
       ${a.estat === 'finalitzada' ? `<div><span class="l">${cons ? 'Contestada' : 'Finalitzada'}</span>${dmyhm(a.finalitzada_el)} per ${h(nomCurtTreballador(C.get('treballadors', a.finalitzada_per)))}${a.data_recepcio ? ' · rebuda ' + dmyhm(a.data_recepcio) : ''}</div>` : ''}
-      ${a.descripcio && !cons ? `<div><span class="l">Descripció / instruccions</span>${h(a.descripcio)}</div>` : ''}
+      ${a.descripcio && !cons && !cc ? `<div><span class="l">Descripció / instruccions</span>${h(a.descripcio)}</div>` : ''}
       ${a.tipus === 'albarans' ? `<div><span class="l">Fulls de treball de la incidència</span>${fullsIncHTML(inc, potActuar && a.estat !== 'finalitzada' && esOficina(t))}</div>` : ''}
       ${a.decisio ? `<div><span class="l">Decisió</span><b>${h(etiquetaOpt(INC.decisions, a.decisio))}</b></div>` : ''}
       ${a.resultat && a.estat === 'finalitzada' ? `<div><span class="l">${a.es_peticio ? 'Resposta' : 'Resultat'}</span>${h(a.resultat)}</div>` : ''}
-      ${a.es_peticio && !cons ? `<div><span class="l">Petició</span>${a.estat === 'finalitzada' ? 'resposta registrada' : 'pendent de resposta'}</div>` : ''}
+      ${a.es_peticio && !cons && !cc ? `<div><span class="l">Petició</span>${a.estat === 'finalitzada' ? 'resposta registrada' : 'pendent de resposta'}</div>` : ''}
       ${consOb && !client ? `<div><span class="l">Consulta</span><a href="#" data-sel="${consOb.id}">esperant la resposta de ${h(nomCurtTreballador(C.get('treballadors', consOb.responsable_treballador_id)))}</a>: «${h(consOb.descripcio || '')}»</div>` : ''}
       ${amps.length && !client ? `<div><span class="l">Ampliacions</span>${amps.map(x => `<div>${dmyhm(x.demanada_el)}: ${dmyhm(x.venciment_original)} → ${dmyhm(x.venciment_nou)} · ${h(x.motiu)} · <b>${x.estat}</b>${x.estat === 'pendent' && oberta && esSeguidora(inc) ? ` <button class="btn small" data-amp="${x.id}" data-dec="aprovada">Aprova</button> <button class="btn ghost small" data-amp="${x.id}" data-dec="rebutjada">Rebutja</button>` : ''}</div>`).join('')}</div>` : ''}
       ${(() => { const obs = String(a.observacions || '').split('\n').filter(l => l.trim() && !/^Reoberta el /.test(l)).join('\n'); return obs ? `<div><span class="l">Observacions</span>${h(obs)}</div>` : ''; })()}
@@ -7928,6 +8102,7 @@ function seguentHabitual(origen) {
 function bindPanell(inc) {
   const st = state.inc, p = $('#ic-panell'), t = trebInc(); if (!p) return;
   const cancel = $('#panell-cancel'); if (cancel) cancel.addEventListener('click', () => { st.form = null; pintaPanell(inc); });
+  bindFormConsultaClient(inc, p, m => errorInc(m));
   const naTanca = $('#na-tanca'); if (naTanca) naTanca.addEventListener('click', () => { st.form = { tipus: 'tanca' }; st.sel = null; pintaPanell(inc); });
   p.querySelectorAll('[data-retira]').forEach(el => el.addEventListener('click', async e => { e.preventDefault(); const x = C.get('incidencia_accions', Number(el.dataset.retira)); if (x) await retiraAccio(inc, x); }));
   p.querySelectorAll('[data-sel]').forEach(el => el.addEventListener('click', e => { e.preventDefault(); st.sel = Number(el.dataset.sel); st.form = null; renderMain(); }));
@@ -8177,6 +8352,91 @@ async function creaConsulta(inc, a, text) {
   return { id: r.data.id, dest };
 }
 
+/* ---------- consulta al client: el tècnic o la seguidora (o l'oficina) pregunten o aclareixen alguna cosa al client, en qualsevol moment ----------
+   No atura cap feina: queda al carril del client, esperant. S'envia al client per WhatsApp o per correu (el text ja va preparat); quan contesta,
+   qui l'ha feta (o la seguidora, o l'oficina) hi apunta la resposta, i la pregunta i la resposta queden juntes, a dalt de tot de l'historial. */
+function potConsultarClient(inc) {
+  const t = trebInc();
+  return !!t && !!inc && inc.estat === 'oberta' && !vistaExterna() && (esSeguidora(inc) || esOficina(t) || carrilDeTreballador(t) === 'tecnic');
+}
+// a qui del client, per defecte: el primer que té la informació a disposició; si no, el principal del lloc
+function contactePerDefecte(inc) {
+  const cs = contactesDelLloc(inc.lloc_id), aut = (inc.contactes_autoritzats || []).map(Number);
+  return cs.find(c => aut.includes(c.id)) || cs.find(c => c.principal) || cs[0] || null;
+}
+async function creaConsultaClient(inc, contacteId, text) {
+  const t = trebInc(), c = contacteId ? C.get('contactes', contacteId) : null;
+  const dades = { incidencia_id: inc.id, tipus: 'consulta_client', carril: 'client', titol: nomTipus('consulta_client'), descripcio: text, creat_per: t.id,
+    responsable_treballador_id: null, responsable_proveidor_id: null, responsable_contacte_id: c ? c.id : null, gestor_id: t.id, estat: 'pendent', grup_termini: null, venciment: null, inici: null,
+    origen_accio_id: null, es_peticio: true, visible_client: true, adjunts: [] };
+  const r = await sb.from('incidencia_accions').insert(dades).select('id').single(); if (r.error) throw r.error;
+  await eventInc(inc.id, r.data.id, 'nova_accio', 'Consulta al client' + (c ? ' → ' + c.nom : '') + ': ' + String(text).slice(0, 160));
+  await recarregaInc();
+  return r.data.id;
+}
+// el missatge per enviar-la: la pregunta, la incidència i qui la fa (es pot retocar abans d'enviar-lo)
+function missatgeConsultaClient(inc, a) {
+  const c = C.get('contactes', a.responsable_contacte_id) || {}, q = C.get('treballadors', a.creat_per), lloc = llocInc(inc), emp = (C.rows('empresa')[0] || {}).nom || 'Outdoor';
+  const nom = String(c.nom || '').trim().split(/\s+/)[0] || '';
+  return { assumpte: 'Incidència ' + inc.numero + (lloc.nom ? ' · ' + lloc.nom : '') + ' · consulta',
+    cos: `Hola${nom ? ' ' + nom : ''},\n\nUs volem fer una consulta sobre la incidència ${inc.numero} (${inc.titol})${lloc.nom ? ', a ' + lloc.nom : ''}:\n\n${a.descripcio || ''}\n\nGràcies,\n${nomTreballador(q) || ''}\n${emp}` };
+}
+// el telèfon per a WhatsApp: només xifres, amb el prefix del país (34 si és un número espanyol de 9 xifres)
+const telefonWa = tel => { let d = String(tel || '').replace(/[^\d+]/g, ''); if (d.startsWith('+')) d = d.slice(1); else if (d.startsWith('00')) d = d.slice(2); else if (/^[6789]\d{8}$/.test(d)) d = '34' + d; return /^\d{8,15}$/.test(d) ? d : ''; };
+function enllacosConsultaClient(inc, a, gran) {
+  const c = C.get('contactes', a.responsable_contacte_id) || {}, m = missatgeConsultaClient(inc, a), wa = telefonWa(c.telefon), cls = gran ? 'boto-gran envia' : 'btn ghost small';
+  return `<a class="${cls}" href="https://wa.me/${wa}?text=${encodeURIComponent(m.cos)}" target="_blank" rel="noopener">Envia per WhatsApp${c.nom && wa ? ' a ' + h(c.nom) : ''}</a>`
+    + (c.email ? ` <a class="${cls}" href="${enllacMailto(c.email, m.assumpte, m.cos)}" title="${h(c.email)}">Envia per correu${c.nom ? ' a ' + h(c.nom) : ''}</a>` : '');
+}
+// el formulari (a l'app i a l'oficina): a qui i què
+function formConsultaClientHTML(inc) {
+  const fo = state.inc.form && state.inc.form.tipus === 'consulta_client' ? state.inc.form : {}, cs = contactesDelLloc(inc.lloc_id), def = fo.contacte || (contactePerDefecte(inc) || {}).id;
+  return `<div class="f"><span class="l">A qui</span>${cs.length ? `<select id="cc-contacte">${cs.map(c => `<option value="${c.id}" ${Number(def) === c.id ? 'selected' : ''}>${h(c.nom)}${c.carrec ? ' (' + h(c.carrec) + ')' : ''}</option>`).join('')}</select>` : '<span class="hint">Aquest lloc no té cap persona de contacte: la consulta queda apuntada per al client.</span>'}</div>
+    <div class="f"><span class="l">Què vols preguntar o aclarir al client?</span><textarea lang="ca" spellcheck="true" id="cc-text">${h(fo.text || '')}</textarea><span class="hint">Després la podràs enviar per WhatsApp o per correu, amb el text ja preparat.</span></div>
+    <button type="button" class="boto-gran client" id="cc-envia">Fes la consulta</button>`;
+}
+function bindFormConsultaClient(inc, cont, err) {
+  const st = state.inc, env = cont.querySelector('#cc-envia'); if (!env) return;
+  env.addEventListener('click', async () => {
+    const text = (cont.querySelector('#cc-text').value || '').trim(), sel = cont.querySelector('#cc-contacte');
+    if (!text) { err('Escriu què vols preguntar al client.', env); return; }
+    env.disabled = true;
+    try { const id = await creaConsultaClient(inc, sel && sel.value ? Number(sel.value) : null, text); st.form = null; st.sel = id; toast('Consulta al client apuntada: ara envia-la per WhatsApp o per correu.', 6000); renderMain(); }
+    catch (e) { env.disabled = false; err(friendly(e), env); }
+  });
+}
+// a l'app: el botó CONSULTA AL CLIENT, o el formulari obert
+function consultaClientAppHTML(inc) {
+  const fo = state.inc.form && state.inc.form.tipus === 'consulta_client';
+  return fo ? `<div class="ao-bloc ao-cons" id="cc-form">${formConsultaClientHTML(inc)}<a href="#" id="cc-cancel" class="ao-cancel">Cancel·la</a></div>` : `<button type="button" class="boto-gran client" id="cc-obre">Consulta al client</button>`;
+}
+function bindConsultaClientApp(inc, main) {
+  const st = state.inc;
+  const ob = main.querySelector('#cc-obre'); if (ob) ob.addEventListener('click', e => { e.preventDefault(); st.form = { tipus: 'consulta_client' }; renderMain(); const tx = $('#cc-text'); if (tx) { tx.focus(); if (tx.scrollIntoView) tx.scrollIntoView({ block: 'center' }); } });
+  const ca = main.querySelector('#cc-cancel'); if (ca) ca.addEventListener('click', e => { e.preventDefault(); st.form = null; renderMain(); });
+  bindFormConsultaClient(inc, main, (m, on) => errorAo(main, m, on));
+}
+// a l'app: la pantalla d'una consulta al client (la pregunta gran, enviar-la, i apuntar-hi la resposta quan arribi)
+function consultaClientAccioHTML(inc, a) {
+  const st = state.inc, t = trebInc(), ee = estatEfectiu(a), fet = a.estat === 'finalitzada', c = C.get('contactes', a.responsable_contacte_id) || {}, q = C.get('treballadors', a.creat_per);
+  const pot = inc.estat === 'oberta' && !!t && (socResponsable(a) || socCreador(a) || esSeguidora(inc) || esOficina(t));
+  const fo = st.form && st.form.accio === a.id ? st.form : {};
+  const html = [];
+  html.push(`<div class="ao-qui"><span>Al client: <b>${h(c.nom || 'el client')}</b>${c.carrec ? ' (' + h(c.carrec) + ')' : ''}</span><span>Ho pregunta: <b>${h(nomTreballador(q)) || '—'}</b></span></div>`);
+  html.push(`<div class="ao-peticio consulta client"><div class="ao-sobre"><span>F${faseDe(a)} · ${h(nomTipus(a.tipus))}</span><span class="pill e-${ee}">${INC.estats[ee]}</span></div><div class="ao-text">${h(a.descripcio || '')}</div></div>`);
+  if (fet) html.push(`<div class="ao-feta"><b>Resposta de ${h(c.nom || 'el client')}</b> · ${dmyhm(a.finalitzada_el)}${a.finalitzada_per && Number(a.finalitzada_per) !== (t || {}).id ? ' · l’ha apuntada ' + h(nomCurtTreballador(C.get('treballadors', a.finalitzada_per))) : ''}<div class="ao-desc">${h(a.resultat || '')}</div>${potDesferFinalitzada(inc, a) ? '<a href="#" id="ao-desfes" class="ao-desfes">Desfés-ho</a>' : ''}</div>`);
+  else if (pot) {
+    html.push(`<div class="ao-envia">${enllacosConsultaClient(inc, a, true)}</div>`);
+    html.push(`<div class="ao-bloc"><div class="f"><span class="l">Quan contesti: la resposta del client</span><textarea lang="ca" spellcheck="true" id="cc-resposta">${h(fo.resposta || '')}</textarea></div><button type="button" class="boto-gran contesta" id="cc-registra">Registra la resposta</button>${potRetirarAccio(inc, a) ? `<a href="#" class="ao-cancel" data-retira="${a.id}">Retira la consulta (feta per error)</a>` : ''}</div>`);
+  }
+  html.push(caixaMediaHTML(a, potPujarAdj(inc, a), { titol: 'Fotos i documents de la consulta', boto: 'Afegeix una foto o un document' }));
+  const fil = filIncHTML(inc, a, { senseObertura: true });
+  if (fil) html.push(`<div class="ao-fila ao-fil"><span class="l">Fins ara</span>${fil}</div>`);
+  // una altra pregunta al client (petit: aquí el que compta és aquesta)
+  if (potConsultarClient(inc)) html.push(state.inc.form && state.inc.form.tipus === 'consulta_client' ? consultaClientAppHTML(inc) : '<a href="#" id="cc-obre" class="ao-cancel">Fes una altra consulta al client</a>');
+  return html.join('');
+}
+
 /* ---------- finalitzar: un sol pas, sense confirmar (si cal, es desfà) ----------
    o = { resultat, decisio, recepcio }. El full de treball de l'acció queda totalment finalitzat (o anul·lat, si és buit); la feina d'un operari
    torna a qui la va encarregar; una consulta contestada torna la feina a qui la va fer; el pressupost va al client. Torna què ha passat. */
@@ -8337,7 +8597,7 @@ function renderAccionsMeves(main) {
   const totes = C.rows('incidencia_accions').filter(a => a.actiu && a.estat !== 'finalitzada' && t && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id))
     .filter(a => (C.get('incidencies', a.incidencia_id) || {}).estat === 'oberta');
   const perAra = totes.filter(perFer).sort((a, b) => (Number(esConsulta(b)) - Number(esConsulta(a))) || String(a.venciment || '9').localeCompare(String(b.venciment || '9')));
-  const esperen = totes.filter(a => activa(a) && peticionsObertes(a).length).sort((a, b) => String(a.venciment || '9').localeCompare(String(b.venciment || '9')));
+  const esperen = totes.filter(a => activa(a) && (peticionsObertes(a).length || esConsultaClient(a))).sort((a, b) => String(a.venciment || '9').localeCompare(String(b.venciment || '9')));
   const programades = totes.filter(iniciFutur).sort((a, b) => String(a.inici).localeCompare(String(b.inici)));
   // les incidències que segueixo (o totes, si soc de l'oficina) sense cap acció oberta: toca encarregar el pas següent o tancar-les
   const perEncarregar = t ? C.rows('incidencies').filter(i => senseSeguent(i) && (Number(i.seguidora_id) === t.id || (!APP_NOMES_TASQUES && esOficina(t)))).sort((x, y) => String(y.data_obertura).localeCompare(String(x.data_obertura))) : [];
@@ -8350,12 +8610,16 @@ function renderAccionsMeves(main) {
   // les novetats que encara no s'havien mirat (en sortir d'aquí, ja estan vistes)
   const vistesAbans = vistes() || new Set(), noves = new Set(novetatsMeves().filter(n => !vistesAbans.has(n.clau)).map(n => n.accio));
   const respostes = new Map(novetatsMeves().filter(n => n.tipus === 'resposta').map(n => [n.accio, C.get('incidencia_accions', n.consulta)]));
+  // la resposta del client a una consulta teva, si l'ha apuntada algú altre: a dalt de tot fins que la miris
+  const respClient = novetatsMeves().filter(n => n.tipus === 'resposta_client' && !vistesAbans.has(n.clau)).map(n => C.get('incidencia_accions', n.accio)).filter(Boolean);
+  const targetaRespClient = a => { const inc = C.get('incidencies', a.incidencia_id) || {};
+    return `<div class="ic-targeta consulta nou" data-inc="${inc.id}" data-accio="${a.id}"><span class="pill nou">nova</span> <b>Resposta de ${h(nomResponsable(a) || 'el client')}</b> · ${h(inc.numero || '')} ${h(inc.titol || '')}<br><span class="hint">${h(llocInc(inc).nom || '')} · a la teva consulta: «${h(String(a.descripcio || '').slice(0, 120))}»</span><br><span class="ic-resp">${h(String(a.resultat || '').slice(0, 200))}</span></div>`; };
   const targetaInc = i => { const ob = accionsInc(i).filter(a => a.estat !== 'finalitzada' && activa(a)), qui = ob.map(a => nomCurtTreballador(C.get('treballadors', a.responsable_treballador_id)) || nomResponsable(a)).filter(Boolean);
     return `<div class="ic-targeta part" data-inc="${i.id}" data-accio="" style="border-left-color:${ob.length ? colorCarril(ob[0].carril) : '#c9d0c4'}"><b>${h(i.numero)}</b> · ${h(i.titol)}<br><span class="hint">${h(llocInc(i).nom || '')}${i.estat === 'tancada' ? ' · tancada ' + dmy(i.data_tancament) : (qui.length ? ' · ara depèn de ' + h([...new Set(qui)].join(', ')) : ' · cap acció oberta')}</span></div>`; };
   const targeta = a => {
     const inc = C.get('incidencies', a.incidencia_id) || {}, ee = estatEfectiu(a), cons = esConsulta(a), internes = [inc.observacions_internes, a.observacions_internes].filter(Boolean).join(' · ');
     const sobre = cons && a.origen_accio_id ? C.get('incidencia_accions', a.origen_accio_id) : null, consOb = consultaOberta(a), resp = respostes.get(a.id);
-    const titol = cons ? 'Consulta de ' + nomCurtTreballador(C.get('treballadors', a.creat_per)) : nomTipus(a.tipus);
+    const titol = cons ? 'Consulta de ' + nomCurtTreballador(C.get('treballadors', a.creat_per)) : esConsultaClient(a) ? 'Consulta al client' + (nomResponsable(a) ? ' · ' + nomResponsable(a) : '') : nomTipus(a.tipus);
     return `<div class="ic-targeta ${foraTermini(a) ? 'fora' : ''} ${cons ? 'consulta' : ''} ${noves.has(a.id) ? 'nou' : ''}" data-inc="${inc.id}" data-accio="${a.id}">${noves.has(a.id) ? '<span class="pill nou">nova</span> ' : ''}<b>${h(titol)}</b> · ${h(inc.numero || '')} ${h(inc.titol || '')}<br><span class="hint">${h(llocInc(inc).nom || '')}${sobre ? ' · sobre «' + h(nomTipus(sobre.tipus)) + '»' : ''}</span><br>`
       + `<span class="pill e-${ee}">${INC.estats[ee]}</span> ${esReoberta(a) ? '<span class="pill dep">ha tornat: cal el pas següent</span> ' : ''}${iniciFutur(a) ? '<span>' + textInici(a) + '</span> · ' : ''}${a.venciment ? '<span class="' + (foraTermini(a) ? 'v-no' : '') + '">venç ' + dmyhm(a.venciment) + '</span>' : ''}`
       + `${consOb ? '<br><span class="ic-espera">Esperant la resposta de ' + h(nomCurtTreballador(C.get('treballadors', consOb.responsable_treballador_id))) + ': «' + h(String(consOb.descripcio || '').slice(0, 120)) + '»</span>' : ''}`
@@ -8364,6 +8628,7 @@ function renderAccionsMeves(main) {
   };
   main.innerHTML = `<h1>Les meves accions <button class="btn ghost small" id="am-cal" style="vertical-align:middle; margin-left:8px">Calendari</button></h1>
     ${!t ? '<div class="msg err">El teu usuari no té fitxa de treballador.</div>' : ''}
+    ${respClient.map(targetaRespClient).join('')}
     ${perAra.length ? perAra.map(targeta).join('') : '<div class="empty">Ara mateix no tens res per fer.</div>'}
     ${esperen.length ? `<h3>Esperant resposta</h3><p class="hint">Hi has fet una consulta (o una petició): quan et contestin, tornaran a dalt.</p>${esperen.map(targeta).join('')}` : ''}
     ${programades.length ? `<details class="ic-programades"><summary>Programades per més endavant (${programades.length}): encara no toquen</summary>${programades.map(targeta).join('')}</details>` : ''}
@@ -8383,7 +8648,7 @@ function renderAccionsMeves(main) {
    ===================================================================== */
 const COLORS_ACCIO = {
   obrir: '#8d8d8d', assignar_seguidora: '#6f6f6f', visibilitat_client: '#b5b5b5',                                   // F1 grisos
-  diagnosticar: '#1f5fbf', planificar: '#3b7dd8', consultar: '#5e9ae6', demanar_preu: '#8fbcef', pressupost: '#0f3f8f', // F2 blaus
+  diagnosticar: '#1f5fbf', planificar: '#3b7dd8', consultar: '#5e9ae6', consulta_client: '#9b6fd6', demanar_preu: '#8fbcef', pressupost: '#0f3f8f', // F2 blaus
   demanar_instruccions: '#7b4fb3', decisio_client: '#a07fd2', autoritzar_actuacio: '#5e3690',                     // F3 liles
   programar: '#e08a2b', assignar: '#f0a64f', executar: '#c9671a', demanar_material: '#b8862b', registrar_resultat: '#f6c88a', // F4 taronges
   conclusio: '#2f7d4a', tancar: '#1e5c35', reobrir: '#6db585',                                                    // F5 verds
