@@ -710,6 +710,17 @@
   .copia-avis{ flex:1 1 100%; background:#f2f7fc; border:1.5px solid #a9c8e8; border-radius:10px; padding:11px 15px; line-height:1.45; }
   .copia-avis p{ margin:0 0 7px; } .copia-avis p:last-child{ margin:0; } .copia-avis .sub{ font-size:13.5px; color:var(--ink-2); }
   .copia-avis .btn.small{ margin-left:4px; }
+  /* correccions de fitxatges (oficina) */
+  .fx-ed{ border:1px solid var(--line-2); background:#fff; color:var(--ink-2); border-radius:5px; padding:0 6px; margin-left:3px; font:inherit; font-size:12.5px; line-height:20px; cursor:pointer; vertical-align:1px; }
+  .fx-ed:hover{ border-color:var(--ink-2); color:var(--ink); }
+  .fx-corr{ color:#b26a00; font-weight:700; cursor:help; margin-left:1px; }
+  .fx-ed-caixa{ max-width:520px; } .fx-ed-caixa .f{ margin:0 0 10px; } .fx-ed-qui{ margin:0 0 10px; }
+  .fx-ed-caixa .fx-ed-grid{ display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:10px; }
+  .fx-ed-caixa input[type=date], .fx-ed-caixa input[type=time], .fx-ed-caixa input[type=text], .fx-ed-caixa select{ width:100%; box-sizing:border-box; }
+  .fx-ed-endema{ display:flex; gap:7px; align-items:center; font-size:14px; color:var(--ink-2); margin:0 0 10px; }
+  .fx-ed-caixa .hint{ display:block; margin:0 0 12px; font-size:13px; line-height:1.4; }
+  .fx-corr-titol{ margin-top:26px; }
+  @media (max-width:560px){ .fx-ed-caixa .fx-ed-grid{ grid-template-columns:1fr 1fr; } .fx-ed-caixa .fx-ed-grid .f:first-child{ grid-column:1 / -1; } }
 </style>
 </head>
 <body data-mode="entrada">
@@ -1565,7 +1576,8 @@ const SCHEMA = {
       children: [{ table: 'factura_linies', fk: 'factura_id', label: 'Línies de la factura', show: r => !!r.amb_linies, editable: r => r.estat === 'esborrany', sum: { field: 'base', label: 'Base imposable' } }],
       actions: r => r.estat === 'esborrany'
         ? [{ label: 'Emet la factura', run: () => emetFactura(r.id) }, { label: 'Previsualitza el PDF', run: () => generaPdfFactura(r.id).catch(e => showFormError(friendly(e))) }]
-        : (r.pdf ? [{ label: 'Obre el PDF', noDesa: true, run: () => obreFitxer(r.pdf) }]
+        : (r.pdf ? [{ label: 'Obre el PDF', noDesa: true, run: () => obreFitxer(r.pdf) },
+                    { label: 'Refés el PDF', noDesa: true, run: () => generaPdfFactura(r.id).then(() => toast('PDF refet i desat')).catch(e => showFormError(friendly(e))) }]
                  : [{ label: 'Genera el PDF', run: () => generaPdfFactura(r.id, { obrir: false }).then(() => { toast('PDF desat'); renderMain(); }).catch(e => showFormError(friendly(e))) }]),
       fields: [
         { key: 'numero_complet', label: 'Número', type: 'info', fmt: r => r.numero_complet || '(s’assigna en emetre)' },
@@ -2046,6 +2058,7 @@ const SCHEMA = {
     incidencies: { label: 'Incidències', nou: 'Nova incidència', order: 'id', display: r => (r.numero || '') + ' — ' + (r.titol || ''), list: ['numero', 'titol'], fields: [] },
     nomines: { label: 'Nòmines', order: 'id', display: r => (r.concepte || 'Nòmina') + ' ' + MESOS[(r.mes || 1) - 1] + ' ' + r.exercici, list: ['treballador_id', 'exercici', 'mes', 'concepte'], fields: [] }, // es carrega per al calendari de nòmines (pàgina pròpia)
     absencies: { label: 'Vacances i baixes', order: 'id', display: r => (r.tipus || '') + ' ' + dmy(r.dia), list: ['treballador_id', 'dia', 'tipus'], fields: [] }, // un registre per treballador i dia; es carrega per al calendari (pàgina pròpia)
+    fitxatges_correccions: { label: 'Correccions de fitxatges', order: 'id', display: r => r.accio + ' ' + r.tipus, list: [], fields: [] }, // el rastre de les correccions (SQL 080)
     fitxatges: { label: 'Fitxatges', order: 'id', display: r => (r.tipus || '') + ' ' + dmyhm(r.moment), list: ['treballador_id', 'tipus', 'moment'], fields: [] }, // entrades i sortides; es carrega per a les pàgines Fitxar i Fitxatges
     festius: {
       label: 'Festius', nou: 'Nou festiu', order: 'dia', desc: true,
@@ -2291,7 +2304,7 @@ const C = {
   rows: t => cache[t] || [],
   get: (t, id) => { const pk = (SCHEMA.tables[t] || {}).pk; return pk ? (cache[t] || []).find(r => String(r[pk]) === String(id)) : (cache[t] || []).find(r => r.id === Number(id)); },
 };
-const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, copia: null, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, pagProv: { vista: 'marca', data: '', q: '', fets: {}, pagades: false }, ft: { id: null, form: null, vista: 'llista', nou: null, fets: false }, marques: {}, fac: { any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), avis: null }, ia: { missatges: [], enviant: false }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, calAcc: { vista: '', ref: '', meves: false, fetes: false, interns: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
+const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, copia: null, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, pagProv: { vista: 'marca', data: '', q: '', fets: {}, pagades: false }, ft: { id: null, form: null, vista: 'llista', nou: null, fets: false }, marques: {}, fac: { any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), avis: null }, ia: { missatges: [], enviant: false }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, calAcc: { vista: '', ref: '', meves: false, fetes: false, interns: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false, ed: null }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
 const L = (t, id) => { const r = C.get(t, id); return r ? SCHEMA.tables[t].display(r, L) : ''; };
 
 /* =====================================================================
@@ -4180,14 +4193,14 @@ function renderApp() {
       </nav>
       <div class="main" id="main"></div>
     </div>`;
-  $('#brand').addEventListener('click', () => { state.table = null; state.editing = null; state.copia = null; renderApp(); });
+  $('#brand').addEventListener('click', () => { state.table = null; state.editing = null; state.copia = null; state.fx.ed = null; renderApp(); });
   $('#logout').addEventListener('click', async () => { await oblidaPush(); await sb.auth.signOut(); user = null; renderLogin(); });
   bindBotoAvisos();
   document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
-    state.mode = b.dataset.mode; state.editing = null; state.copia = null; renderApp();
+    state.mode = b.dataset.mode; state.editing = null; state.copia = null; state.fx.ed = null; renderApp();
   }));
   document.querySelectorAll('.side button').forEach(b => b.addEventListener('click', () => {
-    state.table = b.dataset.table; state.editing = null; state.q = ''; state.copia = null; renderApp();
+    state.table = b.dataset.table; state.editing = null; state.q = ''; state.copia = null; state.fx.ed = null; renderApp();
   }));
   renderMain();
 }
@@ -4252,7 +4265,7 @@ function renderAppOperari() {
       <span class="who">${h(t ? nomCurtTreballador(t) : user.email)} <button class="btn ghost small" id="avisos">🔕 Avisos</button> <button class="btn ghost small" id="logout">Surt</button></span>
     </div>
     <div class="shell" style="grid-template-columns:minmax(0,1fr)"><div class="main" id="main"></div></div>`;
-  $('#brand').addEventListener('click', () => { state.table = null; state.editing = null; state.copia = null; renderApp(); });
+  $('#brand').addEventListener('click', () => { state.table = null; state.editing = null; state.copia = null; state.fx.ed = null; renderApp(); });
   $('#logout').addEventListener('click', async () => { await oblidaPush(); await sb.auth.signOut(); user = null; renderLogin(); });
   bindBotoAvisos();
   const main = $('#main');
@@ -4261,6 +4274,7 @@ function renderAppOperari() {
       ${t ? '' : '<div class="msg err">El teu usuari no té fitxa de treballador amb aquest correu d’accés: demana a l’oficina que t’hi afegeixin.</div>'}
       <div class="home menu-app">
         <button class="ample" data-go="fitxar" style="${estilMenu('fitxar')}"><strong>Fitxar</strong><em class="sub">Entrada · Sortida</em><span>${h(estatFitxatgeText(t))}</span>${fonsMenu('fitxar')}</button>
+        ${potCorregirFitxatges(t) ? `<button class="ample" data-go="fitxatges" style="--p:#7d93a6;--pf:#2f4a60"><strong>Fitxatges de tothom</strong><span>Corregir entrades i sortides</span>${ESCENES_MENU.fitxar}</button>` : ''}
         <button class="ample" data-go="tasques_piscina" style="${estilMenu('tasques_piscina')}"><strong>Tasques piscina</strong><span>Nova tasca: mesures, comprovacions i feines</span>${fonsMenu('tasques_piscina')}</button>
         <button data-go="informe_tasques_piscina" style="${estilMenu('informe_tasques_piscina')}"><strong>Tasques per piscina</strong>${fonsMenu('informe_tasques_piscina')}</button>
         <button data-go="informe_tasques_dates" style="${estilMenu('informe_tasques_dates')}"><strong>Tasques per data</strong>${fonsMenu('informe_tasques_dates')}</button>
@@ -5027,10 +5041,19 @@ function pdfFactura(f) {
   const acc = ACCENT[tema], ink = [40, 40, 40], grey = [125, 125, 125];
   const linies = C.rows('factura_linies').filter(l => l.actiu && Number(l.factura_id) === f.id).sort((a, b) => (a.ordre - b.ordre) || (a.id - b.id));
   const M = 20, R = 210 - M, W = R - M;
+  const BAIX = 274;   // fins on arriba el contingut de cada pàgina: a sota hi ha el peu (la ratlla, a 279)
   const label = (t, x, y, opt) => { doc.setTextColor(...grey); doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.text(t, x, y, opt); };
   const text = (t, x, y, size, style, color, opt) => { doc.setTextColor(...(color || ink)); doc.setFont('helvetica', style || 'normal'); doc.setFontSize(size || 10); doc.text(t, x, y, opt); };
+  const marca = () => { if (f.estat === 'esborrany') { doc.setTextColor(232, 232, 232); doc.setFont('helvetica', 'bold'); doc.setFontSize(64); doc.text('ESBORRANY', 105, 170, { align: 'center', angle: 30 }); } };
+  // quan no hi cap tot: pàgina nova, amb el número de la factura i el client a dalt; torna on comença el contingut
+  const novaPagina = () => {
+    doc.addPage(); marca();
+    label('FACTURA ' + (f.numero_complet || 'ESBORRANY') + ' (CONTINUACIÓ)', M, 16);
+    label(f.client_nom || client.nom || '', R, 16, { align: 'right' });
+    return 24;
+  };
 
-  if (f.estat === 'esborrany') { doc.setTextColor(232, 232, 232); doc.setFont('helvetica', 'bold'); doc.setFontSize(64); doc.text('ESBORRANY', 105, 170, { align: 'center', angle: 30 }); }
+  marca();
 
   // logotip
   const lw = 62, lh = lw * LOGO_RATIO;
@@ -5069,46 +5092,64 @@ function pdfFactura(f) {
   text(cL, M, y + 6, 10.5); y = y + 6 + cL.length * 5.3;
   if (f.periode_inici && f.periode_fi) { text('Període del ' + dmy(f.periode_inici) + ' al ' + dmy(f.periode_fi), M, y + 1, 8.5, 'normal', grey); y += 6; }
 
-  // línies (només a les factures manuals)
+  // línies (només a les factures manuals); si no hi caben, continuen a la pàgina següent amb la capçalera de la taula
   if (linies.length) {
     y += 8;
     const ambDte = linies.some(l => l.dte != null && l.dte !== '');
     const cx = ambDte ? { qty: 128, preu: 150, dte: 166, imp: R } : { qty: 138, preu: 163, imp: R };
     const descW = (cx.qty - 12) - (M + 2);
-    doc.setFillColor(242, 242, 242); doc.rect(M, y, W, 7, 'F');
-    label('DESCRIPCIÓ', M + 2, y + 4.6); label('Nº', cx.qty, y + 4.6, { align: 'right' }); label('IMPORT', cx.preu, y + 4.6, { align: 'right' });
-    if (ambDte) label('DTE', cx.dte, y + 4.6, { align: 'right' });
-    label('TOTAL', cx.imp - 2, y + 4.6, { align: 'right' });
-    y += 7;
-    doc.setDrawColor(225); doc.setLineWidth(0.2);
+    const capTaula = () => {
+      doc.setFillColor(242, 242, 242); doc.rect(M, y, W, 7, 'F');
+      label('DESCRIPCIÓ', M + 2, y + 4.6); label('Nº', cx.qty, y + 4.6, { align: 'right' }); label('IMPORT', cx.preu, y + 4.6, { align: 'right' });
+      if (ambDte) label('DTE', cx.dte, y + 4.6, { align: 'right' });
+      label('TOTAL', cx.imp - 2, y + 4.6, { align: 'right' });
+      y += 7;
+    };
+    capTaula();
     for (const l of linies) {
-      const dL = doc.splitTextToSize(l.descripcio, descW);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);   // la descripció es parteix amb la lletra amb què s'escriu
+      const dL = doc.splitTextToSize(String(l.descripcio || ''), descW);
       const rh = Math.max(6.5, dL.length * 4.8 + 2);
+      if (y + rh > BAIX) { y = novaPagina(); capTaula(); }
       text(dL, M + 2, y + 4.6, 9.5);
       text(String(l.quantitat).replace('.', ','), cx.qty, y + 4.6, 9.5, 'normal', ink, { align: 'right' });
       text(fmtEur(l.preu_unitari), cx.preu, y + 4.6, 9.5, 'normal', ink, { align: 'right' });
       if (ambDte) text(l.dte != null && l.dte !== '' ? String(Number(l.dte)).replace('.', ',') + ' %' : '', cx.dte, y + 4.6, 9.5, 'normal', ink, { align: 'right' });
       text(fmtEur(l.base), cx.imp - 2, y + 4.6, 9.5, 'normal', ink, { align: 'right' });
-      y += rh; doc.line(M, y, R, y);
+      y += rh; doc.setDrawColor(225); doc.setLineWidth(0.2); doc.line(M, y, R, y);
     }
+    if (y + 8 > BAIX) y = novaPagina();
     const suma = linies.reduce((t, l) => t + Number(l.base || 0), 0);
     text('Base imposable', cx.preu, y + 5.2, 9.5, 'bold', ink, { align: 'right' });
     text(fmtEur(suma), cx.imp - 2, y + 5.2, 9.5, 'bold', ink, { align: 'right' });
     y += 8;
   }
 
-  // pagament
-  const py = Math.max(y + 14, 196);
-  label('PAGAMENT', M, py);
+  // pagament (a l'esquerra), totals (a la dreta) i codi de client (a baix a l'esquerra): al lloc de sempre si les línies hi deixen lloc,
+  // just a sota de les línies si arriben més avall, i a la pàgina següent si en aquesta ja no hi caben
   const forma = f.forma_pagament || client.forma_pagament;
   const venc = f.data_venciment ? dmy(f.data_venciment) : null;
   const ptxt = forma === 'domiciliacio'
     ? 'Rebut domiciliat al compte del client' + (venc ? ', amb càrrec el ' + venc : '') + '.'
     : 'Transferència al compte ' + (f.compte_cobrament_text || '') + (venc ? ', abans del ' + venc : '') + '.';
-  text(doc.splitTextToSize(ptxt, 95), M, py + 5.5, 9.5);
+  const codi = f.codi_client || client.codi_client;
+  const lloc = des => {
+    const py = Math.max(des + 10, 196), ty = Math.max(des + 12, 232);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+    let pL = doc.splitTextToSize(ptxt, 95);
+    if (ty - 4 < py + 5.5 + pL.length * 4.2) pL = doc.splitTextToSize(ptxt, 88);   // al costat dels totals: una mica més estret, que no s'hi acosti
+    const pFi = py + 5.5 + (pL.length - 1) * 4.2, cy = Math.max(262, pFi + 9);
+    return { py, ty, cy, pL, fi: Math.max(ty + 22, codi ? cy + 6.5 : pFi + 2) };
+  };
+  let ll = lloc(y);
+  if (ll.fi > BAIX) ll = lloc(novaPagina());
+
+  // pagament
+  label('PAGAMENT', M, ll.py);
+  text(ll.pL, M, ll.py + 5.5, 9.5);
 
   // totals
-  const tx = 118, ty = 232, tv = R - 3;
+  const tx = 118, ty = ll.ty, tv = R - 3;
   const fila = (t, v, yy, big) => { text(t, tx + 3, yy, big ? 11 : 9.5, big ? 'bold' : 'normal'); text(v, tv, yy, big ? 12 : 10, big ? 'bold' : 'normal', big ? acc : ink, { align: 'right' }); };
   fila('Base imposable', fmtEur(f.base_imponible), ty);
   fila('IVA ' + String(Number(f.iva_percent)).replace('.', ',') + ' %', fmtEur(f.quota_iva), ty + 7.5);
@@ -5116,18 +5157,21 @@ function pdfFactura(f) {
   fila('TOTAL FACTURA', fmtEur(f.total), ty + 18.8, true);
 
   // codi de client, a baix a l'esquerra
-  const codi = f.codi_client || client.codi_client;
-  if (codi) { label('CODI CLIENT', M, 262); text(String(codi), M, 267.5, 10); }
+  if (codi) { label('CODI CLIENT', M, ll.cy); text(String(codi), M, ll.cy + 5.5, 10); }
 
-  // peu: dades de l'empresa
-  doc.setDrawColor(205); doc.setLineWidth(0.2); doc.line(M, 279, R, 279);
+  // peu a totes les pàgines: dades de l'empresa (i el número de pàgina, si n'hi ha més d'una)
   const peu1 = [emp.nom, emp.nif].filter(Boolean).join('   ·   ');
   const peu2 = [[emp.adreca, [emp.cp, emp.poblacio].filter(Boolean).join(' ')].filter(Boolean).join(', '), emp.telefon ? 'T ' + emp.telefon : '', emp.email].filter(Boolean).join('   ·   ');
-  text(peu1, 105, 284, 8, 'normal', grey, { align: 'center' });
-  text(peu2, 105, 288.5, 8, 'normal', grey, { align: 'center' });
+  const n = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= n; i++) {
+    doc.setPage(i);
+    doc.setDrawColor(205); doc.setLineWidth(0.2); doc.line(M, 279, R, 279);
+    text(peu1, 105, 284, 8, 'normal', grey, { align: 'center' });
+    text(peu2, 105, 288.5, 8, 'normal', grey, { align: 'center' });
+    if (n > 1) text('Pàgina ' + i + ' de ' + n, R, 284, 7.5, 'normal', grey, { align: 'right' });
+  }
   return doc;
 }
-
 async function generaPdfFactura(id, { obrir = true } = {}) {
   const f = C.get('factures', id);
   const doc = pdfFactura(f);
@@ -9056,7 +9100,7 @@ function posicioActual() {
 }
 // el lloc d'un fitxatge, per a l'app: el lloc nostre més proper si és a menys de 300 m; si no, a quina distància queda del més proper; o sense GPS
 function llocFitxatgeText(f, llocs) {
-  if (f.lat == null || f.lng == null) return '<span class="fx-lluny">sense GPS</span>';
+  if (f.lat == null || f.lng == null) return /^Afegit per /.test(f.observacions || '') ? '<span class="hint">afegit des de l’oficina</span>' : '<span class="fx-lluny">sense GPS</span>';
   const p = llocMesProper(Number(f.lat), Number(f.lng), llocs); if (!p) return '<span class="hint">posició desada</span>';
   return p.m <= RADI_LLOC_FEINA_M ? `<span class="fx-aprop">${h(p.nom)}</span>` : `<span class="fx-lluny">a ${distText(p.m)} de ${h(p.nom)}</span>`;
 }
@@ -9132,7 +9176,7 @@ function llocMesProper(lat, lng, llocs) {
 }
 const distText = m => m < 1000 ? Math.round(m) + ' m' : (m / 1000).toFixed(1).replace('.', ',') + ' km';
 function proximitatHTML(f, llocs) {
-  if (f.lat == null || f.lng == null) return '<span class="fx-lluny">sense GPS</span>';
+  if (f.lat == null || f.lng == null) return /^Afegit per /.test(f.observacions || '') ? '<span class="hint">afegit des de l’oficina</span>' : '<span class="fx-lluny">sense GPS</span>';
   const p = llocMesProper(Number(f.lat), Number(f.lng), llocs); if (!p) return '<span class="hint">cap lloc amb coordenades</span>';
   return `<span class="${p.m <= RADI_LLOC_FEINA_M ? 'fx-aprop' : 'fx-lluny'}">${p.m <= RADI_LLOC_FEINA_M ? '' : '⚠ '}${h(p.nom)} · ${distText(p.m)}</span>`;
 }
@@ -9241,43 +9285,177 @@ function pdfRegistreJornada(persones, any, mes) {
   });
   return doc;
 }
-// oficina: els fitxatges de tothom, per mes i per persona (resum diari) o com a llista completa; PDF del registre de jornada
+/* ---------- Correccions de fitxatges (només a la web de l'oficina) ----------
+   L'administrador, l'oficina i els tècnics (carril tècnic) poden afegir, canviar l'hora o eliminar entrades i sortides de qualsevol persona.
+   Tot passa per corregeix_fitxatges() (SQL 080): comprova el permís, que les entrades i sortides continuïn alternant-se, i n'apunta el rastre
+   (qui, quan, l'hora d'abans, la de després i el motiu). Els operaris, no; i a l'app, ningú. */
+const potCorregirFitxatges = t => !APP_NOMES_TASQUES && !!t && (esOficina(t) || carrilDeTreballador(t) === 'tecnic');
+const fitxatgesCorregits = () => new Set(C.rows('fitxatges_correccions').map(c => Number(c.fitxatge_id)).filter(Boolean));
+// la marca d'un fitxatge afegit o corregit per l'oficina (amb la nota de qui i quan)
+const marcaCorregit = (f, corr) => f && corr.has(Number(f.id)) ? `<sup class="fx-corr" title="${h(f.observacions || 'Corregit')}">*</sup>` : '';
+// un tram del resum: entrada – sortida; si la sortida és d'un altre dia, amb la data; si passa de 12 hores, en vermell
+function tramFitxatgeHTML(x, llocs, corr) {
+  const fiDia = x.fi ? ymd(new Date(x.fi.moment)) : null, llarg = !!x.fi && x.minuts > 12 * 60;
+  const fi = x.fi
+    ? `<span class="${llarg ? 'v-no' : ''}"${llarg ? ' title="Més de 12 hores: potser no va fitxar la sortida a l’hora"' : ''}>${horaDe(x.fi.moment)}${fiDia !== x.dia ? ' (' + dmy(fiDia).slice(0, 5) + ')' : ''}</span>${enllacGps(x.fi, llocs)}${marcaCorregit(x.fi, corr)}`
+    : '<span class="v-no">sense sortida</span>';
+  return `${horaDe(x.inici.moment)}${enllacGps(x.inici, llocs)}${marcaCorregit(x.inici, corr)} – ${fi}`;
+}
+// l'editor s'obre amb el tram d'un fitxatge: l'entrada i la seva sortida (o, si la sortida no té entrada, només la sortida)
+function obreEditorFitxatge(f) {
+  if (!f) return;
+  const tram = parellesFitxatge(fitxatgesDe(f.treballador_id)).find(x => x.inici.id === f.id || (x.fi && x.fi.id === f.id));
+  state.fx.ed = tram ? { treb: Number(f.treballador_id), dia: tram.dia, e: tram.inici.id, s: tram.fi ? tram.fi.id : null }
+    : { treb: Number(f.treballador_id), dia: ymd(new Date(f.moment)), e: f.tipus === 'entrada' ? f.id : null, s: f.tipus === 'sortida' ? f.id : null };
+  renderMain();
+}
+function editorFitxatgeHTML() {
+  const ed = state.fx.ed, E = ed.e ? C.get('fitxatges', ed.e) : null, S = ed.s ? C.get('fitxatges', ed.s) : null, existent = !!(E || S);
+  const diaS = S ? ymd(new Date(S.moment)) : null, endema = !!(E && S) && diaS !== ymd(new Date(E.moment));
+  const persones = C.rows('treballadors').filter(x => x.actiu).sort((a, b) => nomTreballador(a).localeCompare(nomTreballador(b), 'ca'));
+  return `<div class="avisos-panell" id="fxe-panell"><div class="avisos-caixa fx-ed-caixa" role="dialog" aria-modal="true" aria-labelledby="fxe-titol">
+    <h3 id="fxe-titol">${existent ? 'Corregeix el fitxatge' : 'Afegeix fitxatges'}</h3>
+    ${existent ? `<p class="fx-ed-qui"><b>${h(nomTreballador(C.get('treballadors', ed.treb)))}</b></p>`
+      : `<label class="f"><span class="l">Persona</span><select id="fxe-treb"><option value="">Tria…</option>${persones.map(p => `<option value="${p.id}" ${Number(ed.treb) === p.id ? 'selected' : ''}>${h(nomTreballador(p))}</option>`).join('')}</select></label>`}
+    <div class="fx-ed-grid">
+      <label class="f"><span class="l">Dia</span><input type="date" id="fxe-dia" value="${h(ed.dia || '')}" max="${avui()}"></label>
+      <label class="f"><span class="l">Entrada</span><input type="time" id="fxe-e" value="${E ? horaDe(E.moment) : ''}"></label>
+      <label class="f"><span class="l">Sortida</span><input type="time" id="fxe-s" value="${S ? horaDe(S.moment) : ''}"></label>
+    </div>
+    <label class="fx-ed-endema"><input type="checkbox" id="fxe-endema" ${endema ? 'checked' : ''}> La sortida és de l’endemà${endema ? ' (ara és del ' + dmy(diaS) + ')' : ''}</label>
+    <p class="hint">${existent
+      ? 'Canvia l’hora que calgui. Si esborres una hora, aquell fitxatge s’elimina.'
+      : 'Una jornada oblidada: l’entrada i la sortida. Si només en falta una, deixa l’altra buida. Una pausa dins d’un tram (va sortir i va tornar a entrar): posa la sortida abans que l’entrada.'}</p>
+    <label class="f"><span class="l">Motiu</span><input type="text" id="fxe-motiu" maxlength="200" placeholder="p. ex. es va oblidar de fitxar la sortida"></label>
+    <div id="fxe-err" class="msg err" hidden></div>
+    <div class="accions">
+      <button type="button" class="btn" id="fxe-desa">Desa</button>
+      ${existent ? `<button type="button" class="btn danger" id="fxe-elimina">Elimina ${E && S ? 'l’entrada i la sortida' : E ? 'l’entrada' : 'la sortida'}</button>` : ''}
+      <button type="button" class="btn ghost" id="fxe-cancel">Cancel·la</button>
+    </div>
+  </div></div>`;
+}
+function bindEditorFitxatge() {
+  const panell = $('#fxe-panell'); if (!panell) return;
+  const tanca = () => { state.fx.ed = null; renderMain(); };
+  $('#fxe-cancel').addEventListener('click', tanca);
+  $('#fxe-desa').addEventListener('click', () => desaEditorFitxatge(false));
+  const el = $('#fxe-elimina'); if (el) el.addEventListener('click', () => desaEditorFitxatge(true));
+  panell.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.preventDefault(); tanca(); }
+    else if (e.key === 'Enter' && e.target.tagName === 'INPUT' && e.target.type !== 'checkbox') { e.preventDefault(); desaEditorFitxatge(false); }
+  });
+  const primer = $('#fxe-treb') && !$('#fxe-treb').value ? $('#fxe-treb') : $('#fxe-e'); if (primer) primer.focus();
+}
+// desa (o elimina) amb una sola crida: tots els canvis de la persona es fan junts o no se'n fa cap
+async function desaEditorFitxatge(eliminar) {
+  const ed = state.fx.ed, err = $('#fxe-err'); if (!ed) return;
+  const mostra = m => { err.textContent = m; err.hidden = false; };
+  err.hidden = true;
+  const E = ed.e ? C.get('fitxatges', ed.e) : null, S = ed.s ? C.get('fitxatges', ed.s) : null;
+  const treb = E || S ? ed.treb : Number(($('#fxe-treb') || {}).value || 0);
+  if (!treb) return mostra('Tria la persona.');
+  const motiu = $('#fxe-motiu').value.trim();
+  const p = { treballador_id: treb, motiu, afegeix: [], modifica: [], elimina: [] };
+  const nom = nomTreballador(C.get('treballadors', treb));
+  if (eliminar) {
+    const que = [E ? 'l’entrada de les ' + horaDe(E.moment) : '', S ? 'la sortida de les ' + horaDe(S.moment) : ''].filter(Boolean).join(' i ');
+    if (!confirm(`Eliminar ${que} de ${nom}, del ${dmy(ed.dia)}? Quedarà apuntat qui ho ha fet.`)) return;
+    p.elimina = [E, S].filter(Boolean).map(f => f.id);
+  } else {
+    const dia = $('#fxe-dia').value, he = $('#fxe-e').value, hs = $('#fxe-s').value, endema = $('#fxe-endema').checked;
+    if (!dia) return mostra('Falta el dia.');
+    if (!E && !S && !he && !hs) return mostra('Posa l’hora d’entrada, la de sortida o totes dues.');
+    const mE = he ? new Date(dia + 'T' + he + ':00') : null, mS = hs ? new Date(dia + 'T' + hs + ':00') : null;
+    if (mS && endema) mS.setDate(mS.getDate() + 1);
+    if ((mE && mE > new Date()) || (mS && mS > new Date())) return mostra('Aquesta hora encara no ha arribat.');
+    if (mE && mS && +mE === +mS) return mostra('L’entrada i la sortida no poden ser a la mateixa hora.');
+    if (mE && mS && mS < mE && (E || S || endema)) return mostra('La sortida ha de ser després de l’entrada (si és de l’endemà, marca-ho).');
+    const mateixMinut = (f, m) => Math.floor(new Date(f.moment).getTime() / 60000) === Math.floor(m.getTime() / 60000);
+    const canvi = (f, m, tipus) => {
+      if (f && !m) p.elimina.push(f.id);
+      else if (f && !mateixMinut(f, m)) p.modifica.push({ id: f.id, moment: m.toISOString() });
+      else if (!f && m) p.afegeix.push({ tipus, moment: m.toISOString() });
+    };
+    canvi(E, mE, 'entrada'); canvi(S, mS, 'sortida');
+    if (!p.afegeix.length && !p.modifica.length && !p.elimina.length) { state.fx.ed = null; renderMain(); toast('Sense canvis'); return; }
+  }
+  const botons = [...document.querySelectorAll('#fxe-panell .accions button')]; botons.forEach(b => { b.disabled = true; });
+  const { data, error } = await sb.rpc('corregeix_fitxatges', { p });
+  botons.forEach(b => { b.disabled = false; });
+  if (error) {
+    const m = (error.message || '') + ' ' + (error.code || '');
+    return mostra(/PGRST202|corregeix_fitxatges|Could not find the function/i.test(m) ? 'Falta executar el fitxer SQL 080 a Supabase.' : friendly(error));
+  }
+  state.fx.ed = null;
+  await Promise.all([loadTable('fitxatges'), loadTable('fitxatges_correccions').catch(() => {})]);
+  renderMain();
+  toast(eliminar ? 'Fitxatge eliminat' : data && data.afegits && data.afegits.length && !p.modifica.length ? (data.afegits.length === 1 ? 'Fitxatge afegit' : 'Fitxatges afegits') : 'Fitxatge corregit');
+}
+// el rastre de les correccions dels fitxatges del mes (i de la persona, si n'hi ha una de triada)
+function correccionsFitxatgesHTML(prefix, treb) {
+  const files = C.rows('fitxatges_correccions')
+    .filter(c => (!treb || String(c.treballador_id) === String(treb)) && [c.moment_despres, c.moment_abans].some(m => m && ymd(new Date(m)).startsWith(prefix)))
+    .sort((a, b) => String(b.fet_el).localeCompare(String(a.fet_el)) || b.id - a.id);
+  if (!files.length) return '';
+  const que = c => (c.tipus === 'entrada' ? 'Entrada ' : 'Sortida ') + (c.accio === 'afegit' ? 'afegida' : c.accio === 'eliminat' ? 'eliminada' : 'canviada');
+  return `<h3 class="fx-corr-titol">Correccions d’aquest mes</h3>
+    <table class="tbl"><thead><tr><th>Quan</th><th>Qui ha corregit</th><th>Persona</th><th>Què</th><th>Abans</th><th>Després</th><th>Motiu</th></tr></thead><tbody>${files.map(c => `<tr>
+      <td>${dmyhm(c.fet_el)}</td><td>${h(nomTreballador(C.get('treballadors', c.fet_per)))}</td><td>${h(nomTreballador(C.get('treballadors', c.treballador_id)))}</td>
+      <td>${que(c)}</td><td>${c.moment_abans ? dmyhm(c.moment_abans) : '—'}</td><td>${c.moment_despres ? dmyhm(c.moment_despres) : '—'}</td><td>${h(c.motiu || '')}</td></tr>`).join('')}</tbody></table>`;
+}
+// oficina: els fitxatges de tothom, per mes i per persona (resum diari) o com a llista completa; PDF del registre de jornada.
+// L'administrador, l'oficina i els tècnics hi poden corregir, afegir i eliminar entrades i sortides (només aquí, a la web de l'oficina).
 function renderFitxatges(main) {
-  const st = state.fx, t = treballadorActual(), llocs = llocsDeFeina();
+  const st = state.fx, t = treballadorActual(), llocs = llocsDeFeina(), ed = potCorregirFitxatges(t), corr = fitxatgesCorregits();
   const any = Number(st.any) || new Date().getFullYear(), mes = Math.min(12, Math.max(1, Number(st.mes) || new Date().getMonth() + 1));
   const prefix = any + '-' + String(mes).padStart(2, '0') + '-';
   const treballadors = C.rows('treballadors').filter(x => x.actiu).sort((a, b) => nomTreballador(a).localeCompare(nomTreballador(b), 'ca'));
   const persones = st.treb ? treballadors.filter(x => String(x.id) === st.treb) : treballadors;
+  const boto = (attr, text, titol) => ed ? ` <button type="button" class="fx-ed" ${attr} title="${h(titol)}">${text}</button>` : '';
   let totMes = 0, html = '';
   persones.forEach(p => {
     const parelles = parellesFitxatge(fitxatgesDe(p.id)).filter(x => x.dia.startsWith(prefix));
-    if (!parelles.length) { if (st.treb) html += `<div class="empty">Cap fitxatge de ${h(nomTreballador(p))} el ${MESOS[mes - 1].toLowerCase()} de ${any}.</div>`; return; }
+    if (!parelles.length) {
+      if (st.treb) html += `<div class="empty">Cap fitxatge de ${h(nomTreballador(p))} el ${MESOS[mes - 1].toLowerCase()} de ${any}.${ed ? ` <button type="button" class="btn ghost small" data-fx-nou="${p.id}|">Afegeix-n’hi</button>` : ''}</div>`;
+      return;
+    }
     const perDia = new Map(); parelles.forEach(x => { if (!perDia.has(x.dia)) perDia.set(x.dia, []); perDia.get(x.dia).push(x); });
     const total = parelles.reduce((a, x) => a + (x.fi ? x.minuts : 0), 0), obertes = parelles.filter(x => !x.fi).length; totMes += total;
     html += `<h3>${h(nomTreballador(p))} <span class="hint">· ${perDia.size} ${perDia.size === 1 ? 'dia' : 'dies'} · ${durText(total)}${obertes ? ' · <b class="v-no">' + obertes + (obertes === 1 ? ' entrada sense sortida' : ' entrades sense sortida') + '</b>' : ''}</span></h3>
       <div class="fx-dades">DNI ${h(p.nif || '—')} · Núm. Seguretat Social ${h(p.num_seguretat_social || '—')}</div>
-      <table class="tbl"><thead><tr><th>Dia</th><th>Entrades i sortides</th><th>Hores</th></tr></thead><tbody>${[...perDia.keys()].sort().map(d => { const ps = perDia.get(d); return `<tr><td>${dmy(d)} <span class="hint">${['dg', 'dl', 'dt', 'dc', 'dj', 'dv', 'ds'][new Date(d + 'T12:00:00').getDay()]}</span></td><td>${ps.map(x => horaDe(x.inici.moment) + enllacGps(x.inici, llocs) + ' – ' + (x.fi ? horaDe(x.fi.moment) + enllacGps(x.fi, llocs) : '<span class="v-no">sense sortida</span>')).join(' · ')}</td><td>${durText(ps.reduce((a, x) => a + (x.fi ? x.minuts : 0), 0))}</td></tr>`; }).join('')}</tbody></table>`;
+      <table class="tbl"><thead><tr><th>Dia</th><th>Entrades i sortides</th><th>Hores</th></tr></thead><tbody>${[...perDia.keys()].sort().map(d => { const ps = perDia.get(d); return `<tr><td>${dmy(d)} <span class="hint">${['dg', 'dl', 'dt', 'dc', 'dj', 'dv', 'ds'][new Date(d + 'T12:00:00').getDay()]}</span></td><td>${ps.map(x => tramFitxatgeHTML(x, llocs, corr) + boto(`data-fx-tram="${x.inici.id}"`, '✎', 'Corregeix aquest tram')).join(' · ')}${boto(`data-fx-nou="${p.id}|${d}"`, '＋', 'Afegeix un tram aquest dia')}</td><td>${durText(ps.reduce((a, x) => a + (x.fi ? x.minuts : 0), 0))}</td></tr>`; }).join('')}</tbody></table>`;
   });
   const complets = fitxatgesDelMes(any, mes).filter(f => !st.treb || String(f.treballador_id) === st.treb).sort((a, b) => String(a.moment).localeCompare(String(b.moment)));
-  const llistaHTML = `<table class="tbl"><thead><tr><th>Quan</th><th>Qui</th><th>Què</th><th>Lloc més proper</th><th>Observacions</th></tr></thead><tbody>${complets.map(f => `<tr><td>${dmyhm(f.moment)}</td><td>${h(nomTreballador(C.get('treballadors', f.treballador_id)))}</td><td>${f.tipus === 'entrada' ? '<span class="xip ok">entrada</span>' : '<span class="xip">sortida</span>'}</td><td>${proximitatHTML(f, llocs)}${f.lat != null ? ' ' + enllacGps(f, llocs) : ''}</td><td>${h(f.observacions || '')}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">Cap fitxatge aquest mes.</td></tr>'}</tbody></table>`;
+  const llistaHTML = `<table class="tbl"><thead><tr><th>Quan</th><th>Qui</th><th>Què</th><th>Lloc més proper</th><th>Observacions</th>${ed ? '<th></th>' : ''}</tr></thead><tbody>${complets.map(f => `<tr><td>${dmyhm(f.moment)}${marcaCorregit(f, corr)}</td><td>${h(nomTreballador(C.get('treballadors', f.treballador_id)))}</td><td>${f.tipus === 'entrada' ? '<span class="xip ok">entrada</span>' : '<span class="xip">sortida</span>'}</td><td>${proximitatHTML(f, llocs)}${f.lat != null ? ' ' + enllacGps(f, llocs) : ''}</td><td>${h(f.observacions || '')}</td>${ed ? `<td>${boto(`data-fx-fit="${f.id}"`, '✎', 'Corregeix')}</td>` : ''}</tr>`).join('') || `<tr><td colspan="${ed ? 6 : 5}" class="empty">Cap fitxatge aquest mes.</td></tr>`}</tbody></table>`;
   main.innerHTML = `<h1>Fitxatges</h1>
-    <p class="sub">Entrades i sortides de jornada registrades des de l’app de cadascú, amb l’hora del servidor i la posició del mòbil (📍 obre el mapa). «Resum diari» és el registre de jornada per persona; «Llista completa», tots els fitxatges en ordre. Les correccions, de moment, des de l’editor de Supabase.</p>
+    <p class="sub">Entrades i sortides de jornada registrades des de l’app de cadascú, amb l’hora del servidor i la posició del mòbil (📍 obre el mapa). «Resum diari» és el registre de jornada per persona; «Llista completa», tots els fitxatges en ordre.${ed ? ' Per corregir un tram, ✎; per afegir-ne un, ＋ al costat del dia o «Afegeix fitxatges». Cada correcció queda apuntada (qui, quan, l’hora d’abans i la de després) i el fitxatge porta un <span class="fx-corr">*</span>.' : ''}</p>
     <div class="bar">
       <span class="seg"><button class="${st.vista !== 'llista' ? 'on' : ''}" data-vista="persona">Resum diari per persona</button><button class="${st.vista === 'llista' ? 'on' : ''}" data-vista="llista">Llista completa</button></span>
       <select id="fx-treb" style="width:auto; min-width:200px"><option value="">Tothom</option>${treballadors.map(x => `<option value="${x.id}" ${String(x.id) === st.treb ? 'selected' : ''}>${h(nomTreballador(x))}</option>`).join('')}</select>
       <span class="nom-any"><button class="btn ghost small" data-mes="-1" title="Mes anterior">◀</button><b class="vac-titolmes">${MESOS[mes - 1]} ${any}</b><button class="btn ghost small" data-mes="1" title="Mes següent">▶</button></span>
       <button class="btn ghost small" id="fx-avui">Aquest mes</button>
+      ${ed ? '<button class="btn" id="fx-afegeix" title="Una jornada oblidada, una entrada o una sortida que falten, o una pausa">Afegeix fitxatges</button>' : ''}
       <button class="btn" id="fx-pdf" title="Una pàgina per treballador: empresa, nom i cognoms, DNI, núm. de la Seguretat Social, un dia per fila i signatures">PDF registre de jornada${st.treb ? '' : ' (tothom)'}</button>
       <button class="btn ghost small" id="fx-print">Imprimeix</button>
       <span class="n">${complets.length} fitxatges · ${durText(totMes)} en total</span>
     </div>
-    ${st.vista === 'llista' ? llistaHTML : (html || '<div class="empty">Cap fitxatge aquest mes.</div>')}`;
+    ${st.vista === 'llista' ? llistaHTML : (html || '<div class="empty">Cap fitxatge aquest mes.</div>')}
+    ${ed ? correccionsFitxatgesHTML(prefix, st.treb) : ''}
+    ${ed && st.ed ? editorFitxatgeHTML() : ''}`;
   main.querySelectorAll('[data-vista]').forEach(b => b.addEventListener('click', () => { st.vista = b.dataset.vista; renderMain(); }));
   $('#fx-pdf').addEventListener('click', () => { try { const doc = pdfRegistreJornada(persones, any, mes); window.open(URL.createObjectURL(doc.output('blob')), '_blank'); } catch (e) { showFormError(friendly(e)); } });
   $('#fx-treb').addEventListener('change', e => { st.treb = e.target.value; renderMain(); });
   main.querySelectorAll('[data-mes]').forEach(b => b.addEventListener('click', () => { const d = new Date(any, mes - 1 + Number(b.dataset.mes), 1); st.any = String(d.getFullYear()); st.mes = String(d.getMonth() + 1); renderMain(); }));
   $('#fx-avui').addEventListener('click', () => { const d = new Date(); st.any = String(d.getFullYear()); st.mes = String(d.getMonth() + 1); renderMain(); });
   $('#fx-print').addEventListener('click', () => window.print());
+  if (!ed) return;
+  // obrir l'editor: un tram del resum, un fitxatge de la llista, un tram nou en un dia o des del botó
+  main.querySelectorAll('[data-fx-tram]').forEach(b => b.addEventListener('click', () => obreEditorFitxatge(C.get('fitxatges', b.dataset.fxTram))));
+  main.querySelectorAll('[data-fx-fit]').forEach(b => b.addEventListener('click', () => obreEditorFitxatge(C.get('fitxatges', b.dataset.fxFit))));
+  main.querySelectorAll('[data-fx-nou]').forEach(b => b.addEventListener('click', () => { const [treb, dia] = b.dataset.fxNou.split('|'); st.ed = { nou: true, treb: Number(treb), dia: dia || (avui().startsWith(prefix) ? avui() : '') }; renderMain(); }));
+  const af = $('#fx-afegeix'); if (af) af.addEventListener('click', () => { st.ed = { nou: true, treb: st.treb ? Number(st.treb) : null, dia: avui().startsWith(prefix) ? avui() : '' }; renderMain(); });
+  if (st.ed) bindEditorFitxatge();
 }
 
 /* =====================================================================
