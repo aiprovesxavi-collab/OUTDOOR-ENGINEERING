@@ -2345,7 +2345,23 @@ function readConfig() {
 }
 
 // carrega una taula sencera per blocs de 1.000 files (Supabase no en torna més d'un cop)
+// treballadors: les columnes que pot llegir tothom, i les personals a part (SQL 081: treballadors_privat(), segons qui ho demana)
+const COLS_TREBALLADORS = 'id,nom,cognoms,email_acces,rol,equip_id,data_alta,data_baixa,actiu,creat_el,actualitzat_el,codi_pressupost,titol_signatura,carril_incidencies,foto';
+async function loadTreballadors() {
+  const priv = await sb.rpc('treballadors_privat');
+  if (priv.error) {   // sense el SQL 081 encara: tota la taula, com abans
+    const tot = await sb.from('treballadors').select('*').order('id'); if (tot.error) throw tot.error; return tot.data;
+  }
+  const { data, error } = await sb.from('treballadors').select(COLS_TREBALLADORS).order('id'); if (error) throw error;
+  const per = new Map((priv.data || []).map(p => [Number(p.id), p]));
+  return data.map(t => {
+    const p = per.get(Number(t.id)) || {}, extra = {};
+    Object.keys(p).forEach(k => { if (k !== 'id' && p[k] != null) extra[k] = p[k]; });
+    return { ...t, ...extra };
+  });
+}
 async function loadTable(t) {
+  if (t === 'treballadors') { cache[t] = await loadTreballadors(); return; }
   const pk = (SCHEMA.tables[t] || {}).pk || 'id';
   const BLOC = 1000; let des = 0; const tot = [];
   while (true) {
@@ -8989,7 +9005,7 @@ function esAvuiAniversari(iso) {
   return dies.includes(String(iso).slice(5, 10));
 }
 const anysDes = iso => new Date().getFullYear() - Number(String(iso).slice(0, 4));   // anys sencers (el dia i el mes ja coincideixen)
-function aniversarisAvui() { return C.rows('treballadors').filter(t => t.actiu && esAvuiAniversari(t.data_naixement)); }
+function aniversarisAvui() { return C.rows('treballadors').filter(t => t.actiu && esAvuiAniversari(t.data_naixement || (t.aniversari ? '0000-' + t.aniversari : null))); }
 // aniversari de l'entrada a l'empresa: data d'alta, com a mínim un any, i que la persona no sigui de baixa
 function aniversarisEmpresaAvui() {
   const avuiISO = ymd(new Date());
