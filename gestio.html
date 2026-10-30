@@ -2163,7 +2163,8 @@ const SCHEMA = {
       fields: [
         { key: 'lloc_id', label: 'Lloc', type: 'ref', ref: 'llocs', required: true },
         { key: 'nom', label: 'Nom', type: 'text', required: true, default: 'jardí', hint: '"davant", "darrere" si n’hi ha més d’un', dup: 'exact', dupScope: 'lloc_id' },
-        { key: 'agrupacio_id', label: 'Agrupació de facturació', type: 'ref', ref: 'agrupacions', dependsOn: 'lloc_id', filter: delClientDelLloc },
+        { key: 'agrupacio_id', label: 'Agrupació de facturació', type: 'ref', ref: 'agrupacions', dependsOn: 'lloc_id', filter: delClientDelLloc, autoUnic: false,
+          preferit: v => agrupacioPerDefecte(v.lloc_id, 'inclou_jardi'), hint: 'es posa sola: la del client que inclou el jardí (si en té més d’una, tria-la)' },
         { key: 'equip_id', label: 'Equip', type: 'ref', ref: 'equips' },
         { key: 'm2_gespa', label: 'm² de gespa', type: 'number', step: '0.01', min: 0 },
         { key: 'm2_arbusts', label: 'm² d’arbusts', type: 'number', step: '0.01', min: 0 },
@@ -2203,7 +2204,8 @@ const SCHEMA = {
       fields: [
         { key: 'lloc_id', label: 'Lloc', type: 'ref', ref: 'llocs', required: true },
         { key: 'nom', label: 'Nom', type: 'text', required: true, default: 'piscina', hint: '"gran", "infantil" si n’hi ha més d’una', dup: 'exact', dupScope: 'lloc_id' },
-        { key: 'agrupacio_id', label: 'Agrupació de facturació', type: 'ref', ref: 'agrupacions', dependsOn: 'lloc_id', filter: delClientDelLloc },
+        { key: 'agrupacio_id', label: 'Agrupació de facturació', type: 'ref', ref: 'agrupacions', dependsOn: 'lloc_id', filter: delClientDelLloc, autoUnic: false,
+          preferit: v => agrupacioPerDefecte(v.lloc_id, 'inclou_piscina'), hint: 'es posa sola: la del client que inclou la piscina (si en té més d’una, tria-la)' },
         { key: 'treballador_id', label: 'Operari habitual', type: 'ref', ref: 'treballadors', hint: 'qui la fa normalment; qualsevol operari pot entrar-hi tasques' },
         { key: 'llargada', label: 'Llargada (m)', type: 'number', step: '0.01', required: true },
         { key: 'amplada', label: 'Amplada (m)', type: 'number', step: '0.01', required: true },
@@ -4603,7 +4605,7 @@ function bindMain(td) {
         const cur = sel.value;
         sel.innerHTML = optionsHTML(f, vals, ''); // es refan les opcions segons el pare nou; la tria anterior només es manté si encara hi és
         sel.value = cur && sel.querySelector(`option[value="${cur}"]`) ? cur : '';
-        if (triaUnica(f, sel)) sel.dispatchEvent(new Event('change', { bubbles: true })); // una sola opció possible: queda triada, i els que en depenen també s'actualitzen
+        if (triaUnica(f, sel) || triaPreferida(f, sel, vals)) sel.dispatchEvent(new Event('change', { bubbles: true })); // una sola opció possible (o la preferida): queda triada, i els que en depenen també s'actualitzen
       });
       td.fields.filter(f => f.type === 'multi' && changed !== f.key).forEach(f => {
         const box = frm.querySelector(`[data-multi="${f.key}"]`); if (!box) return;
@@ -4628,6 +4630,8 @@ function bindMain(td) {
     frm.dataset.inicial = '1'; viu(); delete frm.dataset.inicial; // en pintar, els camps amb valor no es buiden encara que ara no toquin
     // registre nou: els desplegables que depenen d'un altre i només tenen una opció (l'únic lloc del client, l'única piscina del lloc…) queden triats
     if (!frm.dataset.id) td.fields.filter(f => f.dependsOn).forEach(f => { const sel = frm.querySelector(`select[name="${f.key}"]`); if (triaUnica(f, sel)) sel.dispatchEvent(new Event('change', { bubbles: true })); });
+    // l'opció preferida (l'agrupació del client) es posa sola, també en les que ja hi són i la tenen buida (queda desada amb el botó de sempre)
+    td.fields.filter(f => f.preferit).forEach(f => { const sel = frm.querySelector(`select[name="${f.key}"]`); if (triaPreferida(f, sel, formValues(frm))) sel.dispatchEvent(new Event('change', { bubbles: true })); });
     // focs artificials quan un valor queda en verd (fort: grans; suau: petits), un cop per canvi de color, i només amb el valor ja entrat
     const darrerColor = {};
     td.fields.filter(f => f.color && (f.type === 'number' || f.type === 'select')).forEach(f => {
@@ -4680,6 +4684,12 @@ function bindMain(td) {
   bindRows(td); bindMarques(td);
 }
 // desplegable dependent amb una sola opció real i sense valor: es tria sola (llevat que el camp digui autoUnic: false)
+// desplegable amb una opció preferida (l'agrupació del client, per exemple) i sense valor: es tria sola
+function triaPreferida(f, sel, vals) {
+  if (!sel || sel.disabled || !f.preferit || sel.value !== '') return false;
+  const id = f.preferit(vals); if (id == null || !sel.querySelector(`option[value="${id}"]`)) return false;
+  sel.value = String(id); return true;
+}
 function triaUnica(f, sel) {
   if (!sel || sel.disabled || f.autoUnic === false || sel.value !== '') return false;
   const reals = [...sel.options].filter(o => o.value !== '');
@@ -6865,7 +6875,25 @@ const sacsItem = kg => kg > 0 ? Math.ceil(kg / SAC_KG * 10 - 1e-9) / 10 : 0;    
 const sacsTotal = kg => kg > 0 ? Math.ceil(kg / SAC_KG - 1e-9) : 0;   // un total: sacs sencers
 const nDec = (v, dec) => Number(v).toLocaleString('ca-ES', { maximumFractionDigits: dec });
 const textSacs = n => n + (n === 1 ? ' sac' : ' sacs');
-const contracteVigent = r => { if (!r || !r.agrupacio_id) return false; const a = C.get('agrupacions', r.agrupacio_id), d = avui(); return !!a && a.actiu && (!a.data_fi || a.data_fi >= d); };
+// una agrupació de facturació vigent avui (estat «Actual»): començada i sense acabar
+const agrupacioVigent = a => !!a && a.actiu && !!a.data_inici && a.data_inici <= avui() && (!a.data_fi || a.data_fi >= avui());
+// l'agrupació que es posa sola a una piscina (inclou = 'inclou_piscina') o a un jardí ('inclou_jardi'): la del client del lloc que la inclou,
+// vigent avui; si no n'hi ha cap de començada, la futura. Si n'hi ha més d'una, cap (cal triar-la).
+const agrupacioPerDefecte = (llocId, inclou) => {
+  const l = llocId ? C.get('llocs', llocId) : null; if (!l || !l.client_id) return null;
+  const seves = C.rows('agrupacions').filter(a => a.actiu && Number(a.client_id) === Number(l.client_id) && !!a[inclou] && (!a.data_fi || a.data_fi >= avui()));
+  const vigents = seves.filter(agrupacioVigent);
+  if (vigents.length) return vigents.length === 1 ? vigents[0].id : null;
+  return seves.length === 1 ? seves[0].id : null;
+};
+// el contracte d'una piscina o d'un jardí: la seva agrupació, si és vigent; si no en té (o ja no ho és), qualsevol agrupació vigent del client
+// del lloc que inclogui la piscina (inclou = 'inclou_piscina') o el jardí ('inclou_jardi')
+const contracteVigent = (r, inclou) => {
+  if (!r) return false;
+  if (r.agrupacio_id && agrupacioVigent(C.get('agrupacions', r.agrupacio_id))) return true;
+  const lloc = C.get('llocs', r.lloc_id); if (!lloc || !lloc.client_id) return false;
+  return C.rows('agrupacions').some(a => Number(a.client_id) === Number(lloc.client_id) && !!a[inclou] && agrupacioVigent(a));
+};
 // el lloc i, si no és el nom de sempre («piscina», «jardí»), el nom: «Mas Roig», «Mas Roig · infantil»
 const nomInstal = (r, deSempre) => { const lloc = (C.get('llocs', r.lloc_id) || {}).nom || '', nom = String(r.nom || '').trim(); return nom && nom.toLowerCase() !== deSempre ? (lloc ? lloc + ' · ' : '') + nom : (lloc || nom); };
 
@@ -6878,13 +6906,13 @@ function dadesSal() {
     if (!x.actiu || x.salinitat == null || x.salinitat === '' || isNaN(Number(x.salinitat)) || String(x.data || '') < desde) return;
     const ja = darrera.get(Number(x.piscina_id)); if (!ja || clau(x) > clau(ja)) darrera.set(Number(x.piscina_id), x);
   });
-  return C.rows('piscines').filter(p => p.actiu && (p.tractament === 'sal' || ambClorador.has(Number(p.id))) && contracteVigent(p)).map(p => {
+  return C.rows('piscines').filter(p => p.actiu && (p.tractament === 'sal' || ambClorador.has(Number(p.id))) && contracteVigent(p, 'inclou_piscina')).map(p => {
     const m3 = volumPiscina(p), x = darrera.get(Number(p.id)), sal = x ? Number(x.salinitat) : null;
     return { grup: p.treballador_id ? Number(p.treballador_id) : null, nom: nomInstal(p, 'piscina'), m3, sal, data: x ? x.data : null, kg: m3 && sal != null ? Math.max(0, (SAL_GL - sal) * m3) : null };
   });
 }
 function dadesAdob() {
-  return C.rows('jardins').filter(j => j.actiu && contracteVigent(j)).map(j => {
+  return C.rows('jardins').filter(j => j.actiu && contracteVigent(j, 'inclou_jardi')).map(j => {
     const m2 = (Number(j.m2_gespa) || 0) + (Number(j.m2_prat) || 0);
     return { grup: j.equip_id ? Number(j.equip_id) : null, nom: nomInstal(j, 'jardí'), m2, kg: kgAdobJardi(m2) };
   });
@@ -6945,7 +6973,7 @@ function comptadorsMeus() {
   const tots = C.rows('comptadors').filter(comptadorViu);
   if (esOficina(t)) return tots;
   if (!t.equip_id) return [];
-  const llocs = new Set(C.rows('jardins').filter(j => j.actiu && Number(j.equip_id) === Number(t.equip_id) && contracteVigent(j)).map(j => Number(j.lloc_id)));
+  const llocs = new Set(C.rows('jardins').filter(j => j.actiu && Number(j.equip_id) === Number(t.equip_id) && contracteVigent(j, 'inclou_jardi')).map(j => Number(j.lloc_id)));
   return tots.filter(c => llocs.has(Number(c.lloc_id)));
 }
 const lecturesDe = id => C.rows('lectures').filter(l => l.actiu && Number(l.comptador_id) === Number(id)).sort((a, b) => String(b.data).localeCompare(String(a.data)));   // la més nova primer
