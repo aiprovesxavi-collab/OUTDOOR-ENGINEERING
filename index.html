@@ -721,6 +721,31 @@
   .fx-ed-caixa .hint{ display:block; margin:0 0 12px; font-size:13px; line-height:1.4; }
   .fx-corr-titol{ margin-top:26px; }
   @media (max-width:560px){ .fx-ed-caixa .fx-ed-grid{ grid-template-columns:1fr 1fr; } .fx-ed-caixa .fx-ed-grid .f:first-child{ grid-column:1 / -1; } }
+  /* documents dels treballadors */
+  .dc-wrap{ overflow:auto; max-height:70vh; border:1px solid var(--line); border-radius:8px; margin:6px 0 8px; background:#fff; }
+  .dc-taula{ border-collapse:separate; border-spacing:0; font-size:13px; min-width:100%; }
+  .dc-taula th, .dc-taula td{ border-bottom:1px solid var(--line); border-right:1px solid var(--line); padding:6px 8px; text-align:center; white-space:nowrap; }
+  .dc-taula thead th{ font-weight:600; color:var(--ink-2); vertical-align:bottom; white-space:normal; min-width:76px; max-width:120px; font-size:12px; line-height:1.25; background:var(--bg-2); position:sticky; top:0; z-index:2; }
+  .dc-taula .dc-nom{ text-align:left; position:sticky; left:0; background:#fff; z-index:1; min-width:170px; max-width:230px; white-space:normal; font-weight:500; }
+  .dc-taula thead .dc-nom{ z-index:3; background:var(--bg-2); } .dc-taula .dc-nom a{ color:inherit; text-decoration:none; } .dc-taula .dc-nom a:hover{ text-decoration:underline; }
+  .dc-taula td.dc{ cursor:pointer; font-variant-numeric:tabular-nums; } .dc-taula td.dc:hover{ outline:2px solid var(--ink-2); outline-offset:-2px; }
+  td.dc.vigent, .dc-llegenda i.vigent{ background:#e4f1e8; color:#1e5c35; } td.dc.aviat, .dc-llegenda i.aviat{ background:#fff1d6; color:#8a5a00; font-weight:600; }
+  td.dc.caducat, .dc-llegenda i.caducat{ background:#fde4e1; color:#b3261e; font-weight:600; }
+  td.dc.falta, .dc-llegenda i.falta{ background:repeating-linear-gradient(45deg, #f4f4f2, #f4f4f2 6px, #e6e6e2 6px, #e6e6e2 12px); color:#6b6b6b; }
+  .dc-llegenda{ display:flex; gap:14px; flex-wrap:wrap; font-size:13px; color:var(--ink-2); margin:0 0 22px; } .dc-llegenda i{ display:inline-block; width:14px; height:14px; border-radius:3px; vertical-align:-2px; margin-right:5px; border:1px solid var(--line); }
+  .dc-xip{ font-size:12.5px; padding:2px 9px; border-radius:999px; white-space:nowrap; background:var(--bg-2); color:var(--ink-2); }
+  .dc-xip.vigent{ background:#e4f1e8; color:#1e5c35; } .dc-xip.aviat{ background:#fff1d6; color:#8a5a00; } .dc-xip.caducat{ background:#fde4e1; color:#b3261e; } .dc-xip.falta{ background:#eee; color:#666; }
+  .dc-caixa{ max-width:640px; max-height:calc(100vh - 32px); overflow:auto; } .dc-qui{ margin:-4px 0 12px; }
+  .dc-versio{ border:1px solid var(--line-2); border-radius:9px; padding:10px 12px; margin:0 0 10px; } .dc-versio.antiga{ background:var(--bg-2); }
+  .dc-versio-cap{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:0 0 4px; } .dc-obs{ margin:6px 0 0; font-size:14px; }
+  .dc-fitxers{ display:flex; flex-wrap:wrap; gap:6px 12px; margin:6px 0 0; } .dc-fitxer{ text-decoration:none; overflow-wrap:anywhere; } .dc-fitxer:hover{ text-decoration:underline; }
+  .dc-accions-versio{ display:flex; gap:8px; margin:8px 0 0; }
+  .dc-form .f{ margin:0 0 10px; } .dc-form .dc-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; } .dc-form select, .dc-form input[type=date], .dc-form textarea{ width:100%; box-sizing:border-box; }
+  .dc-form .hint{ display:block; margin:-4px 0 10px; font-size:13px; } .dc-treu{ display:flex; flex-direction:column; gap:4px; font-size:14px; }
+  .dc-targeta{ border:1px solid var(--line-2); border-radius:12px; padding:12px 14px; margin:0 0 10px; background:#fff; }
+  .dc-targeta-cap{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:space-between; } .dc-targeta .dc-fitxer{ font-size:16px; }
+  .msg.dc-avis{ background:#fff1d6; color:#8a5a00; }
+  .dc-anteriors{ margin:8px 0 0; font-size:14px; } .dc-anteriors summary{ cursor:pointer; color:var(--ink-2); } .dc-anterior{ margin:6px 0 0 12px; }
 </style>
 </head>
 <body data-mode="entrada">
@@ -769,6 +794,8 @@ const OPT = {
   transparencia: [['optima','Òptima'],['transparent_pero','Transparent, però…'],['un_punt_terbola','Un punt tèrbola'],['terbola_es_veu','Tèrbola però es veu el sumider'],['no_es_veu','No es veu el sumider']],
   si_no: [['true','Sí'],['false','No']],
   rol: [['admin','Administrador'],['oficina','Oficina'],['tecnic','Tècnic']],
+  categoria_document: [['identificacio','Identificació'],['contracte','Contracte i alta'],['dades','Protecció de dades'],['prl','Prevenció de riscos'],['carnets','Carnets i formació'],['altres','Altres']],
+  obligatori_document: [['ningu','Ningú (opcional)'],['tots','Tothom'],['operaris','Operaris i tècnics'],['oficina','Oficina']],
   carril_inc: [['operari','Operari'],['tecnic','Tècnic']],
   ambit_festiu: [['catalunya','Catalunya (calendari oficial)'],['local','Festa local del municipi']],
   qui_report: [['treballador','Un treballador (jo mateix o un company)'],['client','Una persona de la comunitat (registrada o no)']],
@@ -1198,7 +1225,7 @@ const SCHEMA = {
     { label: 'CONSUM', color: '#1f5fbf', tables: ['comptadors', 'lectures', 'consum_aigua'] },
     { label: 'INSTAL·LACIONS', color: '#8fcf9a', tables: ['jardins', 'piscines', 'informe_sal', 'informe_adob'] },
     { label: 'EQUIPAMENTS I INSTAL·LACIONS', color: '#e5b800', tables: ['programadors', 'bombes', 'filtres', 'cloradors_salins'] },
-    { label: 'PERSONAL', color: '#222222', tables: ['treballadors', 'equips', 'fitxar', 'fitxatges', 'mapa_fitxatges', 'nomines', 'vacances', 'festius'] },
+    { label: 'PERSONAL', color: '#222222', tables: ['treballadors', 'equips', 'fitxar', 'fitxatges', 'mapa_fitxatges', 'nomines', 'documents_treballadors', 'tipus_document', 'vacances', 'festius'] },
     { label: 'ALTRES', color: '#b48ede', tables: ['tipus_iva', 'empresa', 'aigua_parametres_mensuals', 'avisos_piscina', 'comptes_bancaris', 'poblacions_sol', 'hores_sol'] },
   ],
   pages: {
@@ -1234,6 +1261,7 @@ const SCHEMA = {
     calendari_accions: { label: 'Calendari d’accions', render: main => renderCalendariAccions(main) },
     codis_qr: { label: 'Codis QR dels llocs', render: main => renderCodisQR(main) },
     nomines: { label: 'Nòmines', render: main => renderNomines(main) },
+    documents_treballadors: { label: 'Documents', render: main => renderDocumentsTreballadors(main) },
     vacances: { label: 'Vacances i baixes', render: main => renderVacances(main) },
     fitxar: { label: 'Fitxar', render: main => renderFitxar(main) },
     fitxatges: { label: 'Fitxatges', render: main => renderFitxatges(main) },
@@ -1686,6 +1714,7 @@ const SCHEMA = {
     treballadors: {
       label: 'Treballadors', nou: 'Nou treballador', order: 'nom',
       display: r => nomTreballador(r),
+      actions: r => [{ label: 'Documents', noDesa: true, run: () => { Object.assign(state.docs, { treb: String(r.id), cat: '', sel: null }); state.mode = 'consulta'; state.table = 'documents_treballadors'; state.editing = null; renderApp(); window.scrollTo({ top: 0 }); } }],
       list: ['nom', 'cognoms', 'telefon', 'email_acces', 'rol', 'equip_id', 'data_alta', 'data_baixa'],
       fields: [
         { key: 'nom', label: 'Nom', type: 'text', required: true },
@@ -2056,6 +2085,25 @@ const SCHEMA = {
     },
     // taules de les incidències: les gestiona la pàgina "Incidències" (no tenen formulari genèric)
     incidencies: { label: 'Incidències', nou: 'Nova incidència', order: 'id', display: r => (r.numero || '') + ' — ' + (r.titol || ''), list: ['numero', 'titol'], fields: [] },
+    tipus_document: {
+      label: 'Tipus de document', nou: 'Nou tipus de document', order: 'ordre',
+      display: r => r.nom,
+      list: ['nom', 'categoria', 'caduca', 'validesa_mesos', 'avis_dies', 'obligatori', 'visible_treballador', 'confidencial'],
+      fields: [
+        { key: 'nom', label: 'Nom', type: 'text', required: true, dup: 'similar' },
+        { key: 'categoria', label: 'Categoria', type: 'select', options: OPT.categoria_document, required: true, default: 'altres' },
+        { key: 'per_a', type: 'hidden', default: 'treballador' },
+        { key: 'caduca', label: 'Caduca', type: 'boolean' },
+        { key: 'validesa_mesos', label: 'Validesa (mesos)', type: 'integer', min: 1, hint: 'per calcular la caducitat a partir de la data del document (120 = 10 anys); buit = es posa a mà' },
+        { key: 'avis_dies', label: 'Avisa (dies abans)', type: 'integer', min: 0, required: true, default: 30 },
+        { key: 'obligatori', label: 'Obligatori per a', type: 'select', options: OPT.obligatori_document, required: true, default: 'ningu', hint: 'a la graella, qui no el tingui surt amb «falta»' },
+        { key: 'visible_treballador', label: 'La persona el veu a l’app', type: 'boolean', default: true },
+        { key: 'confidencial', label: 'Confidencial: només l’administrador (i la persona)', type: 'boolean', hint: 'salut, sancions… La marca només la pot treure l’administrador' },
+        { key: 'ordre', label: 'Ordre dins la categoria', type: 'integer', default: 0 },
+        { key: 'observacions', label: 'Observacions', type: 'textarea', hint: 'surt d’ajuda en pujar-ne un' },
+      ],
+    },
+    documents: { label: 'Documents', order: 'id', display: r => (L('tipus_document', r.tipus_id) || 'Document') + ' — ' + L('treballadors', r.treballador_id), list: [], fields: [] }, // els de cada treballador (SQL 082); es gestionen a la pàgina «Documents»
     nomines: { label: 'Nòmines', order: 'id', display: r => (r.concepte || 'Nòmina') + ' ' + MESOS[(r.mes || 1) - 1] + ' ' + r.exercici, list: ['treballador_id', 'exercici', 'mes', 'concepte'], fields: [] }, // es carrega per al calendari de nòmines (pàgina pròpia)
     absencies: { label: 'Vacances i baixes', order: 'id', display: r => (r.tipus || '') + ' ' + dmy(r.dia), list: ['treballador_id', 'dia', 'tipus'], fields: [] }, // un registre per treballador i dia; es carrega per al calendari (pàgina pròpia)
     fitxatges_correccions: { label: 'Correccions de fitxatges', order: 'id', display: r => r.accio + ' ' + r.tipus, list: [], fields: [] }, // el rastre de les correccions (SQL 080)
@@ -2304,7 +2352,7 @@ const C = {
   rows: t => cache[t] || [],
   get: (t, id) => { const pk = (SCHEMA.tables[t] || {}).pk; return pk ? (cache[t] || []).find(r => String(r[pk]) === String(id)) : (cache[t] || []).find(r => r.id === Number(id)); },
 };
-const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, copia: null, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, pagProv: { vista: 'marca', data: '', q: '', fets: {}, pagades: false }, ft: { id: null, form: null, vista: 'llista', nou: null, fets: false }, marques: {}, fac: { any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), avis: null }, ia: { missatges: [], enviant: false }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, calAcc: { vista: '', ref: '', meves: false, fetes: false, interns: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false, ed: null }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
+const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, copia: null, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, pagProv: { vista: 'marca', data: '', q: '', fets: {}, pagades: false }, ft: { id: null, form: null, vista: 'llista', nou: null, fets: false }, marques: {}, fac: { any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), avis: null }, ia: { missatges: [], enviant: false }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, docs: { cat: '', treb: '', sel: null }, calAcc: { vista: '', ref: '', meves: false, fetes: false, interns: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false, ed: null }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
 const L = (t, id) => { const r = C.get(t, id); return r ? SCHEMA.tables[t].display(r, L) : ''; };
 
 /* =====================================================================
@@ -2463,7 +2511,7 @@ async function start() {
   if (desDAvis) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
   renderApp();
   if (desDAvis) obreDesDAvis(desDAvis[1]);
-  mostraFelicitacions();
+  mostraFelicitacions().finally(() => setTimeout(mostraAvisDocuments, 300));
   engegaAvisos();
   if (faltes.length) toastErr('Taules que la base de dades encara no té: ' + faltes.join(', ') + '. Executa el fitxer SQL que les crea (o «notify pgrst, \'reload schema\'» si acabes de fer-ho).');
 }
@@ -4204,19 +4252,19 @@ function renderApp() {
     <div class="shell">
       <nav class="side">
         ${SCHEMA.groups.filter(g => !g.oficina || esOficina(treballadorActual())).map(g => `<div class="grp" style="--gc:${g.color}; min-height:${Math.max(70, Math.round(g.label.length * 9) + 28)}px"><div class="glw"><div class="gl">${h(g.label)}</div></div><div class="gi">
-          ${g.tables.length ? g.tables.map(t => `<button data-table="${t}" class="${state.table === t ? 'on' : ''}">${h((SCHEMA.tables[t] || SCHEMA.pages[t]).label)}${t === 'accions_meves' ? insigniaHTML('menu') : ''}</button>`).join('') : '<div class="buit">encara res</div>'}
+          ${g.tables.length ? g.tables.map(t => `<button data-table="${t}" class="${state.table === t ? 'on' : ''}">${h((SCHEMA.tables[t] || SCHEMA.pages[t]).label)}${t === 'accions_meves' ? insigniaHTML('menu') : ''}${t === 'documents_treballadors' && nAlertesDocuments() ? `<b class="nou menu" title="documents caducats o que caduquen aviat">${nAlertesDocuments()}</b>` : ''}</button>`).join('') : '<div class="buit">encara res</div>'}
         </div></div>`).join('')}
       </nav>
       <div class="main" id="main"></div>
     </div>`;
-  $('#brand').addEventListener('click', () => { state.table = null; state.editing = null; state.copia = null; state.fx.ed = null; renderApp(); });
+  $('#brand').addEventListener('click', () => { state.table = null; state.editing = null; state.copia = null; state.fx.ed = null; state.docs.sel = null; renderApp(); });
   $('#logout').addEventListener('click', async () => { await oblidaPush(); await sb.auth.signOut(); user = null; renderLogin(); });
   bindBotoAvisos();
   document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
-    state.mode = b.dataset.mode; state.editing = null; state.copia = null; state.fx.ed = null; renderApp();
+    state.mode = b.dataset.mode; state.editing = null; state.copia = null; state.fx.ed = null; state.docs.sel = null; renderApp();
   }));
   document.querySelectorAll('.side button').forEach(b => b.addEventListener('click', () => {
-    state.table = b.dataset.table; state.editing = null; state.q = ''; state.copia = null; state.fx.ed = null; renderApp();
+    state.table = b.dataset.table; state.editing = null; state.q = ''; state.copia = null; state.fx.ed = null; state.docs.sel = null; renderApp();
   }));
   renderMain();
 }
@@ -4281,7 +4329,7 @@ function renderAppOperari() {
       <span class="who">${h(t ? nomCurtTreballador(t) : user.email)} <button class="btn ghost small" id="avisos">🔕 Avisos</button> <button class="btn ghost small" id="logout">Surt</button></span>
     </div>
     <div class="shell" style="grid-template-columns:minmax(0,1fr)"><div class="main" id="main"></div></div>`;
-  $('#brand').addEventListener('click', () => { state.table = null; state.editing = null; state.copia = null; state.fx.ed = null; renderApp(); });
+  $('#brand').addEventListener('click', () => { state.table = null; state.editing = null; state.copia = null; state.fx.ed = null; state.docs.sel = null; renderApp(); });
   $('#logout').addEventListener('click', async () => { await oblidaPush(); await sb.auth.signOut(); user = null; renderLogin(); });
   bindBotoAvisos();
   const main = $('#main');
@@ -4303,6 +4351,7 @@ function renderAppOperari() {
         <button data-go="informe_adob" style="${estilMenu('informe_adob')}"><strong>Adob</strong>${fonsMenu('informe_adob')}</button>
         <button data-go="nomines" style="${estilMenu('nomines')}"><strong>Nòmines</strong>${fonsMenu('nomines')}</button>
         <button data-go="vacances" style="${estilMenu('vacances')}"><strong>Vacances</strong>${fonsMenu('vacances')}</button>
+        <button class="ample" data-go="documents_treballadors" style="--p:#8e7cc3;--pf:#4b3a7a"><strong>Documents</strong>${(() => { const n = t ? alertesDocuments({ nomesMeus: true }).length : 0; return n ? `<span class="pend">${n} per renovar</span>` : '<span>DNI, contracte, carnets…</span>'; })()}${ESCENES_MENU.fulls_treball_app}</button>
       </div>`;
     main.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { state.table = b.dataset.go; state.editing = null; if (b.dataset.go === 'fulls_treball_app') Object.assign(state.ft, { id: null, form: null, nou: null }); if (b.dataset.go === 'lectures_app') state.lect = { id: null }; renderApp(); }));
     return;
@@ -7270,6 +7319,277 @@ async function copiaCreaAdministrador(btn) {
 function acabaCopia(id) {
   if (!state.copia || state.copia.taula !== state.table) return;
   state.copia = null; state.mode = 'consulta'; state.editing = id;
+}
+/* =====================================================================
+   DOCUMENTS DELS TREBALLADORS (SQL 082): a part de les nòmines, els documents de cada persona (DNI, contracte, aptitud mèdica, carnets…),
+   amb la data del document i la de caducitat. L'oficina els puja i ho veu tot en una graella (persona × tipus) amb colors; cadascú veu
+   els seus a l'app. Renovar = pujar-ne un de nou del mateix tipus: el més recent és el vigent i els anteriors queden d'historial.
+   Els tipus confidencials (salut i sancions) només els veu i els gestiona l'administrador (i la persona els seus).
+   ===================================================================== */
+const CAT_DOC = { identificacio: 'Identificació', contracte: 'Contracte i alta', dades: 'Protecció de dades', prl: 'Prevenció de riscos', carnets: 'Carnets i formació', altres: 'Altres' };
+const oficinaDocs = () => !APP_NOMES_TASQUES && esOficina(treballadorActual());
+const adminDocs = () => !APP_NOMES_TASQUES && (treballadorActual() || {}).rol === 'admin';
+const tipusDocs = () => C.rows('tipus_document').filter(t => t.actiu && t.per_a === 'treballador')
+  .sort((a, b) => (Object.keys(CAT_DOC).indexOf(a.categoria) - Object.keys(CAT_DOC).indexOf(b.categoria)) || ((a.ordre || 0) - (b.ordre || 0)) || String(a.nom).localeCompare(String(b.nom), 'ca'));
+// els tipus que la persona connectada gestiona (i veu a la graella): l'administrador, tots; l'oficina, tots menys els confidencials
+const potGestionarTipus = tp => !!tp && (adminDocs() || (oficinaDocs() && !tp.confidencial));
+const tipusGestionables = () => tipusDocs().filter(potGestionarTipus);
+const docsDe = trebId => C.rows('documents').filter(d => d.actiu && Number(d.treballador_id) === Number(trebId));
+const dataDoc = d => String(d.data_document || String(d.creat_el || '').slice(0, 10));
+const ordreDoc = (a, b) => dataDoc(b).localeCompare(dataDoc(a)) || String(b.creat_el || '').localeCompare(String(a.creat_el || '')) || b.id - a.id;
+// per tipus, els documents d'una persona: el primer és el vigent (el més recent) i la resta, l'historial
+function documentsPerTipus(trebId) {
+  const m = new Map();
+  docsDe(trebId).sort(ordreDoc).forEach(d => { const k = Number(d.tipus_id); if (!m.has(k)) m.set(k, []); m.get(k).push(d); });
+  return m;
+}
+const diesFinsA = iso => Math.round((new Date(String(iso).slice(0, 10) + 'T12:00:00') - new Date(avui() + 'T12:00:00')) / 86400000);
+const obligatoriPer = (tp, t) => !!t && (tp.obligatori === 'tots' || (tp.obligatori === 'operaris' && t.rol === 'tecnic') || (tp.obligatori === 'oficina' && esOficina(t)));
+// l'estat d'un tipus per a una persona: vigent, aviat (caduca d'aquí a pocs dies), caducat, falta (és obligatori i no n'hi ha) o res (no li cal)
+function estatDocument(d, tp, t) {
+  if (!d) return obligatoriPer(tp, t) ? 'falta' : null;
+  if (!d.data_caducitat) return 'vigent';
+  const n = diesFinsA(d.data_caducitat);
+  return n < 0 ? 'caducat' : n <= Number(tp.avis_dies || 0) ? 'aviat' : 'vigent';
+}
+const dmyCurt = iso => { const s = dmy(iso); return s ? s.slice(0, 6) + s.slice(8) : ''; };
+function textEstatDoc(e, d) {
+  if (e === 'falta') return 'falta';
+  if (!d) return '';
+  if (!d.data_caducitat) return 'sense caducitat';
+  const n = diesFinsA(d.data_caducitat);
+  if (e === 'caducat') return 'caducat el ' + dmy(d.data_caducitat);
+  if (e === 'aviat') return 'caduca el ' + dmy(d.data_caducitat) + (n === 0 ? ' (avui)' : n === 1 ? ' (demà)' : ' (d’aquí a ' + n + ' dies)');
+  return 'vigent fins al ' + dmy(d.data_caducitat);
+}
+// el que cal renovar: els documents vigents caducats o que caduquen aviat (de tothom per a l'oficina, o només els propis)
+function alertesDocuments({ nomesMeus = false, dies = null } = {}) {
+  const jo = treballadorActual(); if (!jo) return [];
+  const persones = nomesMeus ? [jo] : C.rows('treballadors').filter(t => t.actiu);
+  const tipus = new Map(tipusDocs().map(t => [Number(t.id), t]));
+  const out = [];
+  persones.forEach(p => documentsPerTipus(p.id).forEach((llista, tid) => {
+    const tp = tipus.get(tid), d = llista[0];
+    if (!tp || !d.data_caducitat || (nomesMeus ? !tp.visible_treballador : !potGestionarTipus(tp))) return;
+    const n = diesFinsA(d.data_caducitat), limit = dies != null ? dies : Number(tp.avis_dies || 0);
+    if (n <= limit) out.push({ p, tp, d, n, estat: n < 0 ? 'caducat' : n <= Number(tp.avis_dies || 0) ? 'aviat' : 'vigent' });
+  }));
+  return out.sort((a, b) => a.n - b.n);
+}
+const nAlertesDocuments = () => { try { return oficinaDocs() ? alertesDocuments().length : 0; } catch (e) { return 0; } };
+// la caducitat que toca: la data del document més la validesa del tipus (si en té)
+function caducitatCalculada(dataIso, tp) {
+  if (!dataIso || !tp || !tp.caduca || !tp.validesa_mesos) return '';
+  const d = new Date(dataIso + 'T12:00:00'); d.setMonth(d.getMonth() + Number(tp.validesa_mesos)); return ymd(d);
+}
+// els fitxers s'obren amb un enllaç que dura pocs minuts
+async function obreFitxerDocument(path) {
+  const w = window.open('', '_blank');
+  const { data, error } = await sb.storage.from(BUCKET).createSignedUrl(path, 300);
+  if (error) { if (w) w.close(); toastErr('No s’ha pogut obrir: ' + friendly(error)); return; }
+  if (w) w.location.href = data.signedUrl; else window.open(data.signedUrl, '_blank');
+}
+const fitxersHTML = d => (Array.isArray(d.fitxers) ? d.fitxers : []).map(f => `<a href="#" class="dc-fitxer" data-dc-obre="${h(f.path)}" title="${h(f.nom || '')}">📄 ${h(f.nom || 'fitxer')}</a>`).join('') || '<span class="hint">sense fitxer</span>';
+
+// la pàgina: a l'oficina, la graella de tothom; a la resta, els documents propis
+function renderDocumentsTreballadors(main) {
+  if (!oficinaDocs()) { renderMeusDocuments(main); return; }
+  const st = state.docs;
+  const treballadors = C.rows('treballadors').filter(x => x.actiu).sort((a, b) => nomTreballador(a).localeCompare(nomTreballador(b), 'ca'));
+  if (st.treb && !treballadors.some(x => String(x.id) === String(st.treb))) st.treb = '';
+  const persones = st.treb ? treballadors.filter(x => String(x.id) === String(st.treb)) : treballadors;
+  const tots = tipusGestionables(), cats = Object.keys(CAT_DOC).filter(c => tots.some(t => t.categoria === c));
+  if (st.cat && !cats.includes(st.cat)) st.cat = '';
+  const tipus = tots.filter(t => !st.cat || t.categoria === st.cat);
+  const compte = { caducat: 0, aviat: 0, falta: 0 };
+  const files = persones.map(p => { const per = documentsPerTipus(p.id);
+    return { p, cel: tipus.map(tp => { const ll = per.get(Number(tp.id)) || [], d = ll[0], e = estatDocument(d, tp, p); if (compte[e] != null) compte[e]++; return { tp, d, e }; }) }; });
+  const celText = c => c.e === 'falta' ? 'falta' : c.d ? (c.d.data_caducitat ? dmyCurt(c.d.data_caducitat) : '✓') : '';
+  const llista = alertesDocuments({ dies: 90 }).filter(x => !st.treb || String(x.p.id) === String(st.treb));
+  main.innerHTML = `<h1>Documents dels treballadors</h1>
+    <p class="sub">Els documents de cada persona (a part de les nòmines), amb la caducitat. Cada casella és un tipus de document: en verd, vigent; en taronja, caduca aviat; en vermell, caducat; ratllat, falta i és obligatori. Clica-la per veure’l, renovar-lo o pujar-lo. Cada treballador veu els seus a l’app.${adminDocs() ? ' Els tipus amb 🔒 són confidencials: només els veus tu (i la persona).' : ''}</p>
+    <div class="bar">
+      <select id="dc-cat" style="width:auto"><option value="">Tots els tipus</option>${cats.map(c => `<option value="${c}" ${c === st.cat ? 'selected' : ''}>${h(CAT_DOC[c])}</option>`).join('')}</select>
+      <select id="dc-treb" style="width:auto; min-width:200px"><option value="">Tothom</option>${treballadors.map(x => `<option value="${x.id}" ${String(x.id) === String(st.treb) ? 'selected' : ''}>${h(nomTreballador(x))}</option>`).join('')}</select>
+      <button class="btn" id="dc-puja">Puja un document</button>
+      <span class="n">${compte.caducat ? `<b class="v-no">${compte.caducat} ${compte.caducat === 1 ? 'caducat' : 'caducats'}</b> · ` : ''}${compte.aviat} ${compte.aviat === 1 ? 'caduca' : 'caduquen'} aviat · ${compte.falta} ${compte.falta === 1 ? 'falta' : 'falten'}</span>
+    </div>
+    ${tipus.length ? `<div class="dc-wrap"><table class="dc-taula"><thead><tr><th class="dc-nom">Persona</th>${tipus.map(tp => `<th title="${h(tp.nom)}${tp.observacions ? ' · ' + h(tp.observacions) : ''}">${h(tp.nom)}${tp.confidencial ? ' 🔒' : ''}</th>`).join('')}</tr></thead>
+      <tbody>${files.map(f => `<tr><th class="dc-nom"><a href="#" data-dc-persona="${f.p.id}" title="Només aquesta persona">${h(nomTreballador(f.p))}</a></th>${f.cel.map(c => `<td class="dc ${c.e || ''}" data-dc="${f.p.id}|${c.tp.id}" title="${h(c.tp.nom)}${c.e ? ': ' + h(textEstatDoc(c.e, c.d)) : ''}">${celText(c)}</td>`).join('')}</tr>`).join('') || `<tr><td colspan="${tipus.length + 1}" class="empty">Cap treballador actiu.</td></tr>`}</tbody></table></div>
+      <div class="dc-llegenda"><span><i class="dc vigent"></i>vigent (amb la data de caducitat; ✓ si no caduca)</span><span><i class="dc aviat"></i>caduca aviat</span><span><i class="dc caducat"></i>caducat</span><span><i class="dc falta"></i>falta (obligatori)</span></div>`
+      : '<div class="empty">No hi ha cap tipus de document. Executa el fitxer SQL 082, o crea’n a «Tipus de document».</div>'}
+    <h3>Caduquen en els propers 90 dies (i els caducats)</h3>
+    ${llista.length ? `<table class="tbl"><thead><tr><th>Persona</th><th>Document</th><th>Caducitat</th><th></th></tr></thead><tbody>${llista.map(x => `<tr class="row" data-dc="${x.p.id}|${x.tp.id}"><td>${h(nomTreballador(x.p))}</td><td>${h(x.tp.nom)}</td><td>${dmy(x.d.data_caducitat)}</td><td><span class="dc-xip ${x.estat}">${x.n < 0 ? 'caducat fa ' + (-x.n) + (x.n === -1 ? ' dia' : ' dies') : x.n === 0 ? 'avui' : 'd’aquí a ' + x.n + (x.n === 1 ? ' dia' : ' dies')}</span></td></tr>`).join('')}</tbody></table>`
+      : '<div class="empty">Res no caduca en els propers 90 dies.</div>'}
+    ${st.sel ? panellDocumentHTML() : ''}`;
+  $('#dc-cat').addEventListener('change', e => { st.cat = e.target.value; renderMain(); });
+  $('#dc-treb').addEventListener('change', e => { st.treb = e.target.value; renderMain(); });
+  $('#dc-puja').addEventListener('click', () => { st.sel = { mode: 'nou', treb: st.treb ? Number(st.treb) : null, tipus: null }; renderMain(); });
+  main.querySelectorAll('[data-dc-persona]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); st.treb = a.dataset.dcPersona; renderMain(); }));
+  main.querySelectorAll('[data-dc]').forEach(c => c.addEventListener('click', () => {
+    const [treb, tipus] = c.dataset.dc.split('|').map(Number), hiEs = (documentsPerTipus(treb).get(tipus) || []).length;
+    st.sel = { mode: hiEs ? 'veure' : 'nou', treb, tipus }; renderMain();
+  }));
+  if (st.sel) bindPanellDocument();
+}
+
+// la finestra d'un tipus de document d'una persona: el vigent i l'historial, o el formulari per pujar-ne un o corregir-lo
+function panellDocumentHTML() {
+  const sel = state.docs.sel;
+  if (sel.mode !== 'veure') return formDocumentHTML();
+  const p = C.get('treballadors', sel.treb), tp = C.get('tipus_document', sel.tipus);
+  if (!p || !tp) { state.docs.sel = null; return ''; }
+  const ll = documentsPerTipus(sel.treb).get(Number(sel.tipus)) || [], pot = potGestionarTipus(tp);
+  const versio = (d, i) => { const e = i ? null : estatDocument(d, tp, p);
+    return `<div class="dc-versio ${i ? 'antiga' : ''}">
+      <div class="dc-versio-cap"><b>${i ? 'Anterior' : 'Vigent'}</b>${e ? ` <span class="dc-xip ${e}">${h(textEstatDoc(e, d))}</span>` : ''}</div>
+      <div class="hint">Data del document: ${d.data_document ? dmy(d.data_document) : '—'} · Caducitat: ${d.data_caducitat ? dmy(d.data_caducitat) : 'no en té'} · Pujat el ${dmy(String(d.creat_el || '').slice(0, 10))}${d.pujat_per ? ' per ' + h(nomCurtTreballador(C.get('treballadors', d.pujat_per))) : ''}</div>
+      <div class="dc-fitxers">${fitxersHTML(d)}</div>
+      ${d.observacions ? `<div class="dc-obs">${h(d.observacions)}</div>` : ''}
+      ${pot ? `<div class="dc-accions-versio"><button type="button" class="btn ghost small" data-dc-edita="${d.id}">Corregeix</button><button type="button" class="btn ghost small" data-dc-baixa="${d.id}">Dona de baixa</button></div>` : ''}
+    </div>`; };
+  return `<div class="avisos-panell" id="dcp-panell"><div class="avisos-caixa dc-caixa" role="dialog" aria-modal="true" aria-labelledby="dcp-titol">
+    <h3 id="dcp-titol">${h(tp.nom)}${tp.confidencial ? ' 🔒' : ''}</h3>
+    <p class="dc-qui">${h(nomTreballador(p))}${tp.observacions ? ` · <span class="hint">${h(tp.observacions)}</span>` : ''}</p>
+    ${ll.length ? ll.map(versio).join('') : `<p class="hint">Encara no n’hi ha cap.${obligatoriPer(tp, p) ? ' És obligatori.' : ''}</p>`}
+    <div id="dcp-err" class="msg err" hidden></div>
+    <div class="accions">${pot ? `<button type="button" class="btn" id="dcp-nou">${ll.length ? 'Renova’l (puja’n un de nou)' : 'Puja’l'}</button>` : ''}<button type="button" class="btn ghost" id="dcp-tanca">Tanca</button></div>
+  </div></div>`;
+}
+function formDocumentHTML() {
+  const sel = state.docs.sel, d = sel.mode === 'edita' ? C.get('documents', sel.id) : null;
+  const trebId = d ? Number(d.treballador_id) : sel.treb, tipusId = d ? Number(d.tipus_id) : sel.tipus;
+  const tp = tipusId ? C.get('tipus_document', tipusId) : null;
+  const persones = C.rows('treballadors').filter(x => x.actiu).sort((a, b) => nomTreballador(a).localeCompare(nomTreballador(b), 'ca'));
+  const tipus = tipusGestionables();
+  const dataIni = d ? (d.data_document || '') : avui(), cadIni = d ? (d.data_caducitat || '') : caducitatCalculada(dataIni, tp);
+  return `<div class="avisos-panell" id="dcp-panell"><div class="avisos-caixa dc-caixa dc-form" role="dialog" aria-modal="true" aria-labelledby="dcp-titol">
+    <h3 id="dcp-titol">${d ? 'Corregeix el document' : sel.treb && sel.tipus && (documentsPerTipus(sel.treb).get(Number(sel.tipus)) || []).length ? 'Renova el document' : 'Puja un document'}</h3>
+    ${trebId && (d || sel.treb) ? `<p class="dc-qui"><b>${h(nomTreballador(C.get('treballadors', trebId)))}</b></p>`
+      : `<label class="f"><span class="l">Persona</span><select id="dcf-treb"><option value="">Tria…</option>${persones.map(p => `<option value="${p.id}">${h(nomTreballador(p))}</option>`).join('')}</select></label>`}
+    ${tp && (d || sel.tipus) ? `<p class="dc-qui">${h(tp.nom)}${tp.confidencial ? ' 🔒' : ''}</p>`
+      : `<label class="f"><span class="l">Tipus de document</span><select id="dcf-tipus"><option value="">Tria…</option>${Object.keys(CAT_DOC).filter(c => tipus.some(t => t.categoria === c)).map(c => `<optgroup label="${h(CAT_DOC[c])}">${tipus.filter(t => t.categoria === c).map(t => `<option value="${t.id}">${h(t.nom)}${t.confidencial ? ' 🔒' : ''}</option>`).join('')}</optgroup>`).join('')}</select></label>`}
+    <div class="dc-grid">
+      <label class="f"><span class="l">Data del document</span><input type="date" id="dcf-data" value="${h(dataIni)}"></label>
+      <label class="f"><span class="l">Caducitat</span><input type="date" id="dcf-cad" value="${h(cadIni)}" ${d && d.data_caducitat ? 'data-manual="1"' : ''}></label>
+    </div>
+    <p class="hint" id="dcf-hint-cad">${h(pistaCaducitat(tp))}</p>
+    ${d ? `<div class="f"><span class="l">Fitxers</span><div class="dc-treu">${(Array.isArray(d.fitxers) ? d.fitxers : []).map((f, i) => `<label><input type="checkbox" data-dcf-treu="${i}"> treu «${h(f.nom || 'fitxer')}»</label>`).join('') || '<span class="hint">encara sense fitxer</span>'}</div></div>` : ''}
+    <label class="f"><span class="l">${d ? 'Afegeix-hi fitxers' : 'Fitxers'} <span class="hint">(PDF o fotos; en pots triar més d’un, p. ex. l’anvers i el revers)</span></span><input type="file" id="dcf-fitxers" accept="application/pdf,image/*" multiple></label>
+    <label class="f"><span class="l">Observacions</span><textarea id="dcf-obs" rows="2">${h(d ? d.observacions || '' : '')}</textarea></label>
+    <div id="dcp-err" class="msg err" hidden></div>
+    <div class="accions"><button type="button" class="btn" id="dcf-desa">Desa</button><button type="button" class="btn ghost" id="dcf-cancel">Cancel·la</button></div>
+  </div></div>`;
+}
+const pistaCaducitat = tp => !tp ? '' : !tp.caduca ? 'Aquest tipus no caduca: deixa la caducitat buida (o posa-n’hi una si aquest en té).'
+  : tp.validesa_mesos ? 'Es calcula sola: la data del document més ' + (tp.validesa_mesos % 12 === 0 ? (tp.validesa_mesos / 12) + (tp.validesa_mesos === 12 ? ' any' : ' anys') : tp.validesa_mesos + ' mesos') + '. La pots canviar.'
+  : 'Posa la data de caducitat que diu el document.' + (tp.observacions ? ' (' + tp.observacions + ')' : '');
+function bindPanellDocument() {
+  const panell = $('#dcp-panell'); if (!panell) return;
+  const st = state.docs, sel = st.sel;
+  const tanca = () => { st.sel = null; renderMain(); };
+  const err = m => { const e = $('#dcp-err'); e.textContent = m; e.hidden = false; };
+  panell.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); tanca(); } });
+  panell.querySelectorAll('[data-dc-obre]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); obreFitxerDocument(a.dataset.dcObre); }));
+  if (sel.mode === 'veure') {
+    $('#dcp-tanca').addEventListener('click', tanca);
+    const nou = $('#dcp-nou'); if (nou) nou.addEventListener('click', () => { st.sel = { mode: 'nou', treb: sel.treb, tipus: sel.tipus }; renderMain(); });
+    panell.querySelectorAll('[data-dc-edita]').forEach(b => b.addEventListener('click', () => { st.sel = { mode: 'edita', id: Number(b.dataset.dcEdita), treb: sel.treb, tipus: sel.tipus }; renderMain(); }));
+    panell.querySelectorAll('[data-dc-baixa]').forEach(b => b.addEventListener('click', async () => {
+      const d = C.get('documents', b.dataset.dcBaixa), tp = C.get('tipus_document', sel.tipus);
+      if (!confirm(`Donar de baixa aquest document (${tp ? tp.nom : ''}${d && d.data_document ? ', del ' + dmy(d.data_document) : ''})? Deixarà de sortir, però no s’esborra.`)) return;
+      const r = await sb.from('documents').update({ actiu: false }).eq('id', Number(b.dataset.dcBaixa));
+      if (r.error) return err(friendly(r.error));
+      await loadTable('documents'); if (!(documentsPerTipus(sel.treb).get(Number(sel.tipus)) || []).length) st.sel = null; renderMain(); toast('Document donat de baixa');
+    }));
+    $('#dcp-tanca').focus();
+    return;
+  }
+  // formulari: la caducitat es calcula sola mentre no s'hagi tocat a mà
+  const cad = $('#dcf-cad'), data = $('#dcf-data'), selTipus = $('#dcf-tipus');
+  const tipusActual = () => C.get('tipus_document', selTipus ? selTipus.value : (sel.mode === 'edita' ? (C.get('documents', sel.id) || {}).tipus_id : sel.tipus));
+  const recalcula = () => { const tp = tipusActual(); $('#dcf-hint-cad').textContent = pistaCaducitat(tp); if (!cad.dataset.manual) cad.value = caducitatCalculada(data.value, tp); };
+  cad.addEventListener('input', () => { cad.dataset.manual = cad.value ? '1' : ''; });
+  data.addEventListener('change', recalcula); if (selTipus) selTipus.addEventListener('change', recalcula);
+  $('#dcf-cancel').addEventListener('click', () => { st.sel = sel.mode === 'edita' || (sel.treb && sel.tipus && (documentsPerTipus(sel.treb).get(Number(sel.tipus)) || []).length) ? { mode: 'veure', treb: sel.treb, tipus: sel.tipus } : null; renderMain(); });
+  $('#dcf-desa').addEventListener('click', () => desaDocument().catch(e => err(friendly(e))));
+  const primer = $('#dcf-treb') || $('#dcf-tipus') || data; if (primer) primer.focus();
+}
+// desa: el registre primer, després els fitxers a docs_treballadors/<persona>/<document>/, i la llista de fitxers al registre
+async function desaDocument() {
+  const st = state.docs, sel = st.sel, err = m => { const e = $('#dcp-err'); e.textContent = m; e.hidden = false; };
+  const d = sel.mode === 'edita' ? C.get('documents', sel.id) : null;
+  const treb = d ? Number(d.treballador_id) : sel.treb || Number(($('#dcf-treb') || {}).value || 0);
+  const tipus = d ? Number(d.tipus_id) : sel.tipus || Number(($('#dcf-tipus') || {}).value || 0);
+  if (!treb) return err('Tria la persona.');
+  if (!tipus) return err('Tria el tipus de document.');
+  const dataDocument = $('#dcf-data').value || null, dataCaducitat = $('#dcf-cad').value || null, obs = $('#dcf-obs').value.trim() || null;
+  if (dataDocument && dataCaducitat && dataCaducitat < dataDocument) return err('La caducitat no pot ser abans de la data del document.');
+  const nous = [...($('#dcf-fitxers').files || [])];
+  const treure = d ? [...document.querySelectorAll('[data-dcf-treu]:checked')].map(c => (d.fitxers || [])[Number(c.dataset.dcfTreu)]).filter(Boolean) : [];
+  if (!d && !nous.length && !confirm('No hi has posat cap fitxer. El vols desar igualment (només amb les dates)?')) return;
+  const botons = [...document.querySelectorAll('#dcp-panell .accions button')]; botons.forEach(b => { b.disabled = true; });
+  try {
+    let id = d ? d.id : null;
+    if (d) { const r = await sb.from('documents').update({ data_document: dataDocument, data_caducitat: dataCaducitat, observacions: obs }).eq('id', id); if (r.error) throw r.error; }
+    else { const r = await sb.from('documents').insert({ tipus_id: tipus, treballador_id: treb, data_document: dataDocument, data_caducitat: dataCaducitat, observacions: obs, fitxers: [] }).select('id').single(); if (r.error) throw r.error; id = r.data.id; }
+    const pujats = [];
+    for (const f of nous) {
+      const path = `docs_treballadors/${treb}/${id}/${Date.now()}_${f.name.replace(/[^\w.\-]+/g, '_')}`;
+      const up = await sb.storage.from(BUCKET).upload(path, f, { contentType: f.type || undefined });
+      if (up.error) {   // el registre ja hi és: es queda obert per tornar-ho a provar
+        if (pujats.length) await sb.from('documents').update({ fitxers: [...((d && d.fitxers) || []), ...pujats] }).eq('id', id);   // (els que s'havien de treure, encara hi són)
+        await loadTable('documents'); st.sel = { mode: 'edita', id, treb, tipus }; renderMain();
+        return err('El document s’ha desat, però «' + f.name + '» no s’ha pogut pujar: ' + friendly(up.error) + '. Torna-ho a provar des d’aquí.');
+      }
+      pujats.push({ path, nom: f.name, tipus: f.type || '', mida: f.size });
+    }
+    if (treure.length) { const r = await sb.storage.from(BUCKET).remove(treure.map(f => f.path)); if (r && r.error) throw r.error; }
+    if (pujats.length || treure.length) {
+      const fitxers = [...((d && d.fitxers) || []).filter(x => !treure.includes(x)), ...pujats];
+      const r = await sb.from('documents').update({ fitxers }).eq('id', id); if (r.error) throw r.error;
+    }
+    await loadTable('documents');
+    st.sel = { mode: 'veure', treb, tipus }; renderMain();
+    toast(d ? 'Document corregit' : 'Document desat');
+  } finally { botons.forEach(b => { b.disabled = false; }); }
+}
+
+// a l'app (i a la web per a qui no és de l'oficina): els documents propis, per categories, amb l'estat i els fitxers
+function renderMeusDocuments(main) {
+  const jo = treballadorActual(), per = jo ? documentsPerTipus(jo.id) : new Map();
+  const tipus = tipusDocs().filter(tp => tp.visible_treballador && per.has(Number(tp.id)));
+  const cats = Object.keys(CAT_DOC).filter(c => tipus.some(t => t.categoria === c));
+  const avisos = jo ? alertesDocuments({ nomesMeus: true }) : [];
+  main.innerHTML = `<h1>Els meus documents</h1>
+    <p class="sub">Els documents que l’empresa té teus: DNI, contracte, carnets, formació… Toca un fitxer per obrir-lo. Si en renoves algun, porta’l a l’oficina.</p>
+    ${!jo ? '<div class="msg err">El teu usuari no té fitxa de treballador amb aquest correu d’accés: demana a l’oficina que t’hi afegeixin.</div>' : ''}
+    ${avisos.length ? `<div class="msg ${avisos.some(x => x.estat === 'caducat') ? 'err' : 'dc-avis'}">${avisos.map(x => `${h(x.tp.nom)}: ${x.estat === 'caducat' ? 'caducat el ' : 'caduca el '}${dmy(x.d.data_caducitat)}`).join('<br>')}</div>` : ''}
+    ${cats.length ? cats.map(c => `<h3>${h(CAT_DOC[c])}</h3>${tipus.filter(t => t.categoria === c).map(tp => { const ll = per.get(Number(tp.id)), d = ll[0], e = estatDocument(d, tp, jo);
+      return `<div class="dc-targeta"><div class="dc-targeta-cap"><b>${h(tp.nom)}</b> <span class="dc-xip ${e || ''}">${h(textEstatDoc(e, d))}</span></div>
+        <div class="dc-fitxers">${fitxersHTML(d)}</div>
+        ${ll.length > 1 ? `<details class="dc-anteriors"><summary>${ll.length - 1} ${ll.length === 2 ? 'versió anterior' : 'versions anteriors'}</summary>${ll.slice(1).map(a => `<div class="dc-anterior"><span class="hint">${a.data_document ? dmy(a.data_document) : dmy(String(a.creat_el || '').slice(0, 10))}${a.data_caducitat ? ' · caducitat ' + dmy(a.data_caducitat) : ''}</span><div class="dc-fitxers">${fitxersHTML(a)}</div></div>`).join('')}</details>` : ''}
+      </div>`; }).join('')}`).join('') : (jo ? '<div class="empty">Encara no hi ha cap document teu.</div>' : '')}`;
+  main.querySelectorAll('[data-dc-obre]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); obreFitxerDocument(a.dataset.dcObre); }));
+}
+
+// en obrir el programa (un cop al dia): a l'oficina, el que cal renovar de tothom; a la resta, el seu
+async function mostraAvisDocuments() {
+  try {
+    const jo = treballadorActual(); if (!jo || document.querySelector('.aniv') || $('#avd-panell')) return;
+    const oficina = oficinaDocs(), llista = oficina ? alertesDocuments() : alertesDocuments({ nomesMeus: true });
+    if (!llista.length) return;
+    const clau = 'gestio_avis_documents_' + jo.id + '_' + avui();
+    try { if (localStorage.getItem(clau)) return; localStorage.setItem(clau, '1'); } catch (e) {}
+    const div = document.createElement('div'); div.className = 'avisos-panell'; div.id = 'avd-panell';
+    div.innerHTML = `<div class="avisos-caixa" role="dialog" aria-modal="true" aria-labelledby="avd-titol"><h3 id="avd-titol">${oficina ? 'Documents per renovar' : 'Tens documents per renovar'}</h3>
+      <ul>${llista.slice(0, 8).map(x => `<li class="${x.estat === 'caducat' ? 'no' : ''}">${oficina ? h(nomTreballador(x.p)) + ' · ' : ''}${h(x.tp.nom)}: ${x.estat === 'caducat' ? 'caducat el ' : 'caduca el '}${dmy(x.d.data_caducitat)}</li>`).join('')}${llista.length > 8 ? `<li>i ${llista.length - 8} més</li>` : ''}</ul>
+      <div class="accions"><button class="btn" id="avd-obre">${oficina ? 'Obre els documents' : 'Mira’ls'}</button><button class="btn ghost" id="avd-tanca">D’acord</button></div></div>`;
+    document.body.appendChild(div);
+    const tanca = () => div.remove();
+    $('#avd-tanca').addEventListener('click', tanca);
+    $('#avd-obre').addEventListener('click', () => { tanca(); if (oficina) state.mode = 'consulta'; state.table = 'documents_treballadors'; state.editing = null; state.docs.sel = null; renderApp(); window.scrollTo({ top: 0 }); });
+  } catch (e) {}
 }
 async function toggleActiu(td) {
   const t = state.table, row = C.get(t, state.editing);
