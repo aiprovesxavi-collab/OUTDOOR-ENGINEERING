@@ -1906,9 +1906,10 @@ const SCHEMA = {
     },
     fulls_treball: {
       label: 'Fulls de treball', nou: 'Nou full de treball', order: 'termini', desc: true,
+      sortBy: (a, b) => String(b.termini || b.creat_el || '').localeCompare(String(a.termini || a.creat_el || '')) || (b.id || 0) - (a.id || 0),   // els que no tenen termini (els obre l'operari), per quan es van crear
       display: r => (r.numero || 'full') + ' — ' + r.nom,
       list: ['numero', 'nom', 'lloc_id', 'encarregat_id', 'inici', 'termini', 'estat', 'hores', 'incidencia', 'albara'],
-      validate: p => p.inici && p.termini && new Date(p.inici) > new Date(p.termini) ? 'La data en què es pot començar no pot ser després del termini.' : null,
+      validate: (p, id) => !id && !p.termini ? 'Posa el termini final.' : p.inici && p.termini && new Date(p.inici) > new Date(p.termini) ? 'La data en què es pot començar no pot ser després del termini.' : null,
       computed: {
         hores: { label: 'Hores', num: true, fn: r => horesFull(r.id) },
         albara: { label: 'Albarà', fn: r => r.albara_id ? ((C.get('albarans', r.albara_id) || {}).numero_complet || 'sí') : '' },
@@ -1933,7 +1934,7 @@ const SCHEMA = {
         { key: 'estat', label: 'Estat', type: 'info', fmt: r => ESTATS_FULL[r.estat] || r.estat || 'Pendent' },
         { key: 'nom', label: 'Nom de la tasca', type: 'text', required: true, wide: true },
         { key: 'inici', label: 'Es pot començar', type: 'datetime', hint: 'buit = de seguida; amb data, el full queda programat fins llavors' },
-        { key: 'termini', label: 'Termini final', type: 'datetime', required: true, default: () => vencimentPerGrup('mig_termini').toISOString() },
+        { key: 'termini', label: 'Termini final', type: 'datetime', default: () => vencimentPerGrup('mig_termini').toISOString(), hint: 'obligatori en un full nou; els que l’operari obre ell mateix des de l’app no en porten' },
         { key: 'lloc_id', label: 'Lloc', type: 'ref', ref: 'llocs', required: true, optionLabel: r => r.nom + (r.poblacio ? ' — ' + r.poblacio : ''), ro: r => !!r && !!r.incidencia_id },
         { key: 'encarregat_id', label: 'A qui s’encomana la feina', type: 'ref', ref: 'treballadors', required: true, filter: r => r.actiu, optionLabel: r => nomTreballador(r) },
         { key: 'demanat_per', label: 'Qui ho demana', type: 'ref', ref: 'treballadors', filter: r => r.actiu, optionLabel: r => nomTreballador(r), default: () => { const t = treballadorActual(); return t ? t.id : ''; } },
@@ -6456,7 +6457,7 @@ async function recarregaFulls() { await Promise.all(['fulls_treball', 'full_treb
 async function creaFullPerAccio(inc, a) {
   const ja = fullDeAccio(a); if (ja) return ja.id;
   const acabada = a.estat === 'finalitzada';
-  const termini = acabada ? vencimentPerGrup('mig_termini').toISOString() : (a.venciment || vencimentPerGrup(a.grup_termini || 'mig_termini').toISOString());
+  const termini = acabada ? null : (a.venciment || vencimentPerGrup(a.grup_termini || 'mig_termini').toISOString());
   const dades = { nom: a.titol || nomTipus(a.tipus), termini, lloc_id: inc.lloc_id, observacions_previes: a.descripcio || null, encarregat_id: a.responsable_treballador_id, demanat_per: a.creat_per || null,
     incidencia_id: inc.id, accio_id: a.id, estat: a.estat === 'en_curs' ? 'en_curs' : 'pendent', inici: acabada ? null : (a.inici || null) };
   const r = await sb.from('fulls_treball').insert(dades).select('id').single(); if (r.error) throw r.error;
@@ -6583,8 +6584,6 @@ function renderFullsOperari(main) {
   const nou = st.nou ? `<div class="ft"><h4 style="margin-top:0">Nou full de treball</h4>
       <div class="ft-nova" id="ft-nou">
         <label class="f wide"><span class="l">Nom de la tasca</span><input type="text" data-nf="nom"></label>
-        <label class="f"><span class="l">Es pot començar</span><input type="datetime-local" data-nf="inici"><span class="hint">buit = de seguida</span></label>
-        <label class="f"><span class="l">Termini final</span><input type="datetime-local" data-nf="termini" value="${aLocalDT(vencimentPerGrup('mig_termini'))}"></label>
         <label class="f"><span class="l">Lloc</span><select data-nf="lloc_id"><option value="">Tria el lloc…</option>${C.rows('llocs').filter(l => l.actiu).sort((a, b) => a.nom.localeCompare(b.nom, 'ca')).map(l => `<option value="${l.id}">${h(l.nom)}${l.poblacio ? ' — ' + h(l.poblacio) : ''}</option>`).join('')}</select></label>
         <label class="f wide"><span class="l">Observacions preliminars per fer la feina</span><textarea lang="ca" spellcheck="true" data-nf="observacions_previes"></textarea></label>
         <p class="hint wide" style="margin:0">La feina te l’encomanes a tu mateix${t ? ' (' + h(nomTreballador(t)) + ')' : ''}.</p>
@@ -6604,12 +6603,10 @@ function renderFullsOperari(main) {
   const cr = $('#ft-crea'); if (cr) cr.addEventListener('click', async () => {
     const v = k => ($(`#ft-nou [data-nf="${k}"]`) || {}).value || '';
     if (!v('nom').trim()) { showFormError('Posa el nom de la tasca.'); return; }
-    if (!v('termini')) { showFormError('Cal un termini.'); return; }
     if (!v('lloc_id')) { showFormError('Tria el lloc.'); return; }
     if (!t) { showFormError('El teu usuari no té fitxa de treballador.'); return; }
-    if (v('inici') && new Date(v('inici')) > new Date(v('termini'))) { showFormError('La data en què es pot començar no pot ser després del termini.'); return; }
     cr.disabled = true;
-    const r = await sb.from('fulls_treball').insert({ nom: v('nom').trim(), inici: v('inici') ? deLocalDT(v('inici')) : null, termini: deLocalDT(v('termini')), lloc_id: Number(v('lloc_id')), observacions_previes: v('observacions_previes').trim() || null, encarregat_id: t.id, demanat_per: t.id, estat: 'pendent' }).select('id').single();
+    const r = await sb.from('fulls_treball').insert({ nom: v('nom').trim(), lloc_id: Number(v('lloc_id')), observacions_previes: v('observacions_previes').trim() || null, encarregat_id: t.id, demanat_per: t.id, estat: 'pendent' }).select('id').single();
     if (r.error) { cr.disabled = false; showFormError(friendly(r.error)); return; }
     await loadTable('fulls_treball'); toast('Full de treball creat'); st.nou = null; st.id = r.data.id; renderMain(); window.scrollTo({ top: 0 });
   });
@@ -6627,7 +6624,7 @@ function renderFullOperari(main, id) {
     <div class="ao-qui"><span>Ho demana: <b>${h(nomTreballador(qui)) || '—'}</b></span><span>Encarregat: <b>${h(nomTreballador(enc)) || '—'}</b></span></div>
     <div class="ao-peticio"><div class="ao-sobre"><span>Full de treball ${h(f.numero || '')}</span><span class="pill e-${f.finalitzat ? 'finalitzada' : f.estat === 'en_curs' ? 'en_curs' : fullProgramat(f) ? 'programada' : 'pendent'}">${fullProgramat(f) ? 'Programat' : h(ESTATS_FULL[f.estat] || '')}</span>${fora ? '<span class="pill fora">Fora de termini</span>' : ''}</div><div class="ao-text">${h(f.nom)}</div></div>
     ${f.inici ? `<div class="ao-fila"><span class="l">Es pot començar</span><span class="ao-termini">${dmyhm(f.inici)}${fullProgramat(f) ? ' · programat' : ''}</span></div>` : ''}
-    <div class="ao-fila"><span class="l">${f.inici ? 'Termini final' : 'Termini'}</span><span class="ao-termini ${fora ? 'fora' : ''}">${f.termini ? dmyhm(f.termini) : '—'}</span></div>
+    ${f.termini ? `<div class="ao-fila"><span class="l">${f.inici ? 'Termini final' : 'Termini'}</span><span class="ao-termini ${fora ? 'fora' : ''}">${dmyhm(f.termini)}</span></div>` : ''}
     ${f.observacions_previes ? `<div class="ao-fila"><span class="l">Observacions preliminars</span><div class="ao-desc">${h(f.observacions_previes)}</div></div>` : ''}
     ${f.finalitzat ? `<div class="ao-feta"><b>Finalitzat</b> el ${dmyhm(f.finalitzat_el)}${f.albara_id ? ' · ja té albarà' : ''}${f.resum ? `<div class="ao-desc">${h(f.resum)}</div>` : ''}${potDesferFull(f) ? '<a href="#" id="ftf-desfes" class="ao-desfes">Desfés-ho: encara no està acabat</a>' : ''}</div>` : ''}
     <div id="ferr"></div>
