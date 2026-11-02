@@ -748,6 +748,11 @@
   .dc-anteriors{ margin:8px 0 0; font-size:14px; } .dc-anteriors summary{ cursor:pointer; color:var(--ink-2); } .dc-anterior{ margin:6px 0 0 12px; }
   .f.chk .hint{ display:block; margin:5px 2px 0; }
   .progres-fix{ position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:10000; background:#1f2a24; color:#fff; padding:11px 16px; border-radius:10px; font-size:15px; box-shadow:0 6px 24px rgba(0,0,0,.25); max-width:calc(100% - 32px); text-align:center; }
+  /* PDF de factures */
+  .pf-filtres{ display:grid; grid-template-columns:minmax(220px, 1.3fr) repeat(2, minmax(140px, .7fr)) minmax(220px, 1.4fr); gap:12px; align-items:start; margin:0 0 6px; }
+  .pf-filtres .f{ margin:0; } .pf-filtres input, .pf-filtres select{ width:100%; box-sizing:border-box; }
+  @media (max-width:900px){ .pf-filtres{ grid-template-columns:1fr 1fr; } .pf-filtres .pf-num, .pf-filtres .pf-client{ grid-column:1 / -1; } }
+  .pf-bar{ align-items:center; flex-wrap:wrap; gap:8px; } .pf-taula td:last-child{ text-align:right; }
 </style>
 </head>
 <body data-mode="entrada">
@@ -1217,7 +1222,7 @@ const SCHEMA = {
   groups: [
     { label: 'PREGUNTA', color: '#2b5f8a', tables: ['pregunta_ia'] },
     { label: 'QUI · ON', color: '#e08a8a', tables: ['administradors', 'contactes', 'clients', 'llocs', 'informes_lloc', 'clients_per_administrador'] },
-    { label: 'FACTURACIÓ', color: '#8a8a8a', tables: ['agrupacions', 'facturacio_recurrent', 'factures', 'marcat_cobrats', 'calendari_facturacio', 'vencudes', 'grafiques_facturacio', 'pressupostos_tasca', 'pressupostos_agrupacio', 'clausules_pressupost'] },
+    { label: 'FACTURACIÓ', color: '#8a8a8a', tables: ['agrupacions', 'facturacio_recurrent', 'factures', 'pdf_factures', 'marcat_cobrats', 'calendari_facturacio', 'vencudes', 'grafiques_facturacio', 'pressupostos_tasca', 'pressupostos_agrupacio', 'clausules_pressupost'] },
     { label: 'ALBARANS I PRODUCTES', color: '#c9c9c9', tables: ['productes', 'albarans', 'albarans_pendents'] },
     { label: 'PROVEÏDORS', color: '#c0691e', tables: ['proveidors', 'factures_proveidor', 'puja_factures_proveidor', 'pagaments_proveidor', 'comptes_despesa'] },
     { label: 'COMPTABILITAT', color: '#3f6f4f', oficina: true, tables: ['compta_diari', 'compta_major', 'compta_sumes', 'compta_nou', 'compta_banc', 'compta_remeses', 'compta_immobilitzat', 'compta_contasol', 'comptes', 'compta_config'] },
@@ -1250,6 +1255,7 @@ const SCHEMA = {
     puja_factures_proveidor: { label: 'Puja factures (PDF)', render: main => renderPujaFactures(main) },
     calendari_facturacio: { label: 'Calendari de facturació', render: main => renderCalendariFacturacio(main) },
     vencudes: { label: 'Vençudes i pendents', render: main => renderVencudes(main) },
+    pdf_factures: { label: 'PDF de factures', render: main => renderPdfFactures(main) },
     marcat_cobrats: { label: 'Marcat de cobrats/pagats', render: main => renderMarcatCobrats(main) },
     pagaments_proveidor: { label: 'Pagaments a proveïdors', render: main => renderPagamentsProveidor(main) },
     grafiques_facturacio: { label: 'Gràfiques d’ingressos i despeses', render: main => renderGrafiquesFacturacio(main) },
@@ -2353,7 +2359,7 @@ const C = {
   rows: t => cache[t] || [],
   get: (t, id) => { const pk = (SCHEMA.tables[t] || {}).pk; return pk ? (cache[t] || []).find(r => String(r[pk]) === String(id)) : (cache[t] || []).find(r => r.id === Number(id)); },
 };
-const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, copia: null, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, pagProv: { vista: 'marca', data: '', q: '', fets: {}, pagades: false }, ft: { id: null, form: null, vista: 'llista', nou: null, fets: false }, marques: {}, fac: { any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), avis: null }, ia: { missatges: [], enviant: false }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, docs: { cat: '', treb: '', sel: null }, calAcc: { vista: '', ref: '', meves: false, fetes: false, interns: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false, ed: null }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
+const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, copia: null, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, pagProv: { vista: 'marca', data: '', q: '', fets: {}, pagades: false }, ft: { id: null, form: null, vista: 'llista', nou: null, fets: false }, marques: {}, fac: { any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), avis: null }, ia: { missatges: [], enviant: false }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, docs: { cat: '', treb: '', sel: null }, pdff: { num: '', des: '', fins: '', client: '' }, calAcc: { vista: '', ref: '', meves: false, fetes: false, interns: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false, ed: null }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
 const L = (t, id) => { const r = C.get(t, id); return r ? SCHEMA.tables[t].display(r, L) : ''; };
 
 /* =====================================================================
@@ -6819,6 +6825,146 @@ function renderPagamentsProveidor(main) {
 }
 
 /* ---------- Vençudes i pendents: factures emeses no cobrades i factures de proveïdor no pagades amb el venciment passat ---------- */
+/* =====================================================================
+   PDF DE FACTURES: les factures emeses que es vulguin —per número, entre dues dates i/o d'un jardí (client)— en un sol PDF, o
+   cadascuna per separat. Els PDF són els que es van desar en emetre-les; si alguna no en té, es fa en aquell moment i es desa.
+   Per ajuntar-los es fa servir pdf-lib, que només es descarrega el primer cop que cal.
+   ===================================================================== */
+const PDFLIB_URL = 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js';
+let pdfLibPromesa = null;
+function carregaPdfLib() {
+  if (window.PDFLib) return Promise.resolve(window.PDFLib);
+  return pdfLibPromesa || (pdfLibPromesa = new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = PDFLIB_URL; s.async = true;
+    s.onload = () => (window.PDFLib ? res(window.PDFLib) : rej(new Error('No s’ha pogut carregar l’eina per ajuntar els PDF.')));
+    s.onerror = () => { pdfLibPromesa = null; s.remove(); rej(new Error('No s’ha pogut carregar l’eina per ajuntar els PDF (hi ha connexió?).')); };
+    document.head.appendChild(s);
+  }));
+}
+// l'any i el número d'una factura emesa (0004/26 → [2026, 4])
+const anyFactura = f => { const m = String(f.numero_complet || '').match(/\/(\d{2})$/); return m ? 2000 + Number(m[1]) : Number(String(f.data_factura || '').slice(0, 4)); };
+// «0004/26», «4/26» o «4» (sense any: el de la data «del» o l'actual); intervals amb «-» o «a» (4-10, 4/26 a 10/26); llistes amb comes.
+// Les altres sèries s'escriuen senceres (S-0001/26). Torna null si no hi ha res escrit i 'error' si no s'entén.
+function rangsNumeros(text, anyPerDefecte) {
+  const t = String(text || '').trim(); if (!t) return null;
+  const any = a => (a ? (a.length === 2 ? 2000 + Number(a) : Number(a)) : null), out = [];
+  for (const tros0 of t.split(/[,;]+/)) {
+    const tros = tros0.trim(); if (!tros) continue;
+    const s = tros.match(/^([a-z]+)\s*-?\s*(\d+)\s*\/\s*(\d{2}|\d{4})$/i);   // una altra sèrie: S-0001/26
+    if (s) { out.push({ exacte: [s[1].toUpperCase(), Number(s[2]), any(s[3])] }); continue; }
+    const m = tros.match(/^(\d+)(?:\s*\/\s*(\d{2}|\d{4}))?(?:\s*(?:-|–|\ba\b|fins a)\s*(\d+)(?:\s*\/\s*(\d{2}|\d{4}))?)?$/i);
+    if (!m) return 'error';
+    const a1 = any(m[2]) || any(m[4]) || anyPerDefecte, a2 = any(m[4]) || a1;
+    const des = [a1, Number(m[1])], fins = [a2, m[3] != null ? Number(m[3]) : Number(m[1])];
+    out.push(des[0] * 1e6 + des[1] <= fins[0] * 1e6 + fins[1] ? { des, fins } : { des: fins, fins: des });
+  }
+  return out.length ? out : null;
+}
+// els números sols (4, 4-10) són de la sèrie normal (0004/26); les altres sèries (S-0001/26…) s'escriuen senceres
+const dinsRang = (f, r) => {
+  const nc = String(f.numero_complet || '');
+  if (r.exacte) { const m = nc.match(/^([A-Za-z]+)-?(\d+)\/(\d{2})$/); return !!m && m[1].toUpperCase() === r.exacte[0] && Number(m[2]) === r.exacte[1] && 2000 + Number(m[3]) === r.exacte[2]; }
+  const k = anyFactura(f) * 1e6 + Number(f.numero || 0);
+  return /^\d+\/\d{2}$/.test(nc) && k >= r.des[0] * 1e6 + r.des[1] && k <= r.fins[0] * 1e6 + r.fins[1];
+};
+function facturesFiltrades(fl) {
+  const rangs = rangsNumeros(fl.num, fl.des ? Number(fl.des.slice(0, 4)) : new Date().getFullYear());
+  if (rangs === 'error') return [];
+  return C.rows('factures').filter(f => f.estat !== 'esborrany' && f.numero_complet
+      && (!fl.des || String(f.data_factura) >= fl.des) && (!fl.fins || String(f.data_factura) <= fl.fins)
+      && (!fl.client || Number(f.client_id) === Number(fl.client))
+      && (!rangs || rangs.some(r => dinsRang(f, r))))
+    .sort((a, b) => String(a.data_factura).localeCompare(String(b.data_factura)) || anyFactura(a) - anyFactura(b) || (a.numero || 0) - (b.numero || 0));
+}
+const nomJardiFactura = f => { const c = C.get('clients', f.client_id); return c ? clientAmbLlocs(c, C) : (f.client_nom || ''); };
+const textEstatFactura = f => (OPT.estat_factura.find(o => o[0] === f.estat) || [])[1] || f.estat;
+// el PDF desat d'una factura (o, si no en té, es fa ara i es desa)
+async function bytesPdfFactura(f, desats) {
+  if (f.pdf) {
+    const { data, error } = await sb.storage.from(BUCKET).download(f.pdf);
+    if (!error && data) return await data.arrayBuffer();
+  }
+  const blob = pdfFactura(f).output('blob');
+  const path = 'factures/' + String(f.numero_complet || 'id' + f.id).replace(/\//g, '-') + '.pdf';
+  try {
+    const up = await sb.storage.from(BUCKET).upload(path, blob, { upsert: true, contentType: 'application/pdf' });
+    if (!up.error) { const r = await sb.from('factures').update({ pdf: path }).eq('id', f.id); if (!r.error) desats.push(f.id); }
+  } catch (e) {}
+  return await blob.arrayBuffer();
+}
+// totes les factures en un sol PDF (en l'ordre de la llista)
+async function pdfDeFactures(llista) {
+  const PDFLib = await carregaPdfLib();
+  const doc = await PDFLib.PDFDocument.create(), desats = [];
+  try {
+    for (let i = 0; i < llista.length; i++) {
+      mostraProgres(`Preparant les factures: ${i + 1} de ${llista.length}…`);
+      const src = await PDFLib.PDFDocument.load(await bytesPdfFactura(llista[i], desats));
+      (await doc.copyPages(src, src.getPageIndices())).forEach(p => doc.addPage(p));
+    }
+    doc.setTitle('Factures');
+    return new Blob([await doc.save()], { type: 'application/pdf' });
+  } finally {
+    treuProgres();
+    if (desats.length) loadTable('factures').catch(() => {});
+  }
+}
+const nomFitxerFactures = fl => 'factures' + (fl.num ? '_' + String(fl.num).replace(/[^\w-]+/g, '-') : '') + (fl.des ? '_' + fl.des : '') + (fl.fins ? '_' + fl.fins : '')
+  + (fl.client ? '_' + String(L('clients', fl.client) || fl.client).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w]+/g, '-').slice(0, 40) : '') + '.pdf';
+function renderPdfFactures(main) {
+  if (!esOficina(treballadorActual())) { main.innerHTML = '<h1>PDF de factures</h1><div class="msg err">Només ho pot fer l’oficina.</div>'; return; }
+  const fl = state.pdff;
+  const ambFactures = new Set(C.rows('factures').filter(f => f.estat !== 'esborrany').map(f => Number(f.client_id)));
+  const clients = C.rows('clients').filter(c => ambFactures.has(Number(c.id))).map(c => [c.id, clientAmbLlocs(c, C)]).sort((a, b) => a[1].localeCompare(b[1], 'ca'));
+  main.innerHTML = `<h1>PDF de factures</h1>
+    <p class="sub">Tria les factures emeses —per número, entre dues dates i/o d’un jardí— i obre-les totes en un sol PDF, o cadascuna per separat. Els filtres es combinen: per exemple, un jardí i dues dates.</p>
+    <div class="pf-filtres">
+      <label class="f pf-num"><span class="l">Número</span><input type="text" id="pff-num" value="${h(fl.num)}" placeholder="0004/26 · 4-10 · 4, 7, 9" autocomplete="off"><span class="hint">una factura, un interval (4-10) o una llista (4, 7, 9); sense any, el de la data «del» o el d’enguany</span></label>
+      <label class="f"><span class="l">Emeses del</span><input type="date" id="pff-des" value="${h(fl.des)}"></label>
+      <label class="f"><span class="l">al</span><input type="date" id="pff-fins" value="${h(fl.fins)}"></label>
+      <label class="f pf-client"><span class="l">Jardí (client)</span><select id="pff-client"><option value="">Tots</option>${clients.map(([id, nom]) => `<option value="${id}" ${String(fl.client) === String(id) ? 'selected' : ''}>${h(nom)}</option>`).join('')}</select></label>
+    </div>
+    <div id="pff-res"></div>`;
+  const pinta = () => {
+    const err = rangsNumeros(fl.num, 2000) === 'error', llista = facturesFiltrades(fl), total = llista.reduce((t, f) => t + Number(f.total || 0), 0);
+    $('#pff-res').innerHTML = `${err ? '<div class="msg err">No entenc el número: escriu-lo com 0004/26, 4-10 o 4, 7, 9.</div>' : ''}
+      <div class="bar pf-bar"><button class="btn" id="pff-tot" ${llista.length ? '' : 'disabled'}>${llista.length === 1 ? 'Obre la factura en PDF' : `Obre les ${llista.length} factures en un sol PDF`}</button>
+        <button class="btn ghost" id="pff-baixa" ${llista.length ? '' : 'disabled'}>Descarrega el PDF</button>
+        ${fl.num || fl.des || fl.fins || fl.client ? '<button class="btn ghost" id="pff-net">Treu els filtres</button>' : ''}
+        <span class="hint">${llista.length} ${llista.length === 1 ? 'factura' : 'factures'} · ${eur(total)}</span></div>
+      ${llista.length ? `<table class="tbl informe pf-taula"><thead><tr><th>Número</th><th>Data</th><th>Jardí (client)</th><th>Concepte</th><th class="num">Total</th><th>Estat</th><th></th></tr></thead><tbody>
+        ${llista.map(f => `<tr><td>${h(f.numero_complet)}</td><td>${dmy(f.data_factura)}</td><td>${h(nomJardiFactura(f))}</td><td>${h(String(f.concepte || '').slice(0, 90))}</td><td class="num">${eur(f.total)}</td><td>${h(textEstatFactura(f))}</td><td><button type="button" class="btn ghost small" data-pff-obre="${f.id}">PDF</button></td></tr>`).join('')}
+        <tr class="total"><td colspan="4">Total</td><td class="num">${eur(total)}</td><td colspan="2"></td></tr></tbody></table>`
+        : `<div class="empty">${err ? '' : 'Cap factura emesa amb aquests filtres.'}</div>`}`;
+    const tot = $('#pff-tot'), baixa = $('#pff-baixa'), net = $('#pff-net');
+    const fes = async (obrir, btn) => {
+      // la finestra s'obre dins del clic (si no, el navegador la bloqueja) i s'omple quan el PDF és a punt
+      const w = obrir ? window.open('', '_blank') : null;
+      if (w) { try { w.document.title = 'Factures'; w.document.body.style.font = '16px system-ui, sans-serif'; w.document.body.textContent = 'Preparant les factures…'; } catch (e) {} }
+      tot.disabled = baixa.disabled = true;
+      try {
+        const blob = await pdfDeFactures(llista), url = URL.createObjectURL(blob);
+        if (w) w.location.href = url;
+        else { const a = document.createElement('a'); a.href = url; a.download = nomFitxerFactures(fl); document.body.appendChild(a); a.click(); a.remove(); }
+        setTimeout(() => URL.revokeObjectURL(url), 120000);
+      } catch (e) { if (w) w.close(); toastErr(friendly(e)); }
+      finally { tot.disabled = baixa.disabled = false; }
+    };
+    if (tot) tot.addEventListener('click', () => fes(true, tot));
+    if (baixa) baixa.addEventListener('click', () => fes(false, baixa));
+    if (net) net.addEventListener('click', () => { Object.assign(fl, { num: '', des: '', fins: '', client: '' }); renderMain(); });
+    $('#pff-res').querySelectorAll('[data-pff-obre]').forEach(b => b.addEventListener('click', () => {
+      const f = C.get('factures', Number(b.dataset.pffObre)); if (!f) return;
+      if (f.pdf) obreFitxer(f.pdf); else generaPdfFactura(f.id).catch(e => toastErr(friendly(e)));
+    }));
+  };
+  pinta();
+  let t = null;
+  $('#pff-num').addEventListener('input', e => { fl.num = e.target.value; clearTimeout(t); t = setTimeout(pinta, 250); });
+  $('#pff-des').addEventListener('change', e => { fl.des = e.target.value; pinta(); });
+  $('#pff-fins').addEventListener('change', e => { fl.fins = e.target.value; pinta(); });
+  $('#pff-client').addEventListener('change', e => { fl.client = e.target.value; pinta(); });
+}
 function renderVencudes(main) {
   const st = state.venc; if (!st.ref) st.ref = avui();
   const limit = st.ref, passada = d => st.avui ? d <= limit : d < limit;
