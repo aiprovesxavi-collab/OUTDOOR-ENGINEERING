@@ -747,6 +747,7 @@
   .msg.dc-avis{ background:#fff1d6; color:#8a5a00; }
   .dc-anteriors{ margin:8px 0 0; font-size:14px; } .dc-anteriors summary{ cursor:pointer; color:var(--ink-2); } .dc-anterior{ margin:6px 0 0 12px; }
   .f.chk .hint{ display:block; margin:5px 2px 0; }
+  .progres-fix{ position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:10000; background:#1f2a24; color:#fff; padding:11px 16px; border-radius:10px; font-size:15px; box-shadow:0 6px 24px rgba(0,0,0,.25); max-width:calc(100% - 32px); text-align:center; }
 </style>
 </head>
 <body data-mode="entrada">
@@ -7788,11 +7789,56 @@ function redueixFoto(file, opc = FOTO_NORMAL) {
   });
 }
 const massaGran = f => f && f.size > MAX_MB_FITXER * 1024 * 1024 ? `«${f.name}» fa ${Math.round(f.size / 1048576)} MB i el màxim és ${MAX_MB_FITXER} MB${/^video\//.test(f.type || '') ? ': grava un vídeo més curt' : ''}.` : null;
+/* ---------- vídeos lleugers: abans de pujar-los, els vídeos de més de 8 MB es tornen a fer a 1.280 px pel costat llarg i 1,5 Mbps
+   (el so es copia tal qual): d'uns 100-150 MB per minut a uns 12 MB. Ho fa el mateix mòbil o ordinador (WebCodecs, amb la llibreria
+   Mediabunny, que només es descarrega el primer cop que cal). Si el navegador no ho sap fer o falla, es puja l'original. ---------- */
+const VIDEO = { max: 1280, bitrate: 1500000, minMB: 8, maxMB: 45 };
+const MEDIABUNNY_URL = 'https://cdn.jsdelivr.net/npm/mediabunny@1.61.6/dist/bundles/mediabunny.min.mjs';
+let mediabunnyPromesa = null;
+const carregaMediabunny = () => mediabunnyPromesa || (mediabunnyPromesa = import(MEDIABUNNY_URL).catch(e => { mediabunnyPromesa = null; throw e; }));
+const videoPerReduir = f => !!f && /^video\//i.test(f.type || '') && f.size >= VIDEO.minMB * 1048576;
+async function redueixVideo(file, onProgres) {
+  if (!videoPerReduir(file) || typeof VideoEncoder !== 'function' || typeof VideoDecoder !== 'function' || !window.isSecureContext) return file;
+  let input = null;
+  try {
+    const MB = await carregaMediabunny();
+    input = new MB.Input({ source: new MB.BlobSource(file), formats: MB.ALL_FORMATS });
+    const vt = await input.getPrimaryVideoTrack(); if (!vt) return file;
+    const at = await input.getPrimaryAudioTrack();
+    const w = await vt.getDisplayWidth(), al = await vt.getDisplayHeight(), durada = await input.computeDuration();
+    const k = Math.min(1, VIDEO.max / Math.max(w, al));
+    const amplada = Math.max(2, Math.round(w * k / 2) * 2), alcada = Math.max(2, Math.round(al * k / 2) * 2);
+    // prou lleuger perquè ni un vídeo llarg passi de ~45 MB (el so en porta uns 128 kbps)
+    const qualitat = new MB.Quality({ bitrate: Math.max(300000, Math.min(VIDEO.bitrate, Math.floor(VIDEO.maxMB * 8 * 1048576 / Math.max(durada, 1)) - 200000)) });
+    const codec = await MB.getFirstEncodableVideoCodec(['avc', 'vp9', 'av1'], { width: amplada, height: alcada, quality: qualitat });
+    if (!codec) return file;
+    const output = new MB.Output({ format: new MB.Mp4OutputFormat({ fastStart: 'in-memory' }), target: new MB.BufferTarget() });
+    const conv = await MB.Conversion.init({ input, output, tracks: 'primary', showWarnings: false,
+      video: { width: amplada, height: alcada, fit: 'fill', codec, quality: qualitat, forceTranscode: true } });
+    if (!conv.isValid || conv.discardedTracks.some(d => d.track === vt || (at && d.track === at))) return file;   // sense imatge o sense so: l'original
+    let darrer = Date.now(); conv.onProgress = p => { darrer = Date.now(); if (onProgres) onProgres(p); };
+    const vigila = setInterval(() => { if (Date.now() - darrer > 45000) conv.cancel(); }, 5000);   // encallat 45 s (p. ex. el mòbil s'ha apagat): l'original
+    try { await conv.execute(); } finally { clearInterval(vigila); }
+    const buf = output.target.buffer;
+    if (!buf || buf.byteLength >= file.size) return file;
+    return new File([buf], file.name.replace(/\.[^.]+$/, '') + '.mp4', { type: 'video/mp4', lastModified: Date.now() });
+  } catch (e) { console.warn('El vídeo es puja sense reduir:', e); return file; }
+  finally { try { if (input) input.dispose(); } catch (e) {} }
+}
+// l'avís mentre es redueix un vídeo (pot trigar uns segons)
+function mostraProgres(text) { let el = document.getElementById('progres-fix'); if (!el) { el = document.createElement('div'); el.id = 'progres-fix'; el.className = 'progres-fix'; el.setAttribute('role', 'status'); document.body.appendChild(el); } el.textContent = text; }
+function treuProgres() { const el = document.getElementById('progres-fix'); if (el) el.remove(); }
+// una foto o un vídeo, a punt per pujar (més lleugers)
+async function preparaFitxer(f0, opc = FOTO_NORMAL) {
+  if (!videoPerReduir(f0)) return redueixFoto(f0, opc);
+  mostraProgres('Reduint el vídeo «' + f0.name + '»…');
+  try { return await redueixVideo(f0, p => mostraProgres(`Reduint el vídeo «${f0.name}»: ${Math.round(p * 100)} %`)); } finally { treuProgres(); }
+}
 /* ---------- adjunts (fotos, vídeos, documents) a Storage ---------- */
 const tipusAdjunt = nom => /\.(jpe?g|png|gif|webp|heic)$/i.test(nom) ? 'foto' : /\.(mp4|mov|webm|m4v|3gp)$/i.test(nom) ? 'video' : 'document';
 async function pujaAdjunts(carpeta, fitxers, opc = FOTO_NORMAL) {
   const llestos = [];
-  for (const f0 of fitxers) llestos.push(await redueixFoto(f0, opc));   // primer, les fotos més lleugeres
+  for (const f0 of fitxers) llestos.push(await preparaFitxer(f0, opc));   // primer, les fotos i els vídeos més lleugers
   const gran = llestos.map(massaGran).find(Boolean); if (gran) throw new Error(gran);   // si algun passa del màxim, no es puja res
   const out = [];
   for (const f of llestos) {

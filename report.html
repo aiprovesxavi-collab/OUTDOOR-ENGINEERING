@@ -54,8 +54,8 @@
    Només pot fer una cosa: desar l'avís (nom, correu, telèfon, descripció i fotos) per a aquell lloc. No llegeix res més. */
 const BUCKET = 'documents';
 const T = {
-  ca: { titol: 'Avisa d’un problema', sub: 'Explica’ns què passa i, si pots, fes-ne una foto. L’equip de manteniment ho revisarà i t’informarà per correu.', nom: 'El teu nom', correu: 'El teu correu', correuHint: 'per informar-te de com es resol', tel: 'Telèfon (opcional)', que: 'Què passa', queHint: 'on és, des de quan, què has vist…', fotos: 'Fotos o vídeos', fotosBtn: 'Fes una foto o tria’n', envia: 'Envia l’avís', enviant: 'Enviant…', pujant: 'Pujant fitxer', de: 'de', gracies: 'Gràcies', rebut: 'Hem rebut el teu avís.', ref: 'Referència', informarem: 'T’escriurem a', altre: 'Avisa d’un altre problema', invalid: 'Aquest enllaç no és vàlid. Torna a escanejar el codi QR del lloc.', faltaNom: 'Posa el teu nom.', faltaCorreu: 'Posa un correu vàlid.', faltaQue: 'Explica què passa.', error: 'No s’ha pogut enviar. Torna-ho a provar d’aquí a un moment.', massaGran: 'és massa gran (màxim 50 MB).', peu: 'Outdoor Engineering Solutions · manteniment de jardins i piscines' },
-  es: { titol: 'Avisa de un problema', sub: 'Cuéntanos qué pasa y, si puedes, haz una foto. El equipo de mantenimiento lo revisará y te informará por correo.', nom: 'Tu nombre', correu: 'Tu correo', correuHint: 'para informarte de cómo se resuelve', tel: 'Teléfono (opcional)', que: 'Qué pasa', queHint: 'dónde está, desde cuándo, qué has visto…', fotos: 'Fotos o vídeos', fotosBtn: 'Haz una foto o elige', envia: 'Enviar el aviso', enviant: 'Enviando…', pujant: 'Subiendo archivo', de: 'de', gracies: 'Gracias', rebut: 'Hemos recibido tu aviso.', ref: 'Referencia', informarem: 'Te escribiremos a', altre: 'Avisar de otro problema', invalid: 'Este enlace no es válido. Vuelve a escanear el código QR del lugar.', faltaNom: 'Pon tu nombre.', faltaCorreu: 'Pon un correo válido.', faltaQue: 'Explica qué pasa.', error: 'No se ha podido enviar. Vuelve a intentarlo dentro de un momento.', massaGran: 'es demasiado grande (máximo 50 MB).', peu: 'Outdoor Engineering Solutions · mantenimiento de jardines y piscinas' },
+  ca: { titol: 'Avisa d’un problema', sub: 'Explica’ns què passa i, si pots, fes-ne una foto. L’equip de manteniment ho revisarà i t’informarà per correu.', nom: 'El teu nom', correu: 'El teu correu', correuHint: 'per informar-te de com es resol', tel: 'Telèfon (opcional)', que: 'Què passa', queHint: 'on és, des de quan, què has vist…', fotos: 'Fotos o vídeos', fotosBtn: 'Fes una foto o tria’n', envia: 'Envia l’avís', enviant: 'Enviant…', pujant: 'Pujant fitxer', de: 'de', gracies: 'Gràcies', rebut: 'Hem rebut el teu avís.', ref: 'Referència', informarem: 'T’escriurem a', altre: 'Avisa d’un altre problema', invalid: 'Aquest enllaç no és vàlid. Torna a escanejar el codi QR del lloc.', faltaNom: 'Posa el teu nom.', faltaCorreu: 'Posa un correu vàlid.', faltaQue: 'Explica què passa.', error: 'No s’ha pogut enviar. Torna-ho a provar d’aquí a un moment.', massaGran: 'és massa gran (màxim 50 MB).', reduint: 'Reduint el vídeo', peu: 'Outdoor Engineering Solutions · manteniment de jardins i piscines' },
+  es: { titol: 'Avisa de un problema', sub: 'Cuéntanos qué pasa y, si puedes, haz una foto. El equipo de mantenimiento lo revisará y te informará por correo.', nom: 'Tu nombre', correu: 'Tu correo', correuHint: 'para informarte de cómo se resuelve', tel: 'Teléfono (opcional)', que: 'Qué pasa', queHint: 'dónde está, desde cuándo, qué has visto…', fotos: 'Fotos o vídeos', fotosBtn: 'Haz una foto o elige', envia: 'Enviar el aviso', enviant: 'Enviando…', pujant: 'Subiendo archivo', de: 'de', gracies: 'Gracias', rebut: 'Hemos recibido tu aviso.', ref: 'Referencia', informarem: 'Te escribiremos a', altre: 'Avisar de otro problema', invalid: 'Este enlace no es válido. Vuelve a escanear el código QR del lugar.', faltaNom: 'Pon tu nombre.', faltaCorreu: 'Pon un correo válido.', faltaQue: 'Explica qué pasa.', error: 'No se ha podido enviar. Vuelve a intentarlo dentro de un momento.', massaGran: 'es demasiado grande (máximo 50 MB).', reduint: 'Reduciendo el vídeo', peu: 'Outdoor Engineering Solutions · mantenimiento de jardines y piscinas' },
 };
 let idioma = /^es/i.test(navigator.language || '') ? 'es' : 'ca';
 const t = k => T[idioma][k] || k;
@@ -117,19 +117,63 @@ function reduirImatge(f) {
     img.src = url;
   });
 }
+/* ---------- vídeos lleugers: abans de pujar-los, els vídeos de més de 8 MB es tornen a fer a 1.280 px pel costat llarg i 1,5 Mbps
+   (el so es copia tal qual): d'uns 100-150 MB per minut a uns 12 MB. Ho fa el mateix mòbil o ordinador (WebCodecs, amb la llibreria
+   Mediabunny, que només es descarrega el primer cop que cal). Si el navegador no ho sap fer o falla, es puja l'original. ---------- */
+const VIDEO = { max: 1280, bitrate: 1500000, minMB: 8, maxMB: 45 };
+const MEDIABUNNY_URL = 'https://cdn.jsdelivr.net/npm/mediabunny@1.61.6/dist/bundles/mediabunny.min.mjs';
+let mediabunnyPromesa = null;
+const carregaMediabunny = () => mediabunnyPromesa || (mediabunnyPromesa = import(MEDIABUNNY_URL).catch(e => { mediabunnyPromesa = null; throw e; }));
+const videoPerReduir = f => !!f && /^video\//i.test(f.type || '') && f.size >= VIDEO.minMB * 1048576;
+async function redueixVideo(file, onProgres) {
+  if (!videoPerReduir(file) || typeof VideoEncoder !== 'function' || typeof VideoDecoder !== 'function' || !window.isSecureContext) return file;
+  let input = null;
+  try {
+    const MB = await carregaMediabunny();
+    input = new MB.Input({ source: new MB.BlobSource(file), formats: MB.ALL_FORMATS });
+    const vt = await input.getPrimaryVideoTrack(); if (!vt) return file;
+    const at = await input.getPrimaryAudioTrack();
+    const w = await vt.getDisplayWidth(), al = await vt.getDisplayHeight(), durada = await input.computeDuration();
+    const k = Math.min(1, VIDEO.max / Math.max(w, al));
+    const amplada = Math.max(2, Math.round(w * k / 2) * 2), alcada = Math.max(2, Math.round(al * k / 2) * 2);
+    // prou lleuger perquè ni un vídeo llarg passi de ~45 MB (el so en porta uns 128 kbps)
+    const qualitat = new MB.Quality({ bitrate: Math.max(300000, Math.min(VIDEO.bitrate, Math.floor(VIDEO.maxMB * 8 * 1048576 / Math.max(durada, 1)) - 200000)) });
+    const codec = await MB.getFirstEncodableVideoCodec(['avc', 'vp9', 'av1'], { width: amplada, height: alcada, quality: qualitat });
+    if (!codec) return file;
+    const output = new MB.Output({ format: new MB.Mp4OutputFormat({ fastStart: 'in-memory' }), target: new MB.BufferTarget() });
+    const conv = await MB.Conversion.init({ input, output, tracks: 'primary', showWarnings: false,
+      video: { width: amplada, height: alcada, fit: 'fill', codec, quality: qualitat, forceTranscode: true } });
+    if (!conv.isValid || conv.discardedTracks.some(d => d.track === vt || (at && d.track === at))) return file;   // sense imatge o sense so: l'original
+    let darrer = Date.now(); conv.onProgress = p => { darrer = Date.now(); if (onProgres) onProgres(p); };
+    const vigila = setInterval(() => { if (Date.now() - darrer > 45000) conv.cancel(); }, 5000);   // encallat 45 s (p. ex. el mòbil s'ha apagat): l'original
+    try { await conv.execute(); } finally { clearInterval(vigila); }
+    const buf = output.target.buffer;
+    if (!buf || buf.byteLength >= file.size) return file;
+    return new File([buf], file.name.replace(/\.[^.]+$/, '') + '.mp4', { type: 'video/mp4', lastModified: Date.now() });
+  } catch (e) { console.warn('El vídeo es puja sense reduir:', e); return file; }
+  finally { try { if (input) input.dispose(); } catch (e) {} }
+}
 async function envia(e) {
   e.preventDefault(); guardaValors();
   const v = valors;
   if (!v.nom.trim()) { render(t('faltaNom')); return; }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email.trim())) { render(t('faltaCorreu')); return; }
   if (!v.descripcio.trim()) { render(t('faltaQue')); return; }
-  const gran = fitxers.find(f => f.size > 50 * 1024 * 1024); if (gran) { render(gran.name + ' ' + t('massaGran')); return; }
   const btn = $('#envia'), prog = $('#progres'); btn.disabled = true; btn.textContent = t('enviant');
+  // primer, les fotos i els vídeos més lleugers; després, cap fitxer de més de 50 MB
+  const llestos = [];
+  for (let i = 0; i < fitxers.length; i++) {
+    const f0 = fitxers[i];
+    if (videoPerReduir(f0)) { prog.textContent = `${t('reduint')}…`; llestos.push(await redueixVideo(f0, p => { prog.textContent = `${t('reduint')}: ${Math.round(p * 100)} %`; })); }
+    else llestos.push(await reduirImatge(f0));
+  }
+  prog.textContent = '';
+  const gran = llestos.find(f => f.size > 50 * 1024 * 1024); if (gran) { btn.disabled = false; btn.textContent = t('envia'); render(gran.name + ' ' + t('massaGran')); return; }
   try {
     const adjunts = [];
-    for (let i = 0; i < fitxers.length; i++) {
-      prog.textContent = `${t('pujant')} ${i + 1} ${t('de')} ${fitxers.length}…`;
-      const f = await reduirImatge(fitxers[i]);
+    for (let i = 0; i < llestos.length; i++) {
+      prog.textContent = `${t('pujant')} ${i + 1} ${t('de')} ${llestos.length}…`;
+      const f = llestos[i];
       const path = `incidencies/public/${codi}/${Date.now()}_${i}_${f.name.replace(/[^\w.\-]+/g, '_').slice(-60)}`;
       const { error } = await sb.storage.from(BUCKET).upload(path, f, { contentType: f.type || undefined });
       if (error) throw error;
