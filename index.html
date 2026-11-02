@@ -746,6 +746,7 @@
   .dc-targeta-cap{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:space-between; } .dc-targeta .dc-fitxer{ font-size:16px; }
   .msg.dc-avis{ background:#fff1d6; color:#8a5a00; }
   .dc-anteriors{ margin:8px 0 0; font-size:14px; } .dc-anteriors summary{ cursor:pointer; color:var(--ink-2); } .dc-anterior{ margin:6px 0 0 12px; }
+  .f.chk .hint{ display:block; margin:5px 2px 0; }
 </style>
 </head>
 <body data-mode="entrada">
@@ -793,10 +794,9 @@ const OPT = {
   tipus_factura: [['true','Amb línies'],['false','Sense línies: un concepte i un import']],
   transparencia: [['optima','Òptima'],['transparent_pero','Transparent, però…'],['un_punt_terbola','Un punt tèrbola'],['terbola_es_veu','Tèrbola però es veu el sumider'],['no_es_veu','No es veu el sumider']],
   si_no: [['true','Sí'],['false','No']],
-  rol: [['admin','Administrador'],['oficina','Oficina'],['tecnic','Tècnic']],
+  rol: [['admin','Administrador'],['oficina','Oficina'],['tecnic','Tècnic'],['operari','Operari']],
   categoria_document: [['identificacio','Identificació'],['contracte','Contracte i alta'],['dades','Protecció de dades'],['prl','Prevenció de riscos'],['carnets','Carnets i formació'],['altres','Altres']],
   obligatori_document: [['ningu','Ningú (opcional)'],['tots','Tothom'],['operaris','Operaris i tècnics'],['oficina','Oficina']],
-  carril_inc: [['operari','Operari'],['tecnic','Tècnic']],
   ambit_festiu: [['catalunya','Catalunya (calendari oficial)'],['local','Festa local del municipi']],
   qui_report: [['treballador','Un treballador (jo mateix o un company)'],['client','Una persona de la comunitat (registrada o no)']],
   tema: [['blau','Blava'],['verd','Verda']],
@@ -818,7 +818,7 @@ const diesDes = (data, ref) => data ? Math.round((new Date(ref || avui()) - new 
 const tocaCada = (dies, camp, estiu) => (vals) => { if (!vals.piscina_id) return true; if (estiu && !entreEstiu(vals.data)) return false; return diesDes(ultimaMesura(vals.piscina_id, camp, vals.data), vals.data) > dies; };
 const distKm = (a, b, c, d) => { const r = x => x * Math.PI / 180; const h = Math.sin(r(c - a) / 2) ** 2 + Math.cos(r(a)) * Math.cos(r(c)) * Math.sin(r(d - b) / 2) ** 2; return 12742 * Math.asin(Math.sqrt(h)); };
 const treballadorActual = () => user ? C.rows('treballadors').find(t => t.actiu && t.email_acces && t.email_acces.toLowerCase() === String(user.email).toLowerCase()) : null;
-const esOperari = () => { if (APP_NOMES_TASQUES) return true; const t = treballadorActual(); return !t || t.rol === 'tecnic'; };
+const esOperari = () => { if (APP_NOMES_TASQUES) return true; const t = treballadorActual(); return !t || (t.rol !== 'admin' && t.rol !== 'oficina'); };   // operaris i tècnics: l'app
 const nomTreballador = t => t ? [t.nom, t.cognoms].filter(Boolean).join(' ') : '';
 const senseAccents = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 const inicialsTreballador = t => t ? senseAccents(((t.nom || '').trim()[0] || '') + ((t.cognoms || '').trim()[0] || '')).toUpperCase() : '';
@@ -1726,10 +1726,9 @@ const SCHEMA = {
         { key: 'telefon', label: 'Telèfon', type: 'text' },
         { key: 'email', label: 'Correu personal', type: 'email' },
         { key: 'email_acces', label: 'Correu d’accés a l’aplicació', type: 'email', dup: 'exact', hint: 'el mateix amb què entra; lliga la persona amb el que fa' },
-        { key: 'rol', label: 'Rol', type: 'select', options: OPT.rol, required: true, default: 'tecnic' },
+        { key: 'rol', label: 'Rol', type: 'select', options: OPT.rol, required: true, default: 'operari', hint: 'Operari: fa la feina a les comunitats i entra les dades des de l’app (piscines, jardins…); carril operari a les incidències. Tècnic: supervisa i fa el seguiment (carril tècnic): pot corregir fitxatges i veu les vacances de tothom. Oficina i administrador: tot el programa' },
         { key: 'codi_pressupost', label: 'Lletra als pressupostos', type: 'text', hint: 'una majúscula: X, E, M…' },
         { key: 'titol_signatura', label: 'Titulació sota la signatura', type: 'textarea', hint: 'als pressupostos d’agrupació, sota el nom; una línia per títol' },
-        { key: 'carril_incidencies', label: 'Carril a les incidències', type: 'select', options: OPT.carril_inc, hint: 'buit = segons el rol: tècnic → operari; oficina i administrador → tècnic' },
         { key: 'equip_id', label: 'Equip', type: 'ref', ref: 'equips' },
         { key: 'data_alta', label: 'Data d’alta', type: 'date', hint: 'entrada a l’empresa: cada any, aquest dia, l’app felicita la persona pels anys que hi porta' },
         { key: 'data_baixa', label: 'Data de baixa', type: 'date' },
@@ -2067,7 +2066,7 @@ const SCHEMA = {
       abansDesar: (p, id) => { const r = id ? C.get('incidencia_reports', id) : null; if (p.notificat && !(r && r.notificat)) { const t = treballadorActual(); p.notificat_el = new Date().toISOString(); p.notificat_per = t ? t.id : null; } if (p.notificat === false) { p.notificat_el = null; p.notificat_per = null; } },
       fields: [
         { key: 'lloc_id', label: 'Lloc', type: 'ref', ref: 'llocs', required: true, optionLabel: r => r.nom + ' — ' + ((C.get('clients', r.client_id) || {}).nom || '') },
-        { key: 'qui_tipus', label: 'Qui ho comunica', type: 'select', options: OPT.qui_report, required: true, virtual: true, derive: r => r.treballador_comunica_id ? 'treballador' : 'client', default: () => { const t = treballadorActual(); return t && t.rol === 'tecnic' ? 'treballador' : 'client'; } },
+        { key: 'qui_tipus', label: 'Qui ho comunica', type: 'select', options: OPT.qui_report, required: true, virtual: true, derive: r => r.treballador_comunica_id ? 'treballador' : 'client', default: () => { const t = treballadorActual(); return t && (t.rol === 'operari' || t.rol === 'tecnic') ? 'treballador' : 'client'; } },
         { key: 'treballador_comunica_id', label: 'Treballador que ho ha vist', type: 'ref', ref: 'treballadors', visible: v => v.qui_tipus === 'treballador', neteja: true, default: () => { const t = treballadorActual(); return t ? t.id : ''; } },
         { key: 'contacte_id', label: 'Persona registrada (si ho és)', type: 'ref', ref: 'contactes', dependsOn: 'lloc_id', autoUnic: false, filter: (r, f) => !!f.lloc_id && contactesDelLloc(f.lloc_id).some(c => c.id === r.id), visible: v => v.qui_tipus === 'client', neteja: true, hint: 'president, administrador, conserge…; en triar-la s’omplen el nom i el correu' },
         { key: 'nom_comunica', label: 'Nom de qui ho comunica', type: 'text', visible: v => v.qui_tipus === 'client', neteja: true, hint: 'qualsevol persona de la comunitat' },
@@ -2098,7 +2097,7 @@ const SCHEMA = {
         { key: 'avis_dies', label: 'Avisa (dies abans)', type: 'integer', min: 0, required: true, default: 30 },
         { key: 'obligatori', label: 'Obligatori per a', type: 'select', options: OPT.obligatori_document, required: true, default: 'ningu', hint: 'a la graella, qui no el tingui surt amb «falta»' },
         { key: 'visible_treballador', label: 'La persona el veu a l’app', type: 'boolean', default: true },
-        { key: 'confidencial', label: 'Confidencial: només l’administrador (i la persona)', type: 'boolean', hint: 'salut, sancions… La marca només la pot treure l’administrador' },
+        { key: 'confidencial', label: '🔒 Només l’administrador (i la persona)', type: 'boolean', hint: 'per a salut, sancions… Sense la marca, el veuen la persona, l’oficina i l’administrador; cap altre treballador. La marca només la pot treure l’administrador' },
         { key: 'ordre', label: 'Ordre dins la categoria', type: 'integer', default: 0 },
         { key: 'observacions', label: 'Observacions', type: 'textarea', hint: 'surt d’ajuda en pujar-ne un' },
       ],
@@ -2394,7 +2393,7 @@ function readConfig() {
 
 // carrega una taula sencera per blocs de 1.000 files (Supabase no en torna més d'un cop)
 // treballadors: les columnes que pot llegir tothom, i les personals a part (SQL 081: treballadors_privat(), segons qui ho demana)
-const COLS_TREBALLADORS = 'id,nom,cognoms,email_acces,rol,equip_id,data_alta,data_baixa,actiu,creat_el,actualitzat_el,codi_pressupost,titol_signatura,carril_incidencies,foto';
+const COLS_TREBALLADORS = 'id,nom,cognoms,email_acces,rol,equip_id,data_alta,data_baixa,actiu,creat_el,actualitzat_el,codi_pressupost,titol_signatura,foto';
 async function loadTreballadors() {
   const priv = await sb.rpc('treballadors_privat');
   if (priv.error) {   // sense el SQL 081 encara: tota la taula, com abans
@@ -4479,7 +4478,7 @@ function formHTML(td, row) {
     if (f.type === 'seccio') return `<${f.nivell === 2 ? 'h4' : 'h3'} class="seccio wide">${h(f.label)}${f.nota ? `<span class="nota avui" data-nota-for="${f.key}" hidden></span>` : ''}</${f.nivell === 2 ? 'h4' : 'h3'}>${f.notaBloc ? `<div class="wide seccio-nota" data-nota-for="${f.key}" hidden></div>` : ''}`;
     if (f.type === 'hidden') return inputHTML(f, vals, row);
     const dk = `data-fkey="${f.key}"`;
-    if (f.type === 'boolean') return `<label class="f chk" ${dk}><span>${inputHTML(f, vals, row)}</span><span class="l">${h(f.label)}</span></label>`;
+    if (f.type === 'boolean') return `<label class="f chk" ${dk}><span>${inputHTML(f, vals, row)}</span><span class="l">${h(f.label)}</span>${f.hint ? `<span class="hint">${h(f.hint)}</span>` : ''}</label>`;
     if (f.type === 'tristat') return `<div class="f chk tri" ${dk} data-negatiu="${h(f.negatiu || 'INCORRECTE')}">${inputHTML(f, vals, row)}<button type="button" class="l tri-btn">${h(f.label)}</button></div>`;
     const camp = f.ajuda && GUIES[f.ajuda] ? `<span class="amb-ajuda">${inputHTML(f, vals, row)}<button type="button" class="btn-ajuda" data-ajuda="${f.ajuda}" title="Com es mesura: guia en català, castellà i àrab" aria-label="Ajuda: com es mesura"><b>i</b></button></span>` : inputHTML(f, vals, row);
     return `<label class="f ${wide}" ${dk}><span class="l">${h(f.label)}${f.required ? ' <b>*</b>' : ''}${f.quan ? `<span class="toca" data-toca="${f.key}"></span>` : ''}</span>${camp}${f.hint ? `<span class="hint">${h(f.hint)}</span>` : ''}${f.nota ? `<span class="hint nota" data-nota-for="${f.key}" hidden></span>` : ''}${f.dup ? `<span class="dup" data-dup="${f.key}"></span>` : ''}${f.avis ? `<div class="avis" data-avis-for="${f.key}" hidden></div>` : ''}</label>`;
@@ -7344,7 +7343,7 @@ function documentsPerTipus(trebId) {
   return m;
 }
 const diesFinsA = iso => Math.round((new Date(String(iso).slice(0, 10) + 'T12:00:00') - new Date(avui() + 'T12:00:00')) / 86400000);
-const obligatoriPer = (tp, t) => !!t && (tp.obligatori === 'tots' || (tp.obligatori === 'operaris' && t.rol === 'tecnic') || (tp.obligatori === 'oficina' && esOficina(t)));
+const obligatoriPer = (tp, t) => !!t && (tp.obligatori === 'tots' || (tp.obligatori === 'operaris' && (t.rol === 'operari' || t.rol === 'tecnic')) || (tp.obligatori === 'oficina' && esOficina(t)));
 // l'estat d'un tipus per a una persona: vigent, aviat (caduca d'aquí a pocs dies), caducat, falta (és obligatori i no n'hi ha) o res (no li cal)
 function estatDocument(d, tp, t) {
   if (!d) return obligatoriPer(tp, t) ? 'falta' : null;
@@ -7407,7 +7406,7 @@ function renderDocumentsTreballadors(main) {
   const celText = c => c.e === 'falta' ? 'falta' : c.d ? (c.d.data_caducitat ? dmyCurt(c.d.data_caducitat) : '✓') : '';
   const llista = alertesDocuments({ dies: 90 }).filter(x => !st.treb || String(x.p.id) === String(st.treb));
   main.innerHTML = `<h1>Documents dels treballadors</h1>
-    <p class="sub">Els documents de cada persona (a part de les nòmines), amb la caducitat. Cada casella és un tipus de document: en verd, vigent; en taronja, caduca aviat; en vermell, caducat; ratllat, falta i és obligatori. Clica-la per veure’l, renovar-lo o pujar-lo. Cada treballador veu els seus a l’app.${adminDocs() ? ' Els tipus amb 🔒 són confidencials: només els veus tu (i la persona).' : ''}</p>
+    <p class="sub">Els documents de cada persona (a part de les nòmines), amb la caducitat. Són privats: cada treballador només veu els seus, a l’app, i cap altre treballador no en pot veure cap; aquí només els veuen l’oficina i l’administrador.${adminDocs() ? ' Els tipus amb 🔒 (salut i sancions), ni l’oficina: només tu i la persona.' : ''} Cada casella és un tipus de document: en verd, vigent; en taronja, caduca aviat; en vermell, caducat; ratllat, falta i és obligatori. Clica-la per veure’l, renovar-lo o pujar-lo.</p>
     <div class="bar">
       <select id="dc-cat" style="width:auto"><option value="">Tots els tipus</option>${cats.map(c => `<option value="${c}" ${c === st.cat ? 'selected' : ''}>${h(CAT_DOC[c])}</option>`).join('')}</select>
       <select id="dc-treb" style="width:auto; min-width:200px"><option value="">Tothom</option>${treballadors.map(x => `<option value="${x.id}" ${String(x.id) === String(st.treb) ? 'selected' : ''}>${h(nomTreballador(x))}</option>`).join('')}</select>
@@ -7562,7 +7561,7 @@ function renderMeusDocuments(main) {
   const cats = Object.keys(CAT_DOC).filter(c => tipus.some(t => t.categoria === c));
   const avisos = jo ? alertesDocuments({ nomesMeus: true }) : [];
   main.innerHTML = `<h1>Els meus documents</h1>
-    <p class="sub">Els documents que l’empresa té teus: DNI, contracte, carnets, formació… Toca un fitxer per obrir-lo. Si en renoves algun, porta’l a l’oficina.</p>
+    <p class="sub">Els documents que l’empresa té teus: DNI, contracte, carnets, formació… Només els veus tu i l’oficina. Toca un fitxer per obrir-lo. Si en renoves algun, porta’l a l’oficina.</p>
     ${!jo ? '<div class="msg err">El teu usuari no té fitxa de treballador amb aquest correu d’accés: demana a l’oficina que t’hi afegeixin.</div>' : ''}
     ${avisos.length ? `<div class="msg ${avisos.some(x => x.estat === 'caducat') ? 'err' : 'dc-avis'}">${avisos.map(x => `${h(x.tp.nom)}: ${x.estat === 'caducat' ? 'caducat el ' : 'caduca el '}${dmy(x.d.data_caducitat)}`).join('<br>')}</div>` : ''}
     ${cats.length ? cats.map(c => `<h3>${h(CAT_DOC[c])}</h3>${tipus.filter(t => t.categoria === c).map(tp => { const ll = per.get(Number(tp.id)), d = ll[0], e = estatDocument(d, tp, jo);
@@ -7678,7 +7677,7 @@ const INC_URLS = {}; // caché d'enllaços signats dels adjunts
 
 const trebInc = () => treballadorActual();
 const esOficina = t => !!t && (t.rol === 'admin' || t.rol === 'oficina');
-const carrilDeTreballador = t => t ? (t.carril_incidencies || (t.rol === 'tecnic' ? 'operari' : 'tecnic')) : 'tecnic';
+const carrilDeTreballador = t => t ? (t.rol === 'operari' ? 'operari' : 'tecnic') : 'tecnic';   // el carril surt del rol (SQL 083): operari → operari; tècnic, oficina i administrador → tècnic
 function rolsInc(inc) { const t = trebInc(); if (!t) return []; const r = []; if (inc && Number(inc.seguidora_id) === t.id) r.push('seguidora'); if (esOficina(t)) r.push('oficina'); r.push(carrilDeTreballador(t)); return r; }
 const potCrearTipus = (inc, tipus) => (INC.qui[tipus] || []).some(r => rolsInc(inc).includes(r));
 const esSeguidora = inc => !!inc && !!trebInc() && Number(inc.seguidora_id) === trebInc().id;
@@ -9622,7 +9621,7 @@ function pdfRegistreJornada(persones, any, mes) {
   return doc;
 }
 /* ---------- Correccions de fitxatges (només a la web de l'oficina) ----------
-   L'administrador, l'oficina i els tècnics (carril tècnic) poden afegir, canviar l'hora o eliminar entrades i sortides de qualsevol persona.
+   L'administrador, l'oficina i els tècnics (rol Tècnic) poden afegir, canviar l'hora o eliminar entrades i sortides de qualsevol persona.
    Tot passa per corregeix_fitxatges() (SQL 080): comprova el permís, que les entrades i sortides continuïn alternant-se, i n'apunta el rastre
    (qui, quan, l'hora d'abans, la de després i el motiu). Els operaris, no; i a l'app, ningú. */
 const potCorregirFitxatges = t => !APP_NOMES_TASQUES && !!t && (esOficina(t) || carrilDeTreballador(t) === 'tecnic');
