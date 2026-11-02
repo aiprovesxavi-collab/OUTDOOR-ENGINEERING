@@ -6557,7 +6557,7 @@ function bindFull(f, cont) {
   box.querySelectorAll('[data-foto-full]').forEach(inp => inp.addEventListener('change', async () => {
     const fitxers = [...inp.files]; if (!fitxers.length) return;
     try {
-      const nous = (await pujaAdjunts('fulls/' + f.id, fitxers)).map(x => ({ ...x, ...(inp.dataset.fotoFull ? { grup: inp.dataset.fotoFull } : {}), per: t ? t.id : null }));
+      const nous = (await pujaAdjunts('fulls/' + f.id, fitxers, inp.dataset.fotoFull === 'compra' ? FOTO_DOCUMENT : FOTO_NORMAL)).map(x => ({ ...x, ...(inp.dataset.fotoFull ? { grup: inp.dataset.fotoFull } : {}), per: t ? t.id : null }));
       const actual = C.get('fulls_treball', f.id) || f;
       const r = await sb.from('fulls_treball').update({ adjunts: [...(Array.isArray(actual.adjunts) ? actual.adjunts : []), ...nous] }).eq('id', f.id); if (r.error) throw r.error;
       toast(nous.length + ' fitxer' + (nous.length === 1 ? '' : 's') + ' pujat' + (nous.length === 1 ? '' : 's')); despres();
@@ -7530,7 +7530,8 @@ async function desaDocument() {
     if (d) { const r = await sb.from('documents').update({ data_document: dataDocument, data_caducitat: dataCaducitat, observacions: obs }).eq('id', id); if (r.error) throw r.error; }
     else { const r = await sb.from('documents').insert({ tipus_id: tipus, treballador_id: treb, data_document: dataDocument, data_caducitat: dataCaducitat, observacions: obs, fitxers: [] }).select('id').single(); if (r.error) throw r.error; id = r.data.id; }
     const pujats = [];
-    for (const f of nous) {
+    for (const f0 of nous) {
+      const f = await redueixFoto(f0, FOTO_DOCUMENT);
       const path = `docs_treballadors/${treb}/${id}/${Date.now()}_${f.name.replace(/[^\w.\-]+/g, '_')}`;
       const up = await sb.storage.from(BUCKET).upload(path, f, { contentType: f.type || undefined });
       if (up.error) {   // el registre ja hi és: es queda obert per tornar-ho a provar
@@ -7760,11 +7761,41 @@ async function eventInc(incidenciaId, accioId, tipus, detall, causa) {
 }
 async function recarregaInc() { await Promise.all(['incidencies', 'incidencia_accions', 'incidencia_ampliacions', 'incidencia_events', 'incidencia_reports'].map(loadTable)); }
 
+/* ---------- fotos lleugeres: abans de pujar-les, les fotos es redueixen (el costat llarg a 1.600 px i JPEG de qualitat 0,82; les de
+   documents, a 2.200 px i 0,85, perquè es llegeixin bé). Una foto de mòbil passa d'uns 3-5 MB a uns 200-400 KB, i es veu bé a la
+   pantalla. Els vídeos, els PDF i les fotos que ja són petites (menys de 400 KB) no es toquen. Com la pàgina pública dels reports. ---------- */
+const FOTO_NORMAL = { max: 1600, qualitat: 0.82 }, FOTO_DOCUMENT = { max: 2200, qualitat: 0.85 };
+const MAX_MB_FITXER = 50;   // el màxim per fitxer de Supabase en el pla gratuït
+function redueixFoto(file, opc = FOTO_NORMAL) {
+  return new Promise(res => {
+    try {
+      if (!file || !/^image\/(jpeg|png|webp|heic|heif)$/i.test(file.type || '') || file.size < 400 * 1024) return res(file);
+      const canvas = document.createElement('canvas'), ctx = canvas.getContext && canvas.getContext('2d');
+      if (!ctx || !window.URL || !URL.createObjectURL || typeof File !== 'function') return res(file);
+      const url = URL.createObjectURL(file), img = new Image();
+      let fet = false; const acaba = f => { if (fet) return; fet = true; try { URL.revokeObjectURL(url); } catch (e) {} res(f); };
+      setTimeout(() => acaba(file), 15000);   // si el navegador no la sap llegir (p. ex. una HEIC fora de l'iPhone), es puja tal qual
+      img.onload = () => { try {
+        const w = img.naturalWidth, al = img.naturalHeight, k = Math.min(1, opc.max / Math.max(w, al));
+        canvas.width = Math.max(1, Math.round(w * k)); canvas.height = Math.max(1, Math.round(al * k));
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);   // les parts transparents (PNG), en blanc
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(b => acaba(b && b.size < file.size ? new File([b], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg', lastModified: Date.now() }) : file), 'image/jpeg', opc.qualitat);
+      } catch (e) { acaba(file); } };
+      img.onerror = () => acaba(file);
+      img.src = url;
+    } catch (e) { res(file); }
+  });
+}
+const massaGran = f => f && f.size > MAX_MB_FITXER * 1024 * 1024 ? `«${f.name}» fa ${Math.round(f.size / 1048576)} MB i el màxim és ${MAX_MB_FITXER} MB${/^video\//.test(f.type || '') ? ': grava un vídeo més curt' : ''}.` : null;
 /* ---------- adjunts (fotos, vídeos, documents) a Storage ---------- */
 const tipusAdjunt = nom => /\.(jpe?g|png|gif|webp|heic)$/i.test(nom) ? 'foto' : /\.(mp4|mov|webm|m4v|3gp)$/i.test(nom) ? 'video' : 'document';
-async function pujaAdjunts(carpeta, fitxers) {
+async function pujaAdjunts(carpeta, fitxers, opc = FOTO_NORMAL) {
+  const llestos = [];
+  for (const f0 of fitxers) llestos.push(await redueixFoto(f0, opc));   // primer, les fotos més lleugeres
+  const gran = llestos.map(massaGran).find(Boolean); if (gran) throw new Error(gran);   // si algun passa del màxim, no es puja res
   const out = [];
-  for (const f of fitxers) {
+  for (const f of llestos) {
     const path = `incidencies/${carpeta}/${Date.now()}_${f.name.replace(/[^\w.\-]+/g, '_')}`;
     const { error } = await sb.storage.from(BUCKET).upload(path, f, { contentType: f.type || undefined });
     if (error) throw new Error('No s’ha pogut pujar ' + f.name + ': ' + friendly(error));
@@ -9965,6 +9996,7 @@ function renderNomines(main) {
 // puja el fitxer a nomines/<treballador>/ i en crea el registre; si el mes ja té un document, demana el concepte del nou (paga extra…)
 async function pujaNomina(trebId, any, mes, file) {
   const t = treballadorActual(); if (!trebId) throw new Error('Tria el treballador.');
+  file = await redueixFoto(file, FOTO_DOCUMENT);   // si és una foto (no un PDF), més lleugera
   const existents = C.rows('nomines').filter(n => n.actiu && Number(n.treballador_id) === trebId && Number(n.exercici) === any && Number(n.mes) === mes);
   let concepte = 'Nòmina';
   if (existents.length) { const c = prompt(MESOS[mes - 1] + ' ' + any + ' ja té un document (' + existents.map(n => n.concepte).join(', ') + '). Concepte del nou:', 'Paga extra'); if (c == null) return; concepte = c.trim() || 'Nòmina'; }
