@@ -1313,8 +1313,13 @@ const SCHEMA = {
       label: 'Clients', nou: 'Nou client', order: 'nom',
       display: r => r.nom,
       list: ['nom', 'nif', 'tipus', 'administrador_id', 'gestor_id', 'dia_facturacio', 'forma_pagament'],
-      actions: r => accionsCopia('clients', r), extras: copiaAvisHTML, bindExtras: copiaAvisBind, despresCrear: acabaCopia,   // copiar-lo com a proveïdor
+      actions: r => accionsCopia('clients', r), extras: copiaAvisHTML, bindExtras: (frm, td) => { copiaAvisBind(frm, td); bindAdministradorPropi(frm); }, despresCrear: acabaCopia,   // copiar-lo com a proveïdor
+      // s'administra ell mateix: l'administrador i el gestor són el mateix client (es fan sols en desar)
+      conserva: (keep, raw) => { if (raw.administrador_propi) { delete keep.administrador_id; delete keep.gestor_id; } },   // el client següent no hereta l'administrador propi
+      abansDesar: async p => { const chk = $('#frm [name="administrador_propi"]'); if (!chk || !chk.checked) return; const { admId, gestorId } = await administradorPropi(p); p.administrador_id = admId; p.gestor_id = gestorId; },
       fields: [
+        { key: 'administrador_propi', label: 'S’administra ell mateix (no té administrador de finques)', type: 'boolean', virtual: true, derive: r => esAdministradorPropi(r),
+          hint: 'en desar, l’administrador i el gestor són el mateix client, amb les seves dades: no cal donar-lo d’alta a Administradors' },
         { key: 'administrador_id', label: 'Administrador', type: 'ref', ref: 'administradors', required: true },
         { key: 'gestor_id', label: 'Gestor', type: 'ref', ref: 'contactes', required: true, dependsOn: 'administrador_id',
           filter: (r, f) => Number(r.administrador_id) === Number(f.administrador_id), hint: "persona de l'administrador que porta aquest client" },
@@ -5008,7 +5013,7 @@ async function save(td, frm) {
   try {
     const raw = readRaw(td.fields, frm);
     const payload = await buildPayload(td.fields, raw);
-    if (td.abansDesar) td.abansDesar(payload, id);
+    if (td.abansDesar) await td.abansDesar(payload, id);
     if (td.validate) { const m = td.validate(payload, id); if (m) { showFormError(m); return; } }
     btn.disabled = true;
     const abans = id ? { ...(C.get(t, id) || {}) } : null;
@@ -5029,6 +5034,7 @@ async function save(td, frm) {
       // en entrada de dades, conserva les referències per encadenar entrades
       state.keep = {};
       td.fields.filter(f => f.type === 'ref' || f.type === 'select').forEach(f => { if (f.virtual) { if (raw[f.key]) state.keep[f.key] = Number(raw[f.key]); } else if (payload[f.key] != null) state.keep[f.key] = payload[f.key]; });
+      if (td.conserva) td.conserva(state.keep, raw);
       toast('Desat');
     }
     renderMain();
@@ -5046,7 +5052,7 @@ async function desaFormulari(td, frm) {
   if (faltaObligatori(td.fields, frm)) return false;
   try {
     const payload = await buildPayload(td.fields, readRaw(td.fields, frm));
-    if (td.abansDesar) td.abansDesar(payload, id);
+    if (td.abansDesar) await td.abansDesar(payload, id);
     if (td.validate) { const m = td.validate(payload, id); if (m) { showFormError(m); return false; } }
     const abans = { ...(C.get(state.table, id) || {}) };
     const res = await sb.from(state.table).update(payload).eq(td.pk || 'id', id);
@@ -7374,6 +7380,38 @@ function ambMateixNif(t, nif) {
 function administradorExistent(nif, nom) {
   const as = C.rows('administradors').filter(a => a.actiu), n = normNif(nif), nn = String(nom || '').trim().toLowerCase();
   return (n && as.find(a => normNif(a.nif) === n)) || (nn && as.find(a => String(a.nom || '').trim().toLowerCase() === nn)) || null;
+}
+// ---- clients que s'administren ells mateixos (empreses sense administrador de finques) ----
+// ho és si el seu administrador té el mateix NIF que el client
+const esAdministradorPropi = r => { const a = r && C.get('administradors', r.administrador_id); return !!a && !!normNif(r.nif) && normNif(a.nif) === normNif(r.nif); };
+// en desar: l'administrador és el mateix client (el que ja hi ha amb el seu NIF o, si no, se'n crea un amb les seves dades);
+// el gestor, el seu contacte principal (o un de nou amb el nom del client)
+async function administradorPropi(p) {
+  const nom = String(p.nom || '').trim(); if (!nom) throw new Error('Falta el nom o raó social.');
+  const n = v => String(v ?? '').trim() || null;
+  const ja = administradorExistent(p.nif, nom);
+  let admId = ja ? ja.id : null;
+  if (!admId) {
+    const a = await sb.from('administradors').insert({ tipus: esPersonaFisicaNif(p.nif) ? 'persona_fisica' : 'despatx', nom, nif: n(p.nif), telefon: n(p.telefon), email: n(p.email_facturacio),
+      adreca: n(p.adreca), cp: n(p.cp), poblacio: n(p.poblacio), observacions: 'S’administra ell mateix: és el mateix client.' }).select('id').single();
+    if (a.error) throw a.error; admId = a.data.id;
+  }
+  let gestorId = (gestorDeAdministrador(admId) || {}).id || null;
+  if (!gestorId) {
+    const g = await sb.from('contactes').insert({ administrador_id: admId, nom, telefon: n(p.telefon), email: n(p.email_facturacio), principal: true }).select('id').single();
+    if (g.error) throw g.error; gestorId = g.data.id;
+  }
+  if (!ja || !gestorDeAdministrador(admId)) await Promise.all([loadTable('administradors'), loadTable('contactes')]);
+  return { admId, gestorId };
+}
+// a la fitxa: si es marca la casella, l'administrador i el gestor no s'han de triar (desapareixen i no són obligatoris)
+function bindAdministradorPropi(frm) {
+  const chk = frm && frm.querySelector('[name="administrador_propi"]'); if (!chk) return;
+  const aplica = () => ['administrador_id', 'gestor_id'].forEach(k => {
+    const el = frm.querySelector(`[name="${k}"]`), w = frm.querySelector(`[data-fkey="${k}"]`);
+    if (el) el.disabled = chk.checked; if (w) w.hidden = chk.checked;
+  });
+  chk.addEventListener('change', aplica); aplica();
 }
 // el compte on ens paguen que porten més clients (sense clients, l'únic compte bancari actiu)
 function compteCobramentHabitual() {
