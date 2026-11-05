@@ -16,6 +16,7 @@
     --bg:#ffffff; --bg-2:#f5f8f3;
     --green:#2f7d4a; --green-2:#e4f1e8;
     --blue:#2b5f8a; --blue-2:#e5eef6;
+    --factura:#5d7e1b;   /* verd oliva dels botons que fan factures */
     --red:#b8432b; --red-2:#fbebe7;
     --mode:var(--green); --mode-2:var(--green-2);
   }
@@ -333,6 +334,26 @@
   .tbl tr.grup-fila td{ background:#eef1ec; color:var(--ink); font-weight:600; font-size:13px; padding:8px 10px; border-top:2px solid var(--line-2); }
   .sel-bar{ position:sticky; bottom:0; display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:10px; padding:10px 14px; background:#fffdf0; border:1px solid #e3d9a0; border-radius:10px; box-shadow:0 -2px 10px rgba(0,0,0,.08); }
   .sel-bar[hidden]{ display:none; } .sel-bar b{ font-size:14px; } .sel-bar .hint{ flex-basis:100%; }
+  /* botons que fan factures: verds, al centre de la seva fila i separats dels altres (esquerra: els de sempre; dreta: els de perill) */
+  .btn.factura{ background:var(--factura); border-color:var(--factura); color:#fff; }
+  .fila-factura{ display:grid; grid-template-columns:minmax(0, 1fr) auto minmax(0, 1fr); align-items:center; column-gap:48px; row-gap:10px; }
+  .fila-factura > .ff-esq, .fila-factura > .ff-mig, .fila-factura > .ff-dre{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; min-width:0; }
+  .fila-factura > .ff-mig{ justify-content:center; gap:16px; }
+  .fila-factura > .ff-dre{ justify-content:flex-end; }
+  .fila-factura .btn.danger{ margin-left:0; }
+  .fila-factura > .hint, .fila-factura > .nota-sota{ grid-column:1 / -1; }
+  .fila-factura > .nota-sota{ text-align:center; }
+  td .btn.factura{ margin-left:14px; }
+  /* si a l'esquerra o a la dreta els botons no caben en una línia, els verds baixen a una fila seva, al centre (ho decideix ajustaFilesFactura) */
+  .fila-factura.apilada{ grid-template-columns:minmax(0, 1fr) auto; row-gap:14px; }
+  .fila-factura.apilada > .ff-esq{ grid-column:1; grid-row:1; }
+  .fila-factura.apilada > .ff-dre{ grid-column:2; grid-row:1; }
+  .fila-factura.apilada > .ff-mig{ grid-column:1 / -1; grid-row:2; }
+  .fila-factura.apilada > .hint, .fila-factura.apilada > .nota-sota{ grid-column:1 / -1; grid-row:3; }
+  @media (max-width:820px){
+    .fila-factura, .fila-factura.apilada{ grid-template-columns:minmax(0, 1fr); row-gap:14px; }
+    .fila-factura.apilada > .ff-esq, .fila-factura.apilada > .ff-dre, .fila-factura.apilada > .ff-mig, .fila-factura.apilada > .hint, .fila-factura.apilada > .nota-sota{ grid-column:1; grid-row:auto; }
+    .fila-factura > .ff-dre{ justify-content:flex-start; } .fila-factura > :empty{ display:none; } }
   .mc-box{ display:inline-flex; align-items:center; gap:8px; border:1.5px solid var(--line-2); border-radius:8px; padding:6px 12px; cursor:pointer; font-size:14px; user-select:none; }
   .mc-box input{ width:20px; height:20px; }
   .mc-box.on{ background:#2e7d32; border-color:#2e7d32; color:#fff; }
@@ -1616,7 +1637,7 @@ const SCHEMA = {
       },
       children: [{ table: 'factura_linies', fk: 'factura_id', label: 'Línies de la factura', show: r => !!r.amb_linies, editable: r => r.estat === 'esborrany', sum: { field: 'base', label: 'Base imposable' } }],
       actions: r => r.estat === 'esborrany'
-        ? [{ label: 'Emet la factura', run: () => emetFactura(r.id) }, { label: 'Previsualitza el PDF', run: () => generaPdfFactura(r.id).catch(e => showFormError(friendly(e))) }]
+        ? [{ label: 'Emet la factura', classe: 'factura', run: () => emetFactura(r.id) }, { label: 'Previsualitza el PDF', run: () => generaPdfFactura(r.id).catch(e => showFormError(friendly(e))) }]
         : (r.pdf ? [{ label: 'Obre el PDF', noDesa: true, run: () => obreFitxer(r.pdf) },
                     { label: 'Refés el PDF', noDesa: true, run: () => generaPdfFactura(r.id).then(() => toast('PDF refet i desat')).catch(e => showFormError(friendly(e))) }]
                  : [{ label: 'Genera el PDF', run: () => generaPdfFactura(r.id, { obrir: false }).then(() => { toast('PDF desat'); renderMain(); }).catch(e => showFormError(friendly(e))) }]),
@@ -1698,12 +1719,12 @@ const SCHEMA = {
       senseBaixes: true,   // no es donen de baixa: els que no s'han de facturar s'eliminen (estat Eliminat) i es veuen amb la casella
       filaClass: r => r.estat === 'anul_lat' ? 'off' : '',
       marcable: r => r.actiu && r.estat === 'obert', marcaNom: n => n === 1 ? 'albarà marcat' : 'albarans marcats',
-      marcaAccions: [{ label: 'Agrupa albarans', min: 2, run: ids => agrupaAlbarans(ids) }, { label: 'Fes-ne una factura', min: 1, run: ids => facturaAlbarans(ids) },
+      marcaAccions: [{ label: 'Agrupa albarans', min: 2, run: ids => agrupaAlbarans(ids) }, { label: 'Fes-ne una factura', min: 1, classe: 'factura', run: ids => facturaAlbarans(ids) },
         { label: n => n === 1 ? 'Elimina’l' : 'Elimina’ls', min: 1, classe: 'danger', run: ids => eliminaAlbarans(ids) }],
       canBaixa: () => false,
       extras: r => r && r.estat === 'anul_lat' ? '<div class="msg dc-avis">Aquest albarà està <b>eliminat</b>: no es factura i no surt a la llista dels pendents. Si s’ha de facturar, prem «Torna’l a obrir».</div>' : '',
       children: [{ table: 'albara_linies', fk: 'albara_id', label: 'Línies de l’albarà', editable: r => r.estat === 'obert', sum: { field: 'base', label: 'Base imposable' } }],
-      actions: r => r.estat === 'obert' ? [{ label: 'Converteix en factura', run: () => facturaAlbarans([r.id]) }, { label: 'Elimina l’albarà', classe: 'danger', run: () => eliminaAlbarans([r.id]) }]
+      actions: r => r.estat === 'obert' ? [{ label: 'Converteix en factura', classe: 'factura', run: () => facturaAlbarans([r.id]) }, { label: 'Elimina l’albarà', classe: 'danger', run: () => eliminaAlbarans([r.id]) }]
         : r.estat === 'anul_lat' ? [{ label: 'Torna’l a obrir', run: () => tornaObrirAlbara(r.id) }] : [],
       fields: [
         { key: 'numero_complet', label: 'Número', type: 'info', fmt: r => r.numero_complet || '(s’assigna en desar)' },
@@ -1770,7 +1791,7 @@ const SCHEMA = {
       actions: r => [
         { label: r.pdf ? 'Regenera el PDF' : 'Genera el PDF', run: () => generaPdfPressupost(r.id).then(() => { toast('PDF desat'); renderMain(); }).catch(e => showFormError(friendly(e))) },
         ...(r.pdf ? [{ label: 'Obre el PDF desat', noDesa: true, run: () => obreFitxer(r.pdf) }] : []),
-        ...(!r.factura_id ? [{ label: 'Converteix en factura', run: () => facturaPressupost(r.id) }] : []),
+        ...(!r.factura_id ? [{ label: 'Converteix en factura', classe: 'factura', run: () => facturaPressupost(r.id) }] : []),
       ],
       fields: [
         { key: 'numero', label: 'Número', type: 'info', fmt: r => r.numero || '(s’assigna en desar)' },
@@ -4531,13 +4552,7 @@ function formHTML(td, row) {
       ${td.extras ? `<div class="extres">${td.extras(row)}</div>` : ''}
       <form id="frm" data-table="${state.table}" data-id="${editing ? (td.pk ? row[td.pk] : row.id) : ''}" novalidate>
         <div class="grid">${fields}</div>
-        <div class="actions">
-          <button class="btn" type="submit">${editing ? 'Desa els canvis' : 'Desa'}</button>
-          ${editing && td.actions ? td.actions(row).map((a, i) => a.classe === 'danger' ? '' : `<button class="btn ${a.classe || ''}" type="button" data-action="${i}">${h(a.label)}</button>`).join('') : ''}
-          ${editing ? `<button class="btn ghost" type="button" id="cancel">Cancel·la</button>` : ''}
-          ${editing && td.actions ? td.actions(row).map((a, i) => a.classe === 'danger' ? `<button class="btn danger" type="button" data-action="${i}">${h(a.label)}</button>` : '').join('') : ''}
-          ${editing && (!td.canBaixa || td.canBaixa(row)) ? `<button class="btn danger" type="button" id="baixa">${row.actiu ? 'Dona de baixa' : 'Reactiva'}</button>` : ''}
-        </div>
+        ${filaBotonsFitxa(td, row, editing)}
       </form>
       ${editing && td.compta ? comptaDocHTML(td.compta, row) : ''}
       ${childrenHTML(td, row)}
@@ -4635,11 +4650,17 @@ function selBarHTML(td) {
   if (!td.marcable) return '';
   const ids = [...marquesDe(td)].filter(id => { const r = C.get(state.table, id); return r && td.marcable(r); });
   if (!ids.length) return '<div class="sel-bar" id="sel-bar" hidden></div>';
-  const accions = (td.marcaAccions || []).filter(a => ids.length >= (a.min || 1));
-  return `<div class="sel-bar" id="sel-bar"><b>${ids.length} ${h(td.marcaNom ? td.marcaNom(ids.length) : (ids.length === 1 ? 'registre marcat' : 'registres marcats'))}</b>
-    ${accions.map((a, i) => `<button type="button" class="btn ${a.classe || (i ? 'ghost' : '')}" data-marca-accio="${(td.marcaAccions || []).indexOf(a)}">${h(typeof a.label === 'function' ? a.label(ids.length) : a.label)}</button>`).join('')}
-    <button type="button" class="btn ghost small" id="sel-cap">Desmarca’ls</button>
-    ${td.marcaAccions && td.marcaAccions.some(a => ids.length < (a.min || 1)) ? `<span class="hint">${h(td.marcaAccions.filter(a => ids.length < (a.min || 1)).map(a => '«' + (typeof a.label === 'function' ? a.label(a.min) : a.label) + '» necessita almenys ' + a.min).join(' · '))}</span>` : ''}</div>`;
+  const accions = (td.marcaAccions || []).filter(a => ids.length >= (a.min || 1)), normals = accions.filter(a => a.classe !== 'factura' && a.classe !== 'danger');
+  const boto = a => `<button type="button" class="btn ${a.classe || (normals.indexOf(a) > 0 ? 'ghost' : '')}" data-marca-accio="${(td.marcaAccions || []).indexOf(a)}">${h(typeof a.label === 'function' ? a.label(ids.length) : a.label)}</button>`;
+  const cap = `<b>${ids.length} ${h(td.marcaNom ? td.marcaNom(ids.length) : (ids.length === 1 ? 'registre marcat' : 'registres marcats'))}</b>`;
+  const desmarca = '<button type="button" class="btn ghost small" id="sel-cap">Desmarca’ls</button>';
+  const avis = td.marcaAccions && td.marcaAccions.some(a => ids.length < (a.min || 1)) ? `<span class="hint">${h(td.marcaAccions.filter(a => ids.length < (a.min || 1)).map(a => '«' + (typeof a.label === 'function' ? a.label(a.min) : a.label) + '» necessita almenys ' + a.min).join(' · '))}</span>` : '';
+  const verds = accions.filter(a => a.classe === 'factura');
+  if (verds.length) return `<div class="sel-bar fila-factura" id="sel-bar"><div class="ff-esq">${cap}${normals.map(boto).join('')}</div><div class="ff-mig">${verds.map(boto).join('')}</div><div class="ff-dre">${accions.filter(a => a.classe === 'danger').map(boto).join('')}${desmarca}</div>${avis}</div>`;
+  return `<div class="sel-bar" id="sel-bar">${cap}
+    ${accions.map(boto).join('')}
+    ${desmarca}
+    ${avis}</div>`;
 }
 function bindMarques(td) {
   const main = $('#main');
@@ -4973,6 +4994,31 @@ function gpsBind(frm, td) {
     navigator.permissions.query({ name: 'geolocation' }).then(p => { if (p.state === 'granted') btn.click(); }).catch(() => {});
   }
 }
+
+// la fila de botons d'una fitxa: Desa, les accions, Cancel·la i, al final, les de perill (Dona de baixa, Elimina…). Si alguna acció
+// fa una factura (classe 'factura'), la fila es parteix en tres: a l'esquerra els de sempre, al mig els verds i a la dreta els de perill.
+function filaBotonsFitxa(td, row, editing) {
+  const accs = editing && td.actions ? td.actions(row) : [];
+  const boto = (a, i) => `<button class="btn ${a.classe || ''}" type="button" data-action="${i}">${h(a.label)}</button>`;
+  const quines = classe => accs.map((a, i) => (a.classe === classe || (classe === '' && a.classe !== 'danger' && a.classe !== 'factura')) ? boto(a, i) : '').join('');
+  const esq = `<button class="btn" type="submit">${editing ? 'Desa els canvis' : 'Desa'}</button>${quines('')}${editing ? `<button class="btn ghost" type="button" id="cancel">Cancel·la</button>` : ''}`;
+  const dre = quines('danger') + (editing && (!td.canBaixa || td.canBaixa(row)) ? `<button class="btn danger" type="button" id="baixa">${row.actiu ? 'Dona de baixa' : 'Reactiva'}</button>` : '');
+  const mig = quines('factura');
+  return mig ? `<div class="actions fila-factura"><div class="ff-esq">${esq}</div><div class="ff-mig">${mig}</div><div class="ff-dre">${dre}</div></div>` : `<div class="actions">${esq}${dre}</div>`;
+}
+// les files amb botons verds: si a l'esquerra o a la dreta els botons no caben en una línia, els verds baixen a una fila seva, al centre.
+// Es mira cada cop que canvia la pantalla (i en canviar la mida de la finestra).
+function ajustaFilesFactura() {
+  document.querySelectorAll('.fila-factura').forEach(f => {
+    f.classList.remove('apilada');
+    const partida = z => { const fills = z ? [...z.children].filter(c => c.offsetParent !== null) : []; if (fills.length < 2) return false; const t = fills.map(c => c.offsetTop); return Math.max(...t) - Math.min(...t) > 4; };
+    if (partida(f.querySelector(':scope > .ff-esq')) || partida(f.querySelector(':scope > .ff-dre'))) f.classList.add('apilada');
+  });
+}
+let ajustFilesPendent = false;
+function programaAjustFiles() { if (ajustFilesPendent) return; ajustFilesPendent = true; requestAnimationFrame(() => { ajustFilesPendent = false; ajustaFilesFactura(); }); }
+if (typeof MutationObserver !== 'undefined') new MutationObserver(programaAjustFiles).observe(document.documentElement, { childList: true, subtree: true });
+window.addEventListener('resize', programaAjustFiles);
 
 function showFormError(msg) {
   $('#ferr').innerHTML = `<div class="msg err">${h(msg)}</div>`;
@@ -5336,20 +5382,23 @@ function renderFacturacio(main) {
   const pendents = factures.filter(r => r.estat === 'emesa').sort((a, b) => String(a.data_venciment).localeCompare(String(b.data_venciment)));
   const sensePdf = factures.filter(r => r.estat !== 'esborrany' && !r.pdf);
   const filaD = r => `<tr class="${String(r.data_factura || '').slice(0, 7) === mesTria ? '' : 'off'}"><td>${dmy(r.data_factura)}</td><td>${h(llocsFactura(r))}</td><td>${h(L('clients', r.client_id))}${motiuSobrant(r) ? `<br><b class="v-no">${h(motiuSobrant(r))}</b>` : ''}</td><td>${h(r.concepte)}</td><td class="hint">${r.periode_inici ? dmy(r.periode_inici) + ' – ' + dmy(r.periode_fi) : ''}</td><td class="num">${eur(r.base_imponible)}</td><td class="num">${eur(r.total)}</td><td>${dmy(cobramentPrevist(r))}</td>
-    <td class="num"><button class="btn ghost small" data-obre="${r.id}">Obre</button> <button class="btn small" data-emet="${r.id}">Emet</button></td></tr>`;
+    <td class="num"><button class="btn ghost small" data-obre="${r.id}">Obre</button> <button class="btn small factura" data-emet="${r.id}">Emet</button></td></tr>`;
   const filaP = r => `<tr><td>${h(r.numero_complet)}</td><td>${dmy(r.data_factura)}</td><td>${h(L('clients', r.client_id))}</td><td>${h(r.concepte)}</td><td class="num">${eur(r.total)}</td><td>${dmy(r.data_venciment)}</td>
     <td class="num"><button class="btn ghost small" data-obre="${r.id}">Obre</button> ${r.pdf ? `<button class="btn ghost small" data-pdf="${h(r.pdf)}">PDF</button>` : ''}</td></tr>`;
   main.innerHTML = `
     <h1>Facturació recurrent</h1>
     <p>Tria el mes i genera els esborranys: només els d’aquell mes. La factura de cada agrupació es fa dins del mateix mes, amb data del dia de facturació del seu client (octubre es factura el dia de facturació d’octubre, pel període d’octubre). El cobrament va a part: en emetre-la, el venciment es calcula amb el que hi ha pactat amb el client (termini de pagament i dia fix de pagament). Repassa'ls i emet. Un esborrany es pot obrir, corregir o donar de baixa; una factura emesa rep número i queda congelada.</p>
     <p class="sub">${(() => { const ag = C.rows('agrupacions').filter(a => a.actiu); const n = k => ag.filter(a => claAgrupacio(a) === k).length; return `Agrupacions: <b>${n('actual')} actuals</b> (són les que facturen), ${n('futur')} futures (sense data d’inici: no facturen) i ${n('finalitzat')} finalitzades.`; })()}</p>
-    <div class="bar">
-      <span class="nota">Mes a facturar</span>
+    <div class="bar fila-factura">
+      <div class="ff-esq"><span class="nota">Mes a facturar</span>
       <select id="fac-mes" style="width:auto">${MESOS.map((m, i) => `<option value="${i + 1}" ${String(i + 1) === String(st.mes) ? 'selected' : ''}>${m}</option>`).join('')}</select>
-      <select id="fac-any" style="width:auto">${anys.map(y => `<option value="${y}" ${y === String(st.any) ? 'selected' : ''}>${y}</option>`).join('')}</select>
-      <button class="btn" id="genera">Genera els esborranys ${h(nomMesDe)}</button>
+      <select id="fac-any" style="width:auto">${anys.map(y => `<option value="${y}" ${y === String(st.any) ? 'selected' : ''}>${y}</option>`).join('')}</select></div>
+      <div class="ff-mig"><button class="btn factura" id="genera">Genera els esborranys ${h(nomMesDe)}</button>
+      <button class="btn factura" id="emet-totes" ${drafts.length ? '' : 'disabled'}>Emet tots els esborranys (${drafts.length})</button></div>
+      <div class="ff-dre"></div>
+    </div>
+    <div class="bar">
       ${recurrentsMes.length ? `<button class="btn ghost" id="regenera" title="Treu els esborranys recurrents d’aquest mes i els torna a crear amb les dades actuals">Torna a generar ${h(nomMesDe)} (${recurrentsMes.length})</button><button class="btn ghost" id="treu-mes">Treu els esborranys ${h(nomMesDe)} (${recurrentsMes.length})</button>` : ''}
-      <button class="btn ghost" id="emet-totes" ${drafts.length ? '' : 'disabled'}>Emet tots els esborranys (${drafts.length})</button>
       <button class="btn ghost" id="pdfs" ${sensePdf.length ? '' : 'disabled'}>Genera els PDF que faltin (${sensePdf.length})</button>
       ${sobrants.length ? `<button class="btn danger" id="treu-sobrants">Treu els esborranys sobrants (${sobrants.length})</button>` : ''}
     </div>
@@ -5982,7 +6031,7 @@ function liniesProveidorHTML(row) {
       <label class="f" style="flex:2 1 0"><span class="l">Destinació</span><select data-nou="desti">${opcionsDesti({})}</select></label>
       <button type="button" class="btn small" id="fpl-afegeix">Afegeix línia</button>
     </div>
-    <div class="bar"><button type="button" class="btn" id="fpl-crea" ${pend.length ? '' : 'disabled'}>Crea els albarans (${pend.length} líni${pend.length === 1 ? 'a' : 'es'} pendent${pend.length === 1 ? '' : 's'})</button><span class="nota">Un albarà per lloc, amb la data de la factura (${dmy(row.data_factura)}). Et demanarà confirmació.</span></div>
+    <div class="bar fila-factura"><div class="ff-esq"></div><div class="ff-mig"><button type="button" class="btn factura" id="fpl-crea" ${pend.length ? '' : 'disabled'}>Crea els albarans (${pend.length} líni${pend.length === 1 ? 'a' : 'es'} pendent${pend.length === 1 ? '' : 's'})</button></div><div class="ff-dre"></div><span class="nota nota-sota">Un albarà per lloc, amb la data de la factura (${dmy(row.data_factura)}). Et demanarà confirmació.</span></div>
   </div>`;
 }
 function liniesProveidorBind(frm, td) {
@@ -6124,7 +6173,7 @@ function renderAlbaransPendents(main) {
         ${rows.map(a => `<tr><td><input type="checkbox" data-alb="${a.id}" data-client="${c.id}" checked></td><td>${h(a.numero_complet)}</td><td>${dmy(a.data)}</td><td>${h(a.lloc_id ? (C.get('llocs', a.lloc_id) || {}).nom || '' : '')}</td><td>${h(a.descripcio || '')}</td><td class="num">${tot(a, C)}</td>
           <td class="num"><button class="btn ghost small" data-obre-alb="${a.id}">Obre</button></td></tr>`).join('')}
       </tbody></table>
-      <div class="actions"><button class="btn" data-factura-client="${c.id}">Factura els marcats de ${h(c.nom)}</button></div>`;
+      <div class="actions fila-factura"><div class="ff-esq"></div><div class="ff-mig"><button class="btn factura" data-factura-client="${c.id}">Factura els marcats de ${h(c.nom)}</button></div><div class="ff-dre"></div></div>`;
   }).join('');
   main.innerHTML = `
     <h1>Albarans pendents de facturar</h1>
