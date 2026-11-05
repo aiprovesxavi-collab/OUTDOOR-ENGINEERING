@@ -1952,23 +1952,24 @@ const SCHEMA = {
       ],
     },
     fulls_treball: {
-      label: 'Fulls de treball', nou: 'Nou full de treball', order: 'termini', desc: true,
-      sortBy: (a, b) => String(b.termini || b.creat_el || '').localeCompare(String(a.termini || a.creat_el || '')) || (b.id || 0) - (a.id || 0),   // els que no tenen termini (els obre l'operari), per quan es van crear
+      label: 'Fulls de treball', nou: 'Nou full de treball', order: 'creat_el', desc: true,
+      sortBy: (a, b) => String(b.creat_el || '').localeCompare(String(a.creat_el || '')) || (b.id || 0) - (a.id || 0),   // el més nou a dalt
       display: r => (r.numero || 'full') + ' — ' + r.nom,
-      list: ['numero', 'nom', 'lloc_id', 'encarregat_id', 'inici', 'termini', 'estat', 'hores', 'incidencia', 'albara'],
-      validate: (p, id) => !id && !p.termini ? 'Posa el termini final.' : p.inici && p.termini && new Date(p.inici) > new Date(p.termini) ? 'La data en què es pot començar no pot ser després del termini.' : null,
+      list: ['numero', 'nom', 'lloc_id', 'encarregat_id', 'estat', 'hores', 'incidencia', 'albara'],
+      // qui l'obre queda desat (sense sortir enlloc): així hi pot tornar encara que no sigui de l'oficina
+      abansDesar: (p, id) => { if (!id) { const t = treballadorActual(); if (t) p.demanat_per = t.id; } },
       computed: {
         hores: { label: 'Hores', num: true, fn: r => horesFull(r.id) },
         albara: { label: 'Albarà', fn: r => r.albara_id ? numAlbara(r.albara_id, 'sí') : '' },
         estat: { label: 'Estat', fn: r => ESTATS_FULL[r.estat || 'en_curs'] || r.estat },
         incidencia: { label: 'Incidència', fn: r => r.incidencia_id ? ((C.get('incidencies', r.incidencia_id) || {}).numero || '') : '' },
       },
-      filtres: [{ key: 'lloc_id', tipus: 'ref', ref: 'llocs', label: 'Lloc' }, { key: 'encarregat_id', tipus: 'ref', ref: 'treballadors', label: 'Encarregat' }, { key: 'estat', tipus: 'opcions', label: 'Estat', totsLabel: 'Estat: tots menys els eliminats',
+      filtres: [{ key: 'lloc_id', tipus: 'ref', ref: 'llocs', label: 'Lloc' }, { key: 'encarregat_id', tipus: 'ref', ref: 'treballadors', label: 'Qui ha fet la feina' }, { key: 'estat', tipus: 'opcions', label: 'Estat', totsLabel: 'Estat: tots menys els eliminats',
         opcions: [['en_curs', 'Obert'], ['finalitzat', 'Finalitzat'], ['albara', 'Passat a albarà'], ['anul_lat', 'Eliminat'], ['tots', 'Tots, també els eliminats']],
         defecte: r => r.estat !== 'anul_lat', prova: (r, v) => v === 'tots' || r.estat === v || (v === 'en_curs' && r.estat === 'pendent') }],
       canBaixa: () => false, senseBaixes: true,   // no es donen de baixa: els que no s'han de passar a albarà s'eliminen (estat Eliminat)
       filaClass: r => r.estat === 'anul_lat' ? 'off' : '',
-      extras: fullExtresHTML, bindExtras: fullExtresBind,
+      extras: fullExtresHTML, extrasFinal: fullFotosHTML, bindExtras: fullExtresBind,   // les fotos, després de les jornades i el material
       children: [
         { table: 'full_treball_jornades', fk: 'full_id', label: 'Jornades de feina (data, hores, persones i què s’ha fet)', editable: r => r.estat !== 'albara' && r.estat !== 'anul_lat' },
         { table: 'full_treball_material', fk: 'full_id', label: 'Material de magatzem utilitzat', editable: r => r.estat !== 'albara' && r.estat !== 'anul_lat' },
@@ -1986,11 +1987,9 @@ const SCHEMA = {
         { key: 'numero', label: 'Número', type: 'info', fmt: r => r.numero || '(s’assigna en desar)' },
         { key: 'estat', label: 'Estat', type: 'info', fmt: r => ({ pendent: 'Obert (encara no s’ha tancat)', en_curs: 'Obert (encara no s’ha tancat)', finalitzat: 'Finalitzat (falta passar-lo a albarà)', albara: 'Passat a albarà', anul_lat: 'Eliminat (no es passarà a albarà)' })[r.estat || 'en_curs'] || r.estat },
         { key: 'nom', label: 'Nom de la tasca', type: 'text', required: true, wide: true, ro: r => fullEliminat(r) },
-        { key: 'inici', label: 'Es pot començar', type: 'datetime', hint: 'buit = de seguida; amb data, el full queda programat fins llavors', ro: r => fullEliminat(r) },
-        { key: 'termini', label: 'Termini final', type: 'datetime', ro: r => fullEliminat(r), default: () => vencimentPerGrup('mig_termini').toISOString(), hint: 'obligatori en un full nou; els que l’operari obre ell mateix des de l’app no en porten' },
         { key: 'lloc_id', label: 'Lloc', type: 'ref', ref: 'llocs', required: true, optionLabel: r => r.nom + (r.poblacio ? ' — ' + r.poblacio : ''), ro: r => !!r && (!!r.incidencia_id || fullEliminat(r)) },
-        { key: 'encarregat_id', label: 'A qui s’encomana la feina', type: 'ref', ref: 'treballadors', required: true, filter: r => r.actiu, optionLabel: r => nomTreballador(r), ro: r => fullEliminat(r) },
-        { key: 'demanat_per', label: 'Qui ho demana', type: 'ref', ref: 'treballadors', filter: r => r.actiu, optionLabel: r => nomTreballador(r), ro: r => fullEliminat(r), default: () => { const t = treballadorActual(); return t ? t.id : ''; } },
+        { key: 'encarregat_id', label: 'Qui ha fet la feina', type: 'ref', ref: 'treballadors', required: true, filter: r => r.actiu, optionLabel: r => nomTreballador(r), ro: r => fullEliminat(r),
+          hint: 'la persona que hi apunta les jornades i el material: un operari o, si cal, algú de l’oficina' },
         { key: 'observacions_previes', label: 'Observacions preliminars per fer la feina', type: 'textarea', ro: r => fullEliminat(r) },
         { key: 'incidencia_id', label: 'Incidència', type: 'info', fmt: r => r.incidencia_id ? ((C.get('incidencies', r.incidencia_id) || {}).numero || '') + ' · ' + ((C.get('incidencies', r.incidencia_id) || {}).titol || '') + (r.accio_id ? ' · ' + nomTipus((C.get('incidencia_accions', r.accio_id) || {}).tipus) : '') : 'cap (full sense incidència)' },
         { key: 'finalitzat', label: 'Totalment finalitzat', type: 'info', fmt: r => r.finalitzat ? 'sí, el ' + dmyhm(r.finalitzat_el) + (r.finalitzat_per ? ' per ' + nomCurtTreballador(C.get('treballadors', r.finalitzat_per)) : '') : 'no' },
@@ -4396,7 +4395,7 @@ function renderAppOperari() {
         <button data-go="informe_tasques_piscina" style="${estilMenu('informe_tasques_piscina')}"><strong>Tasques per piscina</strong>${fonsMenu('informe_tasques_piscina')}</button>
         <button data-go="informe_tasques_dates" style="${estilMenu('informe_tasques_dates')}"><strong>Tasques per data</strong>${fonsMenu('informe_tasques_dates')}</button>
         <button class="ample llarg" data-go="incidencia_reports" style="${estilMenu('incidencia_reports')}"><strong>Reports d’incidències</strong>${fonsMenu('incidencia_reports')}</button>
-        <button class="ample" data-go="fulls_treball_app" style="${estilMenu('fulls_treball_app')}"><strong>Fulls de treball</strong>${(() => { const t = treballadorActual(); const n = t ? C.rows('fulls_treball').filter(f => f.actiu && Number(f.encarregat_id) === t.id && !f.finalitzat && f.estat !== 'anul_lat' && !fullProgramat(f)).length : 0; return n ? `<span class="pend">${n} pendent${n === 1 ? '' : 's'}</span>` : ''; })()}${fonsMenu('fulls_treball_app')}</button>
+        <button class="ample" data-go="fulls_treball_app" style="${estilMenu('fulls_treball_app')}"><strong>Fulls de treball</strong>${(() => { const t = treballadorActual(); const n = t ? C.rows('fulls_treball').filter(f => f.actiu && Number(f.encarregat_id) === t.id && !f.finalitzat && f.estat !== 'anul_lat' && !fullProgramat(f)).length : 0; return n ? `<span class="pend">${n} obert${n === 1 ? '' : 's'}</span>` : ''; })()}${fonsMenu('fulls_treball_app')}</button>
         <button class="ample" data-go="lectures_app" style="${estilMenu('lectures_app')}"><strong>Lectures de comptadors</strong>${(() => { const n = nPerLlegir(); return n ? `<span class="pend">${n} per llegir aquest mes</span>` : ''; })()}${fonsMenu('lectures_app')}</button>
         <button data-go="calendari_accions" style="${estilMenu('calendari_accions')}"><strong>Calendari accions</strong>${fonsMenu('calendari_accions')}</button>
         <button data-go="accions_meves" style="${estilMenu('accions_meves')}"><strong>Accions pendents</strong>${(() => { const n = t ? C.rows('incidencia_accions').filter(a => a.actiu && perFer(a) && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id) && (C.get('incidencies', a.incidencia_id) || {}).estat === 'oberta').length : 0; const m = t ? C.rows('incidencies').filter(i => senseSeguent(i) && (Number(i.seguidora_id) === t.id || (!APP_NOMES_TASQUES && esOficina(t)))).length : 0; return n || m ? `<span>${n ? n + ' per fer' : ''}${n && m ? ' · ' : ''}${m ? m + ' per encarregar' : ''}</span>` : ''; })()}${insigniaHTML()}${fonsMenu('accions_meves')}</button>
@@ -6588,20 +6587,19 @@ const horesJornada = j => { if (!j || !j.hora_inici || !j.hora_fi) return 0; con
 const horesFull = id => Math.round(jornadesFull(id).reduce((t, j) => t + horesJornada(j) * Number(j.persones || 1), 0) * 100) / 100;
 const resumJornades = id => jornadesFull(id).map(j => dmy(j.data) + ': ' + (j.feina || '')).filter(x => !/: $/.test(x)).join('\n');
 const fotosFull = (f, grup) => (Array.isArray(f.adjunts) ? f.adjunts : []).filter(x => (x.grup || 'abans') === grup);
-// programat: obert, amb data per començar més endavant i sense cap jornada apuntada encara (encara no toca)
-const fullProgramat = f => !!f && !!f.inici && (f.estat === 'pendent' || f.estat === 'en_curs') && !f.finalitzat && new Date(f.inici) > new Date() && !jornadesFull(f.id).length;
+// els fulls ja no tenen «es pot començar» (és de l'acció de la incidència): cap full queda «programat»
+const fullProgramat = () => false;
 // la pastilla de l'estat d'un full (a l'app i a la incidència)
 const pillFull = (f, llarg) => fullProgramat(f) ? `<span class="pill e-programada">${llarg ? 'Programat ' + textInici(f) : 'Programat'}</span>`
   : `<span class="pill e-${f.estat === 'anul_lat' ? 'eliminat' : f.finalitzat || f.estat === 'finalitzat' || f.estat === 'albara' ? 'finalitzada' : 'en_curs'}">${h(ESTATS_FULL[f.estat] || f.estat || '')}</span>`;
 const potEditarFull = f => { const t = treballadorActual(); return !!f && !f.finalitzat && f.estat !== 'albara' && f.estat !== 'anul_lat' && !!t && (esOficina(t) || Number(f.encarregat_id) === t.id || Number(f.demanat_per) === t.id); };
 async function recarregaFulls() { await Promise.all(['fulls_treball', 'full_treball_jornades', 'full_treball_material'].map(loadTable)); }
-// el full d'una acció d'operari: la demanda surt de l'acció (nom = títol, termini = venciment, lloc = el de la incidència…)
+// el full d'una acció d'operari: surt de l'acció (nom = títol, lloc = el de la incidència, qui fa la feina = el responsable de l'acció);
+// el termini i el «es pot començar» són de l'acció, no del full
 async function creaFullPerAccio(inc, a) {
   const ja = fullDeAccio(a); if (ja) return ja.id;
-  const acabada = a.estat === 'finalitzada';
-  const termini = acabada ? null : (a.venciment || vencimentPerGrup(a.grup_termini || 'mig_termini').toISOString());
-  const dades = { nom: a.titol || nomTipus(a.tipus), termini, lloc_id: inc.lloc_id, observacions_previes: a.descripcio || null, encarregat_id: a.responsable_treballador_id, demanat_per: a.creat_per || null,
-    incidencia_id: inc.id, accio_id: a.id, estat: 'en_curs', inici: acabada ? null : (a.inici || null) };
+  const dades = { nom: a.titol || nomTipus(a.tipus), lloc_id: inc.lloc_id, observacions_previes: a.descripcio || null, encarregat_id: a.responsable_treballador_id, demanat_per: a.creat_per || null,
+    incidencia_id: inc.id, accio_id: a.id, estat: 'en_curs' };
   const r = await sb.from('fulls_treball').insert(dades).select('id').single(); if (r.error) throw r.error;
   await loadTable('fulls_treball'); return r.data.id;
 }
@@ -6737,16 +6735,16 @@ function bindFull(f, cont) {
 function renderFullsOperari(main) {
   const st = state.ft, t = treballadorActual();
   if (st.id) return renderFullOperari(main, st.id);
-  const meus = C.rows('fulls_treball').filter(f => f.actiu && t && Number(f.encarregat_id) === t.id && f.estat !== 'anul_lat').sort((a, b) => String(a.termini || '9').localeCompare(String(b.termini || '9')));
+  const meus = C.rows('fulls_treball').filter(f => f.actiu && t && Number(f.encarregat_id) === t.id && f.estat !== 'anul_lat').sort((a, b) => String(b.creat_el || '').localeCompare(String(a.creat_el || '')) || b.id - a.id);
   const pend = meus.filter(f => !f.finalitzat && !fullProgramat(f)), fets = meus.filter(f => f.finalitzat), programats = meus.filter(fullProgramat).sort((a, b) => String(a.inici).localeCompare(String(b.inici)));
-  const targeta = f => { const inc = f.incidencia_id ? C.get('incidencies', f.incidencia_id) : null, fora = f.termini && !f.finalitzat && new Date() > new Date(f.termini);
-    return `<div class="ic-targeta ${fora ? 'fora' : ''}" data-full="${f.id}"><b>${h(f.nom)}</b> · ${h(f.numero || '')}<br><span class="hint">${h(L('llocs', f.lloc_id))}${inc ? ' · ' + h(inc.numero) : ' · sense incidència'} · ${fullProgramat(f) ? 'programat a partir del ' + dmyhm(f.inici) : h(ESTATS_FULL[f.estat] || '')}${f.termini ? ' · termini ' + dmyhm(f.termini) : ''}${fora ? ' · <b class="v-no">fora de termini</b>' : ''}</span></div>`; };
+  const targeta = f => { const inc = f.incidencia_id ? C.get('incidencies', f.incidencia_id) : null;
+    return `<div class="ic-targeta" data-full="${f.id}"><b>${h(f.nom)}</b> · ${h(f.numero || '')}<br><span class="hint">${h(L('llocs', f.lloc_id))}${inc ? ' · ' + h(inc.numero) : ' · sense incidència'} · ${h(ESTATS_FULL[f.estat] || '')}</span></div>`; };
   const nou = st.nou ? `<div class="ft"><h4 style="margin-top:0">Nou full de treball</h4>
       <div class="ft-nova" id="ft-nou">
         <label class="f wide"><span class="l">Nom de la tasca</span><input type="text" data-nf="nom"></label>
         <label class="f"><span class="l">Lloc</span><select data-nf="lloc_id"><option value="">Tria el lloc…</option>${C.rows('llocs').filter(l => l.actiu).sort((a, b) => a.nom.localeCompare(b.nom, 'ca')).map(l => `<option value="${l.id}">${h(l.nom)}${l.poblacio ? ' — ' + h(l.poblacio) : ''}</option>`).join('')}</select></label>
         <label class="f wide"><span class="l">Observacions preliminars per fer la feina</span><textarea lang="ca" spellcheck="true" data-nf="observacions_previes"></textarea></label>
-        <p class="hint wide" style="margin:0">La feina te l’encomanes a tu mateix${t ? ' (' + h(nomTreballador(t)) + ')' : ''}.</p>
+        <p class="hint wide" style="margin:0">Qui fa la feina: tu${t ? ' (' + h(nomTreballador(t)) + ')' : ''}.</p>
         <div class="actions"><button type="button" class="btn" id="ft-crea">Crea el full</button><button type="button" class="btn ghost" id="ft-nou-cancel">Cancel·la</button></div>
       </div></div>` : '';
   main.innerHTML = `<h1>Fulls de treball</h1>
@@ -6776,15 +6774,13 @@ function renderFullOperari(main, id) {
   const t = treballadorActual();
   // en obrir-lo qui el té, el full passa sol a «en curs» (cap botó «Comença»)
   if (f.estat === 'pendent' && !f.finalitzat && !fullProgramat(f) && t && Number(f.encarregat_id) === t.id) { f.estat = 'en_curs'; sb.from('fulls_treball').update({ estat: 'en_curs' }).eq('id', f.id).eq('estat', 'pendent').then(r => { if (r && r.error) f.estat = 'pendent'; }, () => { f.estat = 'pendent'; }); }
-  const lloc = C.get('llocs', f.lloc_id) || {}, client = C.get('clients', lloc.client_id) || {}, qui = f.demanat_per ? C.get('treballadors', f.demanat_per) : null, enc = C.get('treballadors', f.encarregat_id);
-  const fora = f.termini && !f.finalitzat && new Date() > new Date(f.termini), edit = potEditarFull(f);
+  const lloc = C.get('llocs', f.lloc_id) || {}, client = C.get('clients', lloc.client_id) || {}, enc = C.get('treballadors', f.encarregat_id);
+  const edit = potEditarFull(f);
   main.innerHTML = `<div class="ao">
     <div class="bar"><button class="btn ghost" id="ft-torna">← Fulls de treball</button></div>
     <div class="ao-lloc">${h(lloc.nom || 'Lloc sense nom')}${client.nom ? `<span>${h(client.nom)}</span>` : ''}</div>
-    <div class="ao-qui"><span>Ho demana: <b>${h(nomTreballador(qui)) || '—'}</b></span><span>Encarregat: <b>${h(nomTreballador(enc)) || '—'}</b></span></div>
-    <div class="ao-peticio"><div class="ao-sobre"><span>Full de treball ${h(f.numero || '')}</span>${pillFull(f)}${fora ? '<span class="pill fora">Fora de termini</span>' : ''}</div><div class="ao-text">${h(f.nom)}</div></div>
-    ${f.inici ? `<div class="ao-fila"><span class="l">Es pot començar</span><span class="ao-termini">${dmyhm(f.inici)}${fullProgramat(f) ? ' · programat' : ''}</span></div>` : ''}
-    ${f.termini ? `<div class="ao-fila"><span class="l">${f.inici ? 'Termini final' : 'Termini'}</span><span class="ao-termini ${fora ? 'fora' : ''}">${dmyhm(f.termini)}</span></div>` : ''}
+    <div class="ao-qui"><span>Qui fa la feina: <b>${h(nomTreballador(enc)) || '—'}</b></span></div>
+    <div class="ao-peticio"><div class="ao-sobre"><span>Full de treball ${h(f.numero || '')}</span>${pillFull(f)}</div><div class="ao-text">${h(f.nom)}</div></div>
     ${f.observacions_previes ? `<div class="ao-fila"><span class="l">Observacions preliminars</span><div class="ao-desc">${h(f.observacions_previes)}</div></div>` : ''}
     ${f.finalitzat ? `<div class="ao-feta"><b>Finalitzat</b> el ${dmyhm(f.finalitzat_el)}${f.albara_id ? ' · ja té albarà' : ''}${f.resum ? `<div class="ao-desc">${h(f.resum)}</div>` : ''}${potDesferFull(f) ? '<a href="#" id="ftf-desfes" class="ao-desfes">Desfés-ho: encara no està acabat</a>' : ''}</div>` : ''}
     <div id="ferr"></div>
@@ -6800,12 +6796,19 @@ function renderFullOperari(main, id) {
 // ---- oficina: fotos i resum a la fitxa del full; l'albarà ----
 function fullExtresHTML(row) {
   if (!row) return '';
-  const jorn = jornadesFull(row.id), mat = materialFull(row.id), acc = row.accio_id ? C.get('incidencia_accions', row.accio_id) : null, fotos = Array.isArray(row.adjunts) ? row.adjunts : [];
-  const potPujar = row.estat !== 'albara' && row.estat !== 'anul_lat' && !row.accio_id;
+  const jorn = jornadesFull(row.id), mat = materialFull(row.id);
   const avisEliminat = row.estat === 'anul_lat' ? `<div class="msg dc-avis">Aquest full està <b>eliminat</b>${row.eliminat_el ? ' (el ' + dmy(row.eliminat_el) + (row.eliminat_per ? ' per ' + h(nomCurtTreballador(C.get('treballadors', row.eliminat_per))) : '') + ')' : ''}${row.eliminat_motiu ? ': ' + h(row.eliminat_motiu) : ''}. No es passarà a albarà. Si s’ha de fer, prem «Torna’l a obrir».</div>` : '';
-  return `${avisEliminat}<div class="ft" id="ft" data-full="${row.id}">
+  return `${avisEliminat}<div class="ft">
     <div class="ft-resum"><span><b>${jorn.length}</b> jornad${jorn.length === 1 ? 'a' : 'es'} · <b>${String(horesFull(row.id)).replace('.', ',')}</b> h × persones</span><span><b>${mat.length}</b> líni${mat.length === 1 ? 'a' : 'es'} de material</span><span>${row.finalitzat ? 'Finalitzat el ' + dmyhm(row.finalitzat_el) : 'Encara no està finalitzat'}</span>${row.albara_id ? `<span>Albarà <b>${h((C.get('albarans', row.albara_id) || {}).numero_complet || '')}</b></span>` : ''}</div>
-    <h4>Fotos i vídeos${acc ? ' <span class="hint">(són a l’acció de la incidència: s’hi posen des d’allà)</span>' : ''}</h4>
+  </div>`;
+}
+// les fotos i els vídeos del full: a la fitxa de l'oficina van al final, després de les jornades i el material
+function fullFotosHTML(row) {
+  if (!row) return '';
+  const acc = row.accio_id ? C.get('incidencia_accions', row.accio_id) : null, fotos = Array.isArray(row.adjunts) ? row.adjunts : [];
+  const potPujar = row.estat !== 'albara' && row.estat !== 'anul_lat' && !row.accio_id;
+  return `<div class="ft" id="ft" data-full="${row.id}">
+    <h4 style="margin-top:0">Fotos i vídeos${acc ? ' <span class="hint">(són a l’acció de la incidència: s’hi posen des d’allà)</span>' : ''}</h4>
     ${(acc && Array.isArray(acc.adjunts) && acc.adjunts.length) || fotos.length ? `<div class="md-llista">${acc ? mediaHTML(acc.adjunts, { qui: true }) : ''}${mediaHTML(fotos, { treu: potPujar, qui: true })}</div>` : '<p class="hint">Cap.</p>'}
     ${potPujar ? `<label class="btn ghost small ft-puja">Afegeix fotos o vídeos <input type="file" data-foto-full="" multiple accept="image/*,video/*,.pdf" style="display:none"></label>` : ''}
   </div>`;
