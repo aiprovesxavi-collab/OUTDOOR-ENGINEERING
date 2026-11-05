@@ -181,6 +181,7 @@
   .ctx .v{ font-size:18px; font-weight:500; }
   input[type=text],input[type=email],input[type=number],input[type=date],input[type=time],input[type=datetime-local],input[type=password],select,textarea{
     font:inherit; color:var(--ink); background:#fff; border:1px solid var(--line-2); border-radius:4px; padding:7px 10px; width:100%; }
+  input:disabled,textarea:disabled{ background:var(--bg-2); color:var(--ink-2); }   /* després de la regla general, perquè guanyi */
   textarea{ min-height:74px; resize:vertical; }
   input:focus,select:focus,textarea:focus,button:focus-visible{ outline:2px solid var(--mode); outline-offset:1px; }
   input[type=checkbox]{ width:16px; height:16px; accent-color:var(--mode); }
@@ -331,7 +332,7 @@
   .tbl td.marca, .tbl th.marca{ text-align:center; width:34px; } .tbl td.marca input{ width:18px; height:18px; cursor:pointer; }
   .tbl tr.grup-fila td{ background:#eef1ec; color:var(--ink); font-weight:600; font-size:13px; padding:8px 10px; border-top:2px solid var(--line-2); }
   .sel-bar{ position:sticky; bottom:0; display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:10px; padding:10px 14px; background:#fffdf0; border:1px solid #e3d9a0; border-radius:10px; box-shadow:0 -2px 10px rgba(0,0,0,.08); }
-  .sel-bar b{ font-size:14px; } .sel-bar .hint{ flex-basis:100%; }
+  .sel-bar[hidden]{ display:none; } .sel-bar b{ font-size:14px; } .sel-bar .hint{ flex-basis:100%; }
   .mc-box{ display:inline-flex; align-items:center; gap:8px; border:1.5px solid var(--line-2); border-radius:8px; padding:6px 12px; cursor:pointer; font-size:14px; user-select:none; }
   .mc-box input{ width:20px; height:20px; }
   .mc-box.on{ background:#2e7d32; border-color:#2e7d32; color:#fff; }
@@ -796,7 +797,7 @@ const OPT = {
   tipus_filtre: [['sorra','Sorra'],['vidre','Vidre'],['cartutx','Cartutx']],
   tractament: [['clor','Clor líquid'],['sal','Sal'],['brom','Brom']],
   unitat: [['u','unitat'],['kg','kg'],['l','litre'],['m','metre'],['m2','m²'],['h','hora']],
-  estat_albara: [['obert','Obert'],['facturat','Facturat'],['anul_lat','Anul·lat']],
+  estat_albara: [['obert','Obert'],['facturat','Facturat'],['anul_lat','Eliminat']],
   tipus_factura: [['true','Amb línies'],['false','Sense línies: un concepte i un import']],
   transparencia: [['optima','Òptima'],['transparent_pero','Transparent, però…'],['un_punt_terbola','Un punt tèrbola'],['terbola_es_veu','Tèrbola però es veu el sumider'],['no_es_veu','No es veu el sumider']],
   si_no: [['true','Sí'],['false','No']],
@@ -1686,18 +1687,27 @@ const SCHEMA = {
       label: 'Albarans', nou: 'Nou albarà', order: 'data', desc: true,
       display: (r, L) => (r.numero_complet || 'albarà') + ' — ' + L('clients', r.client_id),
       list: ['lloc', 'numero_complet', 'data', 'client_id', 'descripcio', 'total', 'estat', 'factura_id'],
-      computed: { lloc: { label: 'Lloc', fn: r => r.lloc_id ? nomLlocAlbara(r) : '' }, total: { label: 'Total (sense IVA)', num: true, fn: totalLinies('albara_linies', 'albara_id') } },
+      computed: { lloc: { label: 'Lloc', fn: r => r.lloc_id ? nomLlocAlbara(r) : '' }, total: { label: 'Total (sense IVA)', num: true, fn: totalLinies('albara_linies', 'albara_id') },
+        estat: { label: 'Estat', fn: r => (OPT.estat_albara.find(o => o[0] === (r.estat || 'obert')) || [])[1] || r.estat } },
       // la llista va per lloc (els sense lloc al final), i dins de cada lloc del més nou al més antic
       sortBy: (a, b) => nomLlocAlbara(a).localeCompare(nomLlocAlbara(b), 'ca') || String(b.data || '').localeCompare(String(a.data || '')) || b.id - a.id,
       grupDe: r => r.lloc_id ? L('llocs', r.lloc_id) : 'Sense lloc',
+      // tres estats: per defecte només es veuen els oberts (pendents de facturar); les caselles mostren els altres
+      filtres: [{ key: 'estat', tipus: 'caselles', defecte: r => r.estat === 'obert', resum: (v, n) => resumAlbarans(v, n),
+        opcions: [['facturat', 'Veure només els facturats'], ['anul_lat', 'Veure només els eliminats'], ['tots', 'Veure tots']] }],
+      senseBaixes: true,   // no es donen de baixa: els que no s'han de facturar s'eliminen (estat Eliminat) i es veuen amb la casella
+      filaClass: r => r.estat === 'anul_lat' ? 'off' : '',
       marcable: r => r.actiu && r.estat === 'obert', marcaNom: n => n === 1 ? 'albarà marcat' : 'albarans marcats',
-      marcaAccions: [{ label: 'Agrupa albarans', min: 2, run: ids => agrupaAlbarans(ids) }, { label: 'Fes-ne una factura', min: 1, run: ids => facturaAlbarans(ids) }],
-      canBaixa: r => r.estat === 'obert',
+      marcaAccions: [{ label: 'Agrupa albarans', min: 2, run: ids => agrupaAlbarans(ids) }, { label: 'Fes-ne una factura', min: 1, run: ids => facturaAlbarans(ids) },
+        { label: n => n === 1 ? 'Elimina’l' : 'Elimina’ls', min: 1, classe: 'danger', run: ids => eliminaAlbarans(ids) }],
+      canBaixa: () => false,
+      extras: r => r && r.estat === 'anul_lat' ? '<div class="msg dc-avis">Aquest albarà està <b>eliminat</b>: no es factura i no surt a la llista dels pendents. Si s’ha de facturar, prem «Torna’l a obrir».</div>' : '',
       children: [{ table: 'albara_linies', fk: 'albara_id', label: 'Línies de l’albarà', editable: r => r.estat === 'obert', sum: { field: 'base', label: 'Base imposable' } }],
-      actions: r => r.estat === 'obert' ? [{ label: 'Converteix en factura', run: () => facturaAlbarans([r.id]) }] : [],
+      actions: r => r.estat === 'obert' ? [{ label: 'Converteix en factura', run: () => facturaAlbarans([r.id]) }, { label: 'Elimina l’albarà', classe: 'danger', run: () => eliminaAlbarans([r.id]) }]
+        : r.estat === 'anul_lat' ? [{ label: 'Torna’l a obrir', run: () => tornaObrirAlbara(r.id) }] : [],
       fields: [
         { key: 'numero_complet', label: 'Número', type: 'info', fmt: r => r.numero_complet || '(s’assigna en desar)' },
-        { key: 'estat', label: 'Estat', type: 'info', fmt: r => (OPT.estat_albara.find(o => o[0] === r.estat) || [])[1] || r.estat || 'Obert' },
+        { key: 'estat', label: 'Estat', type: 'info', fmt: r => ({ obert: 'Obert (pendent de facturar)', facturat: 'Facturat (ja s’ha convertit en factura)', anul_lat: 'Eliminat (no es factura)' })[r.estat || 'obert'] || r.estat },
         { key: 'client_id', label: 'Client', type: 'ref', ref: 'clients', required: true, optionLabel: clientAmbLlocs, ro: r => !!r && r.estat !== 'obert' },
         { key: 'lloc_id', label: 'Lloc', type: 'ref', ref: 'llocs', dependsOn: 'client_id', filter: (r, f) => Number(r.client_id) === Number(f.client_id), ro: r => !!r && r.estat !== 'obert' },
         { key: 'data', label: 'Data', type: 'date', required: true, default: 'avui', ro: r => !!r && r.estat !== 'obert' },
@@ -1924,7 +1934,7 @@ const SCHEMA = {
       validate: (p, id) => !id && !p.termini ? 'Posa el termini final.' : p.inici && p.termini && new Date(p.inici) > new Date(p.termini) ? 'La data en què es pot començar no pot ser després del termini.' : null,
       computed: {
         hores: { label: 'Hores', num: true, fn: r => horesFull(r.id) },
-        albara: { label: 'Albarà', fn: r => r.albara_id ? ((C.get('albarans', r.albara_id) || {}).numero_complet || 'sí') : '' },
+        albara: { label: 'Albarà', fn: r => r.albara_id ? numAlbara(r.albara_id, 'sí') : '' },
         incidencia: { label: 'Incidència', fn: r => r.incidencia_id ? ((C.get('incidencies', r.incidencia_id) || {}).numero || '') : '' },
       },
       filtres: [{ key: 'lloc_id', tipus: 'ref', ref: 'llocs', label: 'Lloc' }, { key: 'encarregat_id', tipus: 'ref', ref: 'treballadors', label: 'Encarregat' }, { key: 'estat', tipus: 'opcions', opcions: [['pendent', 'Pendent'], ['en_curs', 'En curs'], ['finalitzat', 'Finalitzat'], ['albara', 'Amb albarà'], ['anul_lat', 'Anul·lat']], label: 'Estat' }],
@@ -1954,7 +1964,7 @@ const SCHEMA = {
         { key: 'incidencia_id', label: 'Incidència', type: 'info', fmt: r => r.incidencia_id ? ((C.get('incidencies', r.incidencia_id) || {}).numero || '') + ' · ' + ((C.get('incidencies', r.incidencia_id) || {}).titol || '') + (r.accio_id ? ' · ' + nomTipus((C.get('incidencia_accions', r.accio_id) || {}).tipus) : '') : 'cap (full sense incidència)' },
         { key: 'finalitzat', label: 'Totalment finalitzat', type: 'info', fmt: r => r.finalitzat ? 'sí, el ' + dmyhm(r.finalitzat_el) + (r.finalitzat_per ? ' per ' + nomCurtTreballador(C.get('treballadors', r.finalitzat_per)) : '') : 'no' },
         { key: 'resum', label: 'Resum del que s’ha fet', type: 'textarea' },
-        { key: 'albara_id', label: 'Albarà', type: 'info', fmt: r => r.albara_id ? ((C.get('albarans', r.albara_id) || {}).numero_complet || 'albarà') : '— (es crea quan el full és totalment finalitzat)' },
+        { key: 'albara_id', label: 'Albarà', type: 'info', fmt: r => r.albara_id ? numAlbara(r.albara_id, 'albarà') : '— (es crea quan el full és totalment finalitzat)' },
       ],
     },
     full_treball_jornades: {
@@ -4276,7 +4286,7 @@ function renderApp() {
     state.mode = b.dataset.mode; state.editing = null; state.copia = null; state.fx.ed = null; state.docs.sel = null; renderApp();
   }));
   document.querySelectorAll('.side button').forEach(b => b.addEventListener('click', () => {
-    state.table = b.dataset.table; state.editing = null; state.q = ''; state.copia = null; state.fx.ed = null; state.docs.sel = null; renderApp();
+    state.table = b.dataset.table; state.editing = null; state.q = ''; state.copia = null; state.fx.ed = null; state.docs.sel = null; reiniciaCaselles(b.dataset.table); renderApp();
   }));
   renderMain();
 }
@@ -4523,8 +4533,9 @@ function formHTML(td, row) {
         <div class="grid">${fields}</div>
         <div class="actions">
           <button class="btn" type="submit">${editing ? 'Desa els canvis' : 'Desa'}</button>
-          ${editing && td.actions ? td.actions(row).map((a, i) => `<button class="btn" type="button" data-action="${i}">${h(a.label)}</button>`).join('') : ''}
+          ${editing && td.actions ? td.actions(row).map((a, i) => a.classe === 'danger' ? '' : `<button class="btn ${a.classe || ''}" type="button" data-action="${i}">${h(a.label)}</button>`).join('') : ''}
           ${editing ? `<button class="btn ghost" type="button" id="cancel">Cancel·la</button>` : ''}
+          ${editing && td.actions ? td.actions(row).map((a, i) => a.classe === 'danger' ? `<button class="btn danger" type="button" data-action="${i}">${h(a.label)}</button>` : '').join('') : ''}
           ${editing && (!td.canBaixa || td.canBaixa(row)) ? `<button class="btn danger" type="button" id="baixa">${row.actiu ? 'Dona de baixa' : 'Reactiva'}</button>` : ''}
         </div>
       </form>
@@ -4615,7 +4626,7 @@ function tableHTML(td, rows, clickable) {
   return `<table class="tbl"><thead><tr>${cols.map(k => `<th>${h(colLabel(td, k))}</th>`).join('')}${ambMarca ? '<th class="marca"></th>' : ''}</tr></thead><tbody>
     ${rows.map(r => { const id = td.pk ? r[td.pk] : r.id;
       let cap = ''; if (clickable && td.grupDe) { const g = td.grupDe(r); if (g !== grupAnt) { grupAnt = g; cap = `<tr class="grup-fila"><td colspan="${cols.length + (ambMarca ? 1 : 0)}">${h(g)}</td></tr>`; } }
-      return cap + `<tr class="${clickable ? 'row' : ''} ${r.actiu ? '' : 'off'}" data-id="${id}">${cols.map(k => { const f = fieldDef(td, k); const cp = td.computed && td.computed[k]; const c = f && f.color ? f.color(r[k], r) : (cp && cp.color ? cp.color(r) : ''); return `<td class="${isNum(td, k) ? 'num' : ''} ${c ? 'cel ' + c : ''}">${h(cellText(td, k, r))}</td>`; }).join('')}${ambMarca ? `<td class="marca">${td.marcable(r) ? `<input type="checkbox" data-marca-id="${id}" ${marcats.has(id) ? 'checked' : ''} title="Marca’l">` : ''}</td>` : ''}</tr>`; }).join('')}
+      return cap + `<tr class="${clickable ? 'row' : ''} ${r.actiu ? '' : 'off'} ${td.filaClass ? td.filaClass(r) : ''}" data-id="${id}">${cols.map(k => { const f = fieldDef(td, k); const cp = td.computed && td.computed[k]; const c = f && f.color ? f.color(r[k], r) : (cp && cp.color ? cp.color(r) : ''); return `<td class="${isNum(td, k) ? 'num' : ''} ${c ? 'cel ' + c : ''}">${h(cellText(td, k, r))}</td>`; }).join('')}${ambMarca ? `<td class="marca">${td.marcable(r) ? `<input type="checkbox" data-marca-id="${id}" ${marcats.has(id) ? 'checked' : ''} title="Marca’l">` : ''}</td>` : ''}</tr>`; }).join('')}
   </tbody></table>`;
 }
 // registres marcats (casella al final de la fila) i la barra d'accions que surt quan n'hi ha
@@ -4626,9 +4637,9 @@ function selBarHTML(td) {
   if (!ids.length) return '<div class="sel-bar" id="sel-bar" hidden></div>';
   const accions = (td.marcaAccions || []).filter(a => ids.length >= (a.min || 1));
   return `<div class="sel-bar" id="sel-bar"><b>${ids.length} ${h(td.marcaNom ? td.marcaNom(ids.length) : (ids.length === 1 ? 'registre marcat' : 'registres marcats'))}</b>
-    ${accions.map((a, i) => `<button type="button" class="btn ${i ? 'ghost' : ''}" data-marca-accio="${(td.marcaAccions || []).indexOf(a)}">${h(a.label)}</button>`).join('')}
+    ${accions.map((a, i) => `<button type="button" class="btn ${a.classe || (i ? 'ghost' : '')}" data-marca-accio="${(td.marcaAccions || []).indexOf(a)}">${h(typeof a.label === 'function' ? a.label(ids.length) : a.label)}</button>`).join('')}
     <button type="button" class="btn ghost small" id="sel-cap">Desmarca’ls</button>
-    ${td.marcaAccions && td.marcaAccions.some(a => ids.length < (a.min || 1)) ? `<span class="hint">${h(td.marcaAccions.filter(a => ids.length < (a.min || 1)).map(a => '«' + a.label + '» necessita almenys ' + a.min).join(' · '))}</span>` : ''}</div>`;
+    ${td.marcaAccions && td.marcaAccions.some(a => ids.length < (a.min || 1)) ? `<span class="hint">${h(td.marcaAccions.filter(a => ids.length < (a.min || 1)).map(a => '«' + (typeof a.label === 'function' ? a.label(a.min) : a.label) + '» necessita almenys ' + a.min).join(' · '))}</span>` : ''}</div>`;
 }
 function bindMarques(td) {
   const main = $('#main');
@@ -4643,11 +4654,15 @@ function recentHTML(td) {
   const rows = [...C.rows(state.table)].sort((a, b) => (a.creat_el < b.creat_el ? 1 : -1)).slice(0, 8);
   return `<h3>Darreres entrades (només lectura)</h3>${tableHTML(td, rows, false)}`;
 }
+function reiniciaCaselles(t) { const td = SCHEMA.tables[t], f = state.filtres[t]; if (td && f) (td.filtres || []).filter(ft => ft.tipus === 'caselles').forEach(ft => { delete f[ft.key]; }); }
 function filtresActius(td) { return (td.filtres || []).length ? (state.filtres[state.table] || {}) : {}; }
-function aplicaFiltres(td, rows) {
+function aplicaFiltres(td, rows, ometre) {
   const f = filtresActius(td);
   (td.filtres || []).forEach(ft => {
-    if (ft.tipus === 'dates') {
+    if (ft.key === ometre) return;
+    if (ft.tipus === 'caselles') {   // caselles que s'exclouen: cap de marcada = les de per defecte; «tots» = tots
+      const v = f[ft.key] || ''; if (v !== 'tots') rows = rows.filter(r => v ? String(r[ft.key]) === v : ft.defecte(r));
+    } else if (ft.tipus === 'dates') {
       const de = f[ft.key + '_de'], a = f[ft.key + '_a'];
       if (de) rows = rows.filter(r => String(r[ft.key] || '') >= de);
       if (a) rows = rows.filter(r => String(r[ft.key] || '') <= a);
@@ -4661,7 +4676,9 @@ function aplicaFiltres(td, rows) {
 }
 function filtresHTML(td) {
   const f = filtresActius(td);
-  return (td.filtres || []).map(ft => ft.tipus === 'dates'
+  return (td.filtres || []).map(ft => ft.tipus === 'caselles'
+    ? ft.opcions.map(o => `<label class="chk" style="padding:0"><input type="checkbox" data-flt-casella="${ft.key}" value="${o[0]}" ${String(f[ft.key] || '') === o[0] ? 'checked' : ''}> ${h(o[1])}</label>`).join(' ')
+    : ft.tipus === 'dates'
     ? `<span class="nota">${h(ft.label)}</span> <input type="date" data-flt="${ft.key}_de" value="${h(f[ft.key + '_de'] || '')}" style="width:auto"> <input type="date" data-flt="${ft.key}_a" value="${h(f[ft.key + '_a'] || '')}" style="width:auto">`
     : ft.tipus === 'opcions'
     ? `<select data-flt="${ft.key}" style="width:auto"><option value="">${h(ft.label)}: tots</option>${ft.opcions.map(o => `<option value="${o[0]}" ${o[0] === String(f[ft.key] || '') ? 'selected' : ''}>${h(o[1])}</option>`).join('')}</select>`
@@ -4669,17 +4686,22 @@ function filtresHTML(td) {
   ).join(' ');
 }
 function listHTML(td) {
-  let rows = C.rows(state.table).filter(r => state.showInactive || r.actiu);
-  rows = sortRows(td, rows);
-  rows = aplicaFiltres(td, rows);
-  const q = state.q.trim().toLowerCase();
-  if (q) rows = rows.filter(r => td.list.some(k => cellText(td, k, r).toLowerCase().includes(q)));
+  const base = sortRows(td, C.rows(state.table).filter(r => (state.showInactive && !td.senseBaixes) || r.actiu));
+  let rows = aplicaFiltres(td, base);
+  const q = state.q.trim().toLowerCase(), coincideix = r => td.list.some(k => cellText(td, k, r).toLowerCase().includes(q));
+  if (q) rows = rows.filter(coincideix);
+  // amb caselles d'estat: què s'hi veu i, si es busca, quants n'hi ha més amagats pels altres estats
+  const cas = (td.filtres || []).find(ft => ft.tipus === 'caselles'); let n = `${rows.length} registres`;
+  if (cas) {
+    const v = filtresActius(td)[cas.key] || ''; if (cas.resum) n = cas.resum(v, rows.length);
+    if (q && v !== 'tots') { const mes = aplicaFiltres(td, base, cas.key).filter(coincideix).length - rows.length; if (mes > 0) n += ` · ${mes} més marcant «Veure tots»`; }
+  }
   return `
     <div class="bar">
       <input type="text" id="q" placeholder="Filtra…" value="${h(state.q)}">
       ${filtresHTML(td)}
-      <label class="chk" style="padding:0"><input type="checkbox" id="inact" ${state.showInactive ? 'checked' : ''}> Mostra els donats de baixa</label>
-      <span class="n">${rows.length} registres</span>
+      ${td.senseBaixes ? '' : `<label class="chk" style="padding:0"><input type="checkbox" id="inact" ${state.showInactive ? 'checked' : ''}> Mostra els donats de baixa</label>`}
+      <span class="n">${h(n)}</span>
     </div>
     <div class="llista">${tableHTML(td, rows, true)}${selBarHTML(td)}</div>`;
 }
@@ -4780,6 +4802,12 @@ function bindMain(td) {
     refreshList(td);
   }));
   const inact = $('#inact'); if (inact) inact.addEventListener('change', () => { state.showInactive = inact.checked; refreshList(td); });
+  main.querySelectorAll('[data-flt-casella]').forEach(el => el.addEventListener('change', () => {
+    const k = el.dataset.fltCasella; main.querySelectorAll('[data-flt-casella]').forEach(x => { if (x !== el && x.dataset.fltCasella === k) x.checked = false; });
+    state.filtres[state.table] = state.filtres[state.table] || {}; state.filtres[state.table][k] = el.checked ? el.value : '';
+    if (td.marcable) marquesDe(td).clear();
+    refreshList(td);
+  }));
   bindRows(td); bindMarques(td);
 }
 // desplegable dependent amb una sola opció real i sense valor: es tria sola (llevat que el camp digui autoUnic: false)
@@ -5940,7 +5968,7 @@ function liniesProveidorHTML(row) {
       <td class="num pvp" data-pvp>${eur(pvpLinia(l, prov))}</td>
       <td class="llegit">${h(l.desti_llegit || '')}</td>
       <td class="d">${l.albara_id ? h(l.desti_tipus === 'lloc' ? L('llocs', l.lloc_id) : '') : `<select data-camp="desti">${opcionsDesti(l)}</select>`}</td>
-      <td>${l.albara_id ? `<a href="#" class="fet" data-obre-taula="albarans" data-obre-id="${l.albara_id}">${h((C.get('albarans', l.albara_id) || {}).numero_complet || 'albarà')}</a>` : (l.desti_tipus === 'lloc' && l.lloc_id ? '<span class="hint">pendent</span>' : l.desti_tipus ? '<span class="hint">sense albarà</span>' : '<b class="c-taronja">?</b>')}</td>
+      <td>${l.albara_id ? `<a href="#" class="fet" data-obre-taula="albarans" data-obre-id="${l.albara_id}">${h(numAlbara(l.albara_id, 'albarà'))}</a>` : (l.desti_tipus === 'lloc' && l.lloc_id ? '<span class="hint">pendent</span>' : l.desti_tipus ? '<span class="hint">sense albarà</span>' : '<b class="c-taronja">?</b>')}</td>
       <td>${l.albara_id ? '' : `<button type="button" class="btn ghost small" data-treu-linia="${l.id}">Treu</button>`}</td>
     </tr>`).join('');
   return `<div class="fpl" id="fpl">
@@ -6049,6 +6077,40 @@ async function facturaAlbarans(ids) {
   if (state.marques.albarans) state.marques.albarans.clear();
   toast('Factura esborrany creada');
   state.mode = 'consulta'; state.table = 'factures'; state.editing = Number(data); renderApp(); window.scrollTo({ top: 0 });
+}
+
+// el número d'un albarà on surt (fulls, línies de proveïdor…), amb «(eliminat)» si ho està
+function numAlbara(id, buit) { const a = C.get('albarans', id); return a ? (a.numero_complet || buit) + (a.estat === 'anul_lat' ? ' (eliminat)' : '') : buit; }
+// el recompte de la llista d'albarans segons la casella marcada
+function resumAlbarans(v, n) {
+  const u = n === 1;
+  return `${n} ${u ? 'albarà' : 'albarans'} ` + (v === 'facturat' ? (u ? 'facturat' : 'facturats') : v === 'anul_lat' ? (u ? 'eliminat' : 'eliminats') : v === 'tots' ? 'en total' : (u ? 'obert' : 'oberts') + ' (pendents de facturar)');
+}
+// eliminar albarans oberts: no s'esborren; passen a «Eliminat» (no es facturen i només es veuen amb «Veure només els eliminats»)
+async function eliminaAlbarans(ids) {
+  const alb = ids.map(id => C.get('albarans', id)).filter(Boolean);
+  if (!alb.length) { toastErr('Marca almenys un albarà'); return; }
+  if (alb.some(a => a.estat !== 'obert' || !a.actiu)) { toastErr('Només es poden eliminar albarans oberts (pendents de facturar)'); return; }
+  const u = alb.length === 1, nums = alb.map(a => a.numero_complet).join(', ');
+  const motiu = prompt(`Eliminar ${u ? 'l’albarà ' + nums : 'els ' + alb.length + ' albarans ' + nums}?\n\n`
+    + `No s’esborr${u ? 'a' : 'en'}: ja no es facturar${u ? 'à' : 'an'} i deixar${u ? 'à' : 'an'} de sortir a la llista. ${u ? 'El' : 'Els'} trobaràs marcant «Veure només els eliminats», i ${u ? 'el' : 'els'} podràs tornar a obrir.\n\n`
+    + 'Motiu (no és obligatori; queda a les observacions):', '');
+  if (motiu == null) return;
+  const { data, error } = await sb.rpc('elimina_albarans', { p_ids: alb.map(a => a.id), p_motiu: String(motiu).trim() || null });
+  if (error) { toastErr(friendly(error)); const fe = $('#ferr'); if (fe) fe.innerHTML = `<div class="msg err">${h(friendly(error))}</div>`; return; }
+  await loadTable('albarans');
+  if (state.marques.albarans) alb.forEach(a => state.marques.albarans.delete(a.id));
+  toast(u ? `Albarà ${nums} eliminat` : `${data || alb.length} albarans eliminats`);
+  state.mode = 'consulta'; state.table = 'albarans'; state.editing = null; renderApp(); window.scrollTo({ top: 0 });
+}
+async function tornaObrirAlbara(id) {
+  const a = C.get('albarans', id); if (!a) return;
+  if (!confirm(`Tornar a obrir l’albarà ${a.numero_complet}? Tornarà a estar pendent de facturar.`)) return;
+  const { error } = await sb.rpc('torna_obrir_albarans', { p_ids: [id] });
+  if (error) { toastErr(friendly(error)); const fe = $('#ferr'); if (fe) fe.innerHTML = `<div class="msg err">${h(friendly(error))}</div>`; return; }
+  await loadTable('albarans');
+  toast(`Albarà ${a.numero_complet} obert: torna a estar pendent de facturar`);
+  state.mode = 'consulta'; state.table = 'albarans'; state.editing = id; renderApp(); window.scrollTo({ top: 0 });
 }
 
 function renderAlbaransPendents(main) {
@@ -6698,7 +6760,7 @@ function fullsIncHTML(inc, potFer) {
   const fulls = C.rows('fulls_treball').filter(f => f.actiu && Number(f.incidencia_id) === inc.id && f.estat !== 'anul_lat').sort((a, b) => String(a.numero || '').localeCompare(String(b.numero || '')));
   if (!fulls.length) return '<span class="hint">Aquesta incidència no té cap full de treball.</span>';
   return fulls.map(f => { const alb = f.albara_id ? C.get('albarans', f.albara_id) : null, nJ = jornadesFull(f.id).length, nM = materialFull(f.id).length;
-    const estat = alb ? `albarà <a href="#" data-obre-albara="${alb.id}">${h(alb.numero_complet || '')}</a>` : f.finalitzat ? 'totalment finalitzat' : `<b>${h(ESTATS_FULL[f.estat] || f.estat)}</b>, encara no finalitzat`;
+    const estat = alb ? `albarà <a href="#" data-obre-albara="${alb.id}">${h(numAlbara(alb.id, ''))}</a>` : f.finalitzat ? 'totalment finalitzat' : `<b>${h(ESTATS_FULL[f.estat] || f.estat)}</b>, encara no finalitzat`;
     const boto = !alb && f.finalitzat && potFer ? ` <button type="button" class="btn small" data-albara-full="${f.id}">Crea l’albarà</button>` : '';
     return `<div style="margin:0 0 6px"><a href="#" data-obre-full="${f.id}">${h(f.numero || 'full')}</a> · ${h(f.nom)} · ${nJ} jornad${nJ === 1 ? 'a' : 'es'} (${String(horesFull(f.id)).replace('.', ',')} h × persones) · ${nM} de material · ${estat}${boto}</div>`; }).join('');
 }
