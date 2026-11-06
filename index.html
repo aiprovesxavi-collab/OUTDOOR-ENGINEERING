@@ -7939,13 +7939,17 @@ function renderMeusDocuments(main) {
    persona ja no li torna a sortir (taula alarmes_llegides, SQL 089). Es calculen amb les dades de sempre cada cop que es pinta.
    ===================================================================== */
 const TIPUS_ALARMA = {   // (en aquest ordre a la pàgina)
+  recurrent:           { nom: 'Facturació recurrent del mes sense emetre (fins al dia 5)', color: '#3d6b12' },
   aigua_mes:           { nom: 'Aigua: l’últim mes, per sobre de l’escenari alt', color: '#1f6fbf' },
   aigua_any:           { nom: 'Aigua: el que va d’any, per sobre de l’escenari baix acumulat', color: '#1f6fbf' },
+  sense_lectura:       { nom: 'Comptadors sense cap lectura els últims 2 mesos', color: '#2c7a9e' },
+  esborranys:          { nom: 'Esborranys de factura de fa més d’un mes sense emetre', color: '#5d7e1b' },
   factures_client:     { nom: 'Factures de clients sense cobrar 15 dies després del venciment', color: '#b8432b' },
   factures_proveidor:  { nom: 'Factures de proveïdors sense pagar 15 dies després del venciment', color: '#c0691e' },
   venciment_proveidor: { nom: 'Factures de proveïdor amb el venciment abans del que tenim pactat', color: '#a0522d' },
   accions:             { nom: 'Accions d’incidències fora de termini', color: '#d9534f' },
   documents:           { nom: 'Documents caducats o per renovar', color: '#7b61b0' },
+  fulls:               { nom: 'Fulls de treball de fa més d’un mes sense passar a albarà', color: '#a8740e' },
   albarans:            { nom: 'Albarans oberts de fa més de 3 mesos', color: '#8a7c10' },
   comptabilitat:       { nom: 'Comptabilitat: documents que no s’han pogut comptabilitzar', color: '#3f6f4f' },
   piscines:            { nom: 'Piscines: segona mostra vermella (pH o clor) dels últims 30 dies', color: '#0e7c86' },
@@ -8033,6 +8037,21 @@ function alarmesAigua(jo, oficina) {
   });
   return out;
 }
+// les agrupacions que el mes donat (AAAA-MM) encara no tenen esborrany ni factura, tal com ho calcula «Genera els esborranys» (064): el
+// període següent comença l'endemà del darrer facturat pel programa (esborrany o emesa, no anul·lada), si no l'endemà de «facturat fins»
+// i si no, l'inici del contracte; si comença aquell mes o abans (i el contracte no ha acabat), falta
+function agrupacionsPerFacturar(mes) {
+  const fi = new Map();
+  C.rows('factures').forEach(f => { if (!f.actiu || f.estat === 'anul_lada' || !f.agrupacio_id || !f.periode_fi) return; const k = Number(f.agrupacio_id), d = String(f.periode_fi).slice(0, 10); if (!(fi.get(k) >= d)) fi.set(k, d); });
+  const clients = new Map(C.rows('clients').map(c => [Number(c.id), c]));
+  return C.rows('agrupacions').filter(a => {
+    const c = clients.get(Number(a.client_id)); if (!a.actiu || !a.data_inici || !c || !c.actiu) return false;
+    const d = fi.get(Number(a.id)), seg = d ? ymd(sumaDies(deYmd(d), 1)) : a.facturat_fins ? ymd(sumaDies(deYmd(String(a.facturat_fins).slice(0, 10)), 1)) : String(a.data_inici).slice(0, 10);
+    if (a.data_fi && seg > String(a.data_fi).slice(0, 10)) return false;
+    return seg.slice(0, 7) <= mes;
+  });
+}
+const textCurt = (s, n) => { s = String(s || '').replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
 // totes les alarmes de qui ha entrat (amb les que ja ha llegit). Cada una: tipus, clau (la que es desa en llegir-la), text, detall
 // i on porta (ves: [taula o pàgina, registre, preparació] o obre)
 function calculaAlarmes() {
@@ -8071,6 +8090,50 @@ function calculaAlarmes() {
       ves: oficina ? ['fitxatges', null, () => Object.assign(state.fx, { treb: String(p.id), any: String(quan.getFullYear()), mes: String(quan.getMonth() + 1), vista: 'persona', ed: null })] : ['fitxar', null] });
   });
   if (!oficina) return out;
+  const ara = new Date(), avuiD = ymd(ara), faUnMes = (() => { const x = new Date(ara); x.setMonth(x.getMonth() - 1); return x.getTime(); })();
+  const diesDesDe = t => Math.floor((ara.getTime() - new Date(t).getTime()) / 86400000), dataDe = t => dmy(ymd(new Date(t)));
+  // facturació recurrent del mes: a partir del dia 3, els esborranys d'aquest mes que encara no s'han emès i les agrupacions que encara
+  // no en tenen. Els clients facturen el dia 5 i, si s'emet una factura amb data posterior, aquests ja no es poden emetre amb la seva data.
+  if (ara.getDate() > 2) {
+    const mes = avuiD.slice(0, 7), y = Number(mes.slice(0, 4)), m = Number(mes.slice(5, 7)), tard = ara.getDate() > 5;
+    const esb = C.rows('factures').filter(f => f.actiu && f.estat === 'esborrany' && f.origen === 'recurrent' && String(f.periode_inici || '').slice(0, 7) === mes);
+    const sense = agrupacionsPerFacturar(mes);
+    if (esb.length || sense.length) {
+      const darrera = {};   // la data de la darrera factura emesa de cada sèrie (l'any)
+      C.rows('factures').forEach(f => { if (!f.actiu || f.estat === 'esborrany' || !f.data_factura) return; const d = String(f.data_factura).slice(0, 10), s = String(f.serie || d.slice(0, 4)); if (!(darrera[s] >= d)) darrera[s] = d; });
+      const bloq = esb.filter(f => f.data_factura && darrera[String(f.data_factura).slice(0, 4)] > String(f.data_factura).slice(0, 10)).length;
+      const parts = [esb.length ? `${esb.length} ${esb.length === 1 ? 'esborrany per emetre' : 'esborranys per emetre'} (${eur(esb.reduce((t, f) => t + Number(f.total || 0), 0))})` : '',
+        sense.length ? `${sense.length} ${sense.length === 1 ? 'agrupació encara sense esborrany' : 'agrupacions encara sense esborrany'}` : ''].filter(Boolean).join(' i ');
+      out.push({ tipus: 'recurrent', clau: `recurrent:${mes}:${tard ? 'tard' : 'termini'}`, text: `${MESOS[m - 1]} de ${y}`, ordre: mes,
+        detall: parts + (tard ? '. Ja ha passat el dia 5' : '. S’han d’emetre com a molt el dia 5')
+          + (bloq ? `; ${bloq === 1 ? 'un ja no es pot' : bloq + ' ja no es poden'} emetre amb la data que ${bloq === 1 ? 'té' : 'tenen'}: hi ha factures emeses amb data posterior` : '') + '.',
+        ves: ['facturacio_recurrent', null, () => Object.assign(state.fac, { any: String(y), mes: String(m), avis: null })] });
+    }
+  }
+  // esborranys de factura creats fa més d'un mes i encara sense emetre
+  C.rows('factures').forEach(f => {
+    const des = f.creat_el || f.data_factura; if (!f.actiu || f.estat !== 'esborrany' || !des || new Date(des).getTime() > faUnMes) return;
+    out.push({ tipus: 'esborranys', clau: `esborrany:${f.id}`, text: `${f.origen === 'recurrent' ? 'Esborrany recurrent' : 'Esborrany'} · ${L('clients', f.client_id)}`, ves: ['factures', f.id], ordre: String(des),
+      detall: `${f.concepte ? textCurt(f.concepte, 90) + ' · ' : ''}${eur(f.total)} · creat el ${dataDe(des)} (fa ${diesDesDe(des)} dies)` });
+  });
+  // fulls de treball oberts o finalitzats (encara sense passar a albarà) creats fa més d'un mes
+  C.rows('fulls_treball').forEach(f => {
+    const est = f.estat || 'en_curs';
+    if (!f.actiu || !['en_curs', 'pendent', 'finalitzat'].includes(est) || !f.creat_el || new Date(f.creat_el).getTime() > faUnMes) return;
+    out.push({ tipus: 'fulls', clau: `full:${f.id}`, text: [f.numero || 'Full de treball', (C.get('llocs', f.lloc_id) || {}).nom].filter(Boolean).join(' · '), ves: ['fulls_treball', f.id], ordre: String(f.creat_el),
+      detall: `${f.nom ? textCurt(f.nom, 90) + ' · ' : ''}${est === 'finalitzat' ? 'finalitzat, falta passar-lo a albarà' : 'encara obert'} · creat el ${dataDe(f.creat_el)} (fa ${diesDesDe(f.creat_el)} dies)` });
+  });
+  // comptadors sense cap lectura els últims 2 mesos (des de la darrera o, si no n'hi ha cap, des de l'alta); torna a sortir cada mes
+  const fa2 = new Date(ara); fa2.setMonth(fa2.getMonth() - 2); const lim2 = ymd(fa2), darreraL = new Map();
+  C.rows('lectures').forEach(l => { if (l.actiu === false || !l.data) return; const k = Number(l.comptador_id), d = String(l.data).slice(0, 10); if (!(darreraL.get(k) >= d)) darreraL.set(k, d); });
+  C.rows('comptadors').filter(comptadorViu).forEach(c => {
+    const d = darreraL.get(Number(c.id)), ref = d || (c.data_alta ? String(c.data_alta).slice(0, 10) : '');
+    if (ref && ref >= lim2) return;
+    const equips = [...new Set(C.rows('jardins').filter(j => j.actiu && Number(j.lloc_id) === Number(c.lloc_id) && j.equip_id && contracteVigent(j, 'inclou_jardi')).map(j => L('equips', j.equip_id)).filter(Boolean))];
+    out.push({ tipus: 'sense_lectura', clau: `sense_lectura:${c.id}:${avuiD.slice(0, 7)}`, text: `${(C.get('llocs', c.lloc_id) || {}).nom || 'Lloc'} · comptador ${c.numero_serie || c.id}`, ordre: ref || '0',
+      detall: (d ? `darrera lectura el ${dmy(d)} (fa ${diesEntre(d, avuiD)} dies)` : ref ? `cap lectura des de l’alta, el ${dmy(ref)}` : 'cap lectura') + (equips.length ? ` · el llegeix: ${equips.join(', ')}` : ''),
+      ves: ['consum_aigua', null, () => Object.assign(state.aigua, { lloc: String(c.lloc_id), comptador: String(c.id), any: String(ara.getFullYear()) })] });
+  });
   // factures de clients sense cobrar 15 dies després del venciment
   C.rows('factures').forEach(f => {
     if (!f.actiu || f.estat !== 'emesa' || !f.data_venciment || !(Number(f.total) > 0)) return;
