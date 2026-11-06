@@ -273,6 +273,21 @@
   .avisos-caixa h3{ margin:0 0 10px; font-size:18px; }
   .avisos-caixa ul{ list-style:none; padding:0; margin:0 0 14px; } .avisos-caixa li{ padding:6px 0; border-bottom:1px solid var(--line-2); line-height:1.35; } .avisos-caixa li.ok{ color:var(--green); } .avisos-caixa li.no{ color:var(--red); }
   .avisos-caixa .accions{ display:flex; flex-wrap:wrap; gap:8px; }
+  /* alarmes: un bloc per tipus; a cada alarma, la casella «Llegida» */
+  .al-grup{ border:1px solid var(--line-2); border-left:5px solid var(--ac); border-radius:8px; padding:12px 16px 6px; margin:0 0 16px; background:#fff; max-width:980px; }
+  .al-grup h3{ margin:0 0 6px; font-size:15px; font-weight:600; color:var(--ac); display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+  .al-grup h3 .al-totes{ margin-left:auto; }
+  .al-n{ background:var(--ac); color:#fff; border-radius:999px; padding:1px 8px; font-size:12px; font-weight:700; }
+  .al-fila{ display:flex; gap:14px; align-items:flex-start; padding:9px 0; border-top:1px solid var(--line); }
+  .al-fila.llegida .al-text{ opacity:.5; }
+  .al-llegida{ display:flex; align-items:center; gap:6px; flex:none; font-size:13px; color:var(--ink-2); white-space:nowrap; cursor:pointer; padding-top:1px; }
+  .al-text{ color:var(--ink); text-decoration:none; display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .al-text b{ font-weight:600; }
+  .al-text span{ color:var(--ink-2); font-size:14px; }
+  .al-text:hover b{ text-decoration:underline; }
+  .operari .al-grup{ padding:12px 12px 6px; }
+  .operari .al-text b{ font-size:16px; } .operari .al-text span{ font-size:15px; }
+  .operari .al-llegida{ font-size:15px; } .operari .al-llegida input{ width:22px; height:22px; }
   .toast{ position:fixed; left:24px; bottom:24px; background:var(--ink); color:#fff; padding:10px 16px; border-radius:6px; font-size:14px; opacity:0; transition:opacity .2s; pointer-events:none; }
   .toast.on{ opacity:1; }
   .login{ max-width:380px; margin:80px auto; padding:0 20px; }
@@ -1247,6 +1262,7 @@ const campsBombes = [
 const SCHEMA = {
   groups: [
     { label: 'PREGUNTA', color: '#2b5f8a', tables: ['pregunta_ia'] },
+    { label: 'ALARMES', color: '#c62828', tables: ['alarmes'] },
     { label: 'QUI · ON', color: '#e08a8a', tables: ['administradors', 'contactes', 'clients', 'llocs', 'informes_lloc', 'clients_per_administrador'] },
     { label: 'FACTURACIÓ', color: '#8a8a8a', tables: ['agrupacions', 'facturacio_recurrent', 'factures', 'pdf_factures', 'marcat_cobrats', 'calendari_facturacio', 'vencudes', 'grafiques_facturacio', 'pressupostos_tasca', 'pressupostos_agrupacio', 'clausules_pressupost'] },
     { label: 'ALBARANS I PRODUCTES', color: '#c9c9c9', tables: ['productes', 'albarans', 'albarans_pendents'] },
@@ -1262,6 +1278,7 @@ const SCHEMA = {
   ],
   pages: {
     pregunta_ia: { label: 'Pregunta-ho (IA)', render: main => renderPreguntaIA(main) },
+    alarmes: { label: 'Alarmes', render: main => renderAlarmes(main) },
     compta_diari: { label: 'Llibre diari', render: main => renderComptaDiari(main) },
     compta_major: { label: 'Llibre major', render: main => renderComptaMajor(main) },
     compta_sumes: { label: 'Sumes i saldos', render: main => renderComptaSumes(main) },
@@ -2555,15 +2572,18 @@ async function init() {
 async function start() {
   $('#app').innerHTML = `<div class="login"><p>Carregant dades…</p></div>`;
   let faltes = [];
+  // per a les alarmes: l'aigua i les que ja s'han llegit, alhora que les taules (no en depenen)
+  const pAigua = carregaDadesAigua(), pLlegides = sb.from('alarmes_llegides').select('clau').then(r => r, e => ({ error: e }));
   try { faltes = await loadAll(); }
   catch (e) { renderLogin('No s’han pogut carregar les taules: ' + friendly(e)); return; }
-  await carregaComptaInici();
+  await Promise.all([carregaComptaInici(), carregaAlarmes(pAigua, pLlegides).catch(() => {})]);
   recordaUsuari();
   const desDAvis = location.hash.match(/^#accio=(\d+)$|^#accions$/);   // s'ha obert des d'una notificació
   if (desDAvis) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
+  if (!desDAvis && nAlarmes()) { state.table = 'alarmes'; state.editing = null; }   // si n'hi ha de noves, les alarmes surten en entrar
   renderApp();
   if (desDAvis) obreDesDAvis(desDAvis[1]);
-  mostraFelicitacions().finally(() => setTimeout(mostraAvisDocuments, 300));
+  mostraFelicitacions();   // (els documents per renovar ara surten a les alarmes)
   engegaAvisos();
   if (faltes.length) toastErr('Taules que la base de dades encara no té: ' + faltes.join(', ') + '. Executa el fitxer SQL que les crea (o «notify pgrst, \'reload schema\'» si acabes de fer-ho).');
 }
@@ -4236,6 +4256,7 @@ async function comprovaAvisos(perPush) {
   avisosConeguts = new Set(nov.map(n => n.clau));
   if (perPush === true && !noves.length && avisosActius() && !sonaSistema()) soAvis();   // ha arribat un avís (una prova, o una cosa que ja es coneixia): la melodia igualment
   if (!noves.length) refrescaInsignia();
+  refrescaInsigniaAlarmes();
 }
 // la notificació del sistema (una per cosa: així el mòbil en compta quantes n'hi ha), pel service worker si hi és (a Android és l'única manera)
 async function mostraNotificacio(titol, text, accioId, silenci) {
@@ -4304,7 +4325,7 @@ function renderApp() {
     <div class="shell">
       <nav class="side">
         ${SCHEMA.groups.filter(g => !g.oficina || esOficina(treballadorActual())).map(g => `<div class="grp" style="--gc:${g.color}; min-height:${Math.max(70, Math.round(g.label.length * 9) + 28)}px"><div class="glw"><div class="gl">${h(g.label)}</div></div><div class="gi">
-          ${g.tables.length ? g.tables.map(t => `<button data-table="${t}" class="${state.table === t ? 'on' : ''}">${h((SCHEMA.tables[t] || SCHEMA.pages[t]).label)}${t === 'accions_meves' ? insigniaHTML('menu') : ''}${t === 'documents_treballadors' && nAlertesDocuments() ? `<b class="nou menu" title="documents caducats o que caduquen aviat">${nAlertesDocuments()}</b>` : ''}</button>`).join('') : '<div class="buit">encara res</div>'}
+          ${g.tables.length ? g.tables.map(t => `<button data-table="${t}" class="${state.table === t ? 'on' : ''}">${h((SCHEMA.tables[t] || SCHEMA.pages[t]).label)}${t === 'accions_meves' ? insigniaHTML('menu') : ''}${t === 'alarmes' ? (n => n ? `<b class="nou menu" title="alarmes per mirar">${n}</b>` : '')(nAlarmes()) : ''}${t === 'documents_treballadors' && nAlertesDocuments() ? `<b class="nou menu" title="documents caducats o que caduquen aviat">${nAlertesDocuments()}</b>` : ''}</button>`).join('') : '<div class="buit">encara res</div>'}
         </div></div>`).join('')}
       </nav>
       <div class="main" id="main"></div>
@@ -4345,6 +4366,7 @@ const COLORS_MENU = {
   informe_tasques_dates: '--p:#6b7fd6;--pf:#2b3c8c', incidencia_reports: '--p:#ee8a3c;--pf:#9a4410', calendari_accions: '--p:#9a6fd4;--pf:#4f2a80',
   accions_meves: '--p:#e2635f;--pf:#8c1f1f', fulls_treball_app: '--p:#6b8f9a;--pf:#2f4f5a', nomines: '--p:#d4ad45;--pf:#7a5a10', vacances: '--p:#f0d23a;--pf:#8a7600',
   informe_sal: '--p:#9cc3d6;--pf:#3b6a80', informe_adob: '--p:#9aa83a;--pf:#4a5512', lectures_app: '--p:#c9935e;--pf:#6e4219',
+  alarmes: '--p:#d9435a;--pf:#6e1022',
 };
 const estilMenu = id => COLORS_MENU[id] + (FOTOS_MENU[id] ? ';background-image:url(' + FOTOS_MENU[id] + ')' : '');
 const fonsMenu = id => FOTOS_MENU[id] ? '' : ESCENES_MENU[id];
@@ -4370,6 +4392,8 @@ const ESCENES_MENU = {
   fulls_treball_app: escenaMenu('ft', `<g transform="translate(108 10)"><rect x="4" y="8" width="80" height="100" rx="6" fill="#000" opacity=".2"/><rect x="0" y="4" width="80" height="100" rx="6" fill="#dfe7ea"/><rect x="6" y="12" width="68" height="86" rx="3" fill="#fbfdfd"/><rect x="26" y="-2" width="28" height="12" rx="4" fill="#9aa7b1"/><g stroke="#b9c9c6" stroke-width="3" stroke-linecap="round"><path d="M28 30h36M28 46h36M28 62h28M28 78h32"/></g><g fill="none" stroke="#2f7d4a" stroke-width="2.4"><rect x="12" y="25" width="10" height="10" rx="2"/><rect x="12" y="41" width="10" height="10" rx="2"/><rect x="12" y="57" width="10" height="10" rx="2"/><rect x="12" y="73" width="10" height="10" rx="2"/><path d="M14 30l3 3 5-6M14 46l3 3 5-6M14 62l3 3 5-6" stroke-width="2.6"/></g></g><g transform="translate(60 100) rotate(-50)"><rect x="0" y="-4" width="64" height="8" rx="4" fill="#2b2f38"/><path d="M64 -4l10 4-10 4z" fill="#f0c36a"/><rect x="6" y="-4" width="10" height="8" fill="#e2635f"/></g>`),
   // platja: sol, mar, sorra, para-sol i gandula
   vacances: escenaMenu('vac', `<circle cx="40" cy="30" r="16" fill="#fff6cc"/><g stroke="#fff6cc" stroke-width="2.5" stroke-linecap="round" opacity=".7"><path d="M40 6v6M40 48v6M16 30h6M58 30h6M23 13l4 4M53 43l4 4M57 13l-4 4M27 43l-4 4"/></g><rect x="0" y="62" width="200" height="28" fill="#3a9ad6"/><path d="M0 62c20-6 40-6 60 0s40 6 60 0 40-6 60 0 15 3 20 3v8H0z" fill="#7cc4ee"/><rect x="0" y="88" width="200" height="32" fill="#f3dfa0"/><g transform="translate(112 78)"><path d="M0 22L10 6h30l10 16" fill="none" stroke="#7a5a10" stroke-width="3" stroke-linejoin="round"/><rect x="8" y="8" width="34" height="16" rx="3" fill="#3a9ad6"/><path d="M6 24h38" stroke="#2b3c8c" stroke-width="3" stroke-linecap="round"/></g><g transform="translate(160 34) rotate(-12)"><path d="M-30 36a30 30 0 0 1 60 0z" fill="#e2635f"/><path d="M0 36L-24 18A30 30 0 0 1 -8 7z" fill="#fff"/><path d="M0 36L8 7a30 30 0 0 1 16 11z" fill="#fff"/><path d="M0 36v62" stroke="#7a5a10" stroke-width="3" stroke-linecap="round"/></g>`),
+  // alarmes: una campana que sona
+  alarmes: escenaMenu('al', `<path d="M0 100c40-10 80-10 120 0s60 6 80 2v18H0z" fill="#000" opacity=".16"/><g fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" opacity=".6"><path d="M106 38q-8 20 0 40"/><path d="M94 30q-13 28 0 56"/><path d="M178 38q8 20 0 40"/><path d="M190 30q13 28 0 56"/></g><g transform="translate(142 56) rotate(-14)"><g transform="translate(4 5)" fill="#000" opacity=".2"><path d="M-26 30C-22 22-20 10-20-4a20 20 0 0 1 40 0c0 14 2 26 6 34z"/><rect x="-32" y="28" width="64" height="8" rx="4"/></g><circle cx="0" cy="-26" r="5" fill="#e0b443"/><circle cx="0" cy="42" r="7" fill="#c9972c"/><path d="M-26 30C-22 22-20 10-20-4a20 20 0 0 1 40 0c0 14 2 26 6 34z" fill="#f6d36b"/><path d="M-12-6a12 12 0 0 1 8-12" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".7"/><rect x="-32" y="28" width="64" height="8" rx="4" fill="#e0b443"/></g>`),
 };
 function renderAppOperari() {
   document.body.classList.add('operari'); document.body.classList.remove('ic-full');
@@ -4389,6 +4413,7 @@ function renderAppOperari() {
     main.innerHTML = `
       ${t ? '' : '<div class="msg err">El teu usuari no té fitxa de treballador amb aquest correu d’accés: demana a l’oficina que t’hi afegeixin.</div>'}
       <div class="home menu-app">
+        <button class="ample" data-go="alarmes" style="${estilMenu('alarmes')}"><strong>Alarmes</strong>${(() => { const n = t ? nAlarmes() : 0; return n ? `<span class="pend">${n} per mirar</span>` : '<span>Cap alarma nova</span>'; })()}${fonsMenu('alarmes')}</button>
         <button class="ample" data-go="fitxar" style="${estilMenu('fitxar')}"><strong>Fitxar</strong><em class="sub">Entrada · Sortida</em><span>${h(estatFitxatgeText(t))}</span>${fonsMenu('fitxar')}</button>
         ${potCorregirFitxatges(t) ? `<button class="ample" data-go="fitxatges" style="--p:#7d93a6;--pf:#2f4a60"><strong>Fitxatges de tothom</strong><span>Corregir entrades i sortides</span>${ESCENES_MENU.fitxar}</button>` : ''}
         <button class="ample" data-go="tasques_piscina" style="${estilMenu('tasques_piscina')}"><strong>Tasques piscina</strong><span>Nova tasca: mesures, comprovacions i feines</span>${fonsMenu('tasques_piscina')}</button>
@@ -7907,24 +7932,281 @@ function renderMeusDocuments(main) {
   main.querySelectorAll('[data-dc-obre]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); obreFitxerDocument(a.dataset.dcObre); }));
 }
 
-// en obrir el programa (un cop al dia): a l'oficina, el que cal renovar de tothom; a la resta, el seu
-async function mostraAvisDocuments() {
-  try {
-    const jo = treballadorActual(); if (!jo || document.querySelector('.aniv') || $('#avd-panell')) return;
-    const oficina = oficinaDocs(), llista = oficina ? alertesDocuments() : alertesDocuments({ nomesMeus: true });
-    if (!llista.length) return;
-    const clau = 'gestio_avis_documents_' + jo.id + '_' + avui();
-    try { if (localStorage.getItem(clau)) return; localStorage.setItem(clau, '1'); } catch (e) {}
-    const div = document.createElement('div'); div.className = 'avisos-panell'; div.id = 'avd-panell';
-    div.innerHTML = `<div class="avisos-caixa" role="dialog" aria-modal="true" aria-labelledby="avd-titol"><h3 id="avd-titol">${oficina ? 'Documents per renovar' : 'Tens documents per renovar'}</h3>
-      <ul>${llista.slice(0, 8).map(x => `<li class="${x.estat === 'caducat' ? 'no' : ''}">${oficina ? h(nomTreballador(x.p)) + ' · ' : ''}${h(x.tp.nom)}: ${x.estat === 'caducat' ? 'caducat el ' : 'caduca el '}${dmy(x.d.data_caducitat)}</li>`).join('')}${llista.length > 8 ? `<li>i ${llista.length - 8} més</li>` : ''}</ul>
-      <div class="accions"><button class="btn" id="avd-obre">${oficina ? 'Obre els documents' : 'Mira’ls'}</button><button class="btn ghost" id="avd-tanca">D’acord</button></div></div>`;
-    document.body.appendChild(div);
-    const tanca = () => div.remove();
-    $('#avd-tanca').addEventListener('click', tanca);
-    $('#avd-obre').addEventListener('click', () => { tanca(); if (oficina) state.mode = 'consulta'; state.table = 'documents_treballadors'; state.editing = null; state.docs.sel = null; renderApp(); window.scrollTo({ top: 0 }); });
-  } catch (e) {}
+/* =====================================================================
+   ALARMES: el que cal mirar, a dalt de tot del menú (i a la primera casella de l'app). Si n'hi ha de noves, surten soles en obrir el
+   programa. A l'oficina, totes; a l'app, les de qui ha entrat: l'aigua dels seus llocs (les piscines que porta i els jardins del seu
+   equip), les seves accions fora de termini, els seus documents i el seu fitxatge. Cada alarma es pot marcar com a llegida: a aquella
+   persona ja no li torna a sortir (taula alarmes_llegides, SQL 089). Es calculen amb les dades de sempre cada cop que es pinta.
+   ===================================================================== */
+const TIPUS_ALARMA = {   // (en aquest ordre a la pàgina)
+  aigua_mes:           { nom: 'Aigua: l’últim mes, per sobre de l’escenari alt', color: '#1f6fbf' },
+  aigua_any:           { nom: 'Aigua: el que va d’any, per sobre de l’escenari baix acumulat', color: '#1f6fbf' },
+  factures_client:     { nom: 'Factures de clients sense cobrar 15 dies després del venciment', color: '#b8432b' },
+  factures_proveidor:  { nom: 'Factures de proveïdors sense pagar 15 dies després del venciment', color: '#c0691e' },
+  venciment_proveidor: { nom: 'Factures de proveïdor amb el venciment abans del que tenim pactat', color: '#a0522d' },
+  accions:             { nom: 'Accions d’incidències fora de termini', color: '#d9534f' },
+  documents:           { nom: 'Documents caducats o per renovar', color: '#7b61b0' },
+  albarans:            { nom: 'Albarans oberts de fa més de 3 mesos', color: '#8a7c10' },
+  comptabilitat:       { nom: 'Comptabilitat: documents que no s’han pogut comptabilitzar', color: '#3f6f4f' },
+  piscines:            { nom: 'Piscines: segona mostra vermella (pH o clor) dels últims 30 dies', color: '#0e7c86' },
+  fitxatges:           { nom: 'Fitxatges: entrades de fa més de 12 hores sense sortida', color: '#455a64' },
+};
+const dadesAlarmes = { aigua: null, pendents: [], senseTaula: false, quan: 0 };
+let alarmesLlegides = new Set(), memoAlarmes = null;
+const oficinaAlarmes = () => !APP_NOMES_TASQUES && esOficina(treballadorActual());
+// totes les alarmes de qui ha entrat (també les llegides): es calculen un sol cop per pantalla
+function alarmesAra() {
+  if (!memoAlarmes) {
+    try { memoAlarmes = calculaAlarmes(); } catch (e) { console.error('alarmes', e); memoAlarmes = []; }
+    setTimeout(() => { memoAlarmes = null; }, 0);
+  }
+  return memoAlarmes;
 }
+const nAlarmes = () => alarmesAra().filter(a => !alarmesLlegides.has(a.clau)).length;
+const errDuplicat = e => !!e && /duplicate|unique|23505/i.test(String(e.message || '') + ' ' + String(e.code || ''));
+const hashCurt = s => { let x = 5381; for (const ch of String(s || '')) x = ((x * 33) ^ ch.charCodeAt(0)) >>> 0; return x.toString(36); };
+// l'aigua: els escenaris de cada comptador i el consum de cada mes d'aquest any (i, al gener i al febrer, també del passat)
+async function carregaDadesAigua() {
+  try {
+    const ara = new Date(), any = ara.getFullYear(), anys = ara.getMonth() < 2 ? [any, any - 1] : [any];
+    const [esc, ...cons] = await Promise.all([sb.rpc('escenaris_llocs'), ...anys.map(y => sb.rpc('consum_llocs', { p_any: y }))]);
+    if (esc.error || cons.some(r => r.error)) return null;
+    const out = { esc: esc.data || [], cons: {} }; anys.forEach((y, i) => { out.cons[y] = cons[i].data || []; });
+    return out;
+  } catch (e) { return null; }
+}
+// el que no surt de les taules: l'aigua, les alarmes ja llegides i, a l'oficina, el que la comptabilitat no ha pogut assentar
+async function carregaAlarmes(pAigua, pLlegides) {
+  const jo = treballadorActual(); if (!jo) return;
+  const [aigua, ll, pend] = await Promise.all([
+    pAigua || carregaDadesAigua(),
+    pLlegides || sb.from('alarmes_llegides').select('clau').then(r => r, e => ({ error: e })),
+    oficinaAlarmes() && potVeureCompta() ? sb.from('compta_pendents').select('*').then(r => r.error ? null : r.data || [], () => null) : Promise.resolve([]) ]);
+  if (aigua) dadesAlarmes.aigua = aigua;
+  if (ll && !ll.error) { alarmesLlegides = new Set((ll.data || []).map(x => x.clau)); dadesAlarmes.senseTaula = false; }
+  else if (ll && /alarmes_llegides|PGRST205|42P01/i.test(String(ll.error && ll.error.message || '') + ' ' + String(ll.error && ll.error.code || ''))) dadesAlarmes.senseTaula = true;   // falta el 089
+  if (pend) dadesAlarmes.pendents = pend;
+  dadesAlarmes.quan = Date.now(); memoAlarmes = null;
+}
+// l'aigua, per comptador: el darrer mes sencer que cobreixen les lectures (el de la darrera lectura si és l'últim dia del mes; si no,
+// l'anterior), si és d'aquests últims mesos. Alarma si aquell mes passa de l'escenari alt, i si el que va d'any fins a aquell mes passa
+// de l'escenari baix acumulat (des de gener o, si el comptador s'ha donat d'alta aquest any, des de l'alta: aquell mes, en proporció).
+function alarmesAigua(jo, oficina) {
+  const dades = dadesAlarmes.aigua; if (!dades) return [];
+  let comps = C.rows('comptadors').filter(comptadorViu);
+  if (!oficina) {   // a l'app: els llocs de les piscines que porta i els dels jardins del seu equip
+    const eq = Number(jo.equip_id) || 0;
+    const meus = new Set([...C.rows('piscines').filter(p => p.actiu && Number(p.treballador_id) === jo.id && contracteVigent(p, 'inclou_piscina')).map(p => Number(p.lloc_id)),
+      ...C.rows('jardins').filter(j => j.actiu && eq && Number(j.equip_id) === eq && contracteVigent(j, 'inclou_jardi')).map(j => Number(j.lloc_id))]);
+    comps = comps.filter(c => meus.has(Number(c.lloc_id)));
+  }
+  if (!comps.length) return [];
+  const darrera = new Map();
+  C.rows('lectures').forEach(l => { if (l.actiu === false || !l.data) return; const k = Number(l.comptador_id), d = String(l.data).slice(0, 10); if (!(darrera.get(k) >= d)) darrera.set(k, d); });
+  const E = new Map(); (dades.esc || []).forEach(r => E.set(Number(r.comptador_id) + ':' + Number(r.mes), r));
+  const M = new Map(); Object.keys(dades.cons || {}).forEach(y => (dades.cons[y] || []).forEach(r => M.set(Number(r.comptador_id) + ':' + y + ':' + Number(r.mes), Number(r.m3) || 0)));
+  const perLloc = {}; comps.forEach(c => { perLloc[c.lloc_id] = (perLloc[c.lloc_id] || 0) + 1; });
+  const ara = new Date(), araM = ara.getFullYear() * 12 + ara.getMonth();
+  const m3 = v => String(Math.round(Number(v || 0) * 10) / 10).replace('.', ',') + ' m³', mes_ = (v, ref) => 'un ' + Math.round((v / ref - 1) * 100) + ' % més';
+  const desDe = m => /^[aeiou]/i.test(MESOS_CAT[m - 1]) ? 'D’' + MESOS_CAT[m - 1] : 'De ' + MESOS_CAT[m - 1];
+  const out = [];
+  comps.forEach(c => {
+    const id = Number(c.id), d = darrera.get(id); if (!d) return;
+    const x = new Date(d + 'T12:00:00'), ultimDia = new Date(x.getFullYear(), x.getMonth() + 1, 0).getDate();
+    const cobert = new Date(x.getFullYear(), x.getMonth() - (x.getDate() === ultimDia ? 0 : 1), 1), any = cobert.getFullYear(), mes = cobert.getMonth() + 1;
+    if (araM - (any * 12 + mes - 1) > 2 || !(String(any) in (dades.cons || {}))) return;   // sense lectures d'aquests últims mesos
+    const lloc = C.get('llocs', c.lloc_id) || {}, text = (lloc.nom || 'Lloc') + (perLloc[c.lloc_id] > 1 ? ' · comptador ' + (c.numero_serie || c.id) : '');
+    const mm = String(mes).padStart(2, '0'), ves = ['consum_aigua', null, () => Object.assign(state.aigua, { lloc: String(c.lloc_id), comptador: String(c.id), any: String(any) })];
+    const gastat = M.get(id + ':' + any + ':' + mes) || 0, alt = Number((E.get(id + ':' + mes) || {}).alt) || 0;
+    if (alt > 0 && gastat > alt) out.push({ tipus: 'aigua_mes', clau: `aigua_mes:${id}:${any}-${mm}`, text, ves, ordre: text,
+      detall: `${MESOS[mes - 1]} de ${any}: ${m3(gastat)}, i l’escenari alt és de ${m3(alt)} (${mes_(gastat, alt)})` });
+    const alta = c.data_alta ? String(c.data_alta).slice(0, 10) : '', altaAquest = alta.slice(0, 4) === String(any), ini = altaAquest ? Number(alta.slice(5, 7)) : 1;
+    let suma = 0, baix = 0;
+    for (let m = ini; m <= mes; m++) {
+      suma += M.get(id + ':' + any + ':' + m) || 0;
+      let b = Number((E.get(id + ':' + m) || {}).baix) || 0;
+      if (altaAquest && m === ini) { const dm = new Date(any, m, 0).getDate(); b = b * (dm - Number(alta.slice(8, 10)) + 1) / dm; }
+      baix += b;
+    }
+    if (baix > 0 && suma > baix) out.push({ tipus: 'aigua_any', clau: `aigua_any:${id}:${any}-${mm}`, text, ves, ordre: text,
+      detall: `${ini === mes ? MESOS[mes - 1] : desDe(ini) + ' a ' + MESOS_CAT[mes - 1]} de ${any}: ${m3(suma)}, i l’escenari baix acumulat és de ${m3(baix)} (${mes_(suma, baix)})` });
+  });
+  return out;
+}
+// totes les alarmes de qui ha entrat (amb les que ja ha llegit). Cada una: tipus, clau (la que es desa en llegir-la), text, detall
+// i on porta (ves: [taula o pàgina, registre, preparació] o obre)
+function calculaAlarmes() {
+  const jo = treballadorActual(); if (!jo) return [];
+  const oficina = oficinaAlarmes(), out = [];
+  const avuiS = ymd(new Date()), diesDes = d => Math.round((new Date(avuiS + 'T12:00:00') - new Date(String(d).slice(0, 10) + 'T12:00:00')) / 86400000);
+  try { out.push(...alarmesAigua(jo, oficina)); } catch (e) { console.error('alarmes de l’aigua', e); }
+  // accions fora de termini: les meves (me les han encarregat o les gestiono) i, a l'oficina, també les de les incidències que segueixo
+  const incs = new Map(C.rows('incidencies').map(i => [Number(i.id), i])), llocsInc = new Map();
+  C.rows('incidencia_accions').forEach(a => {
+    if (!a.actiu || !activa(a) || !foraTermini(a)) return;
+    const inc = incs.get(Number(a.incidencia_id)); if (!inc || !inc.actiu || inc.estat !== 'oberta') return;
+    const meva = Number(a.responsable_treballador_id) === jo.id || Number(a.gestor_id) === jo.id;
+    if (!meva && !(oficina && Number(inc.seguidora_id) === jo.id)) return;
+    const que = nomTipus(a.tipus) + (a.titol && a.titol !== nomTipus(a.tipus) ? ': ' + a.titol : '');
+    if (!llocsInc.has(inc.id)) llocsInc.set(inc.id, llocInc(inc).nom || '');
+    out.push({ tipus: 'accions', clau: `accio:${a.id}:${String(a.venciment).slice(0, 16)}`, text: (inc.numero || 'Incidència') + (llocsInc.get(inc.id) ? ' · ' + llocsInc.get(inc.id) : ''),
+      detall: `${que}${Number(a.responsable_treballador_id) === jo.id ? '' : ' (la té ' + (nomResponsable(a) || 'algú altre') + ')'} · el termini era el ${dmyhm(a.venciment)}`, obre: () => obreDesDAvis(a.id), ordre: String(a.venciment) });
+  });
+  // documents caducats o que caducaran dins del termini d'avís del seu tipus: a l'oficina, els de tothom; a l'app, els seus
+  try {
+    (oficina ? alertesDocuments() : alertesDocuments({ nomesMeus: true })).forEach(x => out.push({ tipus: 'documents', clau: `document:${x.d.id}:${x.estat}`,
+      text: (oficina ? nomTreballador(x.p) + ' · ' : '') + x.tp.nom, detall: textEstatDoc(x.estat, x.d), ordre: String(x.d.data_caducitat),
+      ves: ['documents_treballadors', null, () => Object.assign(state.docs, oficina ? { treb: String(x.p.id), cat: '', sel: null } : { sel: null })] }));
+  } catch (e) { console.error('alarmes dels documents', e); }
+  // una entrada de fa més de 12 hores sense sortida: segurament no s'ha fitxat la sortida (a l'oficina, de tothom; a l'app, la seva)
+  const ultimFx = new Map();   // el darrer fitxatge de cada persona (en una sola passada)
+  C.rows('fitxatges').forEach(f => { const k = Number(f.treballador_id), u = ultimFx.get(k), m = String(f.moment), mu = u ? String(u.moment) : ''; if (!u || m > mu || (m === mu && f.id > u.id)) ultimFx.set(k, f); });
+  (oficina ? C.rows('treballadors').filter(t => t.actiu) : [jo]).forEach(p => {
+    const u = ultimFx.get(Number(p.id)); if (!u || u.tipus !== 'entrada') return;
+    const hores = (Date.now() - new Date(u.moment).getTime()) / 3600000; if (!(hores > 12)) return;
+    const quan = new Date(u.moment);
+    out.push({ tipus: 'fitxatges', clau: `fitxatge:${u.id}`, ordre: String(u.moment), text: oficina ? nomTreballador(p) : 'Tens l’entrada oberta',
+      detall: oficina ? `entrada el ${dmyhm(u.moment)} (fa ${Math.floor(hores)} hores) i cap sortida: segurament no ha fitxat la sortida`
+                      : `des del ${dmyhm(u.moment)} (fa ${Math.floor(hores)} hores), sense cap sortida. Si ja havies plegat, digues a l’oficina a quina hora perquè la posin.`,
+      ves: oficina ? ['fitxatges', null, () => Object.assign(state.fx, { treb: String(p.id), any: String(quan.getFullYear()), mes: String(quan.getMonth() + 1), vista: 'persona', ed: null })] : ['fitxar', null] });
+  });
+  if (!oficina) return out;
+  // factures de clients sense cobrar 15 dies després del venciment
+  C.rows('factures').forEach(f => {
+    if (!f.actiu || f.estat !== 'emesa' || !f.data_venciment || !(Number(f.total) > 0)) return;
+    const n = diesDes(f.data_venciment); if (n <= 15) return;
+    out.push({ tipus: 'factures_client', clau: `factura:${f.id}`, text: `${f.numero_complet || 'Factura'} · ${f.client_nom || L('clients', f.client_id)}`,
+      detall: `${eur(f.total)} · va vèncer el ${dmy(f.data_venciment)} (fa ${n} dies)`, ves: ['factures', f.id], ordre: String(f.data_venciment) });
+  });
+  // factures de proveïdors sense pagar 15 dies després del venciment (les dubtoses, no) i les que vencen abans del que tenim pactat
+  C.rows('factures_proveidor').forEach(f => {
+    if (!f.actiu || f.pagada) return;
+    const text = () => `${L('proveidors', f.proveidor_id) || 'Proveïdor'} · factura ${f.numero || 'sense número'}`, venc = f.data_venciment ? String(f.data_venciment).slice(0, 10) : '';
+    if (venc && !f.dubtosa) { const n = diesDes(venc); if (n > 15) out.push({ tipus: 'factures_proveidor', clau: `factura_proveidor:${f.id}`, text: text(), ves: ['factures_proveidor', f.id], ordre: venc,
+      detall: `${eur(f.total)} · va vèncer el ${dmy(venc)} (fa ${n} dies)` }); }
+    const p = C.get('proveidors', f.proveidor_id);
+    if (!venc || !p || f.venciment_origen === 'calculat' || ((p.termini_dies == null || p.termini_dies === '') && !p.dia_pagament)) return;   // sense condicions pactades, res a comparar
+    const esp = vencimentEsperat(p, f.data_factura);
+    if (esp && venc < esp) out.push({ tipus: 'venciment_proveidor', clau: `venciment_proveidor:${f.id}:${venc}`, text: text(), ves: ['factures_proveidor', f.id], ordre: venc,
+      detall: `la factura demana el pagament el ${dmy(venc)}; amb el que tenim pactat (${condicionsProveidor(p)}) seria el ${dmy(esp)}` });
+  });
+  // albarans oberts (sense facturar) de fa més de 3 mesos
+  const fa3 = new Date(); fa3.setMonth(fa3.getMonth() - 3); const lim3 = ymd(fa3);
+  const antics = C.rows('albarans').filter(a => a.actiu && (a.estat || 'obert') === 'obert' && a.data && String(a.data).slice(0, 10) < lim3);
+  if (antics.length) {
+    const base = new Map(); C.rows('albara_linies').forEach(l => { if (l.actiu) base.set(Number(l.albara_id), (base.get(Number(l.albara_id)) || 0) + Number(l.base || 0)); });
+    antics.forEach(a => out.push({ tipus: 'albarans', clau: `albara:${a.id}`, text: `${a.numero_complet || 'Albarà'} · ${L('clients', a.client_id)}`, ves: ['albarans', a.id], ordre: String(a.data),
+      detall: `del ${dmy(a.data)}${a.descripcio ? ' · ' + a.descripcio : ''} · ${eur(base.get(Number(a.id)) || 0)} sense IVA` }));
+  }
+  // comptabilitat: els documents que el motor no ha pogut assentar
+  (dadesAlarmes.pendents || []).forEach(p => {
+    const f = p.origen === 'factura' ? C.get('factures', p.origen_id) : null, fp = p.origen === 'factura_proveidor' ? C.get('factures_proveidor', p.origen_id) : null;
+    const text = p.origen === 'factura' ? 'Factura ' + (f ? (f.numero_complet || 'esborrany') + ' · ' + L('clients', f.client_id) : '#' + p.origen_id)
+      : p.origen === 'factura_proveidor' ? 'Factura de proveïdor ' + (fp ? (fp.numero || 'sense número') + ' · ' + L('proveidors', fp.proveidor_id) : '#' + p.origen_id)
+      : p.origen === 'banc' ? 'Moviment del banc #' + p.origen_id : String(p.origen || 'Document') + ' #' + p.origen_id;
+    out.push({ tipus: 'comptabilitat', clau: `compta:${p.origen}:${p.origen_id}:${hashCurt(p.missatge)}`, text, detall: String(p.missatge || ''), ves: ['compta_config', null], ordre: String(p.quan || '') });
+  });
+  // piscines: la segona mostra (pH o clor lliure) en vermell o pitjor, dels últims 30 dies
+  const lim30 = ymd(new Date(Date.now() - 30 * 86400000)), xifra = v => String(v).replace('.', ',');
+  C.rows('tasques_piscina').forEach(t => {
+    if (!t.actiu || String(t.data || '').slice(0, 10) < lim30) return;
+    const ph = t.ph_2 != null && t.ph_2 !== '' && esVermell(colorLlindar('ph')(t.ph_2, t)), cl = t.clor_lliure_2 != null && t.clor_lliure_2 !== '' && esVermell(colorLlindar('clor_lliure')(t.clor_lliure_2, t));
+    if (!ph && !cl) return;
+    out.push({ tipus: 'piscines', clau: `piscina:${t.id}`, text: nomInstal(C.get('piscines', t.piscina_id) || {}, 'piscina') || 'Piscina', ves: ['tasques_piscina', t.id], ordre: String(t.data) + ' ' + String(t.hora || ''),
+      detall: `${dmy(t.data)}: ${[ph ? 'pH ' + xifra(t.ph_2) : '', cl ? 'clor lliure ' + xifra(t.clor_lliure_2) + ' ppm' : ''].filter(Boolean).join(' i ')} a la segona mostra${t.treballador_id ? ' · ' + nomCurtTreballador(C.get('treballadors', t.treballador_id)) : ''}` });
+  });
+  return out;
+}
+// porta on hi ha el que diu l'alarma
+function obreAlarma(a) {
+  if (a.obre) { a.obre(); return; }
+  const [taula, editing, prepara] = a.ves || [];
+  if (!taula) return;
+  if (prepara) prepara();
+  if (!esOperari()) state.mode = 'consulta';
+  state.table = taula; state.editing = editing ?? null; state.copia = null; state.q = ''; reiniciaCaselles(taula);
+  renderApp(); window.scrollTo({ top: 0 });
+}
+// el número del menú, sense tornar a pintar res
+function refrescaInsigniaAlarmes() {
+  const b = document.querySelector('.side button[data-table="alarmes"]'); if (!b) return;
+  const n = nAlarmes(); let x = b.querySelector('b.nou');
+  if (!n) { if (x) x.remove(); return; }
+  if (!x) { x = document.createElement('b'); x.className = 'nou menu'; x.title = 'alarmes per mirar'; b.appendChild(x); }
+  x.textContent = String(n);
+}
+// marca (o desmarca) alarmes com a llegides; torna true si ha anat bé
+async function marcaAlarmes(claus, llegida) {
+  const jo = treballadorActual(); if (!jo || !claus.length) return false;
+  if (llegida) {
+    const noves = claus.filter(k => !alarmesLlegides.has(k)); if (!noves.length) return true;
+    noves.forEach(k => alarmesLlegides.add(k));
+    let r = await sb.from('alarmes_llegides').insert(noves.map(clau => ({ treballador_id: jo.id, clau })));
+    if (r.error && errDuplicat(r.error)) {   // alguna ja hi era (llegida des d'un altre aparell): una per una
+      let err = null;
+      for (const clau of noves) { const x = await sb.from('alarmes_llegides').insert({ treballador_id: jo.id, clau }); if (x.error && !errDuplicat(x.error)) err = err || x.error; }
+      r = { error: err };
+    }
+    if (r.error) { noves.forEach(k => alarmesLlegides.delete(k)); toastErr(friendly(r.error)); memoAlarmes = null; return false; }
+  } else {
+    const r = await sb.from('alarmes_llegides').delete().eq('treballador_id', jo.id).in('clau', claus);
+    if (r.error) { toastErr(friendly(r.error)); return false; }
+    claus.forEach(k => alarmesLlegides.delete(k));
+  }
+  memoAlarmes = null;
+  return true;
+}
+// la pàgina: es pinta amb el que ja se sap; si fa més de mig minut, es tornen a demanar l'aigua, les llegides i la comptabilitat
+function renderAlarmes(main) {
+  const st = state.alarmes || (state.alarmes = { llegides: false, marcat: 0 }), t0 = Date.now();
+  pintaAlarmes(main);
+  if (Date.now() - dadesAlarmes.quan < 30000) return;
+  const abans = signaturaAlarmes();
+  carregaAlarmes().then(() => {
+    if (state.table !== 'alarmes' || !main.isConnected || st.marcat > t0) return;   // (si mentrestant n'ha marcat alguna, no es repinta)
+    if (signaturaAlarmes() !== abans) pintaAlarmes(main);
+    refrescaInsigniaAlarmes();
+  }, () => {});
+}
+const signaturaAlarmes = () => alarmesAra().map(a => a.clau + (alarmesLlegides.has(a.clau) ? '+' : '')).join('|') + (dadesAlarmes.senseTaula ? '!' : '');
+const MAX_ALARMES_GRUP = 30, ordreAlarmes = new Intl.Collator('ca');
+const resumAlarmes = n => (n ? `${n} ${n === 1 ? 'alarma per mirar' : 'alarmes per mirar'}. ` : 'Cap alarma nova. ') + 'Marca «Llegida» les que ja hagis vist: a tu ja no et tornaran a sortir (a la resta, sí).';
+function pintaAlarmes(main) {
+  const jo = treballadorActual(), st = state.alarmes || (state.alarmes = { llegides: false, marcat: 0 }), app = esOperari(); st.obert = st.obert || {};
+  const totes = alarmesAra(), noves = totes.filter(a => !alarmesLlegides.has(a.clau)), visibles = st.llegides ? totes : noves, idx = new Map(totes.map((a, i) => [a, i]));
+  const potMarcar = !!jo && !dadesAlarmes.senseTaula;
+  const grups = Object.keys(TIPUS_ALARMA).map(k => ({ k, t: TIPUS_ALARMA[k], ll: visibles.filter(a => a.tipus === k).sort((a, b) => ordreAlarmes.compare(String(a.ordre), String(b.ordre))) })).filter(g => g.ll.length);
+  main.innerHTML = `${app ? '<div class="bar"><button class="btn ghost" id="al-torna">← Menú</button></div>' : ''}
+    <h1>Alarmes</h1>
+    <p class="sub" id="al-resum">${h(resumAlarmes(noves.length))}</p>
+    ${!jo ? '<div class="msg err">El teu usuari no té fitxa de treballador amb aquest correu d’accés: no es poden marcar com a llegides.</div>'
+      : dadesAlarmes.senseTaula ? '<div class="msg err">Per poder marcar les alarmes com a llegides, abans cal executar a Supabase el fitxer <b>089_alarmes.sql</b>.</div>' : ''}
+    ${totes.length > noves.length || st.llegides ? `<div class="bar"><label class="chk" style="padding:0"><input type="checkbox" id="al-llegides" ${st.llegides ? 'checked' : ''}> Mostra també les que ja he llegit (${totes.length - noves.length})</label></div>` : ''}
+    ${grups.length ? grups.map(g => { const nNoves = g.ll.filter(a => !alarmesLlegides.has(a.clau)).length; return `<section class="al-grup" style="--ac:${g.t.color}" data-al-tipus="${g.k}">
+      <h3>${h(g.t.nom)} <span class="al-n">${g.ll.length}</span>${potMarcar && nNoves > 1 ? `<button type="button" class="btn ghost small al-totes" data-al-totes="${g.k}">Marca-les totes com a llegides</button>` : ''}</h3>
+      ${(st.obert[g.k] ? g.ll : g.ll.slice(0, MAX_ALARMES_GRUP)).map(a => { const ll = alarmesLlegides.has(a.clau); return `<div class="al-fila${ll ? ' llegida' : ''}"><label class="al-llegida"><input type="checkbox" data-al-clau="${h(a.clau)}" ${ll ? 'checked' : ''} ${potMarcar ? '' : 'disabled'}> Llegida</label><a href="#" class="al-text" data-al-obre="${idx.get(a)}"><b>${h(a.text)}</b><span>${h(a.detall)}</span></a></div>`; }).join('')}
+      ${!st.obert[g.k] && g.ll.length > MAX_ALARMES_GRUP ? `<div class="al-fila"><button type="button" class="btn ghost small" data-al-mes="${g.k}">Mostra’n ${g.ll.length - MAX_ALARMES_GRUP} més</button></div>` : ''}
+    </section>`; }).join('')
+      : `<div class="empty">${totes.length ? 'Cap alarma nova: les que hi ha ja les has marcat com a llegides.' : 'Cap alarma: tot en ordre.'}</div>`}`;
+  const tr = main.querySelector('#al-torna'); if (tr) tr.addEventListener('click', () => { state.table = null; state.editing = null; renderApp(); window.scrollTo({ top: 0 }); });
+  const ck = main.querySelector('#al-llegides'); if (ck) ck.addEventListener('change', e => { st.llegides = e.target.checked; pintaAlarmes(main); });
+  main.querySelectorAll('[data-al-clau]').forEach(c => c.addEventListener('change', async () => {
+    const clau = c.dataset.alClau, vol = c.checked; c.disabled = true; st.marcat = Date.now();
+    const ok = await marcaAlarmes([clau], vol);
+    c.disabled = false; if (!ok) c.checked = !vol;
+    const fila = c.closest('.al-fila'); if (fila) fila.classList.toggle('llegida', alarmesLlegides.has(clau));   // es queda (esvaïda) fins que es torna a entrar
+    const r = main.querySelector('#al-resum'); if (r) r.textContent = resumAlarmes(nAlarmes());
+    refrescaInsigniaAlarmes();
+  }));
+  main.querySelectorAll('[data-al-totes]').forEach(b => b.addEventListener('click', async () => {
+    b.disabled = true; st.marcat = Date.now();
+    await marcaAlarmes(alarmesAra().filter(a => a.tipus === b.dataset.alTotes && !alarmesLlegides.has(a.clau)).map(a => a.clau), true);
+    pintaAlarmes(main); refrescaInsigniaAlarmes();
+  }));
+  main.querySelectorAll('[data-al-mes]').forEach(b => b.addEventListener('click', () => { st.obert[b.dataset.alMes] = true; pintaAlarmes(main); }));
+  main.querySelectorAll('[data-al-obre]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); const x = totes[Number(a.dataset.alObre)]; if (x) obreAlarma(x); }));
+}
+
 async function toggleActiu(td) {
   const t = state.table, row = C.get(t, state.editing);
   const label = td.display(row, L);
