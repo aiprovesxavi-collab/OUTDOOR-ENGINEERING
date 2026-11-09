@@ -901,7 +901,7 @@ function ompleClaudators(txt, pr) {
   const valors = {
     'preu mensual sense iva': fmtEur(preuMensualPressupost(pr)).replace(' €', ''),
     'preu mensual amb iva': fmtEur(Math.round(preuMensualPressupost(pr) * (1 + ivaVigent(pr.data) / 100) * 100) / 100).replace(' €', ''),
-    'població del lloc': (lloc && lloc.poblacio) || client.poblacio || '', 'poblacio del lloc': (lloc && lloc.poblacio) || client.poblacio || '',
+    'població del lloc': nomPropi((lloc && lloc.poblacio) || client.poblacio || ''), 'poblacio del lloc': nomPropi((lloc && lloc.poblacio) || client.poblacio || ''),
     'mes de la data de creació del pressupost': MESOS_CAT[d.getUTCMonth()] || '', 'mes': MESOS_CAT[d.getUTCMonth()] || '',
     'any data': String(d.getUTCFullYear()), 'any': String(d.getUTCFullYear()),
     'data': dmy(pr.data), 'client': client.nom || '', 'lloc': lloc ? lloc.nom : '', 'adreça del lloc': lloc ? lloc.adreca || '' : '',
@@ -5240,6 +5240,38 @@ async function obreFitxer(path) {
   if (w) w.location.href = data.signedUrl; else window.open(data.signedUrl, '_blank');
 }
 
+/* ---------- El paper de tots els documents (factures, pressupostos, informes, registre de jornada) ----------
+   El logo, centrat a 10 mm de dalt; les dades de l'empresa, centrades i a 8 mm de baix; el text entre els marges: 25 mm a l'esquerra,
+   15 mm a la dreta, 42 mm a dalt (sense comptar el logo) i 25 mm a baix (sense comptar les dades de l'empresa). El logo i les dades, a
+   totes les pàgines. Tot en Arial (al PDF, la Helvetica, que té les mateixes mides). El que va centrat a la portada, al mig de la
+   pàgina, com el logo. */
+const PAPER = { esq: 25, dre: 195, dalt: 42, baix: 272, mig: 105, logoDalt: 10, logoAmple: 62, peu: 289 };
+PAPER.ample = PAPER.dre - PAPER.esq;
+// on va la línia de base de la primera línia d'un text de «pt» punts que comença (per dalt) a «y»: l'ascendent de l'Arial, com al Word
+const basePaper = (pt, y = PAPER.dalt) => Math.round((y + pt * 0.3528 * 0.905) * 100) / 100;
+// fins on pot arribar «y + alçada d'una línia» (com ho mira salta) perquè l'última línia d'un text de «pt» punts no passi del marge de baix
+const limitPaper = pt => PAPER.baix + pt * 0.3528 * (1.38 - 0.212);
+function logoPaper(doc, tema) { const lw = PAPER.logoAmple, lh = lw * LOGO_RATIO; doc.addImage(LOGOS[tema] || LOGOS.blau, 'JPEG', PAPER.mig - lw / 2, PAPER.logoDalt, lw, lh); }
+// les dades de l'empresa (Arial 7,5 en gris, centrades; l'última línia a 8 mm de baix) i, si cal, el número de pàgina a la dreta, a sobre
+function peuPaper(doc, emp, pagina) {
+  const l1 = [emp.nom, emp.nif ? 'NIF: ' + emp.nif : '', [emp.adreca, [emp.cp, emp.poblacio].filter(Boolean).join(' ')].filter(Boolean).join(' '), emp.telefon ? 'Tel: ' + emp.telefon : ''].filter(Boolean).join(' | ');
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(125, 125, 125);
+  const ls = doc.splitTextToSize(l1, 180), pas = 7.5 * 0.3528 * 1.25;
+  ls.forEach((l, i) => doc.text(l, PAPER.mig, PAPER.peu - (ls.length - 1 - i) * pas, { align: 'center' }));
+  if (pagina) doc.text(String(pagina), PAPER.dre, PAPER.peu - (ls.length - 1) * pas - 4.5, { align: 'right' });
+}
+// «SANT CUGAT DEL VALLÈS» → «Sant Cugat del Vallès»; «XAVIER AMAT URGELL» → «Xavier Amat Urgell» (si ja té minúscules, tal com és)
+const PARTICULES_NOM = new Set(['de', 'del', 'dels', 'la', 'les', 'el', 'els', 'i', 'a', 'al', 'als', 'en']);
+function nomPropi(s) {
+  const t = String(s || '').trim();
+  if (!t || t !== t.toUpperCase() || t === t.toLowerCase()) return t;
+  return t.toLowerCase().split(/(\s+|-)/).map((p, i) => {
+    if (!p || /^(\s+|-)$/.test(p) || (i > 0 && PARTICULES_NOM.has(p))) return p;
+    const m = p.match(/^([dl]['’])(.+)$/);
+    return m ? (i > 0 ? m[1] : m[1].toUpperCase()) + m[2].charAt(0).toUpperCase() + m[2].slice(1) : p.charAt(0).toUpperCase() + p.slice(1);
+  }).join('');
+}
+
 /* ---------- PDF de la factura ---------- */
 const fmtEur = n => { const neg = Number(n) < 0; const [i, d] = Math.abs(Number(n || 0)).toFixed(2).split('.'); return (neg ? '-' : '') + i.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + d + ' €'; };
 
@@ -5251,27 +5283,26 @@ function pdfFactura(f) {
   const tema = f.tema || (teJardi(f) ? 'verd' : 'blau');
   const acc = ACCENT[tema], ink = [40, 40, 40], grey = [125, 125, 125];
   const linies = C.rows('factura_linies').filter(l => l.actiu && Number(l.factura_id) === f.id).sort((a, b) => (a.ordre - b.ordre) || (a.id - b.id));
-  const M = 20, R = 210 - M, W = R - M;
-  const BAIX = 274;   // fins on arriba el contingut de cada pàgina: a sota hi ha el peu (la ratlla, a 279)
+  const M = PAPER.esq, R = PAPER.dre, W = PAPER.ample;
+  const BAIX = PAPER.baix;   // fins on arriba el contingut de cada pàgina: a sota, el marge i les dades de l'empresa
   const label = (t, x, y, opt) => { doc.setTextColor(...grey); doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.text(t, x, y, opt); };
   const text = (t, x, y, size, style, color, opt) => { doc.setTextColor(...(color || ink)); doc.setFont('helvetica', style || 'normal'); doc.setFontSize(size || 10); doc.text(t, x, y, opt); };
   const marca = () => { if (f.estat === 'esborrany') { doc.setTextColor(232, 232, 232); doc.setFont('helvetica', 'bold'); doc.setFontSize(64); doc.text('ESBORRANY', 105, 170, { align: 'center', angle: 30 }); } };
   // quan no hi cap tot: pàgina nova, amb el número de la factura i el client a dalt; torna on comença el contingut
   const novaPagina = () => {
-    doc.addPage(); marca();
-    label('FACTURA ' + (f.numero_complet || 'ESBORRANY') + ' (CONTINUACIÓ)', M, 16);
-    label(f.client_nom || client.nom || '', R, 16, { align: 'right' });
-    return 24;
+    doc.addPage(); marca(); logoPaper(doc, tema);
+    const yc = basePaper(7.5);
+    label('FACTURA ' + (f.numero_complet || 'ESBORRANY') + ' (CONTINUACIÓ)', M, yc);
+    label(f.client_nom || client.nom || '', R, yc, { align: 'right' });
+    return yc + 8;
   };
 
   marca();
+  logoPaper(doc, tema);
 
-  // logotip
-  const lw = 62, lh = lw * LOGO_RATIO;
-  doc.addImage(LOGOS[tema], 'JPEG', (210 - lw) / 2, 14, lw, lh);
-
-  // capçalera esquerra: número, data, venciment
-  let y = 52;
+  // capçalera esquerra: número, data, venciment (comença al marge de dalt)
+  const y0 = basePaper(11.5);
+  let y = y0;
   label('FACTURA', M, y);
   text(f.numero_complet || 'ESBORRANY', M, y + 8.5, 20, 'bold', acc);
   label('DATA', M, y + 18);
@@ -5279,7 +5310,7 @@ function pdfFactura(f) {
   if (f.data_venciment) { label('VENCIMENT', M, y + 31); text(dmy(f.data_venciment), M, y + 36, 11); }
 
   // capçalera dreta: client
-  const rx = 112, rw = R - rx;
+  const rx = 117, rw = R - rx;
   const nom = f.client_nom || client.nom || '';
   doc.setFont('helvetica', 'bold'); doc.setFontSize(11.5);
   const nomL = doc.splitTextToSize(nom, rw);
@@ -5288,16 +5319,16 @@ function pdfFactura(f) {
   const adreca = f.client_adreca || [client.adreca, [client.cp, client.poblacio].filter(Boolean).join(' ')].filter(Boolean).join(', ');
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
   // el carrer en una línia i el codi postal amb la població en una altra
-  const parts = adreca.split(', '); const ultim = parts.length > 1 ? parts.pop() : null;
+  const parts = adreca.split(', '); const ultim = parts.length > 1 ? parts.pop().replace(/^(\d{4,5}\s+)?(.+)$/, (m, cp, pob) => (cp || '') + nomPropi(pob)) : null;
   const adrL = [...doc.splitTextToSize(parts.join(', '), rw), ...(ultim ? doc.splitTextToSize(ultim, rw) : [])];
   if (adreca) { text(adrL, rx, ry, 10); ry += adrL.length * 5; }
   const nif = f.client_nif || client.nif; if (nif) text('NIF ' + nif, rx, ry + 0.5, 10);
 
   // línia de separació
-  y = 94; doc.setDrawColor(...acc); doc.setLineWidth(0.5); doc.line(M, y, R, y);
+  y = y0 + 42; doc.setDrawColor(...acc); doc.setLineWidth(0.5); doc.line(M, y, R, y);
 
   // concepte
-  y = 104; label('CONCEPTE', M, y);
+  y = y0 + 52; label('CONCEPTE', M, y);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5);
   const cL = doc.splitTextToSize(f.concepte || '', W);
   text(cL, M, y + 6, 10.5); y = y + 6 + cL.length * 5.3;
@@ -5307,7 +5338,7 @@ function pdfFactura(f) {
   if (linies.length) {
     y += 8;
     const ambDte = linies.some(l => l.dte != null && l.dte !== '');
-    const cx = ambDte ? { qty: 128, preu: 150, dte: 166, imp: R } : { qty: 138, preu: 163, imp: R };
+    const cx = ambDte ? { qty: 133, preu: 155, dte: 171, imp: R } : { qty: 143, preu: 168, imp: R };
     const descW = (cx.qty - 12) - (M + 2);
     const capTaula = () => {
       doc.setFillColor(242, 242, 242); doc.rect(M, y, W, 7, 'F');
@@ -5360,7 +5391,7 @@ function pdfFactura(f) {
   text(ll.pL, M, ll.py + 5.5, 9.5);
 
   // totals
-  const tx = 118, ty = ll.ty, tv = R - 3;
+  const tx = 123, ty = ll.ty, tv = R - 3;
   const fila = (t, v, yy, big) => { text(t, tx + 3, yy, big ? 11 : 9.5, big ? 'bold' : 'normal'); text(v, tv, yy, big ? 12 : 10, big ? 'bold' : 'normal', big ? acc : ink, { align: 'right' }); };
   fila('Base imposable', fmtEur(f.base_imponible), ty);
   fila('IVA ' + String(Number(f.iva_percent)).replace('.', ',') + ' %', fmtEur(f.quota_iva), ty + 7.5);
@@ -5370,17 +5401,9 @@ function pdfFactura(f) {
   // codi de client, a baix a l'esquerra
   if (codi) { label('CODI CLIENT', M, ll.cy); text(String(codi), M, ll.cy + 5.5, 10); }
 
-  // peu a totes les pàgines: dades de l'empresa (i el número de pàgina, si n'hi ha més d'una)
-  const peu1 = [emp.nom, emp.nif].filter(Boolean).join('   ·   ');
-  const peu2 = [[emp.adreca, [emp.cp, emp.poblacio].filter(Boolean).join(' ')].filter(Boolean).join(', '), emp.telefon ? 'T ' + emp.telefon : '', emp.email].filter(Boolean).join('   ·   ');
+  // a totes les pàgines, les dades de l'empresa (i el número de pàgina, si n'hi ha més d'una)
   const n = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= n; i++) {
-    doc.setPage(i);
-    doc.setDrawColor(205); doc.setLineWidth(0.2); doc.line(M, 279, R, 279);
-    text(peu1, 105, 284, 8, 'normal', grey, { align: 'center' });
-    text(peu2, 105, 288.5, 8, 'normal', grey, { align: 'center' });
-    if (n > 1) text('Pàgina ' + i + ' de ' + n, R, 284, 7.5, 'normal', grey, { align: 'right' });
-  }
+  for (let i = 1; i <= n; i++) { doc.setPage(i); peuPaper(doc, emp, n > 1 ? 'Pàgina ' + i + ' de ' + n : null); }
   return doc;
 }
 async function generaPdfFactura(id, { obrir = true } = {}) {
@@ -5536,31 +5559,29 @@ function pdfPressupost(pr) {
   const tema = pr.tema === 'verd' ? 'verd' : 'blau';
   const ink = [40, 40, 40], grey = [125, 125, 125];
   const linies = C.rows('pressupost_tasca_linies').filter(l => l.actiu && Number(l.pressupost_id) === pr.id).sort((a, b) => (a.ordre - b.ordre) || (a.id - b.id));
-  const M = 22, R = 210 - M, W = R - M, LIMIT = 236;
+  const M = PAPER.esq, R = PAPER.dre, W = PAPER.ample;
   const text = (t, x, y, size, style, color, opt) => { doc.setTextColor(...(color || ink)); doc.setFont('helvetica', style || 'normal'); doc.setFontSize(size || 10); doc.text(t, x, y, opt); };
   const wrap = (t, w, size, style) => { doc.setFont('helvetica', style || 'normal'); doc.setFontSize(size); return doc.splitTextToSize(String(t || ''), w); };
-  const peu = () => {
-    const l1 = [emp.nom, emp.nif ? 'NIF: ' + emp.nif : '', [emp.adreca, [emp.cp, emp.poblacio].filter(Boolean).join(' ')].filter(Boolean).join(' '), emp.telefon ? 'Tel: ' + emp.telefon : ''].filter(Boolean).join(' | ');
-    text(wrap(l1, W, 7.5), 105, 286, 7.5, 'normal', grey, { align: 'center' });
-  };
-  // condicions, sempre a baix de tot de l'última pàgina
+  const peu = () => peuPaper(doc, emp);
+  // condicions, sempre a baix de tot de l'última pàgina (l'última línia, al marge de baix); les línies del pressupost, fins a 16 mm més amunt
+  const valL = wrap(pr.validesa, W - 48, 10.5), yCond = PAPER.baix - 1 - 14 - (valL.length - 1) * 10.5 * 0.3528 * 1.15, LIMIT = yCond - 16;
   const condicions = () => {
-    let cy = 252;
+    let cy = yCond;
     text(pr.nota_iva || '', M, cy, 10.5); cy += 7;
     text('FORMA DE PAGAMENT:', M, cy, 10.5); text(pr.forma_pagament || '', M + 44, cy, 10.5); cy += 7;
-    text('VALIDESA DE LA OFERTA:', M, cy, 10.5); text(wrap(pr.validesa, W - 48, 10.5), M + 48, cy, 10.5);
+    text('VALIDESA DE LA OFERTA:', M, cy, 10.5); text(valL, M + 48, cy, 10.5);
   };
+  const novaPagina = () => { peu(); doc.addPage(); logoPaper(doc, tema); return basePaper(12); };
   const capcalera = () => {
-    const lw = 62, lh = lw * LOGO_RATIO;
-    doc.addImage(LOGOS[tema], 'JPEG', (210 - lw) / 2, 12, lw, lh);
-    let y = 51;
+    logoPaper(doc, tema);
+    const y = basePaper(10) + 3;   // (el client, a la dreta, comença al marge de dalt)
     text('PRESSUPOST:', M, y, 12.5); text(pr.numero || 'ESBORRANY', M + 33, y, 12.5, 'bold');
     text('DATA:', M, y + 9, 12.5); text(dmy(pr.data), M + 16, y + 9, 12.5, 'bold');
-    const rx = 118, rw = R - rx;
+    const rx = 125, rw = R - rx;
     const nomL = wrap(client.nom, rw, 10);
     text(nomL, rx, y - 3, 10); let ry = y - 3 + nomL.length * 4.8;
     if (client.adreca) { text(client.adreca, rx, ry + 1, 10); ry += 6; }
-    const cpp = [client.cp, client.poblacio].filter(Boolean).join('   '); if (cpp) { text(cpp, rx, ry + 1, 10); ry += 6; }
+    const cpp = [client.cp, nomPropi(client.poblacio)].filter(Boolean).join('   '); if (cpp) { text(cpp, rx, ry + 1, 10); ry += 6; }
     if (client.nif) text(client.nif, rx, ry + 1, 10);
     return Math.max(y + 24, ry + 14);
   };
@@ -5570,7 +5591,7 @@ function pdfPressupost(pr) {
   if (pr.descripcio) { const dL = wrap(pr.descripcio, W, 12.5); text(dL, M, y + 4, 12.5); y += 4 + dL.length * 5.9; }
   // capçalera de la taula
   const ambDte = linies.some(l => l.dte != null && l.dte !== '' && Number(l.dte) > 0);
-  const cx = ambDte ? { qty: M + 7, desc: M + 13, preu: 143, dte: 162, tot: R - 2 } : { qty: M + 7, desc: M + 13, preu: 160, tot: R - 2 };
+  const cx = ambDte ? { qty: M + 7, desc: M + 13, preu: 148, dte: 167, tot: R - 2 } : { qty: M + 7, desc: M + 13, preu: 165, tot: R - 2 };
   y += 8; text('PREU UNIT', cx.preu, y, 11, 'normal', grey, { align: 'right' });
   if (ambDte) text('DTE', cx.dte, y, 11, 'normal', grey, { align: 'right' });
   text('TOTAL', cx.tot, y, 11, 'normal', grey, { align: 'right' }); y += 7;
@@ -5578,7 +5599,7 @@ function pdfPressupost(pr) {
   for (const l of linies) {
     const dL = wrap(l.descripcio, descW, 12);
     const rh = dL.length * 5.6 + 3.5;
-    if (y + rh > LIMIT) { peu(); doc.addPage(); y = 24; }
+    if (y + rh > LIMIT) y = novaPagina();
     text(String(Number(l.quantitat)).replace('.', ','), cx.qty, y, 12, 'normal', ink, { align: 'right' });
     text(dL, cx.desc, y, 12);
     text(fmtEur(l.preu_unitari).replace(' €', ''), cx.preu, y, 12, 'normal', ink, { align: 'right' });
@@ -5587,7 +5608,7 @@ function pdfPressupost(pr) {
     y += rh;
   }
   // subtotal
-  if (y + 14 > LIMIT) { peu(); doc.addPage(); y = 24; }
+  if (y + 14 > LIMIT) y = novaPagina();
   y += 5; doc.setDrawColor(...ink); doc.setLineWidth(0.4); doc.rect(cx.preu - 26, y - 6.5, R - (cx.preu - 26), 10.5);
   text('SUBTOTAL', cx.preu - 22, y, 12.5, 'bold'); text(fmtEur(pr.base_imponible).replace(' €', ''), cx.tot, y, 12.5, 'bold', ink, { align: 'right' });
   condicions();
@@ -5657,7 +5678,7 @@ function escriuParagraf(doc, par, x, y, w, size, salta, color) {
   if (cur.length) lines.push(cur);
   const esTitol = lines.length === 1 && toks.length > 0 && toks.every(t => t.b); // una línia sola en negreta ("GESPA:", "REG:"): que no quedi sola a peu de pàgina
   lines.forEach((ln, i) => {
-    y = salta(y, i === 0 ? lh * (esTitol ? 4 : Math.min(2, lines.length)) : lh); prepara(); // un títol necessita lloc per a ell i dues línies del paràgraf següent
+    y = salta(y, i === 0 ? lh * (esTitol ? 4 : lines.length === 3 ? 3 : Math.min(2, lines.length)) : i === lines.length - 2 && lines.length > 3 ? 2 * lh : lh); prepara(); // un títol necessita lloc per a ell i dues línies del paràgraf següent
     if (par.li && i === 0) { doc.setFont('helvetica', 'normal'); doc.text('•', x + 2, y); }
     const last = i === lines.length - 1;
     const gaps = ln.filter((t, j) => j > 0 && !t.glue).length;
@@ -5684,47 +5705,41 @@ function pdfPressupostAgrupacio(pr) {
   const client = C.get('clients', pr.client_id) || {};
   const lloc = pr.lloc_id ? C.get('llocs', pr.lloc_id) : null;
   const tema = pr.tema || (pr.inclou_jardi ? 'verd' : 'blau');
-  const ink = [40, 40, 40], grey = [125, 125, 125];
-  const M = 22, R = 210 - M, W = R - M, LIMIT = 262;
+  const ink = [40, 40, 40];
+  const M = PAPER.esq, W = PAPER.ample, COS = 12, LIMIT = limitPaper(COS), INICI = basePaper(COS);   // el text, a 12 punts
   doc.setTextColor(...ink);
   const text = (t, x, y, size, style, color, opt) => { doc.setTextColor(...(color || ink)); doc.setFont('helvetica', style || 'normal'); doc.setFontSize(size || 10); doc.text(t, x, y, opt); };
   const wrap = (t, w, size, style) => { doc.setFont('helvetica', style || 'normal'); doc.setFontSize(size); return doc.splitTextToSize(String(t || ''), w); };
-  const peu = () => {
-    const l1 = [emp.nom, emp.nif ? 'NIF: ' + emp.nif : '', [emp.adreca, [emp.cp, emp.poblacio].filter(Boolean).join(' ')].filter(Boolean).join(' '), emp.telefon ? 'Tel: ' + emp.telefon : ''].filter(Boolean).join(' | ');
-    text(wrap(l1, W, 7.5), 105, 286, 7.5, 'normal', grey, { align: 'center' });
-  };
-  const logo = () => { const lw = 62, lh = lw * LOGO_RATIO; doc.addImage(LOGOS[tema], 'JPEG', (210 - lw) / 2, 12, lw, lh); return 12 + lh; };
-  const novaPagina = () => { peu(); doc.addPage(); logo(); return 50; };
+  const novaPagina = () => { peuPaper(doc, emp); doc.addPage(); logoPaper(doc, tema); return INICI; };
   const salta = (y, alt) => (y + alt > LIMIT ? novaPagina() : y);
-  // portada: títol amb el número i les parts, client; a baix, població i mes
-  logo();
+  // portada: el títol (amb el número i les parts) i el client, en un sol paràgraf; a baix de tot, la població i el mes
+  logoPaper(doc, tema);
   const noms = [pr.inclou_jardi && 'JARDÍ', pr.inclou_piscina && 'PISCINA', pr.inclou_aigues_grises && 'AIGÜES GRISES'].filter(Boolean);
   const article = { 'JARDÍ': 'DEL', 'PISCINA': 'DE LA', 'AIGÜES GRISES': 'DE LES' }[noms[0]] || 'DE';
   const parts = noms.length ? article + ' ' + (noms.length === 1 ? noms[0] : noms.slice(0, -1).join(', ') + ' I ' + noms[noms.length - 1]) : '';
-  const titol = `PRESSUPOST ${pr.numero || 'ESBORRANY'} DE MANTENIMENT “DESPREOCUPA’T” ${parts} DE LA ZONA COMUNITÀRIA DE`;
-  const tL = wrap(titol, 156, 16, 'bold');
-  let y = 78; text(tL, 105, y, 16, 'bold', ink, { align: 'center' }); y += tL.length * 9;
-  const cL = wrap(client.nom || '', 156, 16, 'bold'); text(cL, 105, y, 16, 'bold', ink, { align: 'center' });
-  text(client.poblacio || (lloc && lloc.poblacio) || '', 105, 250, 15, 'bold', ink, { align: 'center' });
-  text(ompleClaudators('[mes] de [any]', pr), 105, 260, 13, 'normal', ink, { align: 'center' });
-  // contingut: comença directament amb les parts
-  y = novaPagina();
+  const titol = `PRESSUPOST ${pr.numero || 'ESBORRANY'} DE MANTENIMENT “DESPREOCUPA’T” ${parts} DE LA ZONA COMUNITÀRIA DE ${String(client.nom || '').toUpperCase()}`.replace(/\s+/g, ' ').trim();
+  text(wrap(titol, 156, 18, 'bold'), PAPER.mig, 78, 18, 'bold', ink, { align: 'center' });
+  text(nomPropi(client.poblacio || (lloc && lloc.poblacio) || ''), PAPER.mig, PAPER.baix - 10, 15, 'bold', ink, { align: 'center' });
+  text(ompleClaudators('[mes] de [any]', pr), PAPER.mig, PAPER.baix, 15, 'normal', ink, { align: 'center' });
+  // contingut: comença directament amb les parts (al principi de cada pàgina, al marge de dalt)
+  let y = novaPagina();
   for (const c of clausulesPressupost(pr)) {
-    if (c.titol) { y = salta(y, 16); y += 2; text(String(c.titol).toUpperCase(), M, y, 11, 'bold'); y += 7.5; }
-    for (const par of paragrafsClausula(ompleClaudators(c.text, pr))) { y = escriuParagraf(doc, par, M, y, W, 11, salta, ink); y += 2.6; }
+    if (c.titol) { y = salta(y, 17.5); if (y !== INICI) y += 2; text(String(c.titol).toUpperCase(), M, y, COS, 'bold'); y += 8.2; }
+    for (const par of paragrafsClausula(ompleClaudators(c.text, pr))) { y = escriuParagraf(doc, par, M, y, W, COS, salta, ink); y += 2.8; }
     y += 3;
   }
-  // lloc i data, i signatura de qui el signa (nom en Times, titulació a sota)
+  // lloc i data, i la signatura de qui el signa (en Arial: el nom a 13 punts i la titulació a 9,5)
   const signant = pr.signant_id ? C.get('treballadors', pr.signant_id) : null;
   const titols = signant && signant.titol_signatura ? String(signant.titol_signatura).split(/\r?\n/).map(t => t.trim()).filter(Boolean) : [];
-  y = salta(y, 34 + titols.length * 5); y += 8;
-  text(ompleClaudators('[població del lloc], [mes] de [any]', pr), M, y, 11); y += 22;
+  const altTanca = 22 + (signant ? 5.5 + Math.max(0, titols.length - 1) * 4.5 : 0) + 1;   // de la línia del lloc i la data fins a l'última
+  y += 8; if (y + altTanca > PAPER.baix) y = novaPagina();
+  text(ompleClaudators('[població del lloc], [mes] de [any]', pr), M, y, COS); y += 22;
   if (signant) {
-    const sx = 150;
-    doc.setFont('times', 'normal'); doc.setFontSize(15); doc.setTextColor(...ink); doc.text(nomTreballador(signant), sx, y, { align: 'center' }); y += 6;
-    doc.setFontSize(10.5); titols.forEach(t => { doc.text(t, sx, y, { align: 'center' }); y += 5; });
+    const sx = M + W * 0.75;
+    text(nomPropi(nomTreballador(signant)), sx, y, 13, 'normal', ink, { align: 'center' }); y += 5.5;
+    titols.forEach(t => { text(t, sx, y, 9.5, 'normal', ink, { align: 'center' }); y += 4.5; });
   }
-  peu();
+  peuPaper(doc, emp);
   return doc;
 }
 
@@ -5775,18 +5790,14 @@ function pdfInformeLloc(r) {
   const lloc = C.get('llocs', r.lloc_id) || {}, client = C.get('clients', lloc.client_id) || {};
   const tema = r.tema === 'blau' ? 'blau' : 'verd';
   const ink = [92, 92, 92], pale = [140, 140, 140];      // #5C5C5C a tot el document; el lloc i l'adreça, més pàl·lids
-  const M = 25, R = 210 - 15, W = R - M, LIMIT = 268, TOP = 50;   // marges: 2,5 cm a l'esquerra, 1,5 cm a la dreta; el text baixa fins a 268 mm
+  const M = PAPER.esq, R = PAPER.dre, W = PAPER.ample, LIMIT = limitPaper(11), TOP = basePaper(11);   // els marges del paper; el text, a 11 punts
   const text = (t, x, y, size, style, color, opt) => { doc.setTextColor(...(color || ink)); doc.setFont('helvetica', style || 'normal'); doc.setFontSize(size || 10); doc.text(t, x, y, opt); };
   const wrap = (t, w, size, style) => { doc.setFont('helvetica', style || 'normal'); doc.setFontSize(size); return doc.splitTextToSize(String(t || ''), w); };
-  const peu = () => {
-    const l1 = [emp.nom, emp.nif ? 'NIF: ' + emp.nif : '', [emp.adreca, [emp.cp, emp.poblacio].filter(Boolean).join(' ')].filter(Boolean).join(' '), emp.telefon ? 'Tel: ' + emp.telefon : ''].filter(Boolean).join(' | ');
-    text(wrap(l1, W, 7.5), M + W / 2, 286, 7.5, 'normal', pale, { align: 'center' });
-    text(String(doc.internal.getNumberOfPages()), R, 286, 7.5, 'normal', pale, { align: 'right' });
-  };
-  const logo = () => { const lw = 62, lh = lw * LOGO_RATIO; doc.addImage(LOGOS[tema], 'JPEG', (210 - lw) / 2, 12, lw, lh); return 12 + lh; };
-  const novaPagina = () => { peu(); doc.addPage(); logo(); return TOP; };
-  // capçalera: títol, lloc (pàl·lid) i concepte (sense cap rètol)
-  let y = logo() + 16;
+  const peu = () => peuPaper(doc, emp, doc.internal.getNumberOfPages());
+  const novaPagina = () => { peu(); doc.addPage(); logoPaper(doc, tema); return TOP; };
+  // capçalera: títol, lloc (pàl·lid) i concepte (sense cap rètol); comença al marge de dalt
+  logoPaper(doc, tema);
+  let y = basePaper(15);
   const tL = wrap(String(r.titol || '').toUpperCase(), W, 15, 'bold'); text(tL, M, y, 15, 'bold'); y += tL.length * 7.5 + 2;
   text(lloc.nom ? lloc.nom + (client.nom ? ' · ' + client.nom : '') + (lloc.adreca ? ' · ' + lloc.adreca : '') : '', M, y, 9.5, 'normal', pale); y += 9;
   const blocs = [];   // paràgrafs maquetats: primer el concepte (en negreta), després l'informe
@@ -5804,7 +5815,7 @@ function pdfInformeLloc(r) {
     let yy = y, pag = 1, idx = 0, liniesPag = 0; const pos = [];
     for (const b of blocs) {
       for (let i = 0; i < b.m.lines.length; i++, idx++) {
-        const need = i === 0 ? b.m.lh * (b.m.esTitol ? 4 : Math.min(2, b.m.lines.length)) : b.m.lh;
+        const nl = b.m.lines.length, need = i === 0 ? b.m.lh * (b.m.esTitol ? 4 : nl === 3 ? 3 : Math.min(2, nl)) : i === nl - 2 && nl > 3 ? 2 * b.m.lh : b.m.lh;
         if (idx === forcaAbans || yy + need > LIMIT) { pag++; yy = TOP; liniesPag = 0; }
         pos.push({ pag, y: yy }); yy += b.m.lh; liniesPag++;
       }
@@ -5834,10 +5845,10 @@ function pdfInformeLloc(r) {
   if (y + ALT_TANCA > LIMIT) { y = novaPagina(); }
   y += 8;
   const d = new Date(String(r.data || avui()).slice(0, 10) + 'T00:00:00Z');
-  text((lloc.poblacio || client.poblacio || '') + ',  ' + MESOS_CAT[d.getUTCMonth()] + ' de ' + d.getUTCFullYear(), M, y, 11); y += 20;
+  text(nomPropi(lloc.poblacio || client.poblacio || '') + ',  ' + MESOS_CAT[d.getUTCMonth()] + ' de ' + d.getUTCFullYear(), M, y, 11); y += 20;
   if (signant) {
     const sx = M + W * 0.75;
-    text(nomTreballador(signant), sx, y, 13, 'normal', ink, { align: 'center' }); y += 5.5;
+    text(nomPropi(nomTreballador(signant)), sx, y, 13, 'normal', ink, { align: 'center' }); y += 5.5;
     titols.forEach(t => { text(t, sx, y, 9.5, 'normal', ink, { align: 'center' }); y += 4.5; });
   }
   peu();
@@ -10379,15 +10390,16 @@ function pdfRegistreJornada(persones, any, mes) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const emp = C.rows('empresa').find(e => e.actiu) || {};
-  const ink = [60, 60, 60], pale = [130, 130, 130], M = 18, R = 192, W = R - M;
+  const ink = [60, 60, 60], pale = [130, 130, 130], M = PAPER.esq, R = PAPER.dre, W = PAPER.ample;
   const text = (t, x, y, size, style, color, opt) => { doc.setTextColor(...(color || ink)); doc.setFont('helvetica', style || 'normal'); doc.setFontSize(size || 10); doc.text(t, x, y, opt); };
   const nDies = new Date(any, mes, 0).getDate();
   persones.forEach((p, idx) => {
     if (idx) doc.addPage();
-    const lw = 46, lh = lw * LOGO_RATIO; doc.addImage(LOGOS.blau, 'JPEG', M, 10, lw, lh);
-    text('REGISTRE DE JORNADA', R, 16, 15, 'bold', ink, { align: 'right' });
-    text(MESOS[mes - 1] + ' ' + any, R, 23, 11, 'normal', pale, { align: 'right' });
-    let y = 10 + lh + 10;
+    logoPaper(doc, 'blau');
+    let y = basePaper(15);   // el títol, al marge de dalt (i el mes a la dreta)
+    text('REGISTRE DE JORNADA', M, y, 15, 'bold', ink);
+    text(MESOS[mes - 1] + ' ' + any, R, y, 11, 'normal', pale, { align: 'right' });
+    y += 9;
     const wrapA = t => { doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); return doc.splitTextToSize(t, W - 24); };
     const lE = wrapA([emp.nom, emp.nif ? 'NIF ' + emp.nif : '', [emp.adreca, [emp.cp, emp.poblacio].filter(Boolean).join(' ')].filter(Boolean).join(', ')].filter(Boolean).join('  ·  '));
     text('Empresa', M, y, 8, 'bold', pale); text(lE, M + 24, y, 9.5); y += 5 * lE.length + 0.5;
@@ -10397,32 +10409,38 @@ function pdfRegistreJornada(persones, any, mes) {
     const parelles = parellesFitxatge(fitxatgesDe(p.id)).filter(x => x.dia.startsWith(any + '-' + String(mes).padStart(2, '0') + '-'));
     const perDia = new Map(); parelles.forEach(x => { if (!perDia.has(x.dia)) perDia.set(x.dia, []); perDia.get(x.dia).push(x); });
     const absDies = new Map(absenciesActives().filter(a => Number(a.treballador_id) === p.id && a.dia.startsWith(any + '-' + String(mes).padStart(2, '0') + '-')).map(a => [a.dia, a.tipus]));
-    const cols = [M, M + 22, M + 47, M + 72, M + 97, M + 122, M + 147, R], alt = 5.6;
-    const capcalera = () => { doc.setFillColor(240, 240, 240); doc.rect(M, y - 4.3, W, alt, 'F'); ['Dia', 'Entrada', 'Sortida', 'Entrada', 'Sortida', 'Entrada', 'Sortida'].forEach((c, i) => text(c, cols[i] + 1.5, y, 8, 'bold', pale)); text('Hores', R - 1.5, y, 8, 'bold', pale, { align: 'right' }); y += alt; };
+    const cols = [M, M + 22, M + 47, M + 72, M + 97, M + 122, M + 147, R], alt = 4.9, dalt = 3.6;   // files de 4,9 mm: el mes sencer i les signatures, en una pàgina
+    const capcalera = () => { doc.setFillColor(240, 240, 240); doc.rect(M, y - dalt, W, alt, 'F'); ['Dia', 'Entrada', 'Sortida', 'Entrada', 'Sortida', 'Entrada', 'Sortida'].forEach((c, i) => text(c, cols[i] + 1.5, y, 8, 'bold', pale)); text('Hores', R - 1.5, y, 8, 'bold', pale, { align: 'right' }); y += alt; };
     capcalera();
     let totalMin = 0;
     for (let d = 1; d <= nDies; d++) {
       const iso = any + '-' + String(mes).padStart(2, '0') + '-' + String(d).padStart(2, '0'), w = new Date(any, mes - 1, d).getDay(), fs = w === 0 || w === 6, fe = festiuDe(iso), ps = perDia.get(iso) || [], abs = absDies.get(iso);
-      if (y > 262) { doc.addPage(); y = 20; capcalera(); }
-      if (fs) { doc.setFillColor(248, 248, 248); doc.rect(M, y - 4.3, W, alt, 'F'); }
+      if (y + alt - dalt > PAPER.baix) { doc.addPage(); logoPaper(doc, 'blau'); y = PAPER.dalt + dalt; capcalera(); }
+      if (fs) { doc.setFillColor(248, 248, 248); doc.rect(M, y - dalt, W, alt, 'F'); }
       text(String(d).padStart(2, '0') + '/' + String(mes).padStart(2, '0') + '  ' + ['dg', 'dl', 'dt', 'dc', 'dj', 'dv', 'ds'][w], cols[0] + 1.5, y, 8.5, 'normal', fs ? pale : ink);
       if (abs) text(TIPUS_ABS[abs] || abs, cols[1] + 1.5, y, 8.5, 'italic', pale);
       else if (fe && !ps.length) text('Festiu · ' + fe, cols[1] + 1.5, y, 8.5, 'italic', pale);
       ps.slice(0, 3).forEach((x, i) => { text(horaDe(x.inici.moment), cols[1 + i * 2] + 1.5, y, 8.5); text(x.fi ? horaDe(x.fi.moment) : '—', cols[2 + i * 2] + 1.5, y, 8.5, 'normal', x.fi ? ink : [192, 57, 43]); });
       const min = ps.reduce((a, x) => a + (x.fi ? x.minuts : 0), 0); totalMin += min;
       if (ps.length) text(Math.floor(min / 60) + ':' + String(Math.round(min % 60)).padStart(2, '0'), R - 1.5, y, 8.5, 'normal', ink, { align: 'right' });
-      doc.setDrawColor(225); doc.setLineWidth(0.15); doc.line(M, y + 1.6, R, y + 1.6);
+      doc.setDrawColor(225); doc.setLineWidth(0.15); doc.line(M, y + alt - dalt, R, y + alt - dalt);
       y += alt;
       if (ps.length > 3) { ps.slice(3).forEach((x, i) => { text('(cont.)', cols[0] + 1.5, y, 7.5, 'italic', pale); text(horaDe(x.inici.moment), cols[1 + (i % 3) * 2] + 1.5, y, 8.5); text(x.fi ? horaDe(x.fi.moment) : '—', cols[2 + (i % 3) * 2] + 1.5, y, 8.5); if (i % 3 === 2) y += alt; }); if (((ps.length - 3) % 3) !== 0) y += alt; }
     }
     y += 2; text('Total d’hores del mes', cols[0] + 1.5, y, 9.5, 'bold'); text(Math.floor(totalMin / 60) + ':' + String(Math.round(totalMin % 60)).padStart(2, '0'), R - 1.5, y, 9.5, 'bold', ink, { align: 'right' });
-    y += 6; text('Dies amb fitxatge: ' + perDia.size + '. Les hores les registra el servidor en el moment de fitxar; el treballador fitxa des de la seva pròpia app amb la posició del mòbil.', M, y, 7.5, 'normal', pale);
-    if (y > 262) { doc.addPage(); y = 30; } else y = Math.max(y + 16, 252);
-    doc.setDrawColor(150); doc.setLineWidth(0.3); doc.line(M, y + 14, M + 70, y + 14); doc.line(R - 70, y + 14, R, y + 14);
-    text('Signatura de l’empresa', M, y + 19, 8, 'normal', pale); text('Signatura del treballador/a', R - 70, y + 19, 8, 'normal', pale);
-    text('Data: ____ / ____ / ________', M, y + 27, 8, 'normal', pale);
-    text(String(doc.internal.getNumberOfPages()), R, 286, 7.5, 'normal', pale, { align: 'right' });
+    y += 6; doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5);
+    const nota = doc.splitTextToSize('Dies amb fitxatge: ' + perDia.size + '. Les hores les registra el servidor en el moment de fitxar; el treballador fitxa des de la seva pròpia app amb la posició del mòbil.', W);
+    text(nota, M, y, 7.5, 'normal', pale); y += (nota.length - 1) * 7.5 * 0.3528 * 1.15;
+    // les signatures, a baix de tot de la pàgina (la data, a l'últim, al marge de baix); si ja no hi caben, a la pàgina següent
+    let sy = PAPER.baix - 21;
+    if (y + 6 > sy) { doc.addPage(); logoPaper(doc, 'blau'); sy = PAPER.dalt; }
+    doc.setDrawColor(150); doc.setLineWidth(0.3); doc.line(M, sy + 10, M + 70, sy + 10); doc.line(R - 70, sy + 10, R, sy + 10);
+    text('Signatura de l’empresa', M, sy + 14.5, 8, 'normal', pale); text('Signatura del treballador/a', R - 70, sy + 14.5, 8, 'normal', pale);
+    text('Data: ____ / ____ / ________', M, sy + 20, 8, 'normal', pale);
   });
+  // a totes les pàgines, les dades de l'empresa (i el número de pàgina, si n'hi ha més d'una)
+  const n = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= n; i++) { doc.setPage(i); peuPaper(doc, emp, n > 1 ? i : null); }
   return doc;
 }
 /* ---------- Correccions de fitxatges (només a la web de l'oficina) ----------
