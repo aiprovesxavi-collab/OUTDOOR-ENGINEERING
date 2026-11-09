@@ -154,6 +154,7 @@
   .c-taronja{ background:#ffb74d !important; color:#1d2a1b !important; }
   .c-vermell{ background:#d32f2f !important; color:#fff !important; font-weight:600; }
   .c-negre{ background:#222 !important; color:#fff !important; }
+  .c-albara{ background:#f1e86f !important; color:#3b3810 !important; }
   td.cel{ border-radius:4px; font-weight:500; white-space:nowrap; }
   .avis{ margin-top:7px; padding:10px 13px; border:3px solid var(--line-2); border-radius:7px; line-height:1.35; background:#fff; text-align:center; }
   .avis .ca{ text-transform:uppercase; font-size:15.5px; font-weight:600; }
@@ -199,7 +200,8 @@
   .bar input[type=text]{ width:320px; }
   .bar .n{ color:var(--ink-3); font-size:14px; margin-left:auto; }
   .tbl{ width:100%; border-collapse:collapse; font-size:14px; }
-  .tbl th{ text-align:left; font-weight:500; color:var(--ink-2); padding:8px 10px; border-bottom:1px solid var(--line-2); white-space:nowrap; }
+  .tbl th{ text-align:left; font-weight:500; color:var(--ink-2); padding:8px 10px; border-bottom:1px solid var(--line-2); white-space:nowrap; vertical-align:bottom; }
+  .tbl th.ajusta{ white-space:normal; min-width:80px; max-width:120px; line-height:1.25; }
   .tbl td{ padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
   .tbl tr.row{ cursor:pointer; }
   .tbl tr.row:hover td{ background:var(--bg-2); }
@@ -1947,9 +1949,11 @@ const SCHEMA = {
     factures_proveidor: {
       label: 'Factures de proveïdor', nou: 'Nova factura de proveïdor (a mà)', order: 'data_factura', desc: true, compta: 'factura_proveidor',
       display: (r, L) => (r.numero || 'sense número') + ' — ' + L('proveidors', r.proveidor_id) + ' — ' + dmy(r.data_factura),
-      list: ['data_factura', 'proveidor_id', 'numero', 'concepte', 'total', 'compte', 'conforme', 'data_venciment', 'pagada', 'estat'],
+      list: ['data_factura', 'proveidor_id', 'numero', 'concepte', 'total', 'compte', 'conforme', 'data_venciment', 'pagada', 'estat', 'convertida'],
       computed: {
         compte: { label: 'Compte', fn: (r, C) => { const c = C.get('comptes_despesa', r.compte_despesa_id); return c ? c.codi : ''; } },
+        // sí si almenys una línia ja s'ha passat a albarà
+        convertida: { label: 'Convertida en albarà', th: 'ajusta', fn: r => fpAmbAlbara().has(Number(r.id)) ? 'Sí' : 'No', color: r => fpAmbAlbara().has(Number(r.id)) ? 'c-albara' : '' },
         conforme: { label: 'Conforme', fn: (r, C) => { const t = C.get('treballadors', r.conforme_treballador_id); return (t ? 'C' + inicialsTreballador(t) : '') + (r.conforme_data ? ' ' + dmy(r.conforme_data) : ''); } },
       },
       filtres: [{ key: 'data_factura', tipus: 'dates', label: 'Data' }, { key: 'proveidor_id', tipus: 'ref', ref: 'proveidors', label: 'Proveïdor' }, { key: 'compte_despesa_id', tipus: 'ref', ref: 'comptes_despesa', label: 'Compte' }],
@@ -1965,7 +1969,7 @@ const SCHEMA = {
         { key: 'proveidor_id', label: 'Proveïdor', type: 'ref', ref: 'proveidors', required: true },
         { key: 'numero', label: 'Número de factura', type: 'text' },
         { key: 'data_factura', label: 'Data de la factura', type: 'date', required: true, default: 'avui' },
-        { key: 'data_venciment', label: 'Venciment (data de cobrament)', type: 'date', color: (v, r) => r ? estatVenciment(r).classe : '', nota: (vals, r) => estatVenciment(r, vals) },
+        { key: 'data_venciment', label: 'Venciment (data de cobrament)', type: 'date', th: 'ajusta', color: (v, r) => r ? estatVenciment(r).classe : '', nota: (vals, r) => estatVenciment(r, vals) },
         { key: 'concepte', label: 'Concepte', type: 'text' },
         { key: 'base_imponible', label: 'Base imposable', type: 'number', step: '0.01' },
         { key: 'iva_percent', label: 'IVA %', type: 'number', step: '0.01' },
@@ -4690,7 +4694,7 @@ function tableHTML(td, rows, clickable) {
   if (!rows.length) return `<div class="empty">Cap registre.</div>`;
   const cols = td.list, ambMarca = clickable && !!td.marcable, marcats = marquesDe(td);
   let grupAnt = null;
-  return `<table class="tbl"><thead><tr>${cols.map(k => `<th>${h(colLabel(td, k))}</th>`).join('')}${ambMarca ? '<th class="marca"></th>' : ''}</tr></thead><tbody>
+  return `<table class="tbl"><thead><tr>${cols.map(k => { const d = (td.computed && td.computed[k]) || fieldDef(td, k) || {}; return `<th${d.th ? ` class="${d.th}"` : ''}>${h(colLabel(td, k))}</th>`; }).join('')}${ambMarca ? '<th class="marca"></th>' : ''}</tr></thead><tbody>
     ${rows.map(r => { const id = td.pk ? r[td.pk] : r.id;
       let cap = ''; if (clickable && td.grupDe) { const g = td.grupDe(r); if (g !== grupAnt) { grupAnt = g; cap = `<tr class="grup-fila"><td colspan="${cols.length + (ambMarca ? 1 : 0)}">${h(g)}</td></tr>`; } }
       return cap + `<tr class="${clickable ? 'row' : ''} ${r.actiu ? '' : 'off'} ${td.filaClass ? td.filaClass(r) : ''}" data-id="${id}">${cols.map(k => { const f = fieldDef(td, k); const cp = td.computed && td.computed[k]; const c = f && f.color ? f.color(r[k], r) : (cp && cp.color ? cp.color(r) : ''); return `<td class="${isNum(td, k) ? 'num' : ''} ${c ? 'cel ' + c : ''}">${h(cellText(td, k, r))}</td>`; }).join('')}${ambMarca ? `<td class="marca">${td.marcable(r) ? `<input type="checkbox" data-marca-id="${id}" ${marcats.has(id) ? 'checked' : ''} title="Marca’l">` : ''}</td>` : ''}</tr>`; }).join('')}
@@ -6020,6 +6024,12 @@ function destiDesDeText(text) {
 const factorVenda = prov => prov && prov.percentatge_venda != null && prov.percentatge_venda !== '' ? Number(prov.percentatge_venda) / 100 : 1;
 const costLinia = l => l.import != null && l.import !== '' && Number(l.quantitat) ? Number(l.import) / Number(l.quantitat) : Number(l.preu_unitari || 0);
 const pvpLinia = (l, prov) => Math.round(costLinia(l) * factorVenda(prov) * 100) / 100;
+// les factures de proveïdor amb alguna línia ja passada a albarà (es calcula un sol cop per pantalla, no per fila)
+let memoFpAlbara = null;
+const fpAmbAlbara = () => {
+  if (!memoFpAlbara) { memoFpAlbara = new Set(C.rows('factura_proveidor_linies').filter(l => l.actiu && l.albara_id).map(l => Number(l.factura_proveidor_id))); setTimeout(() => { memoFpAlbara = null; }, 0); }
+  return memoFpAlbara;
+};
 const liniesDeFactura = fpId => C.rows('factura_proveidor_linies').filter(l => l.actiu && Number(l.factura_proveidor_id) === Number(fpId)).sort((a, b) => (a.ordre || 0) - (b.ordre || 0) || a.id - b.id);
 function liniesPendentsText(fpId) {
   const ls = liniesDeFactura(fpId), aLloc = ls.filter(l => l.desti_tipus === 'lloc' && l.lloc_id).length, sense = ls.filter(l => !l.desti_tipus).length;
