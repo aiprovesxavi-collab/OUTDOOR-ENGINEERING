@@ -5282,11 +5282,13 @@ function pdfFactura(f) {
   const emp = C.rows('empresa').find(e => e.actiu) || {};
   const client = C.get('clients', f.client_id) || {};
   const tema = f.tema || (teJardi(f) ? 'verd' : 'blau');
-  const acc = ACCENT[tema], fort = FORT[tema], ink = [40, 40, 40], grey = [125, 125, 125], suau = [110, 110, 110];
+  const fort = FORT[tema], ink = [40, 40, 40], grey = [125, 125, 125], suau = [110, 110, 110];
   const linies = C.rows('factura_linies').filter(l => l.actiu && Number(l.factura_id) === f.id).sort((a, b) => (a.ordre - b.ordre) || (a.id - b.id));
   const M = PAPER.esq, R = PAPER.dre, W = PAPER.ample;
   const BAIX = PAPER.baix;   // fins on arriba el contingut de cada pàgina: a sota, el marge i les dades de l'empresa
   // els rètols (FACTURA:, DATA:, PAGAMENT:, CONCEPTE:), a 11,5 punts, amb el valor al costat; els de la taula, a 9,5; el del codi de client, a 7,5
+  const ESQ_DRE = 100;   // el requadre de l'esquerra (número, data i pagament) arriba fins a 100 mm de la vora esquerra del full
+  const CLI_ESQ = 120;   // el del client comença a 90 mm de la vora dreta del full (i arriba fins al marge)
   const label = (t, x, y, opt, size) => { doc.setTextColor(...grey); doc.setFont('helvetica', 'normal'); doc.setFontSize(size || 11.5); doc.text(t, x, y, opt); };
   const text = (t, x, y, size, style, color, opt) => { doc.setTextColor(...(color || ink)); doc.setFont('helvetica', style || 'normal'); doc.setFontSize(size || 10); doc.text(t, x, y, opt); };
   const marca = () => { if (f.estat === 'esborrany') { doc.setTextColor(232, 232, 232); doc.setFont('helvetica', 'bold'); doc.setFontSize(64); doc.text('ESBORRANY', 105, 170, { align: 'center', angle: 30 }); } };
@@ -5304,13 +5306,13 @@ function pdfFactura(f) {
   const ample = t => doc.getStringUnitWidth(t, mesura()) * doc.getFontSize() / doc.internal.scaleFactor;
   const parteix = (t, w) => doc.splitTextToSize(t, w, mesura());
   // un rètol amb els dos punts i el valor al costat, a la mateixa línia (el valor, a 11 punts si no se'n diu cap altra); si el valor no hi
-  // cap, continua a sota, alineat amb el valor. Torna on comença el valor i la base de l'última línia.
-  const rotul = (rot, yy, valor, size, style, color) => {
+  // cap (fins a «dre»), continua a sota, alineat amb el valor. Torna on comença el valor i la base de l'última línia.
+  const rotul = (rot, yy, valor, size, style, color, dre) => {
     size = size || 11;
     label(rot + ':', M, yy);
     const vx = M + ample(rot + ':') + Math.max(11.5, size) * 0.3528 * 0.278;   // (l'espai, el de la lletra més gran)
     doc.setFont('helvetica', style || 'normal'); doc.setFontSize(size);
-    const L = parteix(String(valor == null ? '' : valor), R - vx);
+    const L = parteix(String(valor == null ? '' : valor), (dre || R) - vx);
     text(L, vx, yy, size, style, color);
     return { vx, ult: yy + (L.length - 1) * size * 0.3528 * 1.15 };
   };
@@ -5318,34 +5320,39 @@ function pdfFactura(f) {
   marca();
   logoPaper(doc, tema);
 
-  // capçalera: a l'esquerra, FACTURA: número (a 20 punts, amb el color fort de la marca) i DATA: data; a la dreta, el client. La primera
-  // línia comença al marge de dalt.
-  const y0 = basePaper(20);
+  // capçalera, en dos requadres sense línia ni ombra: a l'esquerra (fins a 100 mm), FACTURA: número (a la mida del nom del client, amb el
+  // color fort de la marca), DATA: data i PAGAMENT: forma i venciment, a la mateixa distància l'un de l'altre; a la dreta (de 120 mm al
+  // marge), el client. La primera línia comença al marge de dalt.
+  const y0 = basePaper(13.5);
   let y = y0;
-  rotul('FACTURA', y0, f.numero_complet || 'ESBORRANY', 20, 'bold', fort);
+  rotul('FACTURA', y0, f.numero_complet || 'ESBORRANY', 13.5, 'bold', fort, ESQ_DRE);
 
-  // el client (el nom, a 13,5 punts; l'adreça i el NIF, més suaus); s'apunta la base de cada línia, per alinear-hi la data
-  const rx = 104, rw = R - rx;   // (més ample: el nom, a 13,5 punts, hi ha de cabre)
+  // el client (el nom, a 13,5 punts; l'adreça i el NIF, a 12 i més suaus); s'apunta la base de cada línia, per alinear-hi la data
+  const rx = CLI_ESQ, rw = R - rx;
   const nom = f.client_nom || client.nom || '';
   doc.setFont('helvetica', 'bold'); doc.setFontSize(13.5);
   const nomL = parteix(nom, rw);
   text(nomL, rx, y0, 13.5, 'bold');
   const bases = nomL.map((s, k) => y0 + k * 13.5 * 0.3528 * 1.15);
-  let ry = y0 + (nomL.length - 1) * 13.5 * 0.3528 * 1.15 + 6.8;
+  const AD = 12, pasAd = AD * 0.3528 * 1.15;
+  let ry = y0 + (nomL.length - 1) * 13.5 * 0.3528 * 1.15 + 7.3;   // la primera línia de sota el nom
   const adreca = f.client_adreca || [client.adreca, [client.cp, client.poblacio].filter(Boolean).join(' ')].filter(Boolean).join(', ');
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
-  // el carrer en una línia i el codi postal amb la població en una altra
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(AD);
+  // el carrer en una línia i el codi postal amb la població en una altra; el NIF, una mica separat
   const parts = adreca.split(', '); const ultim = parts.length > 1 ? parts.pop().replace(/^(\d{4,5}\s+)?(.+)$/, (m, cp, pob) => (cp || '') + nomPropi(pob)) : null;
   const adrL = [...parteix(parts.join(', '), rw), ...(ultim ? parteix(ultim, rw) : [])];
-  if (adreca) { text(adrL, rx, ry, 10, 'normal', suau); adrL.forEach((s, k) => bases.push(ry + k * 10 * 0.3528 * 1.15)); ry += adrL.length * 5; }
-  const nif = f.client_nif || client.nif; if (nif) { text('NIF ' + nif, rx, ry + 0.5, 10, 'normal', suau); bases.push(ry + 0.5); }
+  if (adreca) { text(adrL, rx, ry, AD, 'normal', suau); adrL.forEach((s, k) => bases.push(ry + k * pasAd)); ry += (adrL.length - 1) * pasAd + 6.9; }
+  const nif = f.client_nif || client.nif; if (nif) bases.push(ry);   // (el NIF s'escriu quan se sap on va el pagament)
 
-  // la data, uns 11 mm per sota del número, alineada amb la línia del client que hi caigui més a prop (normalment, la de la població)
-  const objectiu = y0 + 10.86, propers = bases.filter(b => b >= y0 + 9 && b <= y0 + 14);
+  // la data, alineada amb la línia del client que caigui més a prop de la població (la segona de sota el nom, normalment)
+  const objectiu = y0 + 7.3 + pasAd, propers = bases.filter(b => b >= y0 + 10 && b <= y0 + 14.5);
   const yData = propers.length ? propers.reduce((m, b) => Math.abs(b - objectiu) < Math.abs(m - objectiu) ? b : m) : objectiu;
-  rotul('DATA', yData, dmy(f.data_factura));
+  rotul('DATA', yData, dmy(f.data_factura), null, null, null, ESQ_DRE);
+  // el pagament, a la mateixa distància de la data que la data del número; si el NIF hi queda just per sobre, baixa fins a la mateixa altura
+  const yPag = yData + (yData - y0);
+  if (nif) { const k = bases.length - 1; if (yPag - bases[k] > 0 && yPag - bases[k] <= 2.5) bases[k] = yPag; text('NIF ' + nif, rx, bases[k], AD, 'normal', suau); }
 
-  // el pagament, de banda a banda per sota del client, en una línia (o més, si no hi cap): la forma i, al final, el venciment. El compte i
+  // el text del pagament, dins del requadre de l'esquerra, 2 punts més petit i més suau: la forma i, al final, el venciment. El compte i
   // el venciment no es parteixen. A l'esborrany, el compte que hi anirà en emetre-la (el del client).
   const forma = f.forma_pagament || client.forma_pagament;
   const venc = f.data_venciment ? dmy(f.data_venciment) : null;
@@ -5355,13 +5362,10 @@ function pdfFactura(f) {
   const ptxt = forma === 'domiciliacio'
     ? 'Rebut domiciliat al compte del client' + (venc ? ', ' + junt('amb càrrec el ' + venc) : '') + '.'
     : (compte ? 'Transferència al compte ' + compte : 'Transferència bancària') + (venc ? ', ' + junt('abans del ' + venc) : '') + '.';
-  const pg = rotul('PAGAMENT', Math.max(yData + 12, Math.max(...bases) + 9), ptxt);
+  const pg = rotul('PAGAMENT', yPag, ptxt, 9, 'normal', suau, ESQ_DRE);
 
-  // línia de separació
-  y = pg.ult + 7; doc.setDrawColor(...acc); doc.setLineWidth(0.5); doc.line(M, y, R, y);
-
-  // concepte (i, a les recurrents, el període, a sota)
-  const cc = rotul('CONCEPTE', y + 11, f.concepte || '');
+  // el concepte (sense línia de separació), per sota dels dos requadres; a les recurrents, el període, a sota
+  const cc = rotul('CONCEPTE', Math.max(pg.ult, ...bases) + 15, f.concepte || '');
   y = cc.ult + 5.3;
   if (f.periode_inici && f.periode_fi) { text('Període del ' + dmy(f.periode_inici) + ' al ' + dmy(f.periode_fi), cc.vx, y + 1, 8.5, 'normal', grey); y += 6; }
 
