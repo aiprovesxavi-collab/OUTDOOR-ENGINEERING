@@ -16,9 +16,14 @@
     --bg:#ffffff; --bg-2:#f5f8f3;
     --green:#2f7d4a; --green-2:#e4f1e8;
     --blue:#2b5f8a; --blue-2:#e5eef6;
-    --factura:#5d7e1b;   /* verd oliva dels botons que fan factures */
+    --factura:var(--b-endavant);   /* verd oliva dels botons que fan factures */
     --albara:#e8dd31;    /* groc dels botons que passen alguna cosa a albarà */
     --red:#b8432b; --red-2:#fbebe7;
+    /* els colors dels botons, segons el que fan (iguals a tot arreu, a l'oficina i a l'app, i no canvien entre Entrada i Consulta) */
+    --b-desa:#014c85;       /* Desa: blau clàssic */
+    --b-endavant:#5d7e1b;   /* passa endavant (obre la incidència, emet la factura…): el verd d'«Emet factura» */
+    --b-rebutja:#ed7c16;    /* tanca sense fer res: «No és un tema d’Outdoor» (taronja) */
+    --b-elimina:#b6142c;    /* Elimina: vermell chilli pepper */
     --mode:var(--green); --mode-2:var(--green-2);
   }
   body[data-mode="consulta"]{ --mode:var(--blue); --mode-2:var(--blue-2); }
@@ -193,7 +198,7 @@
   .actions{ display:flex; gap:10px; align-items:center; margin-top:22px; flex-wrap:wrap; }
   .btn{ font:inherit; font-weight:500; border:1px solid var(--mode); background:var(--mode); color:#fff; border-radius:5px; padding:8px 16px; cursor:pointer; }
   .btn.ghost{ background:#fff; color:var(--ink); border-color:var(--line-2); }
-  .btn.danger{ background:#fff; color:var(--red); border-color:var(--red); margin-left:auto; }
+  .btn.danger{ background:#fff; color:var(--b-elimina); border-color:var(--b-elimina); margin-left:auto; }
   .btn.small{ padding:4px 10px; font-weight:400; font-size:13.5px; }
   .btn:disabled{ opacity:.55; cursor:default; }
   .bar{ display:flex; gap:16px; align-items:center; margin:0 0 14px; flex-wrap:wrap; }
@@ -355,12 +360,26 @@
   /* botons que fan factures: verds, al centre de la seva fila i separats dels altres (esquerra: els de sempre; dreta: els de perill) */
   .btn.factura{ background:var(--factura); border-color:var(--factura); color:#fff; }
   .btn.albara{ background:var(--albara); border-color:#c9bd1b; color:var(--ink); }
+  /* les famílies de botons: el color el dona el que fa el botó (les variables --b-*), no la pantalla */
+  .btn.desa{ background:var(--b-desa); border-color:var(--b-desa); color:#fff; }
+  .btn.endavant{ background:var(--b-endavant); border-color:var(--b-endavant); color:#fff; }
+  .btn.endavant.ghost{ background:#fff; color:var(--b-endavant); border-color:var(--b-endavant); }   /* el mateix pas, en petit («Vincula a…») */
+  .btn.rebutja{ background:var(--b-rebutja); border-color:var(--b-rebutja); color:#fff; }
+  .btn.elimina{ background:var(--b-elimina); border-color:var(--b-elimina); color:#fff; }
+  .actions > .btn.elimina, .accions > .btn.elimina, .sel-bar > .btn.elimina{ margin-left:auto; }   /* com abans els de perill: al final de la fila */
+  .actions > .dreta{ margin-left:auto; display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+  .boto-gran.desa{ --bg-boto:var(--b-desa); }
   .fi-full{ margin:0 0 10px; } .fi-full .fila-factura{ margin:8px 0 4px; }
   .fila-factura{ display:grid; grid-template-columns:minmax(0, 1fr) auto minmax(0, 1fr); align-items:center; column-gap:48px; row-gap:10px; }
   .fila-factura > .ff-esq, .fila-factura > .ff-mig, .fila-factura > .ff-dre{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; min-width:0; }
   .fila-factura > .ff-mig{ justify-content:center; gap:16px; }
   .fila-factura > .ff-dre{ justify-content:flex-end; }
-  .fila-factura .btn.danger{ margin-left:0; }
+  .fila-factura .btn.danger, .fila-factura .btn.elimina{ margin-left:0; }
+  /* si en una banda hi ha més d'un botó, un sota l'altre: a la dreta de la mateixa amplada (el report: «No és un tema d’Outdoor» i, a sota,
+     «Elimina»); al mig, centrats (el report: «Obre una incidència» i, a sota, les de vincular-lo a una d'oberta) */
+  .fila-factura > .ff-dre.col, .fila-factura > .ff-mig.col{ flex-direction:column; flex-wrap:nowrap; }
+  .fila-factura > .ff-dre.col{ align-items:stretch; justify-self:end; }
+  .fila-factura > .ff-mig.col{ align-items:center; gap:10px; }
   .fila-factura > .hint, .fila-factura > .nota-sota{ grid-column:1 / -1; }
   .fila-factura > .nota-sota{ text-align:center; }
   td .btn.factura{ margin-left:14px; }
@@ -373,7 +392,7 @@
   @media (max-width:820px){
     .fila-factura, .fila-factura.apilada{ grid-template-columns:minmax(0, 1fr); row-gap:14px; }
     .fila-factura.apilada > .ff-esq, .fila-factura.apilada > .ff-dre, .fila-factura.apilada > .ff-mig, .fila-factura.apilada > .hint, .fila-factura.apilada > .nota-sota{ grid-column:1; grid-row:auto; }
-    .fila-factura > .ff-dre{ justify-content:flex-start; } .fila-factura > :empty{ display:none; } }
+    .fila-factura > .ff-dre{ justify-content:flex-start; } .fila-factura > :empty{ display:none; } .fila-factura > .ff-dre.col{ justify-self:stretch; } }
   .mc-box{ display:inline-flex; align-items:center; gap:8px; border:1.5px solid var(--line-2); border-radius:8px; padding:6px 12px; cursor:pointer; font-size:14px; user-select:none; }
   .mc-box input{ width:20px; height:20px; }
   .mc-box.on{ background:#2e7d32; border-color:#2e7d32; color:#fff; }
@@ -1125,7 +1144,7 @@ const cobreixMajuscules = r => { const it = [r.cobreix_jardi && 'JARDÍ', r.cobr
 const cobreixText = r => [r.cobreix_jardi && 'jardí', r.cobreix_piscina && 'piscina', r.cobreix_aigues_grises && 'aigües grises'].filter(Boolean).join(' i ') || 'sense cobertura';
 const ORDRE_GRUPS = [];
 const clientAmbLlocs = (r, C) => { const ll = C.rows('llocs').filter(l => l.actiu && Number(l.client_id) === r.id).map(l => l.nom); return (ll.length ? ll.join(', ') + ' — ' : '') + r.nom; };
-const comptadorAmbLloc = r => L('llocs', r.lloc_id) + ' — ' + cobreixText(r) + ' — ' + (r.numero_serie || 'comptador ' + r.id) + (r.data_baixa ? ' (baixa ' + dmy(r.data_baixa) + ')' : (r.actiu ? '' : ' (donat de baixa)'));
+const comptadorAmbLloc = r => L('llocs', r.lloc_id) + ' — ' + cobreixText(r) + ' — ' + (r.numero_serie || 'comptador ' + r.id) + (r.data_baixa ? ' (baixa ' + dmy(r.data_baixa) + ')' : (r.actiu ? '' : ' (eliminat)'));
 
 /* ---------- Sol i línies de llum ---------- */
 // Sortida i posta del sol (equació del sol, precisió d'un parell de minuts) en hora local
@@ -1781,11 +1800,11 @@ const SCHEMA = {
       filaClass: r => r.estat === 'anul_lat' ? 'off' : '',
       marcable: r => r.actiu && r.estat === 'obert', marcaNom: n => n === 1 ? 'albarà marcat' : 'albarans marcats',
       marcaAccions: [{ label: 'Agrupa albarans', min: 2, run: ids => agrupaAlbarans(ids) }, { label: 'Fes-ne una factura', min: 1, classe: 'factura', run: ids => facturaAlbarans(ids) },
-        { label: n => n === 1 ? 'Elimina’l' : 'Elimina’ls', min: 1, classe: 'danger', run: ids => eliminaAlbarans(ids) }],
+        { label: n => n === 1 ? 'Elimina’l' : 'Elimina’ls', min: 1, classe: 'elimina', run: ids => eliminaAlbarans(ids) }],
       canBaixa: () => false,
       extras: r => r && r.estat === 'anul_lat' ? '<div class="msg dc-avis">Aquest albarà està <b>eliminat</b>: no es factura i no surt a la llista dels pendents. Si s’ha de facturar, prem «Torna’l a obrir».</div>' : '',
       children: [{ table: 'albara_linies', fk: 'albara_id', label: 'Línies de l’albarà', editable: r => r.estat === 'obert', sum: { field: 'base', label: 'Base imposable' } }],
-      actions: r => r.estat === 'obert' ? [{ label: 'Converteix en factura', classe: 'factura', run: () => facturaAlbarans([r.id]) }, { label: 'Elimina l’albarà', classe: 'danger', run: () => eliminaAlbarans([r.id]) }]
+      actions: r => r.estat === 'obert' ? [{ label: 'Converteix en factura', classe: 'factura', run: () => facturaAlbarans([r.id]) }, { label: 'Elimina l’albarà', classe: 'elimina', run: () => eliminaAlbarans([r.id]) }]
         : r.estat === 'anul_lat' ? [{ label: 'Torna’l a obrir', run: () => tornaObrirAlbara(r.id) }] : [],
       fields: [
         { key: 'numero_complet', label: 'Número', type: 'info', fmt: r => r.numero_complet || '(s’assigna en desar)' },
@@ -2038,7 +2057,7 @@ const SCHEMA = {
         ...(potDesferFull(r) ? [{ label: 'Desfés el finalitzat', noDesa: true, run: () => desfesFull(r.id) }] : []),
         ...(r.finalitzat && !r.albara_id && r.estat !== 'anul_lat' ? [{ label: 'Converteix en albarà', classe: 'albara', run: () => creaAlbaraDeFull(r.id) }] : []),
         ...(r.estat === 'anul_lat' ? [{ label: 'Torna’l a obrir', noDesa: true, run: () => tornaObrirFull(r.id) }] : []),
-        ...(r.id && !r.albara_id && r.estat !== 'albara' && r.estat !== 'anul_lat' ? [{ label: 'Elimina el full', classe: 'danger', noDesa: true, run: () => eliminaFull(r.id) }] : []),
+        ...(r.id && !r.albara_id && r.estat !== 'albara' && r.estat !== 'anul_lat' ? [{ label: 'Elimina el full', classe: 'elimina', noDesa: true, run: () => eliminaFull(r.id) }] : []),
         ...(r.albara_id ? [{ label: 'Obre l’albarà', noDesa: true, run: () => { state.mode = 'consulta'; state.table = 'albarans'; state.editing = r.albara_id; renderApp(); } }] : []),
         ...(r.incidencia_id ? [{ label: 'Obre la incidència', noDesa: true, run: () => { state.inc.vista = 'diagrama'; state.inc.id = r.incidencia_id; state.inc.sel = r.accio_id; state.inc.form = null; state.mode = 'consulta'; state.table = 'incidencies'; renderApp(); } }] : []),
       ],
@@ -2163,16 +2182,18 @@ const SCHEMA = {
       filtres: [{ key: 'lloc_id', tipus: 'ref', ref: 'llocs', label: 'Lloc' }],
       extras: reportExtresHTML, bindExtras: reportBind,
       obreEnCrear: 'Report desat. Hi pots afegir més fotos, vídeos o documents.',
+      senseCancel: !APP_NOMES_TASQUES,   // a l'oficina, sense «Cancel·la» (la llista és a sota); a l'app torna al report nou
       despresCrear: pujaFitxersReportNou,
       validate: p => p.treballador_comunica_id ? null
         : !(p.nom_comunica || '').trim() ? 'Posa el nom de qui ho comunica.'
         : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email_comunica || '') ? 'Cal un correu vàlid de qui ho comunica: servirà per informar-lo de la incidència.' : null,
+      // a l'esquerra Desa; al mig «Obre una incidència» (verd) i, a sota, les de vincular-lo a una d'oberta del lloc; a la dreta «No és un
+      // tema d’Outdoor» (taronja) i, a sota, «Elimina». Les observacions seran un tipus d'incidència: ja no hi ha «És una observació» ni
+      // «Descarta» (els reports antics amb aquests estats es veuen igual i es poden tornar a pendent)
       actions: r => !esOficina(treballadorActual()) ? [] : r.estat === 'pendent' ? [
-        { label: 'Obre una incidència', run: () => obreIncidenciaDesDeReport(r.id) },
-        ...obertesDelLloc(r.lloc_id).map(i => ({ label: 'Vincula a ' + i.numero + (i.titol ? ' · ' + String(i.titol).slice(0, 40) : ''), run: () => vinculaReport(r.id, i.id) })),
-        { label: 'És una observació', run: () => resolReport(r.id, 'observacio') },
-        { label: 'No és un tema d’Outdoor: tanca’l', run: () => resolReport(r.id, 'no_outdoor') },
-        { label: 'Descarta', run: () => resolReport(r.id, 'descartat') },
+        { label: 'Obre una incidència', classe: 'endavant', run: () => obreIncidenciaDesDeReport(r.id) },
+        ...obertesDelLloc(r.lloc_id).map(i => ({ label: 'Vincula a ' + i.numero + (i.titol ? ' · ' + String(i.titol).slice(0, 40) : ''), classe: 'endavant ghost small', run: () => vinculaReport(r.id, i.id) })),
+        { label: 'No és un tema d’Outdoor', classe: 'rebutja', run: () => resolReport(r.id, 'no_outdoor') },   // (tanca el report)
       ] : ['observacio', 'no_outdoor', 'descartat', 'incidencia'].includes(r.estat) ? [{ label: 'Torna’l a pendent', run: () => resolReport(r.id, 'pendent') }] : [],
       // la casella de notificació: en marcar-la queda qui i quan
       abansDesar: (p, id) => { const r = id ? C.get('incidencia_reports', id) : null; if (p.notificat && !(r && r.notificat)) { const t = treballadorActual(); p.notificat_el = new Date().toISOString(); p.notificat_per = t ? t.id : null; } if (p.notificat === false) { p.notificat_el = null; p.notificat_per = null; } },
@@ -2189,7 +2210,7 @@ const SCHEMA = {
         { key: 'registrat_per', label: 'Registrat per', type: 'ref', ref: 'treballadors', default: () => { const t = treballadorActual(); return t ? t.id : ''; }, hint: 'buit = l’ha enviat la persona mateixa pel codi QR' },
         { key: 'estat', label: 'Estat', type: 'info', fmt: r => estatReportText(r) + (r.incidencia_id ? ' · ' + L('incidencies', r.incidencia_id) : '') + (r.motiu ? ' · ' + r.motiu : '') },
         // la notificació al client (president / administrador) la marca la seguidora a l'oficina quan decideix què fa amb el report; a l'app no cal
-        { key: 'motiu', label: 'Motiu o nota de l’oficina', type: 'textarea', nomesOficina: true, hint: 'si és una observació, no és un tema d’Outdoor o es descarta: per què (es desa amb el botó que triïs)' },
+        { key: 'motiu', label: 'Motiu o nota de l’oficina', type: 'textarea', nomesOficina: true, hint: 'si no és un tema d’Outdoor, per què (es desa en prémer «No és un tema d’Outdoor»)' },
         { key: 'notificat', label: 'S’ha enviat la notificació al client (president / administrador)', type: 'boolean', hint: 'marca-ho quan els hagis avisat (p. ex. si no és un tema d’Outdoor); queda apuntat qui i quan', nomesOficina: true },
       ],
       extrasFinal: reportFotosHTML,
@@ -2554,7 +2575,7 @@ function renderConfig(err) {
       <form id="cfg">
         <div class="f"><span class="l">Project URL</span><input type="text" name="url" required placeholder="https://xxxx.supabase.co"></div>
         <div class="f"><span class="l">Clau anon (public)</span><input type="text" name="key" required></div>
-        <div class="actions"><button class="btn" type="submit">Desa i continua</button></div>
+        <div class="actions"><button class="btn desa" type="submit">Desa i continua</button></div>
       </form>
     </div>`;
   $('#cfg').addEventListener('submit', e => {
@@ -2877,7 +2898,7 @@ function renderComptaNou(main) {
       <tfoot><tr class="total"><td></td><td colspan="2"><button type="button" class="btn ghost small" id="ca-mes">+ Línia</button> <span id="ca-dif" class="ca-dif"></span></td><td class="num" id="ca-td"></td><td class="num" id="ca-th"></td><td></td></tr></tfoot></table>
     ${datalistComptes()}
     <div id="ca-err"></div>
-    <div class="actions"><button class="btn" type="button" id="ca-desa">Desa l’assentament</button> <button class="btn ghost" type="button" id="ca-cancel">Cancel·la</button> <span class="hint">Ctrl + Intro: desa</span></div></div>`;
+    <div class="actions"><button class="btn desa" type="button" id="ca-desa">Desa l’assentament</button> <button class="btn ghost" type="button" id="ca-cancel">Cancel·la</button> <span class="hint">Ctrl + Intro: desa</span></div></div>`;
   const llegeix = () => {
     ed.data = main.querySelector('#ca-data').value; ed.tipus = main.querySelector('#ca-tipus').value; ed.concepte = main.querySelector('#ca-concepte').value; ed.document = main.querySelector('#ca-doc').value;
     main.querySelectorAll('#ca-cos tr').forEach(tr => { const l = ed.linies[Number(tr.dataset.i)]; if (!l) return; tr.querySelectorAll('[data-k]').forEach(inp => { l[inp.dataset.k] = inp.value; }); });
@@ -2998,7 +3019,7 @@ async function renderComptaConfig(main) {
     <h3>Comptes per defecte</h3>
     <p class="hint">Valen per als documents que es comptabilitzin a partir d’ara: els ja comptabilitzats no canvien (si cal, a sota: «torna a fer també els ja fets»).</p>
     ${defs.map(d => `<div class="fila"><span>${h(d.descripcio)}</span><select data-defecte="${h(d.clau)}" ${dis}>${opcions(d.compte_id)}</select></div>`).join('')}
-    ${admin ? '<div class="actions"><button class="btn" id="cc-desa">Desa la configuració</button></div>' : ''}
+    ${admin ? '<div class="actions"><button class="btn desa" id="cc-desa">Desa la configuració</button></div>' : ''}
     <h3>Comptabilitzar</h3>
     <p>Comptabilitza les factures des de la data d’inici que encara no tenen assentament, posa al dia les que han canviat i treu les que ja no toca (també els moviments del banc conciliats: p. ex. si canvia la data d’inici). Les que no han canviat, no es toquen.</p>
     ${admin ? '<label class="chk"><input type="checkbox" id="cc-refes"> Torna a fer també els assentaments ja fets del període obert, amb la configuració d’ara (comptes per defecte i dels contractes)</label>' : ''}
@@ -3834,7 +3855,7 @@ async function renderComptaImmobilitzat(main) {
     <p class="hint">Cada bé amb la data de compra, el valor, el percentatge anual (amortització lineal) i l’acumulat d’abans (el de ContaSol). Les amortitzacions es comptabilitzen per mesos, l’últim dia de cada mes: la dotació (681…) al deure i l’amortització acumulada (281…) a l’haver. Es pot tornar a fer: els mesos que no han canviat no es toquen.</p>
     <div class="compta-accions"><button type="button" class="btn" id="im-nou">Nou bé</button>
       <span class="im-amort">Comptabilitza les amortitzacions fins al <input type="date" id="im-fins" value="${h(st.fins)}"> <button type="button" class="btn ghost" id="im-fes">Comptabilitza</button></span>
-      <label class="chk"><input type="checkbox" id="im-baixes" ${st.baixes ? 'checked' : ''}> amb els donats de baixa</label></div>
+      <label class="chk"><input type="checkbox" id="im-baixes" ${st.baixes ? 'checked' : ''}> amb els eliminats</label></div>
     <div id="im-cos"><p class="hint">Carregant…</p></div></div>`;
   main.querySelector('#im-nou').addEventListener('click', () => { state.mode = 'entrada'; state.table = 'immobilitzat'; state.editing = null; renderApp(); window.scrollTo({ top: 0 }); });
   main.querySelector('#im-fins').addEventListener('change', e => { st.fins = e.target.value || st.fins; });
@@ -3862,7 +3883,7 @@ async function renderComptaImmobilitzat(main) {
       <td class="num">${num2(x.acumulat)}${Number(x.amortitzat_inicial) ? `<div class="sub">${num2(x.amortitzat_inicial)} d’abans</div>` : ''}</td><td class="num">${num2(x.valor_net)}${acabat ? '<div class="sub">amortitzat</div>' : ''}</td>
       <td>${x.darrer_mes ? dmy(x.darrer_mes) : x.amortitzat_fins ? `<span class="sub">l’acumulat d’abans, fins al ${dmy(x.amortitzat_fins)}</span>` : '<span class="sub">encara res</span>'}</td></tr>`; }).join('')}
     </tbody><tfoot><tr class="total"><td colspan="3">${llista.length} bé${llista.length === 1 ? '' : 's'}</td><td class="num">${num2(t.v)}</td><td></td><td class="num">${num2(t.q)}</td><td class="num">${num2(t.ac)}</td><td class="num">${num2(t.n)}</td><td></td></tr></tfoot></table>
-    <p class="hint">Clica un bé per modificar-lo o donar-lo de baixa (si es ven o es llença, posa-hi la data de baixa: s’amortitza fins aquell dia).</p>`;
+    <p class="hint">Clica un bé per modificar-lo (si es ven o es llença, posa-hi la data de baixa: s’amortitza fins aquell dia).</p>`;
   cos.querySelectorAll('[data-im]').forEach(tr => tr.addEventListener('click', () => { state.mode = 'consulta'; state.table = 'immobilitzat'; state.editing = Number(tr.dataset.im); renderApp(); window.scrollTo({ top: 0 }); }));
 }
 
@@ -4627,7 +4648,7 @@ function formHTML(td, row) {
   if (grupObert) trossos.push('</div>');
   const fields = trossos.join('');
   const title = editing ? `Editant: ${h(td.display(row, L))}` : h(td.nou);
-  const sub = editing ? (row.actiu ? '' : '<span class="sub">donat de baixa</span>') : '';
+  const sub = editing ? (row.actiu ? '' : '<span class="sub">eliminat</span>') : '';
   return `
     <div class="panel ${editing ? 'editing' : ''}">
       <div class="ph"><h2>${title}</h2>${sub}</div>
@@ -4734,13 +4755,13 @@ function selBarHTML(td) {
   if (!td.marcable) return '';
   const ids = [...marquesDe(td)].filter(id => { const r = C.get(state.table, id); return r && td.marcable(r); });
   if (!ids.length) return '<div class="sel-bar" id="sel-bar" hidden></div>';
-  const accions = (td.marcaAccions || []).filter(a => ids.length >= (a.min || 1)), normals = accions.filter(a => a.classe !== 'factura' && a.classe !== 'albara' && a.classe !== 'danger');
+  const accions = (td.marcaAccions || []).filter(a => ids.length >= (a.min || 1)), normals = accions.filter(a => !BOTONS_MIG.includes(familiaBoto(a)) && !BOTONS_DRETA.includes(familiaBoto(a)));
   const boto = a => `<button type="button" class="btn ${a.classe || (normals.indexOf(a) > 0 ? 'ghost' : '')}" data-marca-accio="${(td.marcaAccions || []).indexOf(a)}">${h(typeof a.label === 'function' ? a.label(ids.length) : a.label)}</button>`;
   const cap = `<b>${ids.length} ${h(td.marcaNom ? td.marcaNom(ids.length) : (ids.length === 1 ? 'registre marcat' : 'registres marcats'))}</b>`;
   const desmarca = '<button type="button" class="btn ghost small" id="sel-cap">Desmarca’ls</button>';
   const avis = td.marcaAccions && td.marcaAccions.some(a => ids.length < (a.min || 1)) ? `<span class="hint">${h(td.marcaAccions.filter(a => ids.length < (a.min || 1)).map(a => '«' + (typeof a.label === 'function' ? a.label(a.min) : a.label) + '» necessita almenys ' + a.min).join(' · '))}</span>` : '';
-  const verds = accions.filter(a => a.classe === 'factura' || a.classe === 'albara');
-  if (verds.length) return `<div class="sel-bar fila-factura" id="sel-bar"><div class="ff-esq">${cap}${normals.map(boto).join('')}</div><div class="ff-mig">${verds.map(boto).join('')}</div><div class="ff-dre">${accions.filter(a => a.classe === 'danger').map(boto).join('')}${desmarca}</div>${avis}</div>`;
+  const verds = accions.filter(a => BOTONS_MIG.includes(familiaBoto(a)));
+  if (verds.length) return `<div class="sel-bar fila-factura" id="sel-bar"><div class="ff-esq">${cap}${normals.map(boto).join('')}</div><div class="ff-mig">${verds.map(boto).join('')}</div><div class="ff-dre">${accions.filter(a => BOTONS_DRETA.includes(familiaBoto(a))).map(boto).join('')}${desmarca}</div>${avis}</div>`;
   return `<div class="sel-bar" id="sel-bar">${cap}
     ${accions.map(boto).join('')}
     ${desmarca}
@@ -4805,7 +4826,7 @@ function listHTML(td) {
     <div class="bar">
       <input type="text" id="q" placeholder="Filtra…" value="${h(state.q)}">
       ${filtresHTML(td)}
-      ${td.senseBaixes ? '' : `<label class="chk" style="padding:0"><input type="checkbox" id="inact" ${state.showInactive ? 'checked' : ''}> Mostra els donats de baixa</label>`}
+      ${td.senseBaixes ? '' : `<label class="chk" style="padding:0"><input type="checkbox" id="inact" ${state.showInactive ? 'checked' : ''}> Mostra els eliminats</label>`}
       <span class="n">${h(n)}</span>
     </div>
     <div class="llista">${tableHTML(td, rows, true)}${selBarHTML(td)}</div>`;
@@ -5079,24 +5100,30 @@ function gpsBind(frm, td) {
   }
 }
 
-// la fila de botons d'una fitxa: Desa, les accions, Cancel·la i, al final, les de perill (Dona de baixa, Elimina…). Si alguna acció
-// fa una factura (classe 'factura'), la fila es parteix en tres: a l'esquerra els de sempre, al mig els verds i a la dreta els de perill.
+// la fila de botons d'una fitxa. Cada botó porta el color de la seva família (el que fa): Desa (blau), passar endavant (verd: obrir una
+// incidència, fer la factura…), albarà (groc), tancar sense fer res (taronja), Elimina (vermell); les altres accions (PDF, tornar a obrir…),
+// blanques. A l'esquerra, Desa i les accions de sempre; al mig, les que passen endavant; a la dreta, les de tancar i eliminar (si n'hi ha
+// més d'una, una sota l'altra). Sense cap botó del mig, tot en una fila: els de la dreta, al final.
+const BOTONS_MIG = ['factura', 'albara', 'endavant'], BOTONS_DRETA = ['rebutja', 'elimina', 'danger'];
+const familiaBoto = a => String((a && a.classe) || '').split(/\s+/)[0];
 function filaBotonsFitxa(td, row, editing) {
   const accs = editing && td.actions ? td.actions(row) : [];
-  const boto = (a, i) => `<button class="btn ${a.classe || ''}" type="button" data-action="${i}">${h(a.label)}</button>`;
-  const pas = a => a.classe === 'factura' || a.classe === 'albara';   // els que fan un pas: factura (verd) o albarà (groc)
-  const quines = classe => accs.map((a, i) => (classe === 'pas' ? pas(a) : a.classe === classe || (classe === '' && a.classe !== 'danger' && !pas(a))) ? boto(a, i) : '').join('');
-  const esq = `<button class="btn" type="submit">${editing ? 'Desa els canvis' : 'Desa'}</button>${quines('')}${editing ? `<button class="btn ghost" type="button" id="cancel">Cancel·la</button>` : ''}`;
-  const dre = quines('danger') + (editing && (!td.canBaixa || td.canBaixa(row)) ? `<button class="btn danger" type="button" id="baixa">${row.actiu ? 'Dona de baixa' : 'Reactiva'}</button>` : '');
-  const mig = quines('pas');
-  return mig ? `<div class="actions fila-factura"><div class="ff-esq">${esq}</div><div class="ff-mig">${mig}</div><div class="ff-dre">${dre}</div></div>` : `<div class="actions">${esq}${dre}</div>`;
+  const boto = (a, i) => `<button class="btn ${a.classe || 'ghost'}" type="button" data-action="${i}">${h(a.label)}</button>`;
+  const zona = a => BOTONS_MIG.includes(familiaBoto(a)) ? 'mig' : BOTONS_DRETA.includes(familiaBoto(a)) ? 'dre' : 'esq';
+  const quines = z => accs.map((a, i) => zona(a) === z ? boto(a, i) : '').filter(Boolean);
+  const cancel = editing && !td.senseCancel ? '<button class="btn ghost" type="button" id="cancel">Cancel·la</button>' : '';
+  const esq = `<button class="btn desa" type="submit">${editing ? 'Desa els canvis' : 'Desa'}</button>${quines('esq').join('')}${cancel}`;
+  const baixa = editing && (!td.canBaixa || td.canBaixa(row)) ? (row.actiu ? '<button class="btn elimina" type="button" id="baixa">Elimina</button>' : '<button class="btn desa" type="button" id="baixa">Reactiva</button>') : '';
+  const mig = quines('mig'), dre = [...quines('dre'), baixa].filter(Boolean), col = l => l.length > 1 ? ' col' : '';
+  return mig.length ? `<div class="actions fila-factura"><div class="ff-esq">${esq}</div><div class="ff-mig${col(mig)}">${mig.join('')}</div><div class="ff-dre${col(dre)}">${dre.join('')}</div></div>`
+    : `<div class="actions">${esq}${dre.length ? `<span class="dreta">${dre.join('')}</span>` : ''}</div>`;
 }
 // les files amb botons verds: si a l'esquerra o a la dreta els botons no caben en una línia, els verds baixen a una fila seva, al centre.
 // Es mira cada cop que canvia la pantalla (i en canviar la mida de la finestra).
 function ajustaFilesFactura() {
   document.querySelectorAll('.fila-factura').forEach(f => {
     f.classList.remove('apilada');
-    const partida = z => { const fills = z ? [...z.children].filter(c => c.offsetParent !== null) : []; if (fills.length < 2) return false; const t = fills.map(c => c.offsetTop); return Math.max(...t) - Math.min(...t) > 4; };
+    const partida = z => { const fills = z && !z.classList.contains('col') ? [...z.children].filter(c => c.offsetParent !== null) : []; if (fills.length < 2) return false; const t = fills.map(c => c.offsetTop); return Math.max(...t) - Math.min(...t) > 4; };
     if (partida(f.querySelector(':scope > .ff-esq')) || partida(f.querySelector(':scope > .ff-dre'))) f.classList.add('apilada');
   });
 }
@@ -5499,12 +5526,12 @@ function cobramentPrevist(f) {
   if (dia) v = v.getDate() <= dia ? new Date(v.getFullYear(), v.getMonth(), dia, 12) : new Date(v.getFullYear(), v.getMonth() + 1, dia, 12);
   return ymd(v);
 }
-// un esborrany recurrent «sobra» si la seva agrupació s'ha donat de baixa o ha acabat abans del període facturat
+// un esborrany recurrent «sobra» si la seva agrupació s'ha eliminat o ha acabat abans del període facturat
 function motiuSobrant(f) {
   if (f.origen !== 'recurrent' || !f.agrupacio_id) return '';
   const a = C.get('agrupacions', f.agrupacio_id);
   if (!a) return 'l’agrupació ja no existeix';
-  if (!a.actiu) return 'agrupació donada de baixa';
+  if (!a.actiu) return 'agrupació eliminada';
   if (a.data_fi && f.periode_inici && a.data_fi < f.periode_inici) return 'agrupació acabada el ' + dmy(a.data_fi);
   return '';
 }
@@ -5529,7 +5556,7 @@ function renderFacturacio(main) {
     <td class="num"><button class="btn ghost small" data-obre="${r.id}">Obre</button> ${r.pdf ? `<button class="btn ghost small" data-pdf="${h(r.pdf)}">PDF</button>` : ''}</td></tr>`;
   main.innerHTML = `
     <h1>Facturació recurrent</h1>
-    <p>Tria el mes i genera els esborranys: només els d’aquell mes. La factura de cada agrupació es fa dins del mateix mes, amb data del dia de facturació del seu client (octubre es factura el dia de facturació d’octubre, pel període d’octubre). El cobrament va a part: en emetre-la, el venciment es calcula amb el que hi ha pactat amb el client (termini de pagament i dia fix de pagament). Repassa'ls i emet. Un esborrany es pot obrir, corregir o donar de baixa; una factura emesa rep número i queda congelada.</p>
+    <p>Tria el mes i genera els esborranys: només els d’aquell mes. La factura de cada agrupació es fa dins del mateix mes, amb data del dia de facturació del seu client (octubre es factura el dia de facturació d’octubre, pel període d’octubre). El cobrament va a part: en emetre-la, el venciment es calcula amb el que hi ha pactat amb el client (termini de pagament i dia fix de pagament). Repassa'ls i emet. Un esborrany es pot obrir, corregir o eliminar; una factura emesa rep número i queda congelada.</p>
     <p class="sub">${(() => { const ag = C.rows('agrupacions').filter(a => a.actiu); const n = k => ag.filter(a => claAgrupacio(a) === k).length; return `Agrupacions: <b>${n('actual')} actuals</b> (són les que facturen), ${n('futur')} futures (sense data d’inici: no facturen) i ${n('finalitzat')} finalitzades.`; })()}</p>
     <div class="bar fila-factura">
       <div class="ff-esq"><span class="nota">Mes a facturar</span>
@@ -5544,7 +5571,7 @@ function renderFacturacio(main) {
       <button class="btn ghost" id="pdfs" ${sensePdf.length ? '' : 'disabled'}>Genera els PDF que faltin (${sensePdf.length})</button>
       ${sobrants.length ? `<button class="btn danger" id="treu-sobrants">Treu els esborranys sobrants (${sobrants.length})</button>` : ''}
     </div>
-    ${sobrants.length ? `<p class="sub"><b class="v-no">${sobrants.length} esborran${sobrants.length === 1 ? 'y' : 'ys'} d’agrupacions donades de baixa o acabades</b>: es van crear abans de donar de baixa l’agrupació i no s’esborren sols. Surten marcats a la llista; «Treu els esborranys sobrants» els esborra.</p>` : ''}
+    ${sobrants.length ? `<p class="sub"><b class="v-no">${sobrants.length} esborran${sobrants.length === 1 ? 'y' : 'ys'} d’agrupacions eliminades o acabades</b>: es van crear abans d’eliminar l’agrupació i no s’esborren sols. Surten marcats a la llista; «Treu els esborranys sobrants» els esborra.</p>` : ''}
     ${recurrentsMes.length ? `<p class="sub">Si en veus un error (un dia de facturació, un preu, un concepte…), corregeix-lo a la fitxa del client o de l’agrupació i prem «Torna a generar ${h(nomMesDe)}»: treu els ${recurrentsMes.length} esborranys recurrents d’aquest mes i els crea de nou amb les dades actuals. Les factures emeses i els esborranys manuals no es toquen.</p>` : ''}
     ${st.avis && st.avis.length ? `<div class="msg err">Hi ha ${st.avis.length} agrupaci${st.avis.length === 1 ? 'ó' : 'ons'} amb mesos anteriors sense facturar; no se n’ha creat cap esborrany: tria aquell mes i genera’ls, o si ja estan facturats fora del programa posa «Facturat fins» a la fitxa de l’agrupació.<br>${st.avis.map(n => '· ' + h(n)).join('<br>')}</div>` : ''}
     <h3>Esborranys (${drafts.length})${drafts.length ? ` <span class="hint">· amb data ${h(nomMesDe)}: ${delMes.length} (${eur(totalMes)})${drafts.length > delMes.length ? '; els d’altres mesos surten en gris' : ''}</span>` : ''}</h3>
@@ -5580,7 +5607,7 @@ function renderFacturacio(main) {
     renderMain();
   });
   const ts = $('#treu-sobrants'); if (ts) ts.addEventListener('click', async () => {
-    if (!confirm(`Esborrar ${sobrants.length} esborran${sobrants.length === 1 ? 'y' : 'ys'} d’agrupacions donades de baixa o acabades? No són factures emeses (no tenen número).`)) return;
+    if (!confirm(`Esborrar ${sobrants.length} esborran${sobrants.length === 1 ? 'y' : 'ys'} d’agrupacions eliminades o acabades? No són factures emeses (no tenen número).`)) return;
     ts.disabled = true;
     try { const n = await treuRecurrents(sobrants.map(x => x.id)); await loadTable('factures'); toast(`${n} esborranys esborrats`); renderMain(); }
     catch (e) { toastErr(friendly(e)); ts.disabled = false; }
@@ -7573,7 +7600,7 @@ function renderClientsPerAdministrador(main) {
       <select id="cpa-admin" style="width:auto; min-width:260px"><option value="">Tots els administradors</option>${admins.map(a => `<option value="${a.id}" ${String(a.id) === st.admin ? 'selected' : ''}>${h(a.nom)}</option>`).join('')}</select>
       <input type="text" id="cpa-q" placeholder="Filtra per client, lloc, adreça o població…" value="${h(st.q)}">
       <label class="chk" style="padding:0"><input type="checkbox" id="cpa-vigent" ${st.vigent ? 'checked' : ''}> Només amb contracte vigent</label>
-      <label class="chk" style="padding:0"><input type="checkbox" id="cpa-baixes" ${st.baixes ? 'checked' : ''}> Inclou els donats de baixa</label>
+      <label class="chk" style="padding:0"><input type="checkbox" id="cpa-baixes" ${st.baixes ? 'checked' : ''}> Inclou els eliminats</label>
       <button class="btn ghost" id="cpa-print">Imprimeix (A4 apaïsat)</button>
     </div>
     <div id="cpa-cos" class="cpa"></div>`;
@@ -7792,8 +7819,8 @@ function renderLecturaComptador(main, c) {
       <div class="f"><span class="l">Data</span><input type="date" id="lc-data" value="${h(st.data || avui())}" max="${avui()}" ${st.avis ? 'readonly' : ''}></div>
       <div class="f"><span class="l">Observacions (si cal)</span><input type="text" id="lc-obs" value="${h(st.obs || '')}"></div>
       <div id="lc-err"></div>
-      ${st.avis ? `<div class="lc-alerta">${st.avis.text}<button type="button" class="boto-gran fi" id="lc-confirma">Sí, està bé</button><button type="button" class="boto-gran envia" id="lc-corregeix">La corregeixo</button></div>`
-        : `<button type="button" class="boto-gran fi" id="lc-desa">Desa la lectura</button>`}
+      ${st.avis ? `<div class="lc-alerta">${st.avis.text}<button type="button" class="boto-gran desa" id="lc-confirma">Sí, està bé</button><button type="button" class="boto-gran envia" id="lc-corregeix">La corregeixo</button></div>`
+        : `<button type="button" class="boto-gran desa" id="lc-desa">Desa la lectura</button>`}
     </div>
     ${ls.length ? `<div class="ao-fila"><span class="l">Lectures d’aquest comptador</span>${taulaLectures(c, ls.slice(0, 6))}</div>` : ''}
   </div>`;
@@ -8115,7 +8142,7 @@ function panellDocumentHTML() {
       <div class="hint">Data del document: ${d.data_document ? dmy(d.data_document) : '—'} · Caducitat: ${d.data_caducitat ? dmy(d.data_caducitat) : 'no en té'} · Pujat el ${dmy(String(d.creat_el || '').slice(0, 10))}${d.pujat_per ? ' per ' + h(nomCurtTreballador(C.get('treballadors', d.pujat_per))) : ''}</div>
       <div class="dc-fitxers">${fitxersHTML(d)}</div>
       ${d.observacions ? `<div class="dc-obs">${h(d.observacions)}</div>` : ''}
-      ${pot ? `<div class="dc-accions-versio"><button type="button" class="btn ghost small" data-dc-edita="${d.id}">Corregeix</button><button type="button" class="btn ghost small" data-dc-baixa="${d.id}">Dona de baixa</button></div>` : ''}
+      ${pot ? `<div class="dc-accions-versio"><button type="button" class="btn ghost small" data-dc-edita="${d.id}">Corregeix</button><button type="button" class="btn small elimina" data-dc-baixa="${d.id}">Elimina</button></div>` : ''}
     </div>`; };
   return `<div class="avisos-panell" id="dcp-panell"><div class="avisos-caixa dc-caixa" role="dialog" aria-modal="true" aria-labelledby="dcp-titol">
     <h3 id="dcp-titol">${h(tp.nom)}${tp.confidencial ? ' 🔒' : ''}</h3>
@@ -8147,7 +8174,7 @@ function formDocumentHTML() {
     <label class="f"><span class="l">${d ? 'Afegeix-hi fitxers' : 'Fitxers'} <span class="hint">(PDF o fotos; en pots triar més d’un, p. ex. l’anvers i el revers)</span></span><input type="file" id="dcf-fitxers" accept="application/pdf,image/*" multiple></label>
     <label class="f"><span class="l">Observacions</span><textarea id="dcf-obs" rows="2">${h(d ? d.observacions || '' : '')}</textarea></label>
     <div id="dcp-err" class="msg err" hidden></div>
-    <div class="accions"><button type="button" class="btn" id="dcf-desa">Desa</button><button type="button" class="btn ghost" id="dcf-cancel">Cancel·la</button></div>
+    <div class="accions"><button type="button" class="btn desa" id="dcf-desa">Desa</button><button type="button" class="btn ghost" id="dcf-cancel">Cancel·la</button></div>
   </div></div>`;
 }
 const pistaCaducitat = tp => !tp ? '' : !tp.caduca ? 'Aquest tipus no caduca: deixa la caducitat buida (o posa-n’hi una si aquest en té).'
@@ -8166,10 +8193,10 @@ function bindPanellDocument() {
     panell.querySelectorAll('[data-dc-edita]').forEach(b => b.addEventListener('click', () => { st.sel = { mode: 'edita', id: Number(b.dataset.dcEdita), treb: sel.treb, tipus: sel.tipus }; renderMain(); }));
     panell.querySelectorAll('[data-dc-baixa]').forEach(b => b.addEventListener('click', async () => {
       const d = C.get('documents', b.dataset.dcBaixa), tp = C.get('tipus_document', sel.tipus);
-      if (!confirm(`Donar de baixa aquest document (${tp ? tp.nom : ''}${d && d.data_document ? ', del ' + dmy(d.data_document) : ''})? Deixarà de sortir, però no s’esborra.`)) return;
+      if (!confirm(`Eliminar aquest document (${tp ? tp.nom : ''}${d && d.data_document ? ', del ' + dmy(d.data_document) : ''})? Deixarà de sortir (el fitxer no s’esborra).`)) return;
       const r = await sb.from('documents').update({ actiu: false }).eq('id', Number(b.dataset.dcBaixa));
       if (r.error) return err(friendly(r.error));
-      await loadTable('documents'); if (!(documentsPerTipus(sel.treb).get(Number(sel.tipus)) || []).length) st.sel = null; renderMain(); toast('Document donat de baixa');
+      await loadTable('documents'); if (!(documentsPerTipus(sel.treb).get(Number(sel.tipus)) || []).length) st.sel = null; renderMain(); toast('Document eliminat');
     }));
     $('#dcp-tanca').focus();
     return;
@@ -8584,13 +8611,13 @@ function pintaAlarmes(main) {
 async function toggleActiu(td) {
   const t = state.table, row = C.get(t, state.editing);
   const label = td.display(row, L);
-  if (row.actiu && !confirm(`Donar de baixa "${label}"? No s’esborra res: deixa de sortir a les llistes i als desplegables.`)) return;
+  if (row.actiu && !confirm(`Eliminar «${label}»? Deixarà de sortir a les llistes i als desplegables. Si t’has equivocat, es pot recuperar: marca «Mostra els eliminats», obre’l i prem «Reactiva».`)) return;
   const { error } = await sb.from(t).update({ actiu: !row.actiu }).eq('id', row.id);
   if (error) { showFormError(friendly(error)); return; }
   await loadTable(t);
   let extra = '';
   if (row.actiu && td.enBaixa) { try { extra = (await td.enBaixa(row)) || ''; } catch (e) { toastErr(friendly(e)); } }
-  state.editing = null; toast((row.actiu ? 'Donat de baixa' : 'Reactivat') + extra);
+  state.editing = null; toast((row.actiu ? 'Eliminat' : 'Reactivat') + extra);
   renderMain();
 }
 
@@ -9022,7 +9049,7 @@ function renderNovaIncidencia(main) {
           <span class="hint">només informa: al carril del client només hi haurà una caixa quan se li demani una autorització (econòmica o d’actuació)</span></div>
         <label class="f wide"><span class="l">Observacions internes</span><textarea lang="ca" spellcheck="true" name="observacions_internes">${h(n.observacions_internes || '')}</textarea><span class="hint">${NOTA_INTERNES}</span></label>
       </div>
-      <div class="actions"><button class="btn" id="inc-crea">Obre la incidència</button><button class="btn ghost" id="inc-cancel">Cancel·la</button></div>
+      <div class="actions"><button class="btn endavant" id="inc-crea">Obre la incidència</button><button class="btn ghost" id="inc-cancel">Cancel·la</button></div>
     </div>`;
   const guarda = () => { n.titol = $('[name=titol]').value; n.descripcio = $('[name=descripcio]').value; n.seguidora_id = t.id; n.p_tipus = $('[name=p_tipus]').value; n.p_resp = Number($('[name=p_resp]').value); n.p_grup = $('[name=p_grup]').value; n.grup = n.p_grup; n.p_inici = $('[name=p_inici]').value; n.venciment = $('[name=p_venc]').value; n.p_desc = $('[name=p_desc]').value; n.observacions_internes = $('[name=observacions_internes]').value; n.contactes = [...document.querySelectorAll('[name=contactes]:checked')].map(e => Number(e.value)); };
   $('[name=lloc_id]').addEventListener('change', e => { guarda(); n.lloc_id = Number(e.target.value) || null; n.contactes = null; renderMain(); });
@@ -9583,7 +9610,7 @@ function panellHTML(inc) {
     <div class="f"><span class="l">Descripció</span><textarea lang="ca" spellcheck="true" id="ed-desc">${h(inc.descripcio || '')}</textarea></div>
     <div class="f"><span class="l">Informació a disposició de</span><div class="multi">${contactes.length ? contactes.map(c => `<label><input type="checkbox" name="ed-contactes" value="${c.id}" ${marcats.has(c.id) ? 'checked' : ''}><span>${h(c.nom)}${c.carrec ? ' (' + h(c.carrec) + ')' : ''}</span></label>`).join('') : '<span class="hint">aquest lloc no té persones de contacte</span>'}</div><span class="hint">només informa; si canvia, queda a l’historial</span></div>
     <div class="f"><span class="l">Observacions internes</span><textarea lang="ca" spellcheck="true" id="ed-int">${h(inc.observacions_internes || '')}</textarea><span class="hint">${NOTA_INTERNES}</span></div>
-    <div class="actions"><button class="btn" id="ed-ok">Desa</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div>`; }
+    <div class="actions"><button class="btn desa" id="ed-ok">Desa</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div>`; }
   if (st.form && st.form.tipus === 'galeria') return `<h3>Fotos, vídeos i documents de la incidència</h3><p class="sub">Tot el que s’ha anat adjuntant, des del report inicial fins a l’última acció, per ordre de temps.</p>${galeriaHTML(inc, false)}`;
   if (st.form && st.form.tipus === 'reobre') return `<h3>Reobre la incidència</h3><p class="sub">Es manté el número i tot l’historial; el tancament anterior queda al diagrama.</p><div class="f"><span class="l">Motiu de la reobertura</span><textarea lang="ca" spellcheck="true" id="reobre-motiu"></textarea></div><div class="actions"><button class="btn" id="reobre-ok">Reobre</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div>`;
   const a = st.sel ? C.get('incidencia_accions', st.sel) : null;
@@ -10824,8 +10851,8 @@ function editorFitxatgeHTML() {
     <label class="f"><span class="l">Motiu</span><input type="text" id="fxe-motiu" maxlength="200" placeholder="p. ex. es va oblidar de fitxar la sortida"></label>
     <div id="fxe-err" class="msg err" hidden></div>
     <div class="accions">
-      <button type="button" class="btn" id="fxe-desa">Desa</button>
-      ${existent ? `<button type="button" class="btn danger" id="fxe-elimina">Elimina ${E && S ? 'l’entrada i la sortida' : E ? 'l’entrada' : 'la sortida'}</button>` : ''}
+      <button type="button" class="btn desa" id="fxe-desa">Desa</button>
+      ${existent ? `<button type="button" class="btn elimina" id="fxe-elimina">Elimina ${E && S ? 'l’entrada i la sortida' : E ? 'l’entrada' : 'la sortida'}</button>` : ''}
       <button type="button" class="btn ghost" id="fxe-cancel">Cancel·la</button>
     </div>
   </div></div>`;
