@@ -24,6 +24,7 @@
     --b-endavant:#5d7e1b;   /* passa endavant (obre la incidència, emet la factura…): el verd d'«Emet factura» */
     --b-rebutja:#ed7c16;    /* tanca sense fer res: «No és un tema d’Outdoor» (taronja) */
     --b-elimina:#b6142c;    /* Elimina: vermell chilli pepper */
+    --b-obert:#e0df6c;      /* «Deixar obert» (un full de treball): groc suau, amb el text fosc */
     --mode:var(--green); --mode-2:var(--green-2);
   }
   body[data-mode="consulta"]{ --mode:var(--blue); --mode-2:var(--blue-2); }
@@ -369,6 +370,10 @@
   .actions > .btn.elimina, .accions > .btn.elimina, .sel-bar > .btn.elimina{ margin-left:auto; }   /* com abans els de perill: al final de la fila */
   .actions > .dreta{ margin-left:auto; display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
   .boto-gran.desa{ --bg-boto:var(--b-desa); }
+  .btn.obert{ background:var(--b-obert); border-color:#c4c35a; color:var(--ink); }
+  .boto-gran.obert{ --bg-boto:var(--b-obert); color:var(--ink); }
+  .boto-gran.endavant{ --bg-boto:var(--b-endavant); }
+  .botons-final{ margin-top:18px; border-top:1px solid var(--line); }   /* (la fitxa del full: els botons al final de tot) */
   .fi-full{ margin:0 0 10px; } .fi-full .fila-factura{ margin:8px 0 4px; }
   .fila-factura{ display:grid; grid-template-columns:minmax(0, 1fr) auto minmax(0, 1fr); align-items:center; column-gap:48px; row-gap:10px; }
   .fila-factura > .ff-esq, .fila-factura > .ff-mig, .fila-factura > .ff-dre{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; min-width:0; }
@@ -2047,13 +2052,18 @@ const SCHEMA = {
         defecte: r => r.estat !== 'anul_lat', prova: (r, v) => v === 'tots' || r.estat === v || (v === 'en_curs' && r.estat === 'pendent') }],
       canBaixa: () => false, senseBaixes: true,   // no es donen de baixa: els que no s'han de passar a albarà s'eliminen (estat Eliminat)
       filaClass: r => r.estat === 'anul_lat' ? 'off' : '',
+      // al final d'un full obert, dues opcions: «Deixar obert» (groc suau: desa i el deixa obert) i «Finalitzar» (verd, al mig)
+      botoDesa: r => fullObert(r) ? { label: 'Deixar obert', classe: 'obert' } : null,
+      avisDesat: r => fullObert(r) ? 'Desat: el full queda obert' : '',
+      liniesPendents: { full_treball_jornades: ['hora_inici', 'hora_fi', 'feina'], full_treball_material: ['nom'] },
+      botonsAlFinal: true,   // els botons, al final de tot: després de les jornades, el material i les fotos
       extras: fullExtresHTML, extrasFinal: fullFotosHTML, bindExtras: fullExtresBind,   // les fotos, després de les jornades i el material
       children: [
         { table: 'full_treball_jornades', fk: 'full_id', label: 'Jornades de feina (data, hores, persones i què s’ha fet)', editable: r => r.estat !== 'albara' && r.estat !== 'anul_lat' },
         { table: 'full_treball_material', fk: 'full_id', label: 'Material de magatzem utilitzat', editable: r => r.estat !== 'albara' && r.estat !== 'anul_lat' },
       ],
       actions: r => [
-        ...(!r.finalitzat && r.estat !== 'albara' && r.estat !== 'anul_lat' ? [{ label: 'Marca’l com a finalitzat', run: () => finalitzaFull(r.id, { desDeOficina: true }) }] : []),
+        ...(!r.finalitzat && r.estat !== 'albara' && r.estat !== 'anul_lat' ? [{ label: 'Finalitzar', classe: 'endavant', run: () => finalitzaFull(r.id, { desDeOficina: true }) }] : []),
         ...(potDesferFull(r) ? [{ label: 'Desfés el finalitzat', noDesa: true, run: () => desfesFull(r.id) }] : []),
         ...(r.finalitzat && !r.albara_id && r.estat !== 'anul_lat' ? [{ label: 'Converteix en albarà', classe: 'albara', run: () => creaAlbaraDeFull(r.id) }] : []),
         ...(r.estat === 'anul_lat' ? [{ label: 'Torna’l a obrir', noDesa: true, run: () => tornaObrirFull(r.id) }] : []),
@@ -4657,11 +4667,12 @@ function formHTML(td, row) {
       ${td.extras ? `<div class="extres">${td.extras(row)}</div>` : ''}
       <form id="frm" data-table="${state.table}" data-id="${editing ? (td.pk ? row[td.pk] : row.id) : ''}" novalidate>
         <div class="grid">${fields}</div>
-        ${filaBotonsFitxa(td, row, editing)}
+        ${td.botonsAlFinal ? '' : filaBotonsFitxa(td, row, editing)}
       </form>
       ${editing && td.compta ? comptaDocHTML(td.compta, row) : ''}
       ${childrenHTML(td, row)}
       ${td.extrasFinal ? `<div class="extres extres-final">${td.extrasFinal(row)}</div>` : ''}
+      ${td.botonsAlFinal ? `<div class="botons-final">${filaBotonsFitxa(td, row, editing, 'frm')}</div>` : ''}
     </div>`;
 }
 
@@ -4905,6 +4916,7 @@ function bindMain(td) {
   main.querySelectorAll('[data-action]').forEach(b => b.addEventListener('click', async () => {
     const accio = td.actions(C.get(state.table, state.editing))[Number(b.dataset.action)];
     if (accio.noDesa) { accio.run(); return; } // obrir un PDF no desa res: així el navegador no bloqueja la finestra
+    const pendent = liniaPendent(td); if (pendent) { showFormError(pendent); return; }
     if (frm && !(await desaFormulari(td, frm))) return;
     td.actions(C.get(state.table, state.editing))[Number(b.dataset.action)].run();
   }));
@@ -5106,13 +5118,14 @@ function gpsBind(frm, td) {
 // més d'una, una sota l'altra). Sense cap botó del mig, tot en una fila: els de la dreta, al final.
 const BOTONS_MIG = ['factura', 'albara', 'endavant'], BOTONS_DRETA = ['rebutja', 'elimina', 'danger'];
 const familiaBoto = a => String((a && a.classe) || '').split(/\s+/)[0];
-function filaBotonsFitxa(td, row, editing) {
+function filaBotonsFitxa(td, row, editing, formId) {   // (formId: els botons són fora del formulari, al final de la fitxa)
   const accs = editing && td.actions ? td.actions(row) : [];
   const boto = (a, i) => `<button class="btn ${a.classe || 'ghost'}" type="button" data-action="${i}">${h(a.label)}</button>`;
   const zona = a => BOTONS_MIG.includes(familiaBoto(a)) ? 'mig' : BOTONS_DRETA.includes(familiaBoto(a)) ? 'dre' : 'esq';
   const quines = z => accs.map((a, i) => zona(a) === z ? boto(a, i) : '').filter(Boolean);
   const cancel = editing && !td.senseCancel ? '<button class="btn ghost" type="button" id="cancel">Cancel·la</button>' : '';
-  const esq = `<button class="btn desa" type="submit">${editing ? 'Desa els canvis' : 'Desa'}</button>${quines('esq').join('')}${cancel}`;
+  const bd = (td.botoDesa && td.botoDesa(row)) || { label: editing ? 'Desa els canvis' : 'Desa', classe: 'desa' };   // (un full obert: «Deixar obert»)
+  const esq = `<button class="btn ${bd.classe}" type="submit"${formId ? ` form="${formId}"` : ''}>${h(bd.label)}</button>${quines('esq').join('')}${cancel}`;
   const baixa = editing && (!td.canBaixa || td.canBaixa(row)) ? (row.actiu ? '<button class="btn elimina" type="button" id="baixa">Elimina</button>' : '<button class="btn desa" type="button" id="baixa">Reactiva</button>') : '';
   const mig = quines('mig'), dre = [...quines('dre'), baixa].filter(Boolean), col = l => l.length > 1 ? ' col' : '';
   return mig.length ? `<div class="actions fila-factura"><div class="ff-esq">${esq}</div><div class="ff-mig${col(mig)}">${mig.join('')}</div><div class="ff-dre${col(dre)}">${dre.join('')}</div></div>`
@@ -5190,12 +5203,27 @@ async function buildPayload(fields, raw) {
   return payload;
 }
 
+// una línia escrita a sota d'una fitxa (una jornada, un material…) sense haver premut «Afegeix»: abans de desar o de fer un pas, avisa (si
+// no, es perdria). td.liniesPendents: { taula filla: [camps que, si hi ha alguna cosa escrita, volen dir que s'hi ha començat una línia] }
+function liniaPendent(td) {
+  if (!td.liniesPendents) return null;
+  for (const [taula, camps] of Object.entries(td.liniesPendents)) {
+    const box = document.querySelector(`#main .addrow[data-child="${taula}"]`); if (!box) continue;
+    if (camps.some(k => { const el = box.querySelector(`[name="${k}"]`); return !!el && String(el.value || '').trim() !== ''; })) {
+      const ch = (td.children || []).find(c => c.table === taula);
+      return `Tens una línia a mig apuntar a «${ch ? ch.label : taula}»: prem «Afegeix» per desar-la (o buida-la) i torna-ho a provar.`;
+    }
+  }
+  return null;
+}
+const avisDesat = (td, r) => (typeof td.avisDesat === 'function' ? td.avisDesat(r) : td.avisDesat) || '';
 async function save(td, frm) {
   const t = state.table;
   const id = frm.dataset.id ? (td.pk ? frm.dataset.id : Number(frm.dataset.id)) : null;
   $('#ferr').innerHTML = '';
   if (faltaObligatori(td.fields, frm)) return;
-  const btn = frm.querySelector('button[type=submit]');
+  const pendent = liniaPendent(td); if (pendent) { showFormError(pendent); return; }
+  const btn = frm.querySelector('button[type=submit]') || document.querySelector(`button[type=submit][form="${frm.id}"]`);
   try {
     const raw = readRaw(td.fields, frm);
     const payload = await buildPayload(td.fields, raw);
@@ -5203,7 +5231,7 @@ async function save(td, frm) {
     if (td.validate) { const m = td.validate(payload, id); if (m) { showFormError(m); return; } }
     btn.disabled = true;
     const abans = id ? { ...(C.get(t, id) || {}) } : null;
-    if (id && !Object.keys(payload).length) { btn.disabled = false; state.editing = null; renderMain(); return; }   // res a desar
+    if (id && !Object.keys(payload).length) { btn.disabled = false; if (avisDesat(td, abans)) toast(avisDesat(td, abans)); state.editing = null; renderMain(); return; }   // res a desar
     const res = id
       ? await sb.from(t).update(payload).eq(td.pk || 'id', id)
       : await sb.from(t).insert(payload).select(td.pk || 'id').single();
@@ -5213,7 +5241,7 @@ async function save(td, frm) {
     await loadTable(t);
     if (id && td.despresDesar) { try { await td.despresDesar(id, payload, abans); } catch (e) { toastErr(friendly(e)); } }
     if (id) {
-      state.editing = null; toast('Canvis desats');
+      state.editing = null; toast(avisDesat(td, abans) || 'Canvis desats');
     } else if ((td.children || td.obreEnCrear) && res.data && res.data.id) {
       // el registre acabat de crear queda obert perquè s'hi puguin afegir els aparells (o les fotos d'un report)
       state.editing = res.data.id; state.keep = {}; toast(td.obreEnCrear || 'Desat. Ara pots afegir-hi els aparells.');
@@ -6954,6 +6982,7 @@ const fullProgramat = () => false;
 // la pastilla de l'estat d'un full (a l'app i a la incidència)
 const pillFull = (f, llarg) => fullProgramat(f) ? `<span class="pill e-programada">${llarg ? 'Programat ' + textInici(f) : 'Programat'}</span>`
   : `<span class="pill e-${f.estat === 'anul_lat' ? 'eliminat' : f.finalitzat || f.estat === 'finalitzat' || f.estat === 'albara' ? 'finalitzada' : 'en_curs'}">${h(ESTATS_FULL[f.estat] || f.estat || '')}</span>`;
+const fullObert = r => !!r && r.actiu !== false && !r.finalitzat && r.estat !== 'albara' && r.estat !== 'anul_lat';   // es pot deixar obert o finalitzar
 const potEditarFull = f => { const t = treballadorActual(); return !!f && !f.finalitzat && f.estat !== 'albara' && f.estat !== 'anul_lat' && !!t && (esOficina(t) || Number(f.encarregat_id) === t.id || Number(f.demanat_per) === t.id); };
 async function recarregaFulls() { await Promise.all(['fulls_treball', 'full_treball_jornades', 'full_treball_material'].map(loadTable)); }
 // el full d'una acció d'operari: surt de l'acció (nom = títol, lloc = el de la incidència, qui fa la feina = el responsable de l'acció);
@@ -7048,30 +7077,31 @@ function seccionsFullHTML(f) {
   </div>`;
 }
 function bindFull(f, cont) {
-  const box = cont.querySelector('#ft'); if (!box) return;
+  const box = cont.querySelector('#ft'); if (!box) return { desaPendents: async () => ({}) };
   const t = treballadorActual();
   const despres = async () => { await recarregaFulls(); renderMain(); };
   // l'error surt dins del full, just sobre el botó que s'ha pitjat (a l'app no hi ha #ferr)
   const err = (m, on) => { box.querySelectorAll('.msg.err').forEach(e => e.remove()); const e = document.createElement('div'); e.className = 'msg err'; e.textContent = m; const acts = on && on.querySelector('.actions'); if (acts) acts.parentNode.insertBefore(e, acts); else box.insertBefore(e, box.firstChild); if (e.scrollIntoView) e.scrollIntoView({ block: 'nearest' }); };
-  const aj = $('#ft-afegeix-jornada'); if (aj) aj.addEventListener('click', async () => {
+  // apunta la jornada / el material escrits als formularis del full, sense tornar a pintar: true si s'ha desat (si no, l'error al seu lloc)
+  const apuntaJornada = async () => {
     const v = k => (box.querySelector(`[data-nj="${k}"]`) || {}).value || '', on = $('#ft-nova-jornada');
-    if (!v('data') || !v('hora_inici') || !v('hora_fi')) { err('La jornada necessita la data, l’hora d’inici i l’hora final.', on); return; }
-    if (!v('feina').trim()) { err('Escriu què s’ha fet en aquesta jornada.', on); return; }
-    aj.disabled = true;
+    if (!v('data') || !v('hora_inici') || !v('hora_fi')) { err('La jornada necessita la data, l’hora d’inici i l’hora final.', on); return false; }
+    if (!v('feina').trim()) { err('Escriu què s’ha fet en aquesta jornada.', on); return false; }
     const r = await sb.from('full_treball_jornades').insert({ full_id: f.id, data: v('data'), hora_inici: v('hora_inici'), hora_fi: v('hora_fi'), persones: Math.max(1, parseInt(v('persones'), 10) || 1), feina: v('feina').trim(), treballador_id: t ? t.id : null });
-    if (r.error) { aj.disabled = false; err(friendly(r.error), on); return; }
+    if (r.error) { err(friendly(r.error), on); return false; }
     if (f.estat === 'pendent') await sb.from('fulls_treball').update({ estat: 'en_curs' }).eq('id', f.id);
-    toast('Jornada apuntada'); despres();
-  });
-  const am = $('#ft-afegeix-material'); if (am) am.addEventListener('click', async () => {
+    return true;
+  };
+  const apuntaMaterial = async () => {
     const v = k => (box.querySelector(`[data-nm="${k}"]`) || {}).value || '', on = $('#ft-nova-material');
-    if (!v('nom').trim()) { err('Escriu quin material és.', on); return; }
-    am.disabled = true;
+    if (!v('nom').trim()) { err('Escriu quin material és.', on); return false; }
     const nom = v('nom').trim(), prod = C.rows('productes').find(p => p.actiu && p.nom.trim().toLowerCase() === nom.toLowerCase());
     const r = await sb.from('full_treball_material').insert({ full_id: f.id, data: v('data') || ymd(new Date()), nom, quantitat: Number(v('quantitat')) || 1, producte_id: prod ? prod.id : null });
-    if (r.error) { am.disabled = false; err(friendly(r.error), on); return; }
-    toast('Material apuntat'); despres();
-  });
+    if (r.error) { err(friendly(r.error), on); return false; }
+    return true;
+  };
+  const aj = $('#ft-afegeix-jornada'); if (aj) aj.addEventListener('click', async () => { aj.disabled = true; if (await apuntaJornada()) { toast('Jornada apuntada'); despres(); } else aj.disabled = false; });
+  const am = $('#ft-afegeix-material'); if (am) am.addEventListener('click', async () => { am.disabled = true; if (await apuntaMaterial()) { toast('Material apuntat'); despres(); } else am.disabled = false; });
   box.querySelectorAll('[data-treu-jornada]').forEach(b => b.addEventListener('click', async () => { const r = await sb.from('full_treball_jornades').update({ actiu: false }).eq('id', Number(b.dataset.treuJornada)); if (r.error) { err(friendly(r.error)); return; } despres(); }));
   box.querySelectorAll('[data-treu-material]').forEach(b => b.addEventListener('click', async () => { const r = await sb.from('full_treball_material').update({ actiu: false }).eq('id', Number(b.dataset.treuMaterial)); if (r.error) { err(friendly(r.error)); return; } despres(); }));
   box.querySelectorAll('[data-foto-full]').forEach(inp => inp.addEventListener('change', async () => {
@@ -7093,6 +7123,17 @@ function bindFull(f, cont) {
     if (String(x.path).startsWith('incidencies/')) { try { await sb.storage.from(BUCKET).remove([x.path]); } catch (e2) {} }
     toast('Tret'); despres();
   }));
+  const escrit = (attr, camps) => camps.some(k => String((box.querySelector(`[${attr}="${k}"]`) || {}).value || '').trim() !== '');
+  const buida = (attr, camps) => camps.forEach(k => { const el = box.querySelector(`[${attr}="${k}"]`); if (el) el.value = ''; });
+  return {
+    desaPendents: async () => {
+      const j = escrit('data-nj', ['hora_inici', 'hora_fi', 'feina']), m = escrit('data-nm', ['nom']);
+      if (j) { if (!(await apuntaJornada())) return null; buida('data-nj', ['hora_inici', 'hora_fi', 'feina']); }
+      if (m) { if (!(await apuntaMaterial())) return null; buida('data-nm', ['nom']); }
+      if (j || m) await recarregaFulls();
+      return { jornada: j, material: m };
+    },
+  };
 }
 // ---- l'app: la llista dels fulls de l'operari i un full sol (sense incidència) ----
 function renderFullsOperari(main) {
@@ -7148,11 +7189,19 @@ function renderFullOperari(main, id) {
     ${f.finalitzat ? `<div class="ao-feta"><b>Finalitzat</b> el ${dmyhm(f.finalitzat_el)}${f.albara_id ? ' · ja té albarà' : ''}${f.resum ? `<div class="ao-desc">${h(f.resum)}</div>` : ''}${potDesferFull(f) ? '<a href="#" id="ftf-desfes" class="ao-desfes">Desfés-ho: encara no està acabat</a>' : ''}</div>` : ''}
     <div id="ferr"></div>
     ${seccionsFullHTML(f)}
-    ${edit ? `<button type="button" class="boto-gran fi" id="ftf-ok">Finalitzat</button>` : ''}
+    ${edit ? `<button type="button" class="boto-gran obert" id="ftf-obert">Deixar obert</button><button type="button" class="boto-gran endavant" id="ftf-ok">Finalitzar</button>` : ''}
   </div>`;
   $('#ft-torna').addEventListener('click', () => { st.id = null; st.form = null; renderMain(); window.scrollTo({ top: 0 }); });
-  bindFull(f, main);
-  const fo = $('#ftf-ok'); if (fo) fo.addEventListener('click', () => { fo.disabled = true; finalitzaFull(f.id, { despres: () => { st.form = null; renderMain(); }, error: m => { fo.disabled = false; errorAo(main, m, fo); } }); });
+  const fb = bindFull(f, main);
+  // deixar-lo obert: desa el que hi hagi escrit i torna a la llista (s'hi pot tornar quan calgui)
+  const fob = $('#ftf-obert'); if (fob) fob.addEventListener('click', async () => {
+    fob.disabled = true; const p = await fb.desaPendents(); if (!p) { fob.disabled = false; return; }
+    toast(p.jornada || p.material ? 'Desat: el full queda obert' : 'El full queda obert'); st.id = null; st.form = null; renderMain(); window.scrollTo({ top: 0 });
+  });
+  const fo = $('#ftf-ok'); if (fo) fo.addEventListener('click', async () => {
+    fo.disabled = true; const p = await fb.desaPendents(); if (!p) { fo.disabled = false; return; }
+    finalitzaFull(f.id, { despres: () => { st.form = null; renderMain(); }, error: m => { fo.disabled = false; errorAo(main, m, fo); } });
+  });
   const fd = $('#ftf-desfes'); if (fd) fd.addEventListener('click', e => { e.preventDefault(); desfesFull(f.id); });
   ompleMiniatures(main);
 }
@@ -9523,7 +9572,7 @@ function accioOperariHTML(inc, a) {
   html.push(caixaMediaHTML(a, potPujarAdj(inc, a), { extres: full && Array.isArray(full.adjunts) ? full.adjunts : [] }));
   // FULL DE TREBALL (opcional: només si cal apuntar-hi jornades o material)
   if (accioAmbFull(a)) {
-    if (full) html.push(seccionsFullHTML(full) + (a.estat === 'finalitzada' && !full.finalitzat && potEditarFull(full) ? `<button type="button" class="boto-gran fi" id="ft-fin-sol">Full finalitzat</button>` : ''));
+    if (full) html.push(seccionsFullHTML(full) + (a.estat === 'finalitzada' && !full.finalitzat && potEditarFull(full) ? `<button type="button" class="boto-gran endavant" id="ft-fin-sol">Finalitzar el full</button>` : ''));
     else if (oberta && potCrearFullDe(a)) html.push(`<button type="button" class="boto-gran full" id="ft-obre-btn">Full de treball</button>`);
   }
   // FINALITZAT (o la resposta d'una petició al client o a un proveïdor, si la gestiones tu)
@@ -9582,12 +9631,13 @@ function bindAccioOperari(inc, a, main) {
   main.querySelectorAll('[data-treu-adj]').forEach(b => b.addEventListener('click', async e => { e.preventDefault(); e.stopPropagation(); desaEscrit(); try { await treuAdjuntAccio(inc, a, b.dataset.treuAdj); toast('Tret'); renderMain(); } catch (e2) { err(friendly(e2), b.closest('.md-llista') || b); } }));
   const ob = $('#ft-obre-btn'); if (ob) ob.addEventListener('click', async () => { desaEscrit(); if (await obreFullDeAccio(inc, a, ob)) { toast('Full de treball obert: apunta-hi les jornades i el material.', 5000); renderMain(); const box = $('#ft'); if (box && box.scrollIntoView) box.scrollIntoView({ block: 'start' }); } });
   const full = accioAmbFull(a) ? fullDeAccio(a) : null;
-  if (full) bindFull(full, main);
-  const ffs = $('#ft-fin-sol'); if (ffs) ffs.addEventListener('click', () => { ffs.disabled = true; finalitzaFull(full.id, { despres: () => renderMain(), error: m => { ffs.disabled = false; err(m, ffs); } }); });
+  const fb = full ? bindFull(full, main) : null;
+  const ffs = $('#ft-fin-sol'); if (ffs) ffs.addEventListener('click', async () => { ffs.disabled = true; if (fb && !(await fb.desaPendents())) { ffs.disabled = false; return; } finalitzaFull(full.id, { despres: () => renderMain(), error: m => { ffs.disabled = false; err(m, ffs); } }); });
   const fin = $('#fin-ok'); if (fin) fin.addEventListener('click', async () => {
     const resultat = ($('#fin-resultat').value || '').trim(), dec = $('#fin-decisio') ? $('#fin-decisio').value : null;
     if (a.es_peticio && !resultat && !dec) { err('Escriu la resposta.', fin); return; }
     fin.disabled = true;
+    if (fb && !a.es_peticio && !(await fb.desaPendents())) { fin.disabled = false; return; }
     try {
       const r = await finalitzaAccio(inc, a, { resultat, decisio: dec });
       st.form = null;
