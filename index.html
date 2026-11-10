@@ -550,6 +550,20 @@
   .ic-targeta.fora{ border-color:#d32f2f; }
   .ic-targeta:hover{ border-color:var(--ink-2); }
   .ic-targeta .ic-int{ color:var(--ink-2); font-size:13px; }
+  /* informes per lloc: les fotos (cadascuna amb el seu peu) al final de la fitxa, a l'oficina i a l'app */
+  .inf-fotos{ margin-top:18px; }
+  .inf-graella{ display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:12px; margin:10px 0 12px; }
+  .inf-foto{ margin:0; border:1px solid var(--line-2); border-radius:8px; padding:8px; background:#fff; display:flex; flex-direction:column; gap:6px; }
+  .inf-foto img{ width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:6px; background:#eef1f3; cursor:pointer; }
+  .inf-foto textarea{ width:100%; box-sizing:border-box; min-height:0; resize:vertical; }
+  .inf-foto figcaption{ font-size:13px; color:var(--ink-2); text-align:center; }
+  .inf-text{ white-space:pre-wrap; background:#fafbfa; border:1px solid var(--line-2); border-radius:8px; padding:10px 12px; margin:8px 0 12px; }
+  /* a l'app (mòbil), una foto per fila: la miniatura a l'esquerra; el peu i el botó per treure-la, a la dreta */
+  .operari .inf-graella{ grid-template-columns:minmax(0, 1fr); }
+  .operari .inf-foto{ display:grid; grid-template-columns:120px minmax(0, 1fr); column-gap:10px; row-gap:6px; align-items:start; }
+  .operari .inf-foto img{ grid-row:1 / span 2; }
+  .operari .inf-foto .btn{ justify-self:start; }
+  .operari .inf-foto figcaption{ text-align:left; align-self:center; }
   .ic-capa{ flex-wrap:wrap; } .ic-capa button{ padding:6px 10px; font-size:13px; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .ic-extern{ background:#fff6e5; color:#7a4e00; margin:0 0 8px; }
   .nom-any{ display:inline-flex; align-items:center; gap:4px; } .nom-any input{ width:86px; text-align:center; font-weight:600; }
@@ -1445,9 +1459,13 @@ const SCHEMA = {
     informes_lloc: {
       label: 'Informes per lloc', nou: 'Nou informe', order: 'data', desc: true,
       display: (r, L) => dmy(r.data) + ' — ' + r.titol + ' — ' + ((C.get('llocs', r.lloc_id) || {}).nom || ''),
-      list: ['data', 'lloc_id', 'titol', 'concepte', 'tema', 'signant_id', 'pdf'],
+      list: ['data', 'lloc_id', 'titol', 'concepte', 'tema', 'signant_id', 'nfotos', 'pdf'],
+      computed: { nfotos: { label: 'Fotos', fn: r => fotosInforme(r).length ? String(fotosInforme(r).length) : '' } },
       filtres: [{ key: 'lloc_id', tipus: 'ref', ref: 'llocs', label: 'Lloc' }, { key: 'data', tipus: 'dates', label: 'Data' }],
-      obreEnCrear: 'Informe desat. Ara pots previsualitzar el PDF o generar-lo.',
+      obreEnCrear: 'Informe desat. Ara hi pots posar més fotos, previsualitzar el PDF o generar-lo.',
+      // les fotos (amb el peu): al final de la fitxa; en un informe nou, es pugen en desar-lo; el peu es desa amb la resta
+      extrasFinal: informeFotosHTML, bindExtras: informeFotosBind, despresCrear: pujaFotosInformeNou,
+      abansDesar: (payload, id) => { if (id && document.querySelector('#inf-fotos [data-peu]')) payload.fotos = fotosDelFormulari(C.get('informes_lloc', id)); },
       actions: r => [
         { label: 'Previsualitza el PDF', run: () => generaPdfInforme(r.id, { obrir: true, desa: false }).catch(e => showFormError(friendly(e))) },
         { label: 'Genera i desa el PDF', run: () => generaPdfInforme(r.id, { obrir: true, desa: true }).then(() => renderMain()).catch(e => showFormError(friendly(e))) },
@@ -4389,7 +4407,7 @@ const COLORS_MENU = {
   informe_tasques_dates: '--p:#6b7fd6;--pf:#2b3c8c', incidencia_reports: '--p:#ee8a3c;--pf:#9a4410', calendari_accions: '--p:#9a6fd4;--pf:#4f2a80',
   accions_meves: '--p:#e2635f;--pf:#8c1f1f', fulls_treball_app: '--p:#6b8f9a;--pf:#2f4f5a', nomines: '--p:#d4ad45;--pf:#7a5a10', vacances: '--p:#f0d23a;--pf:#8a7600',
   informe_sal: '--p:#9cc3d6;--pf:#3b6a80', informe_adob: '--p:#9aa83a;--pf:#4a5512', lectures_app: '--p:#c9935e;--pf:#6e4219',
-  alarmes: '--p:#d9435a;--pf:#6e1022',
+  alarmes: '--p:#d9435a;--pf:#6e1022', informes_lloc: '--p:#5b8fc7;--pf:#1f4a78',
 };
 const estilMenu = id => COLORS_MENU[id] + (FOTOS_MENU[id] ? ';background-image:url(' + FOTOS_MENU[id] + ')' : '');
 const fonsMenu = id => FOTOS_MENU[id] ? '' : ESCENES_MENU[id];
@@ -4417,6 +4435,8 @@ const ESCENES_MENU = {
   vacances: escenaMenu('vac', `<circle cx="40" cy="30" r="16" fill="#fff6cc"/><g stroke="#fff6cc" stroke-width="2.5" stroke-linecap="round" opacity=".7"><path d="M40 6v6M40 48v6M16 30h6M58 30h6M23 13l4 4M53 43l4 4M57 13l-4 4M27 43l-4 4"/></g><rect x="0" y="62" width="200" height="28" fill="#3a9ad6"/><path d="M0 62c20-6 40-6 60 0s40 6 60 0 40-6 60 0 15 3 20 3v8H0z" fill="#7cc4ee"/><rect x="0" y="88" width="200" height="32" fill="#f3dfa0"/><g transform="translate(112 78)"><path d="M0 22L10 6h30l10 16" fill="none" stroke="#7a5a10" stroke-width="3" stroke-linejoin="round"/><rect x="8" y="8" width="34" height="16" rx="3" fill="#3a9ad6"/><path d="M6 24h38" stroke="#2b3c8c" stroke-width="3" stroke-linecap="round"/></g><g transform="translate(160 34) rotate(-12)"><path d="M-30 36a30 30 0 0 1 60 0z" fill="#e2635f"/><path d="M0 36L-24 18A30 30 0 0 1 -8 7z" fill="#fff"/><path d="M0 36L8 7a30 30 0 0 1 16 11z" fill="#fff"/><path d="M0 36v62" stroke="#7a5a10" stroke-width="3" stroke-linecap="round"/></g>`),
   // alarmes: una campana que sona
   alarmes: escenaMenu('al', `<path d="M0 100c40-10 80-10 120 0s60 6 80 2v18H0z" fill="#000" opacity=".16"/><g fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" opacity=".6"><path d="M106 38q-8 20 0 40"/><path d="M94 30q-13 28 0 56"/><path d="M178 38q8 20 0 40"/><path d="M190 30q13 28 0 56"/></g><g transform="translate(142 56) rotate(-14)"><g transform="translate(4 5)" fill="#000" opacity=".2"><path d="M-26 30C-22 22-20 10-20-4a20 20 0 0 1 40 0c0 14 2 26 6 34z"/><rect x="-32" y="28" width="64" height="8" rx="4"/></g><circle cx="0" cy="-26" r="5" fill="#e0b443"/><circle cx="0" cy="42" r="7" fill="#c9972c"/><path d="M-26 30C-22 22-20 10-20-4a20 20 0 0 1 40 0c0 14 2 26 6 34z" fill="#f6d36b"/><path d="M-12-6a12 12 0 0 1 8-12" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".7"/><rect x="-32" y="28" width="64" height="8" rx="4" fill="#e0b443"/></g>`),
+  // informe: un full amb el títol, ratlles de text i dues fotos (sol i turons), i una càmera al davant
+  informes_lloc: escenaMenu('inf', `<g transform="translate(112 8) rotate(4)"><rect x="4" y="7" width="74" height="100" rx="5" fill="#000" opacity=".22"/><rect x="0" y="3" width="74" height="100" rx="5" fill="#fbfdff"/><rect x="9" y="13" width="38" height="6" rx="3" fill="#1f4a78" opacity=".8"/><g fill="none" stroke="#9aa7b1" stroke-width="2.5" stroke-linecap="round"><path d="M9 28h56M9 36h56M9 44h40"/></g><rect x="9" y="53" width="26" height="21" rx="2" fill="#8fc0ea"/><circle cx="29" cy="59" r="3" fill="#ffe08a"/><path d="M9 74l8-9 6 5 5-4 8 8z" fill="#3f7d4f"/><rect x="39" y="53" width="26" height="21" rx="2" fill="#8fc0ea"/><path d="M39 74l7-7 6 4 6-6 7 9z" fill="#3f7d4f"/><g fill="none" stroke="#9aa7b1" stroke-width="2" stroke-linecap="round"><path d="M9 84h56M9 91h34"/></g></g><g transform="translate(92 66)"><rect x="0" y="9" width="46" height="31" rx="7" fill="#fff" opacity=".95"/><rect x="13" y="3" width="18" height="9" rx="3" fill="#fff" opacity=".95"/><circle cx="23" cy="25" r="10" fill="#1f4a78"/><circle cx="23" cy="25" r="6" fill="#8fc0ea"/><circle cx="38" cy="16" r="2.2" fill="#e2635f"/></g>`),
 };
 function renderAppOperari() {
   document.body.classList.add('operari'); document.body.classList.remove('ic-full');
@@ -4445,6 +4465,7 @@ function renderAppOperari() {
         <button class="ample llarg" data-go="incidencia_reports" style="${estilMenu('incidencia_reports')}"><strong>Reports d’incidències</strong>${fonsMenu('incidencia_reports')}</button>
         <button class="ample" data-go="fulls_treball_app" style="${estilMenu('fulls_treball_app')}"><strong>Fulls de treball</strong>${(() => { const t = treballadorActual(); const n = t ? C.rows('fulls_treball').filter(f => f.actiu && Number(f.encarregat_id) === t.id && !f.finalitzat && f.estat !== 'anul_lat' && !fullProgramat(f)).length : 0; return n ? `<span class="pend">${n} obert${n === 1 ? '' : 's'}</span>` : ''; })()}${fonsMenu('fulls_treball_app')}</button>
         <button class="ample" data-go="lectures_app" style="${estilMenu('lectures_app')}"><strong>Lectures de comptadors</strong>${(() => { const n = nPerLlegir(); return n ? `<span class="pend">${n} per llegir aquest mes</span>` : ''; })()}${fonsMenu('lectures_app')}</button>
+        ${informesAApp(t) ? `<button class="ample" data-go="informes_lloc" style="${estilMenu('informes_lloc')}"><strong>Informes</strong><span>Informes per lloc, amb fotos</span>${fonsMenu('informes_lloc')}</button>` : ''}
         <button data-go="calendari_accions" style="${estilMenu('calendari_accions')}"><strong>Calendari accions</strong>${fonsMenu('calendari_accions')}</button>
         <button data-go="accions_meves" style="${estilMenu('accions_meves')}"><strong>Accions pendents</strong>${(() => { const n = t ? C.rows('incidencia_accions').filter(a => a.actiu && perFer(a) && (Number(a.responsable_treballador_id) === t.id || Number(a.gestor_id) === t.id) && (C.get('incidencies', a.incidencia_id) || {}).estat === 'oberta').length : 0; const m = t ? C.rows('incidencies').filter(i => senseSeguent(i) && (Number(i.seguidora_id) === t.id || (!APP_NOMES_TASQUES && esOficina(t)))).length : 0; return n || m ? `<span>${n ? n + ' per fer' : ''}${n && m ? ' · ' : ''}${m ? m + ' per encarregar' : ''}</span>` : ''; })()}${insigniaHTML()}${fonsMenu('accions_meves')}</button>
         <button data-go="informe_sal" style="${estilMenu('informe_sal')}"><strong>Sal</strong>${fonsMenu('informe_sal')}</button>
@@ -4453,10 +4474,11 @@ function renderAppOperari() {
         <button data-go="vacances" style="${estilMenu('vacances')}"><strong>Vacances</strong>${fonsMenu('vacances')}</button>
         <button class="ample" data-go="documents_treballadors" style="--p:#8e7cc3;--pf:#4b3a7a"><strong>Documents</strong>${(() => { const n = t ? alertesDocuments({ nomesMeus: true }).length : 0; return n ? `<span class="pend">${n} per renovar</span>` : '<span>DNI, contracte, carnets…</span>'; })()}${ESCENES_MENU.fulls_treball_app}</button>
       </div>`;
-    main.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { state.table = b.dataset.go; state.editing = null; if (b.dataset.go === 'fulls_treball_app') Object.assign(state.ft, { id: null, form: null, nou: null }); if (b.dataset.go === 'lectures_app') state.lect = { id: null }; renderApp(); }));
+    main.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { state.table = b.dataset.go; state.editing = null; if (b.dataset.go === 'fulls_treball_app') Object.assign(state.ft, { id: null, form: null, nou: null }); if (b.dataset.go === 'lectures_app') state.lect = { id: null }; if (b.dataset.go === 'informes_lloc') state.inf = { nou: false }; renderApp(); }));
     return;
   }
   if (SCHEMA.pages[state.table]) { SCHEMA.pages[state.table].render(main); return; }
+  if (state.table === 'informes_lloc') { renderInformesApp(main); return; }
   if (state.table === 'incidencia_reports') {
     const td = SCHEMA.tables.incidencia_reports;
     const meus = [...C.rows('incidencia_reports')].filter(r => r.actiu && (!t || Number(r.registrat_per) === t.id)).sort((a, b) => (a.creat_el < b.creat_el ? 1 : -1)).slice(0, 8);
@@ -4476,6 +4498,7 @@ function renderAppOperari() {
 function renderMain() {
   const main = $('#main');
   document.body.classList.remove('ic-full');
+  if (state.table === 'informes_lloc' && esOperari()) { renderInformesApp(main); return; }   // els informes a l'app (després de desar, etc.)
   if (!state.table) {
     main.innerHTML = `
       <h1>Què vols fer?</h1>
@@ -5791,8 +5814,8 @@ async function generaPdfPressupostAgrupacio(id, { obrir = true } = {}) {
 }
 
 /* ---------- Informes per lloc: PDF amb logo, títol, concepte, text lliure, població i mes, i signatura ---------- */
-// signa per defecte en Xavier Amat (si hi és); si no, qui ha entrat
-function signantPerDefecte() { const x = C.rows('treballadors').find(t => t.actiu && /^xavier$/i.test(String(t.nom || '').trim()) && /^amat/i.test(String(t.cognoms || '').trim())); if (x) return x.id; const t = treballadorActual(); return t ? t.id : ''; }
+// signa per defecte qui el fa, si és tècnic; si no, en Xavier Amat (si hi és) o qui ha entrat
+function signantPerDefecte() { const jo = treballadorActual(); if (jo && jo.rol === 'tecnic') return jo.id; const x = C.rows('treballadors').find(t => t.actiu && /^xavier$/i.test(String(t.nom || '').trim()) && /^amat/i.test(String(t.cognoms || '').trim())); if (x) return x.id; const t = treballadorActual(); return t ? t.id : ''; }
 // maqueta un paràgraf (línies de paraules amb amplades, en Arial) sense dibuixar-lo; serveix per decidir els salts de pàgina abans d'escriure
 function maquetaParagraf(doc, par, w, size) {
   const lh = size * 0.3528 * 1.38, ind = par.li ? 7 : 0, wx = w - ind;
@@ -5816,7 +5839,7 @@ function dibuixaLiniaRica(doc, m, i, x, y, color) {
   let cx = x + m.ind;
   ln.forEach((t, j) => { if (j > 0 && !t.glue) cx += m.sw(t.b) + extra; doc.setFont('helvetica', t.b ? 'bold' : 'normal'); doc.text(t.t, cx, y); cx += t.w; });
 }
-function pdfInformeLloc(r) {
+function pdfInformeLloc(r, fotos = []) {   // fotos: [{ dades, format, w, h, peu }] (fotosPerPdfInforme)
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const emp = C.rows('empresa').find(e => e.actiu) || {};
@@ -5858,7 +5881,7 @@ function pdfInformeLloc(r) {
     return { pos, tancaSol, liniesPag };
   };
   let sim = simula(-1), forca = -1;
-  if (sim.tancaSol && totalLinies > 0) {
+  if (!fotos.length && sim.tancaSol && totalLinies > 0) {   // (amb fotos, el tancament va després de les fotos i les acompanya)
     forca = Math.max(0, totalLinies - Math.min(3, Math.max(1, sim.liniesPag - 1)));
     const dinsPar = []; blocs.forEach(b => b.m.lines.forEach((l, i) => dinsPar.push(i)));   // posició de cada línia dins del seu paràgraf
     while (forca > 0 && dinsPar[forca] === 1) forca--;   // que no quedi la primera línia d'un paràgraf sola a baix de la pàgina anterior
@@ -5875,6 +5898,28 @@ function pdfInformeLloc(r) {
     }
     y += b.despres;
   }
+  // les fotos, després del text: dues per fila (cadascuna a la seva meitat, de 82 mm d'ample i 62 d'alt com a molt, centrada; si en
+  // queda una de sola, al mig), amb el peu a sota (9 punts, pàl·lid). Una fila que no hi cap passa a la pàgina següent, i l'última
+  // s'emporta el tancament (població, data i signatura) perquè no quedi sol.
+  if (fotos.length) {
+    const GAP = 6, CW = (W - GAP) / 2, MAXH = 62, PEU = 9, pasPeu = PEU * 0.3528 * 1.15;
+    const files = []; for (let k = 0; k < fotos.length; k += 2) files.push(fotos.slice(k, k + 2));
+    files.forEach((fila, fi) => {
+      const cel = fila.map(ft => {
+        const k = Math.min(CW / ft.w, MAXH / ft.h), w = ft.w * k, al = ft.h * k, peuL = ft.peu ? wrap(ft.peu, CW, PEU) : [];
+        return { ft, w, al, peuL, alt: al + (peuL.length ? 2 + PEU * 0.3528 * (0.905 + 0.212) + (peuL.length - 1) * pasPeu : 0) };
+      });
+      const alt = Math.max(...cel.map(c => c.alt)), ultima = fi === files.length - 1;
+      const hiCap = y + alt <= PAPER.baix && (!ultima || y + alt + GAP + ALT_TANCA <= LIMIT);
+      if (!hiCap && y > PAPER.dalt + 1) { novaPagina(); y = PAPER.dalt; }
+      cel.forEach((c, j) => {
+        const cx = fila.length === 1 ? M + (W - CW) / 2 : M + j * (CW + GAP);
+        doc.addImage(c.ft.dades, c.ft.format, cx + (CW - c.w) / 2, y, c.w, c.al);
+        if (c.peuL.length) text(c.peuL, cx + CW / 2, y + c.al + 2 + PEU * 0.3528 * 0.905, PEU, 'normal', pale, { align: 'center' });
+      });
+      y += alt + GAP;
+    });
+  }
   if (y + ALT_TANCA > LIMIT) { y = novaPagina(); }
   y += 8;
   const d = new Date(String(r.data || avui()).slice(0, 10) + 'T00:00:00Z');
@@ -5889,14 +5934,17 @@ function pdfInformeLloc(r) {
 }
 async function generaPdfInforme(id, { obrir = true, desa = true } = {}) {
   const r = C.get('informes_lloc', id);
-  const doc = pdfInformeLloc(r);
+  const { imatges, falten } = await fotosPerPdfInforme(r);
+  const doc = pdfInformeLloc(r, imatges);
   const pags = doc.internal.getNumberOfPages();
   const blob = doc.output('blob');
-  if (obrir) window.open(URL.createObjectURL(blob), '_blank');
-  if (pags > 5) toastErr('L’informe ocupa ' + pags + ' pàgines: convé que no passi de 5.');
-  if (!desa) return null;
   const lloc = C.get('llocs', r.lloc_id) || {};
-  const path = 'informes/' + String(lloc.nom || 'lloc').replace(/[^\w.-]+/g, '-') + '-' + String(r.data || '').slice(0, 10) + '-' + r.id + '.pdf';
+  const nom = String(lloc.nom || 'lloc').replace(/[^\w.-]+/g, '-') + '-' + String(r.data || '').slice(0, 10) + '-' + r.id + '.pdf';
+  if (obrir) obrePdfGenerat(blob, nom);
+  if (falten) toastErr(falten === 1 ? 'Una de les fotos no s’ha pogut posar al PDF.' : falten + ' fotos no s’han pogut posar al PDF.');
+  else if (pags > 5 && !imatges.length) toastErr('L’informe ocupa ' + pags + ' pàgines: convé que no passi de 5.');
+  if (!desa) return null;
+  const path = 'informes/' + nom;
   const { error } = await sb.storage.from(BUCKET).upload(path, blob, { upsert: true, contentType: 'application/pdf' });
   if (error) throw new Error('No s’ha pogut desar el PDF: ' + friendly(error));
   const res = await sb.from('informes_lloc').update({ pdf: path }).eq('id', id);
@@ -5904,6 +5952,192 @@ async function generaPdfInforme(id, { obrir = true, desa = true } = {}) {
   await loadTable('informes_lloc');
   toast('PDF desat (' + pags + (pags === 1 ? ' pàgina)' : ' pàgines)'));
   return path;
+}
+// un PDF acabat de fer: a l'ordinador s'obre en una pestanya; al mòbil (on el navegador no el mostra) es descarrega i s'obre amb el
+// visor de PDF. Si el navegador no deixa obrir la pestanya, també es descarrega.
+function obrePdfGenerat(blob, nom) {
+  const url = URL.createObjectURL(blob);
+  if (!/Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '')) { const w = window.open(url, '_blank'); if (w) return; }
+  const a = document.createElement('a'); a.href = url; a.download = nom; document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* ---------- Fotos dels informes per lloc: a la carpeta de l'informe (informes/fotos/<id>/), cada una amb un peu de foto opcional.
+   Surten al PDF després del text, dues per fila. Les posen i treuen l'administrador i l'oficina (a tots els informes) i els tècnics
+   (als que han fet o signen). A l'app, els informes només hi són per a l'administrador i els tècnics (SQL 090). ---------- */
+const fotosInforme = r => (r && Array.isArray(r.fotos) ? r.fotos : []).filter(x => x && typeof x.path === 'string' && x.path.startsWith('informes/fotos/' + r.id + '/'));
+const informesAApp = t => !!t && (t.rol === 'admin' || t.rol === 'tecnic');   // el botó «Informes» de l'app
+// qui pot tocar un informe (o fer-ne un de nou): l'administrador i l'oficina, tots; un tècnic, els que ha fet o signa
+function potEditarInforme(r) {
+  const t = treballadorActual(); if (!t) return false;
+  if (esOficina(t)) return true;
+  return t.rol === 'tecnic' && (!r || Number(r.creat_per) === t.id || Number(r.signant_id) === t.id);
+}
+// les fotos tal com són al formulari: amb el peu que s'hi hagi escrit, encara que no s'hagi desat
+function fotosDelFormulari(r) {
+  return fotosInforme(r).map((x, k) => { const el = document.querySelector(`#inf-fotos [data-peu="${k}"]`); return el ? { ...x, peu: el.value.trim() || null } : x; });
+}
+async function pujaFotosInforme(id, fitxers) {
+  const nous = [];
+  for (let k = 0; k < fitxers.length; k++) {
+    const f0 = fitxers[k];
+    if (!/^image\//i.test(f0.type || '') && !/\.(jpe?g|png|heic|heif|webp)$/i.test(f0.name || '')) throw new Error('«' + f0.name + '» no és una foto.');
+    const f = await redueixFoto(f0, FOTO_NORMAL), gran = massaGran(f); if (gran) throw new Error(gran);
+    const path = `informes/fotos/${id}/${Date.now()}_${k}_${String(f.name || 'foto.jpg').replace(/[^\w.\-]+/g, '_')}`;
+    const { error } = await sb.storage.from(BUCKET).upload(path, f, { contentType: f.type || 'image/jpeg' });
+    if (error) throw new Error('No s’ha pogut pujar ' + f.name + ': ' + friendly(error));
+    nous.push({ path, nom: f.name, peu: null });
+  }
+  return nous;
+}
+async function afegeixFotosInforme(id, fitxers) {
+  mostraProgres('Pujant ' + (fitxers.length === 1 ? 'la foto…' : 'les ' + fitxers.length + ' fotos…'));
+  try {
+    const nous = await pujaFotosInforme(id, fitxers);
+    const res = await sb.from('informes_lloc').update({ fotos: [...fotosDelFormulari(C.get('informes_lloc', id)), ...nous] }).eq('id', id);
+    if (res.error) throw res.error;
+    await loadTable('informes_lloc');
+    toast(nous.length === 1 ? 'Foto pujada' : nous.length + ' fotos pujades');
+  } finally { treuProgres(); }
+}
+// les fotos triades en un informe nou: es pugen just després de desar-lo
+async function pujaFotosInformeNou(id) {
+  const inp = $('#inf-fitxers'), fitxers = inp ? [...inp.files] : []; if (!fitxers.length) return;
+  await afegeixFotosInforme(id, fitxers);
+}
+async function treuFotoInforme(id, k) {
+  const fotos = fotosDelFormulari(C.get('informes_lloc', id)), x = fotos[k]; if (!x) return;
+  const res = await sb.from('informes_lloc').update({ fotos: fotos.filter((y, j) => j !== k) }).eq('id', id);
+  if (res.error) throw res.error;
+  try { await sb.storage.from(BUCKET).remove([x.path]); } catch (e) {}
+  await loadTable('informes_lloc');
+  toast('Foto treta');
+}
+// el quadre de les fotos, al final de l'informe: cada foto amb el seu peu i el botó per treure-la; a sota, el botó per afegir-ne (en un
+// informe nou, es pugen en desar-lo). Si no el pots tocar, només les fotos i els peus.
+function informeFotosHTML(row) {
+  const edit = potEditarInforme(row), fotos = row ? fotosInforme(row) : [];
+  if (!edit && !fotos.length) return '';
+  return `<div class="inf-fotos" id="inf-fotos">
+    <h3>Fotos de l’informe${fotos.length ? ' · ' + fotos.length : ''}</h3>
+    ${edit ? '<p class="hint">Surten al PDF després del text, dues per fila, amb el peu a sota si n’hi poses.</p>' : ''}
+    ${fotos.length ? `<div class="inf-graella">${fotos.map((x, k) => `<figure class="inf-foto"><img data-adj="${h(x.path)}" alt="${h(x.peu || x.nom || 'Foto')}">${edit
+      ? `<textarea data-peu="${k}" rows="2" placeholder="Peu de foto (opcional)" maxlength="200" lang="ca" spellcheck="true">${h(x.peu || '')}</textarea><button type="button" class="btn ghost small" data-treu-foto="${k}">Treu-la</button>`
+      : x.peu ? `<figcaption>${h(x.peu)}</figcaption>` : ''}</figure>`).join('')}</div>` : ''}
+    ${edit ? `<div class="bar"><label class="btn${row ? '' : ' ghost'}" style="cursor:pointer">${row ? 'Afegeix fotos' : 'Tria les fotos (es pujaran en desar l’informe)'}<input type="file" id="inf-fitxers" multiple accept="image/*" style="display:none"></label><span class="nota" id="inf-nota"></span></div>` : ''}
+  </div>`;
+}
+function informeFotosBind(frm, td) {
+  const box = $('#inf-fotos'); if (!box) return;
+  const id = frm && frm.dataset.id ? Number(frm.dataset.id) : null, inp = $('#inf-fitxers'), nota = $('#inf-nota');
+  // abans de pujar o treure una foto, es desa el que s'hagi escrit al formulari (si no, en tornar-lo a pintar, es perdria)
+  if (inp) inp.addEventListener('change', async () => {
+    const fitxers = [...inp.files]; if (!fitxers.length) return;
+    if (!id) { nota.textContent = fitxers.length === 1 ? '1 foto triada: es pujarà en desar l’informe' : fitxers.length + ' fotos triades: es pujaran en desar l’informe'; return; }
+    if (!(await desaFormulari(td, frm))) return;
+    try { await afegeixFotosInforme(id, fitxers); renderMain(); } catch (e) { showFormError(friendly(e)); }
+  });
+  box.querySelectorAll('[data-treu-foto]').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('Treure aquesta foto de l’informe?')) return;
+    if (!(await desaFormulari(td, frm))) return;
+    try { await treuFotoInforme(id, Number(b.dataset.treuFoto)); renderMain(); } catch (e) { showFormError(friendly(e)); }
+  }));
+  ompleMiniatures(box);
+}
+// ---- les fotos, a punt per al PDF ----
+// el contingut d'un fitxer, en bytes
+const bytesDe = blob => blob.arrayBuffer ? blob.arrayBuffer() : new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = () => rej(fr.error); fr.readAsArrayBuffer(blob); });
+// el format, l'amplada i l'alçada d'una imatge JPEG o PNG (de la capçalera); d'un altre format, res
+function midaImatge(b) {
+  if (b.length > 24 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return { format: 'PNG', w: ((b[16] << 24) | (b[17] << 16) | (b[18] << 8) | b[19]) >>> 0, h: ((b[20] << 24) | (b[21] << 16) | (b[22] << 8) | b[23]) >>> 0 };
+  if (b.length < 4 || b[0] !== 0xff || b[1] !== 0xd8) return null;
+  let i = 2;
+  while (i + 9 < b.length) {
+    if (b[i] !== 0xff) { i++; continue; }
+    const m = b[i + 1];
+    if (m === 0xff) { i++; continue; }
+    if (m === 0x01 || (m >= 0xd0 && m <= 0xd8)) { i += 2; continue; }
+    if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc) { const alt = (b[i + 5] << 8) | b[i + 6], w = (b[i + 7] << 8) | b[i + 8]; return w && alt ? { format: 'JPEG', w, h: alt } : null; }
+    i += 2 + ((b[i + 2] << 8) | b[i + 3]);
+  }
+  return null;
+}
+// una foto per al PDF: al navegador, redibuixada dreta (com la va fer la càmera), en JPEG i de 1.200 px com a molt; si no es pot, els
+// bytes tal qual (si és JPEG o PNG)
+async function imatgePerPdf(blob) {
+  if (typeof createImageBitmap === 'function') {
+    try {
+      const bmp = await createImageBitmap(blob, { imageOrientation: 'from-image' });
+      const k = Math.min(1, 1200 / Math.max(bmp.width, bmp.height)), w = Math.max(1, Math.round(bmp.width * k)), al = Math.max(1, Math.round(bmp.height * k));
+      const c = document.createElement('canvas'); c.width = w; c.height = al;
+      const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, al); ctx.drawImage(bmp, 0, 0, w, al);
+      if (bmp.close) bmp.close();
+      return { dades: c.toDataURL('image/jpeg', 0.85), format: 'JPEG', w, h: al };
+    } catch (e) { /* si el navegador no la sap redibuixar, es prova amb els bytes */ }
+  }
+  const b = new Uint8Array(await bytesDe(blob)), mida = midaImatge(b);
+  return mida ? { dades: b, format: mida.format, w: mida.w, h: mida.h } : null;
+}
+// les fotos d'un informe, a punt per al PDF i amb el seu peu (en l'ordre de l'informe); les que no es poden llegir es compten a part
+async function fotosPerPdfInforme(r) {
+  const totes = await Promise.all(fotosInforme(r).map(async x => {
+    try {
+      const url = await urlAdjunt(x.path); if (!url) throw new Error('sense enllaç');
+      const resp = await fetch(url); if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const img = await imatgePerPdf(await resp.blob()); if (!img) throw new Error('format desconegut');
+      return { ...img, peu: x.peu || '' };
+    } catch (e) { console.warn('Foto de l’informe que no surt al PDF:', x.path, e); return null; }
+  }));
+  const imatges = totes.filter(Boolean);
+  return { imatges, falten: totes.length - imatges.length };
+}
+
+// ---- l'app: els informes per lloc, només per a l'administrador i els tècnics. La llista, un de nou i, en obrir-ne un, el formulari
+// (si el pots tocar) o només per mirar (els dels altres tècnics i els de l'oficina).
+function targetaInformeHTML(r) {
+  const s = r.signant_id ? C.get('treballadors', r.signant_id) : null, n = fotosInforme(r).length;
+  return `<div class="ic-targeta" data-informe="${r.id}"><b>${dmy(r.data)}</b> · ${h(r.titol || '')}<br><span class="hint">${h(L('llocs', r.lloc_id))}${s ? ' · signa ' + h(nomCurtTreballador(s)) : ''}${n ? ' · ' + n + (n === 1 ? ' foto' : ' fotos') : ''}${r.pdf ? ' · PDF desat' : ''}${potEditarInforme(r) ? '' : ' · només per mirar'}</span></div>`;
+}
+function informeLecturaHTML(r) {
+  const s = r.signant_id ? C.get('treballadors', r.signant_id) : null;
+  return `<div class="panel"><div class="ph"><h2>${h(r.titol || '')}</h2></div>
+    <p class="hint" style="margin-top:0">Només per mirar: el poden canviar qui l’ha fet o el signa, l’administrador i l’oficina.</p>
+    <div id="ferr"></div>
+    <p><b>${h(L('llocs', r.lloc_id))}</b> · ${dmy(r.data)}${s ? ' · signa ' + h(nomTreballador(s)) : ''}</p>
+    ${r.concepte ? `<p><b>${h(r.concepte)}</b></p>` : ''}
+    <div class="inf-text">${h(String(r.text || '').replace(/\*\*/g, ''))}</div>
+    ${informeFotosHTML(r)}
+    <div class="actions"><button type="button" class="btn" id="inf-previ">Previsualitza el PDF</button>${r.pdf ? '<button type="button" class="btn ghost" id="inf-obre">Obre el PDF desat</button>' : ''}</div>
+  </div>`;
+}
+function renderInformesApp(main) {
+  const t = treballadorActual(), td = SCHEMA.tables.informes_lloc, st = state.inf || (state.inf = { nou: false });
+  if (!informesAApp(t)) { state.table = null; state.editing = null; renderApp(); return; }
+  const r = state.editing ? C.get('informes_lloc', state.editing) : null;
+  if (state.editing && !r) state.editing = null;
+  if (state.editing) st.nou = false;
+  const obert = !!state.editing || st.nou;
+  const torna = `<div class="bar" style="margin:0 0 6px"><button type="button" class="btn ghost small" id="inf-torna">← ${obert ? 'Tots els informes' : 'Menú'}</button></div><h1>Informes</h1>`;
+  if (r && !potEditarInforme(r)) {
+    main.innerHTML = torna + informeLecturaHTML(r);
+    ompleMiniatures(main);
+    $('#inf-previ').addEventListener('click', () => generaPdfInforme(r.id, { obrir: true, desa: false }).catch(e => showFormError(friendly(e))));
+    const ob = $('#inf-obre'); if (ob) ob.addEventListener('click', () => obreFitxer(r.pdf));
+  } else if (obert) {
+    main.innerHTML = torna + formHTML(td, r);
+    bindMain(td); ompleMiniatures(main);
+  } else {
+    const rows = C.rows('informes_lloc').filter(x => x.actiu).sort((a, b) => String(b.data || '').localeCompare(String(a.data || '')) || b.id - a.id);
+    main.innerHTML = torna + `<div id="ferr"></div>
+      <p class="sub">Els informes per lloc, amb les fotos. Pots fer-ne de nous i canviar els que has fet o signes; els altres, només mirar-los.</p>
+      <div class="bar"><button type="button" class="btn" id="inf-nou">Nou informe</button></div>
+      ${rows.length ? rows.map(targetaInformeHTML).join('') : '<div class="empty">Encara no hi ha cap informe.</div>'}`;
+    $('#inf-nou').addEventListener('click', () => { st.nou = true; state.editing = null; state.keep = {}; renderInformesApp(main); window.scrollTo({ top: 0 }); });
+    main.querySelectorAll('[data-informe]').forEach(c => c.addEventListener('click', () => { state.editing = Number(c.dataset.informe); renderInformesApp(main); window.scrollTo({ top: 0 }); }));
+  }
+  $('#inf-torna').addEventListener('click', () => {
+    if (obert) { state.editing = null; st.nou = false; renderInformesApp(main); } else { state.table = null; state.editing = null; renderApp(); }
+    window.scrollTo({ top: 0 });
+  });
 }
 
 /* ---------- Factures de proveïdor des de PDF ---------- */
