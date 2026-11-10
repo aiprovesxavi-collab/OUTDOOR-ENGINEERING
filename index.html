@@ -5286,7 +5286,7 @@ function pdfFactura(f) {
   const linies = C.rows('factura_linies').filter(l => l.actiu && Number(l.factura_id) === f.id).sort((a, b) => (a.ordre - b.ordre) || (a.id - b.id));
   const M = PAPER.esq, R = PAPER.dre, W = PAPER.ample;
   const BAIX = PAPER.baix;   // fins on arriba el contingut de cada pàgina: a sota, el marge i les dades de l'empresa
-  // els rètols (FACTURA, DATA, VENCIMENT, CONCEPTE, PAGAMENT), a 11,5 punts; els de la taula, a 9,5; el del codi de client, a 7,5
+  // els rètols (FACTURA:, DATA:, PAGAMENT:, CONCEPTE:), a 11,5 punts, amb el valor al costat; els de la taula, a 9,5; el del codi de client, a 7,5
   const label = (t, x, y, opt, size) => { doc.setTextColor(...grey); doc.setFont('helvetica', 'normal'); doc.setFontSize(size || 11.5); doc.text(t, x, y, opt); };
   const text = (t, x, y, size, style, color, opt) => { doc.setTextColor(...(color || ink)); doc.setFont('helvetica', style || 'normal'); doc.setFontSize(size || 10); doc.text(t, x, y, opt); };
   const marca = () => { if (f.estat === 'esborrany') { doc.setTextColor(232, 232, 232); doc.setFont('helvetica', 'bold'); doc.setFontSize(64); doc.text('ESBORRANY', 105, 170, { align: 'center', angle: 30 }); } };
@@ -5298,43 +5298,72 @@ function pdfFactura(f) {
     label(f.client_nom || client.nom || '', R, yc, { align: 'right' }, 9.5);
     return yc + 8;
   };
+  // les amplades tal com surten al paper (amb la lletra que hi ha posada): el jsPDF les mesura amb l'interlletratge, que en escriure no
+  // aplica, i l'espai que no es parteix el compta com una lletra ampla
+  const mesura = () => { const w = Object.assign({}, doc.internal.getFont().metadata.Unicode.widths); w[160] = w[32]; return { widths: w, kerning: {} }; };
+  const ample = t => doc.getStringUnitWidth(t, mesura()) * doc.getFontSize() / doc.internal.scaleFactor;
+  const parteix = (t, w) => doc.splitTextToSize(t, w, mesura());
+  // un rètol amb els dos punts i el valor al costat, a la mateixa línia (el valor, a 11 punts si no se'n diu cap altra); si el valor no hi
+  // cap, continua a sota, alineat amb el valor. Torna on comença el valor i la base de l'última línia.
+  const rotul = (rot, yy, valor, size, style, color) => {
+    size = size || 11;
+    label(rot + ':', M, yy);
+    const vx = M + ample(rot + ':') + Math.max(11.5, size) * 0.3528 * 0.278;   // (l'espai, el de la lletra més gran)
+    doc.setFont('helvetica', style || 'normal'); doc.setFontSize(size);
+    const L = parteix(String(valor == null ? '' : valor), R - vx);
+    text(L, vx, yy, size, style, color);
+    return { vx, ult: yy + (L.length - 1) * size * 0.3528 * 1.15 };
+  };
 
   marca();
   logoPaper(doc, tema);
 
-  // capçalera esquerra: número (amb el color fort de la marca), data i venciment; comença al marge de dalt
-  const y0 = basePaper(13.5);
+  // capçalera: a l'esquerra, FACTURA: número (a 20 punts, amb el color fort de la marca) i DATA: data; a la dreta, el client. La primera
+  // línia comença al marge de dalt.
+  const y0 = basePaper(20);
   let y = y0;
-  label('FACTURA', M, y);
-  text(f.numero_complet || 'ESBORRANY', M, y + 9.5, 20, 'bold', fort);
-  label('DATA', M, y + 20);
-  text(dmy(f.data_factura), M, y + 25.5, 11);
-  if (f.data_venciment) { label('VENCIMENT', M, y + 34); text(dmy(f.data_venciment), M, y + 39.5, 11); }
+  rotul('FACTURA', y0, f.numero_complet || 'ESBORRANY', 20, 'bold', fort);
 
-  // capçalera dreta: client (el nom, a 13,5 punts; l'adreça i el NIF, més suaus)
+  // el client (el nom, a 13,5 punts; l'adreça i el NIF, més suaus); s'apunta la base de cada línia, per alinear-hi la data
   const rx = 104, rw = R - rx;   // (més ample: el nom, a 13,5 punts, hi ha de cabre)
   const nom = f.client_nom || client.nom || '';
   doc.setFont('helvetica', 'bold'); doc.setFontSize(13.5);
-  const nomL = doc.splitTextToSize(nom, rw);
-  text(nomL, rx, y, 13.5, 'bold');
-  let ry = y + (nomL.length - 1) * 13.5 * 0.3528 * 1.15 + 6.8;
+  const nomL = parteix(nom, rw);
+  text(nomL, rx, y0, 13.5, 'bold');
+  const bases = nomL.map((s, k) => y0 + k * 13.5 * 0.3528 * 1.15);
+  let ry = y0 + (nomL.length - 1) * 13.5 * 0.3528 * 1.15 + 6.8;
   const adreca = f.client_adreca || [client.adreca, [client.cp, client.poblacio].filter(Boolean).join(' ')].filter(Boolean).join(', ');
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
   // el carrer en una línia i el codi postal amb la població en una altra
   const parts = adreca.split(', '); const ultim = parts.length > 1 ? parts.pop().replace(/^(\d{4,5}\s+)?(.+)$/, (m, cp, pob) => (cp || '') + nomPropi(pob)) : null;
-  const adrL = [...doc.splitTextToSize(parts.join(', '), rw), ...(ultim ? doc.splitTextToSize(ultim, rw) : [])];
-  if (adreca) { text(adrL, rx, ry, 10, 'normal', suau); ry += adrL.length * 5; }
-  const nif = f.client_nif || client.nif; if (nif) text('NIF ' + nif, rx, ry + 0.5, 10, 'normal', suau);
+  const adrL = [...parteix(parts.join(', '), rw), ...(ultim ? parteix(ultim, rw) : [])];
+  if (adreca) { text(adrL, rx, ry, 10, 'normal', suau); adrL.forEach((s, k) => bases.push(ry + k * 10 * 0.3528 * 1.15)); ry += adrL.length * 5; }
+  const nif = f.client_nif || client.nif; if (nif) { text('NIF ' + nif, rx, ry + 0.5, 10, 'normal', suau); bases.push(ry + 0.5); }
+
+  // la data, uns 11 mm per sota del número, alineada amb la línia del client que hi caigui més a prop (normalment, la de la població)
+  const objectiu = y0 + 10.86, propers = bases.filter(b => b >= y0 + 9 && b <= y0 + 14);
+  const yData = propers.length ? propers.reduce((m, b) => Math.abs(b - objectiu) < Math.abs(m - objectiu) ? b : m) : objectiu;
+  rotul('DATA', yData, dmy(f.data_factura));
+
+  // el pagament, de banda a banda per sota del client, en una línia (o més, si no hi cap): la forma i, al final, el venciment. El compte i
+  // el venciment no es parteixen. A l'esborrany, el compte que hi anirà en emetre-la (el del client).
+  const forma = f.forma_pagament || client.forma_pagament;
+  const venc = f.data_venciment ? dmy(f.data_venciment) : null;
+  const junt = s => s.replace(/ /g, '\u00a0');
+  const compte = String(f.compte_cobrament_text || (f.estat === 'esborrany' && (C.get('comptes_bancaris', client.compte_cobrament_id) || {}).iban) || '').trim()
+    .replace(/\b[A-Z]{2}\d{2}(?: [0-9A-Z]{4}){3,7}\b/g, junt);
+  const ptxt = forma === 'domiciliacio'
+    ? 'Rebut domiciliat al compte del client' + (venc ? ', ' + junt('amb càrrec el ' + venc) : '') + '.'
+    : (compte ? 'Transferència al compte ' + compte : 'Transferència bancària') + (venc ? ', ' + junt('abans del ' + venc) : '') + '.';
+  const pg = rotul('PAGAMENT', Math.max(yData + 12, Math.max(...bases) + 9), ptxt);
 
   // línia de separació
-  y = y0 + 46; doc.setDrawColor(...acc); doc.setLineWidth(0.5); doc.line(M, y, R, y);
+  y = pg.ult + 7; doc.setDrawColor(...acc); doc.setLineWidth(0.5); doc.line(M, y, R, y);
 
-  // concepte
-  y = y0 + 57; label('CONCEPTE', M, y);
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5);
-  const cL = doc.splitTextToSize(f.concepte || '', W);
-  text(cL, M, y + 6.5, 10.5); y = y + 6.5 + cL.length * 5.3;
-  if (f.periode_inici && f.periode_fi) { text('Període del ' + dmy(f.periode_inici) + ' al ' + dmy(f.periode_fi), M, y + 1, 8.5, 'normal', grey); y += 6; }
+  // concepte (i, a les recurrents, el període, a sota)
+  const cc = rotul('CONCEPTE', y + 11, f.concepte || '');
+  y = cc.ult + 5.3;
+  if (f.periode_inici && f.periode_fi) { text('Període del ' + dmy(f.periode_inici) + ' al ' + dmy(f.periode_fi), cc.vx, y + 1, 8.5, 'normal', grey); y += 6; }
 
   // línies (només a les factures manuals), 2 punts més grans; si no hi caben, continuen a la pàgina següent amb la capçalera de la taula
   if (linies.length) {
@@ -5369,26 +5398,12 @@ function pdfFactura(f) {
     y += 9.5;
   }
 
-  // a baix de tot de l'última pàgina, fins al marge de baix: a l'esquerra, el pagament (en un requadre de fons, sense vora) i el codi de
-  // client; a la dreta, els totals (2 punts més grans; el total, amb el color fort de la marca). Si les línies hi arriben, a la pàgina següent.
-  const forma = f.forma_pagament || client.forma_pagament;
-  const venc = f.data_venciment ? dmy(f.data_venciment) : null;
-  const compte = String(f.compte_cobrament_text || '').replace(/\b[A-Z]{2}\d{2}(?: [0-9A-Z]{4}){3,7}\b/g, m => m.replace(/ /g, '\u00a0'));   // el compte, sense partir-lo
-  const ptxt = forma === 'domiciliacio'
-    ? 'Rebut domiciliat al compte del client' + (venc ? ', amb càrrec el ' + venc : '') + '.'
-    : 'Transferència al compte ' + compte + (venc ? ', abans del ' + venc : '') + '.';
+  // a baix de tot de l'última pàgina, fins al marge de baix: a la dreta, els totals (2 punts més grans; el total, amb el color fort de la
+  // marca); a l'esquerra, el codi de client. Si les línies hi arriben, a la pàgina següent.
   const codi = f.codi_client || client.codi_client;
-  const tx = 112, pad = 4, pw = tx - 6 - M;   // el requadre del pagament, de 81 mm, i els totals a partir de 112 mm
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(11.5);
-  const pL = doc.splitTextToSize(ptxt, pw - 2 * pad), pasP = 11.5 * 0.3528 * 1.15;
-  const pAlt = pad + 2.9 + 6.2 + (pL.length - 1) * pasP + 1 + pad, pBaix = codi ? BAIX - 11 : BAIX, pt = pBaix - pAlt;
-  const tb = BAIX - 25;   // la primera fila dels totals; la franja del total acaba al marge de baix
-  if (y + 8 > Math.min(pt, tb - 4)) novaPagina();
-
-  // pagament
-  doc.setFillColor(243, 243, 243); doc.rect(M, pt, pw, pAlt, 'F');
-  label('PAGAMENT', M + pad, pt + pad + 2.9);
-  text(pL, M + pad, pt + pad + 2.9 + 6.2, 11.5);
+  const tx = 112;           // els totals, a partir de 112 mm
+  const tb = BAIX - 25;     // la primera fila dels totals; la franja del total acaba al marge de baix
+  if (y + 8 > tb - 4) novaPagina();
 
   // totals
   const tv = R - 3;
