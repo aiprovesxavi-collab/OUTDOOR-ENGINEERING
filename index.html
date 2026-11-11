@@ -2,6 +2,7 @@
 <html lang="ca">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-MZQG6fJVU4KSlo3Gix6PV1+Cqfh4zg0Y9d8oLm+TRJo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestió de manteniment</title>
 <meta name="theme-color" content="#2f7d4a">
@@ -859,11 +860,19 @@
 <div id="app"></div>
 <div class="toast" id="toast"></div>
 
+<!-- Llibreries: a l'arrel de la web, amb el nom «lib-…» i la versió fixada (cap servidor extern; sense carpetes, perquè la pujada
+     web de GitHub no en crea). Tretes del registre de npm tal qual, sense el comentari «sourceMappingURL»:
+       lib-supabase-2.118.0.js (@supabase/supabase-js), lib-jspdf-2.5.1.umd.min.js (jspdf), lib-chart-4.4.1.umd.js (chart.js),
+       lib-qrcode-1.4.4.js (qrcode-generator), lib-pdf-lib-1.17.1.min.js (pdf-lib: ajuntar PDF),
+       lib-mediabunny-1.61.6.min.js (mediabunny 1.61.6, el .mjs original: reduir vídeos),
+       lib-leaflet-1.9.4.js i lib-leaflet-1.9.4.css (leaflet: el mapa dels fitxatges; les imatges del CSS hi són a dins).
+     Per canviar-ne una versió: el fitxer nou a l'arrel i el nom nou aquí, a report.html i on es carrega (carregaPdfLib,
+     MEDIABUNNY_URL, carregaLeaflet). -->
 <script src="config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="lib-supabase-2.118.0.js"></script>
+<script src="lib-jspdf-2.5.1.umd.min.js"></script>
+<script src="lib-chart-4.4.1.umd.js"></script>
+<script src="lib-qrcode-1.4.4.js"></script>
 <script>
 /* =====================================================================
    Configuració
@@ -7400,7 +7409,7 @@ function renderPagamentsProveidor(main) {
    cadascuna per separat. Els PDF són els que es van desar en emetre-les; si alguna no en té, es fa en aquell moment i es desa.
    Per ajuntar-los es fa servir pdf-lib, que només es descarrega el primer cop que cal.
    ===================================================================== */
-const PDFLIB_URL = 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js';
+const PDFLIB_URL = 'lib-pdf-lib-1.17.1.min.js';   // (al mateix lloc: res de servidors externs)
 let pdfLibPromesa = null;
 function carregaPdfLib() {
   if (window.PDFLib) return Promise.resolve(window.PDFLib);
@@ -8861,7 +8870,7 @@ const massaGran = f => f && f.size > MAX_MB_FITXER * 1024 * 1024 ? `«${f.name}�
    (el so es copia tal qual): d'uns 100-150 MB per minut a uns 12 MB. Ho fa el mateix mòbil o ordinador (WebCodecs, amb la llibreria
    Mediabunny, que només es descarrega el primer cop que cal). Si el navegador no ho sap fer o falla, es puja l'original. ---------- */
 const VIDEO = { max: 1280, bitrate: 1500000, minMB: 8, maxMB: 45 };
-const MEDIABUNNY_URL = 'https://cdn.jsdelivr.net/npm/mediabunny@1.61.6/dist/bundles/mediabunny.min.mjs';
+const MEDIABUNNY_URL = './lib-mediabunny-1.61.6.min.js';
 let mediabunnyPromesa = null;
 const carregaMediabunny = () => mediabunnyPromesa || (mediabunnyPromesa = import(MEDIABUNNY_URL).catch(e => { mediabunnyPromesa = null; throw e; }));
 const videoPerReduir = f => !!f && /^video\//i.test(f.type || '') && f.size >= VIDEO.minMB * 1048576;
@@ -10752,8 +10761,8 @@ function carregaLeaflet() {
   if (window.L && window.L.map) return Promise.resolve(); // (L, dins del programa, és la funció d'etiquetes; Leaflet només per window.L)
   if (_leaflet) return _leaflet;
   _leaflet = new Promise((res, rej) => {
-    const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'; document.head.appendChild(css);
-    const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'; sc.onload = () => res(); sc.onerror = () => { _leaflet = null; rej(new Error('No s’ha pogut carregar el mapa (cal connexió a Internet).')); }; document.head.appendChild(sc);
+    const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'lib-leaflet-1.9.4.css'; document.head.appendChild(css);
+    const sc = document.createElement('script'); sc.src = 'lib-leaflet-1.9.4.js'; sc.onload = () => res(); sc.onerror = () => { _leaflet = null; rej(new Error('No s’ha pogut carregar el mapa (cal connexió a Internet).')); }; document.head.appendChild(sc);
   });
   return _leaflet;
 }
