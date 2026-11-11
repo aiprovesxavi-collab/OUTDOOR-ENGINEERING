@@ -1,0 +1,130 @@
+# Còpia de seguretat de cada nit, fora de Supabase i xifrada (Outdoor Engineering).
+#  · La base de dades sencera: rols, estructura (taules, funcions, regles) i dades, amb l'eina oficial de Supabase (supabase db dump).
+#  · Tots els fitxers del Storage (fotos, PDF de factures, nòmines, contractes, documents): només els nous o canviats.
+#  · El codi de l'app (el repositori públic de GitHub).
+# Tot es xifra aquí mateix abans de sortir (rclone crypt): a Backblaze només hi arriben fitxers il·legibles. Sense les dues frases de
+# xifrat (XIFRAT_FRASE i XIFRAT_SAL, guardades al gestor de contrasenyes) no es poden obrir.
+# Res no s'esborra mai del destí (rclone copy, no sync): si un fitxer desapareix de Supabase, a la còpia hi continua.
+# AQUEST REPOSITORI HA DE SER PRIVAT.
+name: Còpia de seguretat (cada nit)
+
+on:
+  schedule:
+    - cron: '17 1 * * *'   # cada nit a les 2:17 a l'hivern (3:17 a l'estiu)
+  workflow_dispatch:         # i a mà: Actions → Còpia de seguretat → Run workflow
+
+permissions:
+  contents: read
+
+concurrency:
+  group: copia
+  cancel-in-progress: false
+
+jobs:
+  copia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      # el Storage de Supabase (S3)
+      RCLONE_CONFIG_SUPA_TYPE: s3
+      RCLONE_CONFIG_SUPA_PROVIDER: Other
+      RCLONE_CONFIG_SUPA_ENDPOINT: ${{ secrets.SUPABASE_S3_ENDPOINT }}
+      RCLONE_CONFIG_SUPA_REGION: ${{ secrets.SUPABASE_S3_REGION }}
+      RCLONE_CONFIG_SUPA_ACCESS_KEY_ID: ${{ secrets.SUPABASE_S3_KEY_ID }}
+      RCLONE_CONFIG_SUPA_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_S3_SECRET }}
+      RCLONE_CONFIG_SUPA_FORCE_PATH_STYLE: 'true'
+      # Backblaze B2 (Europa)
+      RCLONE_CONFIG_B2_TYPE: b2
+      RCLONE_CONFIG_B2_ACCOUNT: ${{ secrets.B2_KEY_ID }}
+      RCLONE_CONFIG_B2_KEY: ${{ secrets.B2_APP_KEY }}
+      RCLONE_CONFIG_B2_HARD_DELETE: 'false'
+      # i, a sobre, el xifrat (els noms de les carpetes es veuen; els dels fitxers i el contingut, no)
+      RCLONE_CONFIG_XIFRAT_TYPE: crypt
+      RCLONE_CONFIG_XIFRAT_REMOTE: b2:${{ secrets.B2_BUCKET }}/outdoor
+      RCLONE_CONFIG_XIFRAT_DIRECTORY_NAME_ENCRYPTION: 'false'
+      APP_REPO: https://github.com/aiprovesxavi-collab/OUTDOOR-ENGINEERING.git
+
+    steps:
+      - name: Comprova que hi ha els 10 secrets
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_S3_ENDPOINT: ${{ secrets.SUPABASE_S3_ENDPOINT }}
+          SUPABASE_S3_REGION: ${{ secrets.SUPABASE_S3_REGION }}
+          SUPABASE_S3_KEY_ID: ${{ secrets.SUPABASE_S3_KEY_ID }}
+          SUPABASE_S3_SECRET: ${{ secrets.SUPABASE_S3_SECRET }}
+          B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
+          B2_BUCKET: ${{ secrets.B2_BUCKET }}
+          XIFRAT_FRASE: ${{ secrets.XIFRAT_FRASE }}
+          XIFRAT_SAL: ${{ secrets.XIFRAT_SAL }}
+        run: |
+          falta=0
+          for n in SUPABASE_DB_URL SUPABASE_S3_ENDPOINT SUPABASE_S3_REGION SUPABASE_S3_KEY_ID SUPABASE_S3_SECRET B2_KEY_ID B2_APP_KEY B2_BUCKET XIFRAT_FRASE XIFRAT_SAL; do
+            if [ -z "${!n}" ]; then echo "::error title=Falta el secret $n::Afegeix-lo a Settings → Secrets and variables → Actions (vegeu GUIA.txt)."; falta=1; fi
+          done
+          [ "$falta" -eq 0 ] && echo "Hi ha els 10 secrets."
+          exit $falta
+
+      - name: Eina de Supabase (CLI 2.122.0)
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.0
+
+      - name: Eina de còpia i xifrat (rclone)
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q rclone
+          rclone version | head -1
+
+      - name: Claus de xifrat
+        env:
+          XIFRAT_FRASE: ${{ secrets.XIFRAT_FRASE }}
+          XIFRAT_SAL: ${{ secrets.XIFRAT_SAL }}
+        run: |
+          p1=$(rclone obscure "$XIFRAT_FRASE"); p2=$(rclone obscure "$XIFRAT_SAL")
+          echo "::add-mask::$p1"; echo "::add-mask::$p2"
+          echo "RCLONE_CONFIG_XIFRAT_PASSWORD=$p1" >> "$GITHUB_ENV"
+          echo "RCLONE_CONFIG_XIFRAT_PASSWORD2=$p2" >> "$GITHUB_ENV"
+
+      - name: Base de dades (rols, estructura i dades)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          D=$(date -u +%Y-%m-%d); echo "D=$D" >> "$GITHUB_ENV"
+          mkdir -p bd
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f bd/roles.sql --role-only
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f bd/schema.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f bd/data.sql --use-copy --data-only -x "storage.buckets_vectors" -x "storage.vector_indexes"
+          # que no sigui buida: hi ha d'haver l'estructura i les dades de les factures i dels clients
+          test -s bd/schema.sql && test -s bd/data.sql
+          grep -qiE 'create table [^(]*"?factures"?' bd/schema.sql || { echo "::error::L'estructura no té la taula factures"; exit 1; }
+          grep -qiE 'copy [^(]*"?clients"? ' bd/data.sql || { echo "::error::Les dades no tenen la taula clients"; exit 1; }
+          printf 'Còpia del %s (UTC %s)\nCLI de Supabase 2.122.0\nRecuperar: vegeu GUIA.txt (prova de restauració)\n' "$D" "$(date -u +%H:%M)" > bd/LLEGEIX.txt
+          tar czf "bd-$D.tar.gz" -C bd .
+          ls -la "bd-$D.tar.gz"
+
+      - name: Puja la base de dades, xifrada
+        run: |
+          set -euo pipefail
+          rclone copy "bd-$D.tar.gz" xifrat:bd/diaries/
+          if [ "$(date -u +%d)" = "01" ]; then rclone copy "bd-$D.tar.gz" xifrat:bd/mensuals/; fi
+          rclone lsl xifrat:bd/diaries/ | sort -k4 | tail -3
+
+      - name: Fitxers del Storage (només els nous o canviats), xifrats
+        run: |
+          set -euo pipefail
+          rclone copy supa:documents xifrat:fitxers/documents --fast-list --transfers 8 --checkers 16 --stats-one-line --stats 60s -v 2>&1 | grep -E 'Transferred|ERROR|Copied \(new\)' | tail -40
+          rclone size xifrat:fitxers/documents
+
+      - name: Codi de l'app (el repositori), xifrat
+        run: |
+          set -euo pipefail
+          git clone --quiet --mirror "$APP_REPO" app.git
+          tar czf "app-$D.tar.gz" app.git
+          rclone copy "app-$D.tar.gz" xifrat:codi/
+
+      - name: Resum
+        run: |
+          echo "### Còpia del $D feta" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Base de dades: $(rclone lsf xifrat:bd/diaries/ | wc -l) còpies diàries guardades" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Fitxers: $(rclone size xifrat:fitxers/documents --json | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["count"], "fitxers,", round(d["bytes"]/1048576), "MB")')" >> "$GITHUB_STEP_SUMMARY"

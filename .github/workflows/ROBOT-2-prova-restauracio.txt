@@ -1,0 +1,100 @@
+# Prova de restauració: recupera una còpia (la més recent o la d'un dia) en un projecte de Supabase DE PROVES, per comprovar que les
+# còpies es poden obrir i que hi és tot. Mai no toca el projecte de debò: si el projecte de destí és el mateix, s'atura.
+# Fes-la ara un cop i, després, cada 3 mesos. També serveix, en cas de desastre, per recuperar-ho tot en un projecte nou (vegeu GUIA.txt).
+name: Prova de restauració
+
+on:
+  workflow_dispatch:
+    inputs:
+      dia:
+        description: 'Dia de la còpia (AAAA-MM-DD); buit = la més recent'
+        required: false
+        default: ''
+      fitxers:
+        description: 'Copiar també els fitxers del Storage al projecte de proves'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  restaura:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      RCLONE_CONFIG_B2_TYPE: b2
+      RCLONE_CONFIG_B2_ACCOUNT: ${{ secrets.B2_KEY_ID }}
+      RCLONE_CONFIG_B2_KEY: ${{ secrets.B2_APP_KEY }}
+      RCLONE_CONFIG_XIFRAT_TYPE: crypt
+      RCLONE_CONFIG_XIFRAT_REMOTE: b2:${{ secrets.B2_BUCKET }}/outdoor
+      RCLONE_CONFIG_XIFRAT_DIRECTORY_NAME_ENCRYPTION: 'false'
+      # el Storage del projecte de proves (només si es copien els fitxers)
+      RCLONE_CONFIG_PROVA_TYPE: s3
+      RCLONE_CONFIG_PROVA_PROVIDER: Other
+      RCLONE_CONFIG_PROVA_ENDPOINT: ${{ secrets.SUPABASE_PROVA_S3_ENDPOINT }}
+      RCLONE_CONFIG_PROVA_REGION: ${{ secrets.SUPABASE_PROVA_S3_REGION }}
+      RCLONE_CONFIG_PROVA_ACCESS_KEY_ID: ${{ secrets.SUPABASE_PROVA_S3_KEY_ID }}
+      RCLONE_CONFIG_PROVA_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_PROVA_S3_SECRET }}
+      RCLONE_CONFIG_PROVA_FORCE_PATH_STYLE: 'true'
+
+    steps:
+      - name: El projecte de destí ha de ser el de proves, mai el de debò
+        env:
+          DESTI: ${{ secrets.SUPABASE_PROVA_DB_URL }}
+          ORIGEN: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          [ -n "$DESTI" ] || { echo "::error title=Falta SUPABASE_PROVA_DB_URL::Crea un projecte de proves a Supabase i posa la seva cadena de connexió (Session pooler) en aquest secret (vegeu GUIA.txt)."; exit 1; }
+          ref() { echo "$1" | sed -nE 's#^postgres(ql)?://postgres\.([a-z0-9]+):.*#\2#p; s#^postgres(ql)?://[^@]*@db\.([a-z0-9]+)\.supabase\.co.*#\2#p' | head -1; }
+          d=$(ref "$DESTI"); o=$(ref "$ORIGEN")
+          [ -n "$d" ] || { echo "::error::No entenc la cadena de connexió del projecte de proves"; exit 1; }
+          if [ "$d" = "$o" ] || [ "$d" = "rafgewuvokjldxbyiqai" ]; then echo "::error title=Aturat::El destí és el projecte de debò. La prova només es fa en un projecte de proves."; exit 1; fi
+          echo "Destí: el projecte de proves $d"
+
+      - name: Eines
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q rclone postgresql-client
+          rclone version | head -1; psql --version
+
+      - name: Claus de xifrat
+        env:
+          XIFRAT_FRASE: ${{ secrets.XIFRAT_FRASE }}
+          XIFRAT_SAL: ${{ secrets.XIFRAT_SAL }}
+        run: |
+          p1=$(rclone obscure "$XIFRAT_FRASE"); p2=$(rclone obscure "$XIFRAT_SAL")
+          echo "::add-mask::$p1"; echo "::add-mask::$p2"
+          echo "RCLONE_CONFIG_XIFRAT_PASSWORD=$p1" >> "$GITHUB_ENV"
+          echo "RCLONE_CONFIG_XIFRAT_PASSWORD2=$p2" >> "$GITHUB_ENV"
+
+      - name: Baixa i desxifra la còpia
+        env:
+          DIA: ${{ inputs.dia }}
+        run: |
+          set -euo pipefail
+          if [ -n "$DIA" ]; then f="bd-$DIA.tar.gz"; else f=$(rclone lsf xifrat:bd/diaries/ | sort | tail -1); fi
+          echo "Còpia: $f"
+          rclone copy "xifrat:bd/diaries/$f" . && mkdir -p bd && tar xzf "$f" -C bd && ls -la bd
+
+      - name: Restaura-la al projecte de proves
+        env:
+          DESTI: ${{ secrets.SUPABASE_PROVA_DB_URL }}
+        run: |
+          set -euo pipefail
+          psql --single-transaction --variable ON_ERROR_STOP=1 \
+            --file bd/roles.sql --file bd/schema.sql \
+            --command 'SET session_replication_role = replica' \
+            --file bd/data.sql --dbname "$DESTI"
+
+      - name: Comprova què hi ha
+        env:
+          DESTI: ${{ secrets.SUPABASE_PROVA_DB_URL }}
+        run: |
+          psql "$DESTI" -At -c "select 'clients: ' || (select count(*) from public.clients) || ' · llocs: ' || (select count(*) from public.llocs) || ' · factures: ' || (select count(*) from public.factures) || ' · treballadors: ' || (select count(*) from public.treballadors) || ' · usuaris: ' || (select count(*) from auth.users) || ' · fitxers (registre): ' || (select count(*) from storage.objects)" | tee resum.txt
+          echo "### Prova de restauració" >> "$GITHUB_STEP_SUMMARY"; cat resum.txt >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fitxers del Storage al projecte de proves (opcional)
+        if: ${{ inputs.fitxers }}
+        run: |
+          set -euo pipefail
+          rclone copy xifrat:fitxers/documents prova:documents --no-check-dest --transfers 8 --checkers 16 --stats-one-line --stats 60s -v 2>&1 | grep -E 'Transferred|ERROR' | tail -20
+          rclone size prova:documents
