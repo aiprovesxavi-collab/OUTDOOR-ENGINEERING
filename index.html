@@ -2,7 +2,7 @@
 <html lang="ca">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-0rZMBJ/kc09i9X28mW7Qk7hECbkDPBGyG5HBawByE5M='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-giAQSzV01Sjvc6AsghYwLcLVOlTbfiAcwbxUbSGTpK0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestió de manteniment</title>
 <meta name="theme-color" content="#2f7d4a">
@@ -378,6 +378,7 @@
   .btn.obert{ background:var(--b-obert); border-color:#c4c35a; color:var(--ink); }
   .boto-gran.obert{ --bg-boto:var(--b-obert); color:var(--ink); }
   .boto-gran.endavant{ --bg-boto:var(--b-endavant); }
+  .boto-gran.elimina{ --bg-boto:#fff; color:var(--b-elimina); border:2px solid var(--b-elimina); box-shadow:none; font-size:17px; padding:14px 12px; margin-top:40px; }   /* (v50) «Eliminar» el full, a l'app */
   .botons-final{ margin-top:18px; border-top:1px solid var(--line); }   /* (la fitxa del full: els botons al final de tot) */
   .fi-full{ margin:0 0 10px; } .fi-full .fila-factura{ margin:8px 0 4px; }
   .fila-factura{ display:grid; grid-template-columns:minmax(0, 1fr) auto minmax(0, 1fr); align-items:center; column-gap:48px; row-gap:10px; }
@@ -7262,6 +7263,10 @@ const pillFull = (f, llarg) => fullProgramat(f) ? `<span class="pill e-programad
   : `<span class="pill e-${f.estat === 'anul_lat' ? 'eliminat' : f.finalitzat || f.estat === 'finalitzat' || f.estat === 'albara' ? 'finalitzada' : 'en_curs'}">${h(ESTATS_FULL[f.estat] || f.estat || '')}</span>`;
 const fullObert = r => !!r && r.actiu !== false && !r.finalitzat && r.estat !== 'albara' && r.estat !== 'anul_lat';   // es pot deixar obert o finalitzar
 const potEditarFull = f => { const t = treballadorActual(); return !!f && !f.finalitzat && f.estat !== 'albara' && f.estat !== 'anul_lat' && !!t && (esOficina(t) || Number(f.encarregat_id) === t.id || Number(f.demanat_per) === t.id); };
+// (v50) eliminar un full des de l'app: l'oficina, com a la web (obert o finalitzat, sense albarà); els altres, només un full obert que han fet
+// ells (el «demanen» ells) i que no és d'una acció d'incidència. La base de dades fa complir el mateix (098).
+const potEliminarFullApp = f => { const t = treballadorActual(); if (!f || !t || f.actiu === false || f.albara_id || f.estat === 'albara' || f.estat === 'anul_lat') return false;
+  return esOficina(t) || (fullObert(f) && !f.accio_id && Number(f.demanat_per) === t.id); };
 async function recarregaFulls() { await Promise.all(['fulls_treball', 'full_treball_jornades', 'full_treball_material'].map(loadTable)); }
 // el full d'una acció d'operari: surt de l'acció (nom = títol, lloc = el de la incidència, qui fa la feina = el responsable de l'acció);
 // el termini i el «es pot començar» són de l'acció, no del full
@@ -7468,6 +7473,7 @@ function renderFullOperari(main, id) {
     <div id="ferr"></div>
     ${seccionsFullHTML(f)}
     ${edit ? `<button type="button" class="boto-gran obert" id="ftf-obert">Deixar obert</button><button type="button" class="boto-gran endavant" id="ftf-ok">Finalitzar</button>` : ''}
+    ${potEliminarFullApp(f) ? '<button type="button" class="boto-gran elimina" id="ftf-elimina">Eliminar</button>' : ''}
   </div>`;
   $('#ft-torna').addEventListener('click', () => { st.id = null; st.form = null; renderMain(); window.scrollTo({ top: 0 }); });
   const fb = bindFull(f, main);
@@ -7481,6 +7487,16 @@ function renderFullOperari(main, id) {
     finalitzaFull(f.id, { despres: () => { st.form = null; renderMain(); }, error: m => { fo.disabled = false; errorAo(main, m, fo); } });
   });
   const fd = $('#ftf-desfes'); if (fd) fd.addEventListener('click', e => { e.preventDefault(); desfesFull(f.id); });
+  // (v50) eliminar-lo: no s'esborra (queda «Eliminat», amb el motiu) i l'oficina el pot tornar a obrir; el que hi hagi escrit sense apuntar, es perd
+  const fel = $('#ftf-elimina'); if (fel) fel.addEventListener('click', async () => {
+    const motiu = prompt(`Eliminar el full de treball ${f.numero || ''}?\n\nNo s’esborra del tot: deixarà de sortir a la llista i no se’n farà albarà ni es facturarà. Si cal, l’oficina el pot tornar a obrir.\n\nMotiu (no és obligatori):`, '');
+    if (motiu == null) return;
+    fel.disabled = true;
+    const { error } = await sb.rpc('elimina_fulls', { p_ids: [f.id], p_motiu: String(motiu).trim() || null });
+    if (error) { fel.disabled = false; errorAo(main, friendly(error), fel); return; }
+    await recarregaFulls(); toast(`Full de treball ${f.numero || ''} eliminat`);
+    st.id = null; st.form = null; renderMain(); window.scrollTo({ top: 0 });
+  });
   ompleMiniatures(main);
 }
 // ---- oficina: fotos i resum a la fitxa del full; l'albarà ----
