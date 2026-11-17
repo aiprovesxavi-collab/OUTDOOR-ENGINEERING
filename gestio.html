@@ -2,7 +2,7 @@
 <html lang="ca">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qGw6ZMxLqs0WOQfmn8RdkiO+NKuwfNa+MtLjA+qVM4c='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-VZW41uRVlZfHEwhwC4oyZmH7W1+TeTkA9ZcfLGw55os='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestió de manteniment</title>
 <meta name="theme-color" content="#2f7d4a">
@@ -421,6 +421,18 @@
   .tasques td.ok{ color:#2e7d32; } .tasques td.no{ color:#d32f2f; } .tasques td.fet{ color:#1f4e79; }
   .tasques td.cel{ padding:3px 6px; }
   .tasques td.obs{ font-size:11.5px; min-width:200px; white-space:normal; width:100%; }
+  /* (v46) «Tasques per cada piscina» a l'app: en horitzontal i sense quadrícula */
+  .tpa-wrap{ overflow-x:auto; margin:4px 0 0; }
+  .tpa{ border-collapse:collapse; font-size:15px; min-width:100%; }
+  .tpa th{ text-align:left; font-weight:600; color:var(--ink-2); padding:6px 9px; border-bottom:1px solid var(--line-2); white-space:nowrap; }
+  .tpa td{ padding:6px 9px; white-space:nowrap; border:0; font-variant-numeric:tabular-nums; }
+  .tpa th.tpa-f, .tpa td.tpa-ok, .tpa td.tpa-no, .tpa td:empty{ text-align:center; }
+  .tpa-v{ display:inline-block; padding:2px 8px; border-radius:6px; }
+  .tpa-seg{ font-style:normal; color:var(--ink-3); margin:0 4px; }
+  .tpa-ok{ color:#2e7d32; font-weight:700; } .tpa-no{ color:#d32f2f; font-weight:700; }
+  .tpa-llegenda{ margin-top:10px; }
+  .tpa-gira{ display:none; }
+  @media (orientation: portrait) and (max-width: 760px){ .tpa-gira{ display:flex; gap:10px; align-items:center; background:#fff4e0; border:1px solid #f0c27a; border-radius:10px; padding:10px 14px; margin:4px 0 12px; font-weight:600; } .tpa-gira span{ font-size:24px; line-height:1; } }
   @media print{ .tasques{ font-size:9.5px; } .tasques th.vert{ height:70px; } .tasques td.cel, .tasques td.ok, .tasques td.no, .tasques td.fet, .avis{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } .capsal{ margin-bottom:8px; } }
   /* incidències: diagrama de carrils a tota la pantalla, panell de detall lliscant, targetes */
   body.ic-full .side{ display:none; }
@@ -1385,7 +1397,7 @@ const SCHEMA = {
     informe_adob: { label: 'Adob per equips', render: main => renderSalAdob(main, 'adob') },
     albarans_pendents: { label: 'Albarans pendents', render: main => renderAlbaransPendents(main) },
     consum_aigua: { label: 'Consum d’aigua', render: main => renderConsumAigua(main) },
-    informe_tasques_piscina: { label: 'Tasca per piscina', render: main => renderInformeTasquesPiscina(main) },
+    informe_tasques_piscina: { label: 'Tasques per cada piscina', render: main => renderInformeTasquesPiscina(main) },
     informe_tasques_dates: { label: 'Tasca per dates', render: main => renderInformeTasquesDates(main) },
     puja_factures_proveidor: { label: 'Puja factures (PDF)', render: main => renderPujaFactures(main) },
     calendari_facturacio: { label: 'Calendari de facturació', render: main => renderCalendariFacturacio(main) },
@@ -2350,7 +2362,8 @@ const SCHEMA = {
         { key: 'clor_lliure_1', ajuda: 'clor_lliure', label: 'Clor lliure 1 (ppm)', curt: 'Cl lliure 1', type: 'number', step: '0.01', color: colorLlindar('clor_lliure'), avis: avisClau('clor_lliure') },
         { key: 'clor_lliure_2', ajuda: 'clor_lliure', label: 'Segona mostra de clor (ppm)', curt: '2a mostra Cl', type: 'number', step: '0.01', color: colorLlindar('clor_lliure'), avis: avisClau('clor_lliure'), visible: vals => esVermell(colorLlindar('clor_lliure')(vals.clor_lliure_1, vals)), neteja: true, hint: 'només quan la primera mostra surt vermella: torna a mesurar' },
         { key: 'clor_combinat_1', ajuda: 'clor_lliure', label: 'Clor combinat 1 (ppm)', curt: 'Cl comb. 1', type: 'number', step: '0.01', color: colorLlindar('clor_combinat'), avis: avisClau('clor_combinat'), visible: tocaCada(7, 'clor_combinat_1', true), quan: 'setmanal, del 15/06 al 15/09' },
-        { key: 'clor_combinat_2', ajuda: 'clor_lliure', label: 'Clor combinat 2 (ppm)', curt: 'Cl comb. 2', type: 'number', step: '0.01', color: colorLlindar('clor_combinat'), avis: avisClau('clor_combinat'), visible: tocaCada(7, 'clor_combinat_1', true), quan: 'setmanal, del 15/06 al 15/09' },
+        { key: 'clor_combinat_2', ajuda: 'clor_lliure', label: 'Segona mostra de clor combinat (ppm)', curt: '2a mostra Cc', type: 'number', step: '0.01', color: colorLlindar('clor_combinat'), avis: avisClau('clor_combinat'),
+          visible: vals => tocaCada(7, 'clor_combinat_1', true)(vals) && esVermell(colorLlindar('clor_combinat')(vals.clor_combinat_1, vals)), neteja: true, netejaNou: true, hint: 'només quan la primera mostra surt vermella: torna a mesurar' },   // (v46) com el clor lliure
         { key: 'ph_1', ajuda: 'ph', label: 'pH 1', type: 'number', step: '0.01', color: colorLlindar('ph'), avis: avisClau('ph') },
         { key: 'ph_2', ajuda: 'ph', label: 'Segona mostra de pH', curt: '2a mostra pH', type: 'number', step: '0.01', color: colorLlindar('ph'), avis: avisClau('ph'), visible: vals => esVermell(colorLlindar('ph')(vals.ph_1, vals)), neteja: true, hint: 'només quan la primera mostra surt vermella: torna a mesurar' },
         { key: 'isocianuric', ajuda: 'isocianuric', label: 'Isocianúric (ppm)', curt: 'Isocian.', type: 'number', step: '0.1', color: colorLlindar('isocianuric'), avis: avisClau('isocianuric'), visible: tocaCada(30, 'isocianuric', true), quan: 'mensual, del 15/06 al 15/09' },
@@ -5133,7 +5146,7 @@ function aplicaVisibilitat(td, frm) {
     const w = frm.querySelector(`[data-fkey="${f.key}"]`); if (!w) return;
     const toca = f.visible(vals, C);
     const el = frm.querySelector(`[name="${f.key}"]`);
-    if (f.neteja && !toca && el && el.value !== '' && !frm.dataset.inicial) { el.value = ''; el.dataset.netejat = '1'; } // camp que no toca amb aquesta tria: es buida (p. ex. els minuts quan passes de "posta de sol" a "sensor")
+    if (f.neteja && !toca && el && el.value !== '' && !frm.dataset.inicial && !(f.netejaNou && frm.dataset.id)) { el.value = ''; el.dataset.netejat = '1'; } // camp que no toca amb aquesta tria: es buida (p. ex. els minuts quan passes de "posta de sol" a "sensor")
     if (f.neteja && toca && el && el.value === '' && el.dataset.netejat && !frm.dataset.id) { const d = defaultValue(f); if (d !== '' && d != null) el.value = String(d); delete el.dataset.netejat; } // i si torna a tocar, recupera el valor predeterminat
     const teValor = el && el.value !== '';
     w.hidden = !(toca || tot || teValor);
@@ -6767,6 +6780,28 @@ function taulaTasquesHTML(rows, opts) {
   return rows.length ? `<table class="tbl informe tasques"><thead><tr>${head.join('')}</tr></thead><tbody>${body}</tbody></table>` : '<div class="empty">Cap tasca en aquest període.</div>';
 }
 
+// (v46) a l'app, «Tasques per cada piscina» en horitzontal, com el dibuix del Xavier: la data, qui (inicials), el clor lliure, el pH, la
+// transparència i cinc feines (X xarxa, NF netejafons, R raspall, NLF línia de flotació, BW backwash) amb ✓ en verd (fet), ✗ en vermell (no
+// fet) o res (no apuntat); sense quadrícula. Si hi ha segona mostra, surt després de la primera. Amb el mòbil en vertical, l'avís de girar-lo.
+const TASCA_APP_FEINES = [['passat_xarxa', 'X', 'xarxa'], ['netejafons', 'NF', 'netejafons'], ['raspallat', 'R', 'raspall'], ['neteja_linia_flotacio', 'NLF', 'neteja de la línia de flotació'], ['neteja_filtre', 'BW', 'backwash (neteja del filtre)']];
+const TRANSP_CURT = { optima: 'Òptima', transparent_pero: 'Transparent…', un_punt_terbola: 'Un punt tèrbola', terbola_es_veu: 'Tèrbola', no_es_veu: 'No es veu' };
+function taulaTasquesAppHTML(rows) {
+  if (!rows.length) return '<div class="empty">Cap tasca en aquestes dates.</div>';
+  const td = SCHEMA.tables.tasques_piscina;
+  const valor = (r, k1, k2, clau) => [k1, k2].filter(k => r[k] != null && r[k] !== '').map(k => `<span class="tpa-v ${colorLlindar(clau)(r[k], r)}">${h(cellText(td, k, r))}</span>`).join('<i class="tpa-seg">›</i>');
+  const marca = v => v === true ? '<td class="tpa-ok">✓</td>' : v === false ? '<td class="tpa-no">✗</td>' : '<td></td>';
+  const segones = rows.some(r => (r.clor_lliure_2 != null && r.clor_lliure_2 !== '') || (r.ph_2 != null && r.ph_2 !== ''));
+  return `<div class="tpa-gira" role="note"><span aria-hidden="true">↻</span> Gira el mòbil: les tasques es veuen en horitzontal.</div>
+  <div class="tpa-wrap"><table class="tpa">
+    <thead><tr><th>Data</th><th>Qui</th><th title="Clor lliure (ppm)">Cl₂</th><th>pH</th><th>Transp.</th>${TASCA_APP_FEINES.map(([, a, l]) => `<th class="tpa-f" title="${h(l)}">${a}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r => { const tr = C.get('treballadors', r.treballador_id);
+      return `<tr><td>${dmy(r.data).slice(0, 5)}</td><td title="${h(nomTreballador(tr))}">${h(inicialsTreballador(tr))}</td>`
+        + `<td>${valor(r, 'clor_lliure_1', 'clor_lliure_2', 'clor_lliure')}</td><td>${valor(r, 'ph_1', 'ph_2', 'ph')}</td>`
+        + `<td>${r.transparencia ? `<span class="tpa-v ${colorTransparencia(r.transparencia)}">${h(TRANSP_CURT[r.transparencia] || r.transparencia)}</span>` : ''}</td>`
+        + TASCA_APP_FEINES.map(([k]) => marca(r[k])).join('') + '</tr>'; }).join('')}</tbody>
+  </table></div>
+  <p class="hint tpa-llegenda">Cl₂ clor lliure · ${TASCA_APP_FEINES.map(([, a, l]) => `<b>${a}</b> ${h(l)}`).join(' · ')} · <span class="tpa-ok">✓</span> fet · <span class="tpa-no">✗</span> no fet · buit: no apuntat${segones ? ' · després de › , la segona mostra' : ''}</p>`;
+}
 // versió per a mòbil: una targeta per tasca, sense taules amples
 function targetesTasquesHTML(rows, opts) {
   const td = SCHEMA.tables.tasques_piscina;
@@ -6794,7 +6829,8 @@ function imprimeixApaisat() {
 }
 
 function renderInformeTasquesPiscina(main) {
-  const st = state.tp; if (!st.desde) st.desde = primerDiaMes(); if (!st.fins) st.fins = avui();
+  // (v46) a l'app, per defecte les dues últimes setmanes; a l'oficina, des de l'u del mes
+  const st = state.tp; if (!st.desde) st.desde = esOperari() ? ymd(new Date(Date.now() - 14 * 86400000)) : primerDiaMes(); if (!st.fins) st.fins = avui();
   const llocs = C.rows('llocs').filter(l => l.actiu && C.rows('piscines').some(p => p.actiu && Number(p.lloc_id) === l.id)).sort((a, b) => a.nom.localeCompare(b.nom, 'ca'));
   const piscines = C.rows('piscines').filter(p => p.actiu && (!st.lloc || Number(p.lloc_id) === Number(st.lloc)));
   if (st.piscina && !piscines.some(p => String(p.id) === st.piscina)) st.piscina = '';
@@ -6803,7 +6839,7 @@ function renderInformeTasquesPiscina(main) {
   const lloc = pisc ? C.get('llocs', pisc.lloc_id) : null;
   const rows = pisc ? C.rows('tasques_piscina').filter(t => t.actiu && Number(t.piscina_id) === pisc.id && t.data >= st.desde && t.data <= st.fins).sort((a, b) => (a.data + (a.hora || '')).localeCompare(b.data + (b.hora || ''))) : [];
   main.innerHTML = `
-    <h1>Tasca per piscina</h1>
+    <h1>Tasques per cada piscina</h1>
     <div class="bar">
       <select id="tp-lloc"><option value="">Tria el lloc…</option>${llocs.map(l => `<option value="${l.id}" ${String(l.id) === st.lloc ? 'selected' : ''}>${h(l.nom)}${l.poblacio ? ' — ' + h(l.poblacio) : ''}</option>`).join('')}</select>
       <select id="tp-piscina" ${piscines.length ? '' : 'disabled'}><option value="">Tria la piscina…</option>${piscines.map(p => `<option value="${p.id}" ${String(p.id) === st.piscina ? 'selected' : ''}>${h(p.nom)}</option>`).join('')}</select>
@@ -6811,7 +6847,7 @@ function renderInformeTasquesPiscina(main) {
       ${esOperari() ? '' : `<button class="btn ghost" id="tp-print" ${pisc ? '' : 'disabled'}>Imprimeix (A4 apaïsat)</button>`}
     </div>
     ${pisc ? `<div class="capsal"><span>Client <b>${h(L('clients', lloc ? lloc.client_id : null))}</b></span><span>Lloc <b>${h(lloc ? lloc.nom : '')}</b></span><span>Piscina <b>${h(pisc.nom)}</b></span><span>Període <b>${dmy(st.desde)} – ${dmy(st.fins)}</b></span><span>Tasques <b>${rows.length}</b></span></div>` : ''}
-    ${pisc ? (esOperari() ? targetesTasquesHTML(rows, { piscina: false }) : taulaTasquesHTML(rows, { hora: false, piscina: false })) : '<div class="empty">Tria un lloc i una piscina.</div>'}`;
+    ${pisc ? (esOperari() ? taulaTasquesAppHTML(rows) : taulaTasquesHTML(rows, { hora: false, piscina: false })) : '<div class="empty">Tria un lloc i una piscina.</div>'}`;
   $('#tp-lloc').addEventListener('change', e => { st.lloc = e.target.value; st.piscina = ''; renderMain(); });
   $('#tp-piscina').addEventListener('change', e => { st.piscina = e.target.value; renderMain(); });
   $('#tp-desde').addEventListener('change', e => { st.desde = e.target.value; renderMain(); });
@@ -8855,14 +8891,15 @@ function calculaAlarmes() {
       : p.origen === 'banc' ? 'Moviment del banc #' + p.origen_id : String(p.origen || 'Document') + ' #' + p.origen_id;
     out.push({ tipus: 'comptabilitat', clau: `compta:${p.origen}:${p.origen_id}:${hashCurt(p.missatge)}`, text, detall: String(p.missatge || ''), ves: ['compta_config', null], ordre: String(p.quan || '') });
   });
-  // piscines: la segona mostra (pH o clor lliure) en vermell o pitjor, dels últims 30 dies
+  // piscines: la segona mostra (pH, clor lliure o, des de la v46, clor combinat) en vermell o pitjor, dels últims 30 dies
   const lim30 = ymd(new Date(Date.now() - 30 * 86400000)), xifra = v => String(v).replace('.', ',');
   C.rows('tasques_piscina').forEach(t => {
     if (!t.actiu || String(t.data || '').slice(0, 10) < lim30) return;
     const ph = t.ph_2 != null && t.ph_2 !== '' && esVermell(colorLlindar('ph')(t.ph_2, t)), cl = t.clor_lliure_2 != null && t.clor_lliure_2 !== '' && esVermell(colorLlindar('clor_lliure')(t.clor_lliure_2, t));
-    if (!ph && !cl) return;
+    const cc = t.clor_combinat_2 != null && t.clor_combinat_2 !== '' && esVermell(colorLlindar('clor_combinat')(t.clor_combinat_2, t));
+    if (!ph && !cl && !cc) return;
     out.push({ tipus: 'piscines', clau: `piscina:${t.id}`, text: nomInstal(C.get('piscines', t.piscina_id) || {}, 'piscina') || 'Piscina', ves: ['tasques_piscina', t.id], ordre: String(t.data) + ' ' + String(t.hora || ''),
-      detall: `${dmy(t.data)}: ${[ph ? 'pH ' + xifra(t.ph_2) : '', cl ? 'clor lliure ' + xifra(t.clor_lliure_2) + ' ppm' : ''].filter(Boolean).join(' i ')} a la segona mostra${t.treballador_id ? ' · ' + nomCurtTreballador(C.get('treballadors', t.treballador_id)) : ''}` });
+      detall: `${dmy(t.data)}: ${[ph ? 'pH ' + xifra(t.ph_2) : '', cl ? 'clor lliure ' + xifra(t.clor_lliure_2) + ' ppm' : '', cc ? 'clor combinat ' + xifra(t.clor_combinat_2) + ' ppm' : ''].filter(Boolean).join(' i ').replace(/ i (?=.* i )/, ', ')} a la segona mostra${t.treballador_id ? ' · ' + nomCurtTreballador(C.get('treballadors', t.treballador_id)) : ''}` });
   });
   return out;
 }
