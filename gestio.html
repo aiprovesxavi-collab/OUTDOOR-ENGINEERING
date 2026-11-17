@@ -2,7 +2,7 @@
 <html lang="ca">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8qb8sfAfU3VeUH5TprSruG0P7+MNK8SA8ZV1rK8xr+Y='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-q9yXb+HHD3z32xW0x+5RFSs7x2jedyVk5d4MXBxbE20='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestió de manteniment</title>
 <meta name="theme-color" content="#2f7d4a">
@@ -4563,6 +4563,130 @@ const ESCENES_MENU = {
   // incidències finalitzades: un full amb ratlles de text i un segell verd amb la marca de fet
   inc_finalitzades: escenaMenu('fin', `<g transform="translate(112 10) rotate(-4)"><rect x="4" y="7" width="74" height="98" rx="5" fill="#000" opacity=".22"/><rect x="0" y="3" width="74" height="98" rx="5" fill="#fbfdfb"/><rect x="9" y="13" width="42" height="6" rx="3" fill="#2c4a38" opacity=".8"/><g fill="none" stroke="#9aa7b1" stroke-width="2.5" stroke-linecap="round"><path d="M9 28h56M9 36h56M9 44h46M9 52h52M9 60h34"/></g></g><g transform="translate(160 76)"><circle r="23" fill="#2f7d4a"/><circle r="18" fill="none" stroke="#fff" stroke-width="2.5" opacity=".85"/><path d="M-9 0l6 6.5 12-13" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></g>`),
 };
+/* ---------- (v49) El botó Enrere del mòbil, a l'app: torna a la pantalla d'abans sense sortir de l'app ----------
+   Cada pantalla de l'app té una «ruta»: la secció (Accions pendents, Fulls de treball…), el que s'hi ha obert (una acció, un full, un informe,
+   una consulta…) i les finestres de sobre (els avisos, una guia, una felicitació). Quan la ruta canvia perquè s'ha tocat alguna cosa, s'afegeix
+   una entrada a l'historial del navegador (l'adreça no canvia); el botó Enrere d'Android (o el gest) torna a l'entrada d'abans i aquí es torna a
+   posar la pantalla que s'hi veia. Al menú principal no queda cap entrada: Enrere surt de l'app, com sempre.
+   - Si es torna enrere amb un botó de la pantalla («← Les meves accions», «Outdoor», «Cancel·la»…), l'historial també hi torna.
+   - Triar una altra cosa del mateix nivell (una altra acció del calendari, un altre report) no afegeix cap entrada.
+   - Les finestres i els formularis es tanquen amb el seu propi botó (així el que s'hi ha escrit es guarda com sempre).
+   - Chrome se salta les entrades afegides sense que s'hagi tocat la pantalla: per això només se n'afegeixen en anar endavant, mai en tornar.
+   Només a l'app (APP_NOMES_TASQUES): a l'oficina, res d'això. */
+const NAV_SESSIO = Math.random().toString(36).slice(2);
+let navPila = null, navPos = 0, navSaltant = 0, navSaltantT = null, navRestaurant = false;
+const mateixaRuta = (a, b) => JSON.stringify(a || []) === JSON.stringify(b || []);
+const copiaNav = v => v == null ? v : JSON.parse(JSON.stringify(v));
+const formNav = f => f && (f.tipus === 'consulta' || f.tipus === 'consulta_client') ? f.tipus : null;   // els formularis de l'acció que es veuen com a pantalla
+function rutaApp() {
+  if (!user || !document.querySelector('#app .top')) return null;
+  const r = [], t = state.table, i = state.inc;
+  if (t) {
+    r.push(String(t));
+    if (t === 'incidencies') {
+      if (i.vista === 'diagrama' && i.id) { r.push('inc:' + i.id); if (formNav(i.form)) r.push('form:' + formNav(i.form)); }
+      else if (i.vista === 'nova') r.push('nova');
+    } else if (t === 'fulls_treball_app') { if (state.ft.id) r.push('full:' + state.ft.id); else if (state.ft.nou) r.push('nou'); }
+    else if (t === 'lectures_app') { if (state.lect && state.lect.id) r.push('comptador:' + state.lect.id); }
+    else if (t === 'informes_lloc') { if (state.editing) r.push('informe:' + state.editing); else if (state.inf && state.inf.nou) r.push('nou'); }
+    else if (t === 'calendari_accions') { if (state.calAcc.sel) r.push('sel:' + state.calAcc.sel); }
+    else if (t === 'documents_treballadors') { if (state.docs.sel) r.push('document'); }
+    else if (t === 'fitxatges') { if (state.fx.ed) r.push('corregeix'); }
+    else if (state.editing) r.push('fitxa:' + state.editing);
+  }
+  if (document.getElementById('avisos-panell')) r.push('avisos');
+  if (document.getElementById('guia')) r.push('guia');
+  if (document.querySelector('.aniv')) r.push('felicitacio');
+  return r;
+}
+// el que cal per tornar a posar una pantalla
+function fotoNav() {
+  const i = state.inc;
+  return { ruta: rutaApp() || [], y: 0, table: state.table, editing: state.editing, mode: state.mode,
+    inc: { vista: i.vista, id: i.id, sel: i.sel, torna: i.torna, capa: i.capa, form: copiaNav(i.form) },
+    ft: { id: state.ft.id, nou: state.ft.nou }, lect: copiaNav(state.lect), inf: copiaNav(state.inf),
+    calSel: state.calAcc.sel, docsSel: copiaNav(state.docs.sel), fxEd: copiaNav(state.fx.ed) };
+}
+const fotoMenuNav = () => ({ ruta: [], y: 0, table: null, editing: null, mode: 'entrada', inc: { vista: 'llista', id: null, sel: null, torna: null, capa: 'interna', form: null },
+  ft: { id: null, nou: null }, lect: { id: null }, inf: { nou: false }, calSel: null, docsSel: null, fxEd: null });
+// l'entrada on és el navegador és la que creu l'app? (un «#…» posat a l'adreça n'afegeix una que l'app no coneix)
+const navAlDia = () => { const s = history.state; return !!s && s.nav === NAV_SESSIO && s.n === navPos; };
+const marcaNav = () => { try { history.replaceState({ nav: NAV_SESSIO, n: navPos }, ''); } catch (e) {} };
+// l'historial torna enrere sol (perquè quedi igual que el que es veu): aquest «popstate» no és de l'usuari
+function saltaNav(salt) {
+  navSaltant++; clearTimeout(navSaltantT); navSaltantT = setTimeout(() => { navSaltant = 0; }, 1500);
+  try { history.go(salt); } catch (e) { navSaltant = 0; }
+}
+// després de pintar: si la pantalla és una altra, l'historial la segueix
+function navComprova() {
+  if (navRestaurant) return;
+  if (!user) { if (navPila && navPos > 0 && navAlDia()) saltaNav(-navPos); navPila = null; navPos = 0; return; }   // ha sortit (la pantalla d'entrada)
+  const ruta = rutaApp(); if (!ruta) return;
+  if (!navPila) { navPila = [fotoMenuNav()]; navPos = 0; try { history.replaceState({ nav: NAV_SESSIO, n: 0 }, ''); } catch (e) {} }   // la base: el menú
+  const actual = navPila[navPos], foto = fotoNav();
+  if (mateixaRuta(foto.ruta, actual.ruta)) { foto.y = actual.y; navPila[navPos] = foto; return; }
+  // s'ha tornat a una pantalla d'abans amb un botó de la pantalla: l'historial també hi torna
+  for (let k = navPos - 1; k >= 0; k--) if (mateixaRuta(navPila[k].ruta, foto.ruta)) {
+    if (!navAlDia()) { navPila[navPos] = foto; marcaNav(); return; }   // el navegador no és on l'app creu: no es salta, l'entrada d'ara passa a ser aquesta pantalla
+    foto.y = navPila[k].y; navPila[k] = foto; const salt = k - navPos; navPos = k; saltaNav(salt); return;
+  }
+  // amunt cap a una pantalla que no hi era, o una altra del mateix nivell: la mateixa entrada
+  const a = actual.ruta, b = foto.ruta;
+  if ((b.length < a.length && mateixaRuta(a.slice(0, b.length), b)) || (b.length === a.length && b.length >= 2 && mateixaRuta(a.slice(0, -1), b.slice(0, -1)))) { navPila[navPos] = foto; return; }
+  // endavant: una entrada nova
+  navPila.length = navPos + 1; navPila.push(foto); navPos++;
+  try { history.pushState({ nav: NAV_SESSIO, n: navPos }, ''); } catch (e) {}
+}
+// Enrere: torna a posar la pantalla de l'entrada
+function navTornaA(obj) {
+  navRestaurant = true;
+  try {
+    // les finestres de sobre que no hi eren es tanquen amb el seu botó (la felicitació, p. ex., deixa passar la següent)
+    const fora = (capa, sel, boto, tanca) => { const el = document.querySelector(sel); if (el && !obj.ruta.includes(capa)) { const b = boto && el.querySelector(boto); if (b) b.click(); else tanca(el); } };
+    fora('avisos', '#avisos-panell', '#avisos-tanca', el => el.remove());
+    fora('guia', '#guia', null, () => tancaGuia());
+    fora('felicitacio', '.aniv', '#aniv-tanca', el => el.remove());
+    // un formulari obert a la pantalla (una consulta, un report): es tanca amb el seu «Cancel·la», que guarda el que s'hi ha escrit
+    let ara = rutaApp() || [];
+    if (ara.length === obj.ruta.length + 1 && mateixaRuta(ara.slice(0, -1), obj.ruta)) {
+      const capa = ara[ara.length - 1];
+      const b = capa === 'form:consulta' ? $('#cons-cancel') : capa === 'form:consulta_client' ? $('#cc-cancel') : /^fitxa:/.test(capa) ? $('#cancel') : null;
+      if (b) { b.click(); ara = rutaApp() || []; }
+    }
+    // si encara no és la pantalla d'abans, es posa el que s'hi veia i es torna a pintar
+    if (!mateixaRuta(ara, obj.ruta)) {
+      const i = state.inc;
+      let form = copiaNav(obj.inc.form);
+      if (!formNav(form) && i.form && Number(i.id) === Number(obj.inc.id)) form = formNav(i.form) === 'consulta_client' ? null : Object.assign(i.form, { tipus: null });   // el que s'havia escrit a l'acció, es queda
+      state.table = obj.table; state.editing = obj.editing; state.mode = obj.mode;
+      Object.assign(i, obj.inc, { form });
+      Object.assign(state.ft, obj.ft, { form: null });
+      state.lect = copiaNav(obj.lect) || { id: null }; state.inf = copiaNav(obj.inf) || { nou: false };
+      state.calAcc.sel = obj.calSel; state.docs.sel = copiaNav(obj.docsSel); state.fx.ed = copiaNav(obj.fxEd);
+      renderApp(); window.scrollTo(0, obj.y || 0);
+    }
+  } finally { navRestaurant = false; }
+  const f = fotoNav(); f.y = obj.y || 0; navPila[navPos] = f;
+}
+if (APP_NOMES_TASQUES) {
+  let navProgramat = false;
+  const programaNav = () => { if (navProgramat) return; navProgramat = true; queueMicrotask(() => { navProgramat = false; try { navComprova(); } catch (e) {} }); };
+  new MutationObserver(programaNav).observe(document.documentElement, { childList: true, subtree: true });
+  window.addEventListener('popstate', e => {
+    if (!navPila) return;
+    const s = e.state, n = s && s.nav === NAV_SESSIO && Number.isInteger(s.n) ? s.n : null;
+    // una entrada que no és de l'app (un «#…» posat a l'adreça): no és Enrere; la pantalla es queda i l'entrada passa a ser la d'ara
+    if (n == null || !navPila[n]) { marcaNav(); return; }
+    if (navSaltant > 0) { navSaltant--; navPos = n; return; }   // l'ha fet el programa (un botó de la pantalla)
+    navPos = n;
+    try { navTornaA(navPila[n]); } catch (er) { navRestaurant = false; }
+  });
+  // abans de tocar res, on era la pantalla (per tornar-hi amb Enrere); i els enllaços «#» no fan entrades
+  document.addEventListener('click', e => {
+    if (navPila && navPila[navPos]) navPila[navPos].y = window.scrollY || 0;
+    const a = e.target && e.target.closest ? e.target.closest('a[href="#"]') : null; if (a) e.preventDefault();
+  }, true);
+}
 function renderAppOperari() {
   document.body.classList.add('operari'); document.body.classList.remove('ic-full');
   state.mode = 'entrada';
