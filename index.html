@@ -2,7 +2,7 @@
 <html lang="ca">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-WN7+qQLF0kI79h2d2UU59QOLvfW/EDvZDL0Zuz3eBEY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-l7lPg9m1GyzttuV7evWoNaK7BQE6JrToEeQyTvno3TE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestió de manteniment</title>
 <meta name="theme-color" content="#2f7d4a">
@@ -282,6 +282,10 @@
   .avisos-caixa h3{ margin:0 0 10px; font-size:18px; }
   .avisos-caixa ul{ list-style:none; padding:0; margin:0 0 14px; } .avisos-caixa li{ padding:6px 0; border-bottom:1px solid var(--line-2); line-height:1.35; } .avisos-caixa li.ok{ color:var(--green); } .avisos-caixa li.no{ color:var(--red); }
   .avisos-caixa .accions{ display:flex; flex-wrap:wrap; gap:8px; }
+  /* (v48) la × de les finestres de l'oficina (en lloc de «Cancel·la»): a dalt a la dreta i sempre a la vista, encara que la finestra baixi (el top, negatiu: dins d'una finestra que baixa compta des del farciment) */
+  .finestra-tanca{ position:sticky; top:-16px; float:right; z-index:2; margin:-10px -12px 4px 10px; border:0; background:#fff; border-radius:50%; width:36px; height:36px;
+    font-size:26px; line-height:1; cursor:pointer; color:var(--ink-2); padding:0; display:flex; align-items:center; justify-content:center; }
+  .finestra-tanca:hover{ background:var(--line); color:var(--ink); }
   /* alarmes: un bloc per tipus; a cada alarma, la casella «Llegida» */
   .al-grup{ border:1px solid var(--line-2); border-left:5px solid var(--ac); border-radius:8px; padding:12px 16px 6px; margin:0 0 16px; background:#fff; max-width:980px; }
   .al-grup h3{ margin:0 0 6px; font-size:15px; font-weight:600; color:var(--ac); display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
@@ -2987,7 +2991,7 @@ function renderComptaNou(main) {
       <tfoot><tr class="total"><td></td><td colspan="2"><button type="button" class="btn ghost small" id="ca-mes">+ Línia</button> <span id="ca-dif" class="ca-dif"></span></td><td class="num" id="ca-td"></td><td class="num" id="ca-th"></td><td></td></tr></tfoot></table>
     ${datalistComptes()}
     <div id="ca-err"></div>
-    <div class="actions"><button class="btn desa" type="button" id="ca-desa">Desa l’assentament</button> <button class="btn ghost" type="button" id="ca-cancel">Cancel·la</button> <span class="hint">Ctrl + Intro: desa</span></div></div>`;
+    <div class="actions"><button class="btn desa" type="button" id="ca-desa">Desa l’assentament</button> <span class="hint">Ctrl + Intro: desa</span></div></div>`;
   const llegeix = () => {
     ed.data = main.querySelector('#ca-data').value; ed.tipus = main.querySelector('#ca-tipus').value; ed.concepte = main.querySelector('#ca-concepte').value; ed.document = main.querySelector('#ca-doc').value;
     main.querySelectorAll('#ca-cos tr').forEach(tr => { const l = ed.linies[Number(tr.dataset.i)]; if (!l) return; tr.querySelectorAll('[data-k]').forEach(inp => { l[inp.dataset.k] = inp.value; }); });
@@ -3044,7 +3048,6 @@ function renderComptaNou(main) {
   ['#ca-data', '#ca-tipus', '#ca-concepte', '#ca-doc'].forEach(k => main.querySelector(k).addEventListener('change', llegeix));
   main.querySelector('#ca-mes').addEventListener('click', novaLinia);
   main.querySelectorAll('[data-treu]').forEach(b => b.addEventListener('click', () => { llegeix(); ed.linies.splice(Number(b.dataset.treu), 1); if (ed.linies.length < 2) ed.linies.push(liniaBuida()); renderComptaNou(main); }));
-  main.querySelector('#ca-cancel').addEventListener('click', () => { st.edit = null; state.table = 'compta_diari'; renderApp(); });
   main.querySelector('#ca-desa').addEventListener('click', async () => {
     llegeix();
     const err = msg => { main.querySelector('#ca-err').innerHTML = `<p class="msg err">${h(msg)}</p>`; };
@@ -4461,6 +4464,15 @@ function engegaAvisos() {
 /* =====================================================================
    Aplicació
    ===================================================================== */
+// (v48) sortir d'una pantalla de l'oficina (el menú, el logo o Entrada/Consulta) fa el que feia el «Cancel·la»: el que s'hi havia escrit i no
+// s'ha desat es perd. També a les pantalles que ho guardaven fins que es cancel·lava: l'assentament nou, la incidència nova, l'editor del panell
+// d'accions i els formularis del panell de la incidència (la incidència oberta i la caixa triada, en canvi, es mantenen).
+function oblidaEsborranys() {
+  state.editing = null; state.copia = null; state.fx.ed = null; state.docs.sel = null; state.docsV.sel = null;
+  if (state.compta) state.compta.edit = null;
+  if (state.panell) { state.panell.edita = null; state.panell.form = null; }
+  const si = state.inc; si.form = null; si.nova = null; if (si.vista === 'nova') si.vista = 'llista';
+}
 function renderApp() {
   if (esOperari()) { renderAppOperari(); return; }
   document.body.classList.remove('operari');
@@ -4482,14 +4494,14 @@ function renderApp() {
       </nav>
       <div class="main" id="main"></div>
     </div>`;
-  $('#brand').addEventListener('click', () => { state.table = null; state.editing = null; state.copia = null; state.fx.ed = null; state.docs.sel = null; state.inc.torna = null; renderApp(); });
+  $('#brand').addEventListener('click', () => { state.table = null; oblidaEsborranys(); state.inc.torna = null; renderApp(); });
   $('#logout').addEventListener('click', async () => { await oblidaPush(); await sb.auth.signOut(); user = null; renderLogin(); });
   bindBotoAvisos();
   document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
-    state.mode = b.dataset.mode; state.editing = null; state.copia = null; state.fx.ed = null; state.docs.sel = null; renderApp();
+    state.mode = b.dataset.mode; oblidaEsborranys(); renderApp();
   }));
   document.querySelectorAll('.side button').forEach(b => b.addEventListener('click', () => {
-    state.table = b.dataset.table; state.editing = null; state.q = ''; state.copia = null; state.fx.ed = null; state.docs.sel = null; reiniciaCaselles(b.dataset.table); renderApp();
+    state.table = b.dataset.table; oblidaEsborranys(); state.q = ''; reiniciaCaselles(b.dataset.table); renderApp();
   }));
   renderMain();
 }
@@ -5203,7 +5215,8 @@ function filaBotonsFitxa(td, row, editing, formId) {   // (formId: els botons s�
   const boto = (a, i) => `<button class="btn ${a.classe || 'ghost'}" type="button" data-action="${i}">${h(a.label)}</button>`;
   const zona = a => BOTONS_MIG.includes(familiaBoto(a)) ? 'mig' : BOTONS_DRETA.includes(familiaBoto(a)) ? 'dre' : 'esq';
   const quines = z => accs.map((a, i) => zona(a) === z ? boto(a, i) : '').filter(Boolean);
-  const cancel = editing && !td.senseCancel ? '<button class="btn ghost" type="button" id="cancel">Cancel·la</button>' : '';
+  // (v48) a la web de l'oficina, sense «Cancel·la»: sortir sense desar (el menú, un altre registre de la llista…) ja no desa. A l'app, es queda.
+  const cancel = editing && esOperari() && !td.senseCancel ? '<button class="btn ghost" type="button" id="cancel">Cancel·la</button>' : '';
   const bd = (td.botoDesa && td.botoDesa(row)) || { label: editing ? 'Desa els canvis' : 'Desa', classe: 'desa' };   // (un full obert: «Deixar obert»)
   const esq = `<button class="btn ${bd.classe}" type="submit"${formId ? ` form="${formId}"` : ''}>${h(bd.label)}</button>${quines('esq').join('')}${cancel}`;
   const baixa = editing && (!td.canBaixa || td.canBaixa(row)) ? (row.actiu ? '<button class="btn elimina" type="button" id="baixa">Elimina</button>' : '<button class="btn desa" type="button" id="baixa">Reactiva</button>') : '';
@@ -8162,16 +8175,9 @@ function copiaAvisHTML(row) {
     <p class="sub">${deClient ? 'La forma i el termini de pagament no es copien (els del client són com ens paga ell): queden els habituals.'
       : 'La forma i el termini de pagament no es copien (els del proveïdor són com li paguem nosaltres): domiciliació si tenim el seu IBAN; si no, transferència. El tipus de client surt del NIF.'}</p>
     ${adm}
-    <p><a href="#" id="copia-cancel">Cancel·la la còpia</a></p>
   </div>`;
 }
 function copiaAvisBind() {
-  const c = $('#copia-cancel');
-  if (c) c.addEventListener('click', e => {
-    e.preventDefault(); const de = state.copia && state.copia.de; state.copia = null;
-    if (de) { state.mode = 'consulta'; state.table = de.taula; state.editing = de.id; }
-    renderApp(); window.scrollTo({ top: 0 });
-  });
   const b = $('#copia-adm'); if (b) b.addEventListener('click', () => copiaCreaAdministrador(b));
 }
 // un client que ve d'un proveïdor sense administrador: el proveïdor passa a ser el seu propi administrador, amb la persona de contacte de gestor.
@@ -8336,6 +8342,8 @@ const DOC_VEH = {
   perTipus: id => documentsPerTipusVehicle(id), obligatori: tp => obligatoriVehicle(tp), tipus: () => tipusGestionablesVehicle(),
 };
 const docCtx = () => state.table === 'documents_vehicles' ? DOC_VEH : DOC_TREB;
+// (v48) la × de les finestres de l'oficina, en lloc de «Cancel·la» o «Tanca»: tanca sense desar res (també amb Esc). A l'app, els botons de sempre.
+const botoTancaFinestra = id => `<button type="button" class="finestra-tanca" id="${id}" title="Tanca" aria-label="Tanca">×</button>`;
 // la finestra d'un tipus de document d'una persona (o d'un vehicle): el vigent i l'historial, o el formulari per pujar-ne un o corregir-lo
 function panellDocumentHTML() {
   const cx = docCtx(), st = cx.st(), sel = st.sel;
@@ -8352,11 +8360,11 @@ function panellDocumentHTML() {
       ${pot ? `<div class="dc-accions-versio"><button type="button" class="btn ghost small" data-dc-edita="${d.id}">Corregeix</button><button type="button" class="btn small elimina" data-dc-baixa="${d.id}">Elimina</button></div>` : ''}
     </div>`; };
   return `<div class="avisos-panell" id="dcp-panell"><div class="avisos-caixa dc-caixa" role="dialog" aria-modal="true" aria-labelledby="dcp-titol">
-    <h3 id="dcp-titol">${h(tp.nom)}${tp.confidencial ? ' 🔒' : ''}</h3>
+    ${esOperari() ? '' : botoTancaFinestra('dcp-tanca')}<h3 id="dcp-titol">${h(tp.nom)}${tp.confidencial ? ' 🔒' : ''}</h3>
     <p class="dc-qui">${h(cx.nom(sid))}${tp.observacions ? ` · <span class="hint">${h(tp.observacions)}</span>` : ''}</p>
     ${ll.length ? ll.map(versio).join('') : `<p class="hint">Encara no n’hi ha cap.${oblig ? ' És obligatori.' : ''}</p>`}
     <div id="dcp-err" class="msg err" hidden></div>
-    <div class="accions">${pot ? `<button type="button" class="btn" id="dcp-nou">${ll.length ? 'Renova’l (puja’n un de nou)' : 'Puja’l'}</button>` : ''}<button type="button" class="btn ghost" id="dcp-tanca">Tanca</button></div>
+    ${pot || esOperari() ? `<div class="accions">${pot ? `<button type="button" class="btn" id="dcp-nou">${ll.length ? 'Renova’l (puja’n un de nou)' : 'Puja’l'}</button>` : ''}${esOperari() ? '<button type="button" class="btn ghost" id="dcp-tanca">Tanca</button>' : ''}</div>` : ''}
   </div></div>`;
 }
 function formDocumentHTML() {
@@ -8367,7 +8375,7 @@ function formDocumentHTML() {
   const tipus = cx.tipus();
   const dataIni = d ? (d.data_document || '') : avui(), cadIni = d ? (d.data_caducitat || '') : caducitatCalculada(dataIni, tp);
   return `<div class="avisos-panell" id="dcp-panell"><div class="avisos-caixa dc-caixa dc-form" role="dialog" aria-modal="true" aria-labelledby="dcp-titol">
-    <h3 id="dcp-titol">${d ? 'Corregeix el document' : sel[cx.clau] && sel.tipus && (cx.perTipus(sel[cx.clau]).get(Number(sel.tipus)) || []).length ? 'Renova el document' : 'Puja un document'}</h3>
+    ${esOperari() ? '' : botoTancaFinestra('dcp-tanca')}<h3 id="dcp-titol">${d ? 'Corregeix el document' : sel[cx.clau] && sel.tipus && (cx.perTipus(sel[cx.clau]).get(Number(sel.tipus)) || []).length ? 'Renova el document' : 'Puja un document'}</h3>
     ${trebId && (d || sel[cx.clau]) ? `<p class="dc-qui"><b>${h(cx.nom(trebId))}</b></p>`
       : `<label class="f"><span class="l">${cx.etiqueta}</span><select id="dcf-${cx.clau}"><option value="">Tria…</option>${persones.map(p => `<option value="${p.id}">${h(cx.nomDe(p))}</option>`).join('')}</select></label>`}
     ${tp && (d || sel.tipus) ? `<p class="dc-qui">${h(tp.nom)}${tp.confidencial ? ' 🔒' : ''}</p>`
@@ -8382,7 +8390,7 @@ function formDocumentHTML() {
     <label class="f"><span class="l">${d ? 'Afegeix-hi fitxers' : 'Fitxers'} <span class="hint">(PDF o fotos; en pots triar més d’un, p. ex. l’anvers i el revers)</span></span><input type="file" id="dcf-fitxers" accept="application/pdf,image/*" multiple></label>
     <label class="f"><span class="l">Observacions</span><textarea id="dcf-obs" rows="2">${h(d ? d.observacions || '' : '')}</textarea></label>
     <div id="dcp-err" class="msg err" hidden></div>
-    <div class="accions"><button type="button" class="btn desa" id="dcf-desa">Desa</button><button type="button" class="btn ghost" id="dcf-cancel">Cancel·la</button></div>
+    <div class="accions"><button type="button" class="btn desa" id="dcf-desa">Desa</button>${esOperari() ? '<button type="button" class="btn ghost" id="dcf-cancel">Cancel·la</button>' : ''}</div>
   </div></div>`;
 }
 const pistaCaducitat = tp => !tp ? '' : !tp.caduca ? 'Aquest tipus no caduca: deixa la caducitat buida (o posa-n’hi una si aquest en té).'
@@ -8394,9 +8402,9 @@ function bindPanellDocument() {
   const tanca = () => { st.sel = null; renderMain(); };
   const err = m => { const e = $('#dcp-err'); e.textContent = m; e.hidden = false; };
   panell.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); tanca(); } });
+  const x = $('#dcp-tanca'); if (x) x.addEventListener('click', tanca);   // la × (a l'oficina) o «Tanca» (a l'app)
   panell.querySelectorAll('[data-dc-obre]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); obreFitxerDocument(a.dataset.dcObre); }));
   if (sel.mode === 'veure') {
-    $('#dcp-tanca').addEventListener('click', tanca);
     const nou = $('#dcp-nou'); if (nou) nou.addEventListener('click', () => { st.sel = { mode: 'nou', [cx.clau]: sel[cx.clau], tipus: sel.tipus }; renderMain(); });
     panell.querySelectorAll('[data-dc-edita]').forEach(b => b.addEventListener('click', () => { st.sel = { mode: 'edita', id: Number(b.dataset.dcEdita), [cx.clau]: sel[cx.clau], tipus: sel.tipus }; renderMain(); }));
     panell.querySelectorAll('[data-dc-baixa]').forEach(b => b.addEventListener('click', async () => {
@@ -8415,7 +8423,7 @@ function bindPanellDocument() {
   const recalcula = () => { const tp = tipusActual(); $('#dcf-hint-cad').textContent = pistaCaducitat(tp); if (!cad.dataset.manual) cad.value = caducitatCalculada(data.value, tp); };
   cad.addEventListener('input', () => { cad.dataset.manual = cad.value ? '1' : ''; });
   data.addEventListener('change', recalcula); if (selTipus) selTipus.addEventListener('change', recalcula);
-  $('#dcf-cancel').addEventListener('click', () => { st.sel = sel.mode === 'edita' || (sel[cx.clau] && sel.tipus && (cx.perTipus(sel[cx.clau]).get(Number(sel.tipus)) || []).length) ? { mode: 'veure', [cx.clau]: sel[cx.clau], tipus: sel.tipus } : null; renderMain(); });
+  if ($('#dcf-cancel')) $('#dcf-cancel').addEventListener('click', () => { st.sel = sel.mode === 'edita' || (sel[cx.clau] && sel.tipus && (cx.perTipus(sel[cx.clau]).get(Number(sel.tipus)) || []).length) ? { mode: 'veure', [cx.clau]: sel[cx.clau], tipus: sel.tipus } : null; renderMain(); });
   $('#dcf-desa').addEventListener('click', () => desaDocument().catch(e => err(friendly(e))));
   const primer = $('#dcf-' + cx.clau) || $('#dcf-tipus') || data; if (primer) primer.focus();
 }
@@ -8618,7 +8626,7 @@ function obreAltaBe(v) {
   const dot = bens.length ? Number(bens[0].compte_dotacio_id) : ((compteCodi('6818000') || compteCodi('6810000') || {}).id || null);
   const div = document.createElement('div'); div.className = 'avisos-panell'; div.id = 'vh-alta';
   div.innerHTML = `<div class="avisos-caixa dc-caixa dc-form" role="dialog" aria-modal="true" aria-labelledby="vh-alta-t">
-    <h3 id="vh-alta-t">Dona d’alta el bé a l’immobilitzat</h3>
+    ${botoTancaFinestra('vha-tanca')}<h3 id="vh-alta-t">Dona d’alta el bé a l’immobilitzat</h3>
     <p class="dc-qui"><b>${h(nomVehicle(v))}</b></p>
     <label class="f"><span class="l">Descripció del bé</span><input type="text" id="vha-desc" value="${h([v.tipus, v.marca, v.model, v.matricula].filter(Boolean).join(' '))}"></label>
     <div class="dc-grid">
@@ -8645,7 +8653,7 @@ function obreAltaBe(v) {
       <p class="hint">l’últim dia d’un mes: es comptabilitza des del mes següent</p>
     </details>
     <div id="vha-err" class="msg err" hidden></div>
-    <div class="accions"><button type="button" class="btn desa" id="vha-desa">Dona d’alta el bé</button><button type="button" class="btn ghost" id="vha-cancel">Cancel·la</button></div>
+    <div class="accions"><button type="button" class="btn desa" id="vha-desa">Dona d’alta el bé</button></div>
   </div>`;
   document.body.appendChild(div);
   const err = m => { const e = $('#vha-err'); e.textContent = m; e.hidden = false; };
@@ -8660,7 +8668,7 @@ function obreAltaBe(v) {
   $('#vha-amort').addEventListener('input', () => { $('#vha-amort').dataset.manual = '1'; });
   $('#vha-actiu').addEventListener('input', () => { const a = $('#vha-actiu').value.trim(); if (!$('#vha-amort').dataset.manual && /^218\d{4}$/.test(a)) { $('#vha-amort').value = '2818' + a.slice(-3); nota(); } });
   div.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); tancaAltaBe(); } });
-  $('#vha-cancel').addEventListener('click', tancaAltaBe);
+  $('#vha-tanca').addEventListener('click', tancaAltaBe);
   $('#vha-desa').addEventListener('click', async () => {
     const desc = $('#vha-desc').value.trim(), data = $('#vha-data').value, valor = Number($('#vha-valor').value), pc = Number($('#vha-pct').value);
     const ca = $('#vha-actiu').value.trim(), cm = $('#vha-amort').value.trim(), cd = Number($('#vha-dot').value), acum = Number($('#vha-acum').value || 0), fins = $('#vha-fins').value || null;
@@ -9225,7 +9233,7 @@ function formSeguidoraHTML(inc) {
     <p class="sub">Ara la porta <b>${h(nomTreballador(C.get('treballadors', act))) || '—'}</b>. Es pot fer en qualsevol moment (vacances, baixa…) perquè la incidència no s’aturi: ${passen.length ? `el que tenia pendent en aquesta incidència passa a la nova (${passen.map(x => '«' + h(nomTipus(x.tipus)) + '»').join(', ')})` : 'ara no té res pendent en aquesta incidència'}.</p>
     <div class="f"><span class="l">Nova seguidora</span><select id="rs-nova"><option value="">Tria…</option>${cands.map(x => `<option value="${x.id}" ${Number(f.nova) === x.id ? 'selected' : ''}>${h(nomTreballador(x))}</option>`).join('')}</select></div>
     <div class="f"><span class="l">Motiu (si cal)</span><input type="text" id="rs-motiu" value="${h(f.motiu || '')}" placeholder="vacances, baixa…"></div>
-    <div class="actions"><button class="btn" id="rs-ok">Reassigna</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div>`;
+    <div class="actions"><button class="btn" id="rs-ok">Reassigna</button></div>`;
 }
 const ordrePanell = k => { const i = PANELL.findIndex(r => r.clau === k); return i < 0 ? 999 : i; };
 const etiquetaOpt = (llista, v) => (llista.find(o => o[0] === v) || [])[1] || v || '';
@@ -9412,7 +9420,7 @@ function editorPanellHTML(r) {
     <div class="f"><span class="l">D’on ve</span>${r.clau === 'obrir' || r.clau === 'assignar_seguidora' ? `<div class="info">${h(veDeText(r))} (sempre)</div>`
       : `<div><span class="seg pa-vede"><button type="button" class="${tots ? 'on' : ''}" data-pa-vede="tots">De tots els F</button><button type="button" class="${tots ? '' : 'on'}" data-pa-vede="alguns">Només d’algunes caixes</button></span></div>${tots ? '' : `<div class="multi">${origens.map(([k, n]) => `<label><input type="checkbox" name="pa-vede" value="${k}" ${veDe.includes(k) ? 'checked' : ''}><span>${h(n)}</span></label>`).join('')}</div>`}`}</div>
     ${r.clau === 'tancar' || r.clau === 'assignar_seguidora' ? '' : `<div class="f"><span class="l">Predeterminat després</span><select id="pa-seguent"><option value="">— (cap)</option>${seguents.map(x => `<option value="${x.clau}" ${seguent === x.clau ? 'selected' : ''}>${h(x.codi)} · ${h(x.nom)}</option>`).join('')}</select></div>`}
-    <div class="actions"><button class="btn desa" id="pa-desa">Desa</button><button class="btn ghost" id="pa-cancel">Cancel·la</button><button class="btn ghost small" id="pa-original" title="Hi posa els valors de la taula original (després cal desar-ho)">Valors de la taula original</button></div>
+    <div class="actions"><button class="btn desa" id="pa-desa">Desa</button><button class="btn ghost small" id="pa-original" title="Hi posa els valors de la taula original (després cal desar-ho)">Valors de la taula original</button></div>
   </div>`;
 }
 function bindPanellAccions(main) {
@@ -9429,7 +9437,6 @@ function bindPanellAccions(main) {
   main.querySelectorAll('[data-pa-vede]').forEach(b => b.addEventListener('click', () => {
     llegeix(); const r = filaPanell(st.edita); st.form.ve_de = b.dataset.paVede === 'tots' ? ['tots'] : (st.form.ve_de || r.ve_de).filter(k => k !== 'tots'); renderMain();
   }));
-  const cancel = main.querySelector('#pa-cancel'); if (cancel) cancel.addEventListener('click', () => { st.edita = null; st.form = null; renderMain(); });
   const orig = main.querySelector('#pa-original'); if (orig) orig.addEventListener('click', () => {
     const d = PANELL_DEFECTE.find(x => x.clau === st.edita); if (!d) return;
     st.form = { nom: d.nom, qui: d.qui.slice(), carrils: d.carrils.slice(), ve_de: d.ve_de.slice(), seguent: d.seguent }; renderMain();
@@ -9732,7 +9739,7 @@ function renderNovaIncidencia(main) {
           <span class="hint">només informa: al carril del client només hi haurà una caixa quan se li demani una autorització (econòmica o d’actuació)</span></div>
         <label class="f wide"><span class="l">Observacions internes</span><textarea lang="ca" spellcheck="true" name="observacions_internes">${h(n.observacions_internes || '')}</textarea><span class="hint">${NOTA_INTERNES}</span></label>
       </div>
-      <div class="actions"><button class="btn endavant" id="inc-crea">Obre la incidència</button><button class="btn ghost" id="inc-cancel">Cancel·la</button></div>
+      <div class="actions"><button class="btn endavant" id="inc-crea">Obre la incidència</button></div>
     </div>`;
   const guarda = () => { n.titol = $('[name=titol]').value; n.descripcio = $('[name=descripcio]').value; n.seguidora_id = Number($('[name=seguidora_id]').value) || null; n.p_tipus = $('[name=p_tipus]').value; n.p_resp = Number($('[name=p_resp]').value); n.p_grup = $('[name=p_grup]').value; n.grup = n.p_grup; n.p_inici = $('[name=p_inici]').value; n.venciment = $('[name=p_venc]').value; n.p_desc = $('[name=p_desc]').value; n.observacions_internes = $('[name=observacions_internes]').value; n.contactes = [...document.querySelectorAll('[name=contactes]:checked')].map(e => Number(e.value)); };
   $('[name=lloc_id]').addEventListener('change', e => { guarda(); n.lloc_id = Number(e.target.value) || null; n.contactes = null; renderMain(); });
@@ -9740,7 +9747,6 @@ function renderNovaIncidencia(main) {
   $('[name=seguidora_id]').addEventListener('change', () => { guarda(); renderMain(); });   // (v42) el carril del primer pas depèn de qui és la seguidora
   $('[name=p_tipus]').addEventListener('change', () => { guarda(); renderMain(); });          // (v42) els responsables, segons els carrils del panell
   $('[name=p_inici]').addEventListener('change', () => { guarda(); n.venciment = ''; renderMain(); });
-  $('#inc-cancel').addEventListener('click', () => { st.vista = 'llista'; st.nova = null; renderMain(); });
   $('#inc-crea').addEventListener('click', async () => {
     guarda();
     const lloc_id = Number($('[name=lloc_id]').value), titol = n.titol.trim(), seguidora_id = n.seguidora_id;
@@ -10293,8 +10299,8 @@ function panellHTML(inc) {
   const st = state.inc, t = trebInc();
   if (st.form && st.form.tipus === 'accio') return formAccioHTML(inc, st.form.origen ? C.get('incidencia_accions', st.form.origen) : null);
   if (st.form && st.form.tipus === 'seguidora') return formSeguidoraHTML(inc);   // (v42) F0
-  if (st.form && st.form.tipus === 'consulta_client') return `<h3>${h(codiTipus('consulta_client'))} · ${h(nomTipus('consulta_client'))}</h3><p class="sub">Una pregunta o una aclaració al client. No atura cap feina; quan contesti, hi apuntes la resposta i queda amb la pregunta a dalt de l’historial.</p>${formConsultaClientHTML(inc)}<div class="actions"><button class="btn ghost small" id="panell-cancel">Cancel·la</button></div>`;
-  if (st.form && st.form.tipus === 'tanca') { const rc = reportsInc(inc).find(x => correuReporta(x)); return `<h3>Tanca la incidència</h3><div class="f"><span class="l">Motiu</span><select id="tanca-motiu">${INC.motiusTancament.map(o => `<option value="${o[0]}">${h(o[1])}</option>`).join('')}</select></div><div class="f"><span class="l">Resultat final</span><textarea lang="ca" spellcheck="true" id="tanca-resultat"></textarea><span class="hint">és el que rebrà qui va avisar, si li envies el resum. Si cal, després es pot reobrir.</span></div>${rc ? `<label class="chk" style="padding:0"><input type="checkbox" id="tanca-correu" checked> En tancar, prepara el correu de resum per a ${h(quiReporta(rc))} (${h(correuReporta(rc))})</label>` : ''}<div class="actions"><button class="btn danger" id="tanca-ok">Tanca</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div>`; }
+  if (st.form && st.form.tipus === 'consulta_client') return `<h3>${h(codiTipus('consulta_client'))} · ${h(nomTipus('consulta_client'))}</h3><p class="sub">Una pregunta o una aclaració al client. No atura cap feina; quan contesti, hi apuntes la resposta i queda amb la pregunta a dalt de l’historial.</p>${formConsultaClientHTML(inc)}`;
+  if (st.form && st.form.tipus === 'tanca') { const rc = reportsInc(inc).find(x => correuReporta(x)); return `<h3>Tanca la incidència</h3><div class="f"><span class="l">Motiu</span><select id="tanca-motiu">${INC.motiusTancament.map(o => `<option value="${o[0]}">${h(o[1])}</option>`).join('')}</select></div><div class="f"><span class="l">Resultat final</span><textarea lang="ca" spellcheck="true" id="tanca-resultat"></textarea><span class="hint">és el que rebrà qui va avisar, si li envies el resum. Si cal, després es pot reobrir.</span></div>${rc ? `<label class="chk" style="padding:0"><input type="checkbox" id="tanca-correu" checked> En tancar, prepara el correu de resum per a ${h(quiReporta(rc))} (${h(correuReporta(rc))})</label>` : ''}<div class="actions"><button class="btn danger" id="tanca-ok">Tanca</button></div>`; }
   if (st.form && st.form.tipus === 'tancada') { const rc = reportsInc(inc).find(x => correuReporta(x)); return `<h3>Incidència tancada</h3><div class="msg ok">${h(inc.numero)} ha quedat tancada: ${h(etiquetaOpt(INC.motiusTancament, inc.motiu_tancament))}.</div>${rc ? `<p class="sub">Resum del que s’ha fet, a punt per enviar a <b>${h(quiReporta(rc))}</b> (${h(correuReporta(rc))}). S’obre al teu programa de correu: revisa’l i envia’l.</p><a class="btn" id="tanca-mail" href="${enllacMailto(correuReporta(rc), 'Incidència ' + inc.numero + ' · ' + inc.titol + ' · resolta', cosResumTancament(inc, rc))}">Envia el resum a ${h(quiReporta(rc))}</a><details style="margin-top:12px"><summary class="hint">Veure el text</summary><pre style="white-space:pre-wrap; font:inherit; font-size:13px; color:var(--ink-2)">${h(cosResumTancament(inc, rc))}</pre></details>` : '<p class="sub">Cap persona amb correu va fer el report: no hi ha resum per enviar.</p>'}<div class="actions"><button class="btn ghost" id="panell-cancel">Tanca el panell</button></div>`; }
   if (st.form && st.form.tipus === 'edita') { const contactes = contactesDelLloc(inc.lloc_id), marcats = new Set((inc.contactes_autoritzats || []).map(Number));
     return `<h3>Capçalera de la incidència</h3>
@@ -10302,9 +10308,9 @@ function panellHTML(inc) {
     <div class="f"><span class="l">Descripció</span><textarea lang="ca" spellcheck="true" id="ed-desc">${h(inc.descripcio || '')}</textarea></div>
     <div class="f"><span class="l">Informació a disposició de</span><div class="multi">${contactes.length ? contactes.map(c => `<label><input type="checkbox" name="ed-contactes" value="${c.id}" ${marcats.has(c.id) ? 'checked' : ''}><span>${h(c.nom)}${c.carrec ? ' (' + h(c.carrec) + ')' : ''}</span></label>`).join('') : '<span class="hint">aquest lloc no té persones de contacte</span>'}</div><span class="hint">només informa; si canvia, queda a l’historial</span></div>
     <div class="f"><span class="l">Observacions internes</span><textarea lang="ca" spellcheck="true" id="ed-int">${h(inc.observacions_internes || '')}</textarea><span class="hint">${NOTA_INTERNES}</span></div>
-    <div class="actions"><button class="btn desa" id="ed-ok">Desa</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div>`; }
+    <div class="actions"><button class="btn desa" id="ed-ok">Desa</button></div>`; }
   if (st.form && st.form.tipus === 'galeria') return `<h3>Fotos, vídeos i documents de la incidència</h3><p class="sub">Tot el que s’ha anat adjuntant, des del report inicial fins a l’última acció, per ordre de temps.</p>${galeriaHTML(inc, false)}`;
-  if (st.form && st.form.tipus === 'reobre') return `<h3>Reobre la incidència</h3><p class="sub">Es manté el número i tot l’historial; el tancament anterior queda al diagrama.</p><div class="f"><span class="l">Motiu de la reobertura</span><textarea lang="ca" spellcheck="true" id="reobre-motiu"></textarea></div><div class="actions"><button class="btn" id="reobre-ok">Reobre</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div>`;
+  if (st.form && st.form.tipus === 'reobre') return `<h3>Reobre la incidència</h3><p class="sub">Es manté el número i tot l’historial; el tancament anterior queda al diagrama.</p><div class="f"><span class="l">Motiu de la reobertura</span><textarea lang="ca" spellcheck="true" id="reobre-motiu"></textarea></div><div class="actions"><button class="btn" id="reobre-ok">Reobre</button></div>`;
   const a = st.sel ? C.get('incidencia_accions', st.sel) : null;
   const ext = externDeCapa(inc);
   if (!a) return `<h3>Detall</h3><p class="sub">${ext ? 'Així ho veu ' + h(nomExtern(ext)) + ': sense observacions internes ni accions que no li corresponen. Clica una caixa per veure’n el detall.' : 'Clica una caixa del diagrama per veure’n el detall i actuar-hi (finalitzar-la, encarregar-ne una altra o fer una consulta a qui te l’ha enviada).' + (inc.estat === 'oberta' ? ' Amb «Nova acció» en crees una que no deriva de cap altra.' : '')}</p>
@@ -10353,10 +10359,10 @@ function panellHTML(inc) {
       <div class="actions"><button class="btn" id="fin-ok" ${pend.length ? 'disabled' : ''}>${a.es_peticio && extern ? 'Registra la resposta' : a.es_peticio ? 'Envia la resposta' : 'Finalitza l’acció'}</button></div></div>`;
   if (formOp && formOp.tipus === 'consulta') { const dest = destinatariConsulta(inc, a); formHtml = `<div class="ic-form"><h4>Consulta a ${h(nomTreballador(dest))}</h4><p class="hint" style="margin:0 0 8px">Mentre no et contesti, aquesta acció queda esperant; quan contesti, et torna amb la resposta.</p>
       <div class="f"><span class="l">Què vols preguntar?</span><textarea lang="ca" spellcheck="true" id="cons-text">${formOp.text != null ? h(formOp.text) : ''}</textarea></div>
-      <button type="button" class="boto-gran consulta" id="cons-envia">Envia la consulta</button><div class="actions"><button class="btn ghost small" id="panell-cancel">Cancel·la</button></div></div>`; }
+      <button type="button" class="boto-gran consulta" id="cons-envia">Envia la consulta</button></div>`; }
   if (formOp && formOp.tipus === 'ampliacio') formHtml = `<div class="ic-form"><h4>Ampliació de termini</h4><p class="sub">Termini actual: ${dmyhm(a.venciment)}. La decideix la seguidora; mentrestant el termini continua comptant.</p>
       <div class="f"><span class="l">Nou termini</span><input type="datetime-local" id="amp-venc" value="${aLocalDT(a.venciment)}"></div><div class="f"><span class="l">Motiu</span><textarea lang="ca" spellcheck="true" id="amp-motiu"></textarea></div>
-      <div class="actions"><button class="btn" id="amp-ok">Demana</button><button class="btn ghost" id="panell-cancel">Cancel·la</button></div></div>`;
+      <div class="actions"><button class="btn" id="amp-ok">Demana</button></div></div>`;
   return `<div class="ic-propi ${a.visible_client && !client ? 'vis' : ''}"><h3 class="ic-titol">${h(tp.nom)}${cons ? ' de ' + h(nomCurtTreballador(C.get('treballadors', a.creat_per))) : !esNomTipus(a.tipus, a.titol) ? ' · ' + h(a.titol) : ''}</h3>
     <div class="capsal"><span>Funció <b>${h(codiDe(a))}</b></span><span>Carril <b>${h(etiquetaOpt(INC.carrils, a.carril))}</b></span><span>Estat <b>${INC.estats[ee]}</b></span>${foraTermini(a) ? '<span><b class="v-no">Fora de termini</b></span>' : ''}</div>
     <div class="ic-detall">
@@ -10434,7 +10440,7 @@ function formAccioHTML(inc, origen) {
     ${f.despres && habitual === 'tancar' ? `<p class="hint" style="margin:0">El panell d’accions proposa ara tancar la incidència${potTancarInc(inc, origen) ? '' : ': no la pots tancar tu (segons el panell, ho fa ' + h((filaPanell('tancar') || { qui: [] }).qui.map(k => k === 'seguidora' ? 'la seguidora, ' + (nomTreballador(C.get('treballadors', inc.seguidora_id)) || '—') : nomQuiPanell(k).toLowerCase()).join(' o ') || 'ningú') + ')'}.</p>` : ''}
     <div class="actions">${(() => {   // (v42) tancar, si el panell ho permet (per defecte, només la seguidora); primer, si és el pas que el panell proposa
       const tanca = f.despres && potTancarInc(inc, origen), primer = tanca && habitual === 'tancar', bTanca = tanca ? `<button class="btn ${primer ? '' : 'ghost'}" id="na-tanca">Tanca la incidència…</button>` : '';
-      return (primer ? bTanca : '') + `<button class="btn ${primer ? 'ghost' : ''}" id="na-ok">${f.despres ? 'Encarrega' : 'Crea l’acció'}</button>` + (primer ? '' : bTanca); })()}<button class="btn ghost" id="panell-cancel">${f.despres ? 'Ara no' : 'Cancel·la'}</button></div>`;
+      return (primer ? bTanca : '') + `<button class="btn ${primer ? 'ghost' : ''}" id="na-ok">${f.despres ? 'Encarrega' : 'Crea l’acció'}</button>` + (primer ? '' : bTanca); })()}${f.despres ? '<button class="btn ghost" id="panell-cancel">Ara no</button>' : ''}</div>`;   // (v48) sense «Cancel·la»: la × del panell
 }
 // el pas que normalment ve després de cada tipus d'acció (preselecció; es pot canviar)
 // el pressupost desat (de tasca o d'agrupació) que anava adjunt a l'acció «Elaborar pressupost» queda acceptat o rebutjat amb la decisió del client
@@ -11627,7 +11633,7 @@ function editorFitxatgeHTML() {
   const diaS = S ? ymd(new Date(S.moment)) : null, endema = !!(E && S) && diaS !== ymd(new Date(E.moment));
   const persones = C.rows('treballadors').filter(x => x.actiu).sort((a, b) => nomTreballador(a).localeCompare(nomTreballador(b), 'ca'));
   return `<div class="avisos-panell" id="fxe-panell"><div class="avisos-caixa fx-ed-caixa" role="dialog" aria-modal="true" aria-labelledby="fxe-titol">
-    <h3 id="fxe-titol">${existent ? 'Corregeix el fitxatge' : 'Afegeix fitxatges'}</h3>
+    ${esOperari() ? '' : botoTancaFinestra('fxe-tanca')}<h3 id="fxe-titol">${existent ? 'Corregeix el fitxatge' : 'Afegeix fitxatges'}</h3>
     ${existent ? `<p class="fx-ed-qui"><b>${h(nomTreballador(C.get('treballadors', ed.treb)))}</b></p>`
       : `<label class="f"><span class="l">Persona</span><select id="fxe-treb"><option value="">Tria…</option>${persones.map(p => `<option value="${p.id}" ${Number(ed.treb) === p.id ? 'selected' : ''}>${h(nomTreballador(p))}</option>`).join('')}</select></label>`}
     <div class="fx-ed-grid">
@@ -11644,14 +11650,14 @@ function editorFitxatgeHTML() {
     <div class="accions">
       <button type="button" class="btn desa" id="fxe-desa">Desa</button>
       ${existent ? `<button type="button" class="btn elimina" id="fxe-elimina">Elimina ${E && S ? 'l’entrada i la sortida' : E ? 'l’entrada' : 'la sortida'}</button>` : ''}
-      <button type="button" class="btn ghost" id="fxe-cancel">Cancel·la</button>
+      ${esOperari() ? '<button type="button" class="btn ghost" id="fxe-cancel">Cancel·la</button>' : ''}
     </div>
   </div></div>`;
 }
 function bindEditorFitxatge() {
   const panell = $('#fxe-panell'); if (!panell) return;
   const tanca = () => { state.fx.ed = null; renderMain(); };
-  $('#fxe-cancel').addEventListener('click', tanca);
+  [$('#fxe-cancel'), $('#fxe-tanca')].forEach(b => { if (b) b.addEventListener('click', tanca); });
   $('#fxe-desa').addEventListener('click', () => desaEditorFitxatge(false));
   const el = $('#fxe-elimina'); if (el) el.addEventListener('click', () => desaEditorFitxatge(true));
   panell.addEventListener('keydown', e => {
