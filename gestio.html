@@ -2,7 +2,7 @@
 <html lang="ca">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-NnhqAHXkZWQQfJ1C/eogu026a9ZoOsONDgdTOouEJSw='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qGw6ZMxLqs0WOQfmn8RdkiO+NKuwfNa+MtLjA+qVM4c='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestió de manteniment</title>
 <meta name="theme-color" content="#2f7d4a">
@@ -862,6 +862,11 @@
   .dc-targeta{ border:1px solid var(--line-2); border-radius:12px; padding:12px 14px; margin:0 0 10px; background:#fff; }
   .dc-targeta-cap{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:space-between; } .dc-targeta .dc-fitxer{ font-size:16px; }
   .msg.dc-avis{ background:#fff1d6; color:#8a5a00; }
+  .dv-hab{ display:block; font-weight:400; font-size:11.5px; color:var(--ink-3); margin-top:2px; }   /* (v45) els habituals sota el vehicle */
+  .vh-compta{ border:1px solid var(--line-2); border-radius:10px; padding:10px 14px; margin:0 0 14px; background:var(--bg-2); }
+  .vh-compta-cap{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; } .vh-compta-cap .btn{ margin-left:auto; } .vh-compta p.hint{ margin:6px 0 0; }
+  .vh-compta-g{ display:grid; grid-template-columns:max-content 1fr; gap:4px 14px; margin:8px 0 0; font-size:14px; } .vh-compta-g dt{ color:var(--ink-2); } .vh-compta-g dd{ margin:0; font-variant-numeric:tabular-nums; }
+  .vha-abans{ margin:4px 0 10px; } .vha-abans summary{ cursor:pointer; color:var(--ink-2); margin:0 0 8px; }
   .dc-anteriors{ margin:8px 0 0; font-size:14px; } .dc-anteriors summary{ cursor:pointer; color:var(--ink-2); } .dc-anterior{ margin:6px 0 0 12px; }
   .f.chk .hint{ display:block; margin:5px 2px 0; }
   .progres-fix{ position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:10000; background:#1f2a24; color:#fff; padding:11px 16px; border-radius:10px; font-size:15px; box-shadow:0 6px 24px rgba(0,0,0,.25); max-width:calc(100% - 32px); text-align:center; }
@@ -927,7 +932,8 @@ const OPT = {
   transparencia: [['optima','Òptima'],['transparent_pero','Transparent, però…'],['un_punt_terbola','Un punt tèrbola'],['terbola_es_veu','Tèrbola però es veu el sumider'],['no_es_veu','No es veu el sumider']],
   si_no: [['true','Sí'],['false','No']],
   rol: [['admin','Administrador'],['oficina','Oficina'],['tecnic','Tècnic'],['operari','Operari']],
-  categoria_document: [['identificacio','Identificació'],['contracte','Contracte i alta'],['dades','Protecció de dades'],['prl','Prevenció de riscos'],['carnets','Carnets i formació'],['altres','Altres']],
+  categoria_document: [['identificacio','Identificació'],['contracte','Contracte i alta'],['dades','Protecció de dades'],['prl','Prevenció de riscos'],['carnets','Carnets i formació'],['altres','Altres'],['vehicle','Vehicle']],
+  per_a_document: [['treballador','Treballadors'],['vehicle','Vehicles']],
   obligatori_document: [['ningu','Ningú (opcional)'],['tots','Tothom'],['operaris','Operaris i tècnics'],['oficina','Oficina']],
   ambit_festiu: [['catalunya','Catalunya (calendari oficial)'],['local','Festa local del municipi']],
   qui_report: [['treballador','Un treballador (jo mateix o un company)'],['client','Una persona de la comunitat (registrada o no)']],
@@ -1359,6 +1365,7 @@ const SCHEMA = {
     { label: 'INSTAL·LACIONS', color: '#8fcf9a', tables: ['jardins', 'piscines', 'informe_sal', 'informe_adob'] },
     { label: 'EQUIPAMENTS I INSTAL·LACIONS', color: '#e5b800', tables: ['programadors', 'bombes', 'filtres', 'cloradors_salins'] },
     { label: 'PERSONAL', color: '#222222', tables: ['treballadors', 'equips', 'fitxar', 'fitxatges', 'mapa_fitxatges', 'nomines', 'documents_treballadors', 'tipus_document', 'vacances', 'festius'] },
+    { label: 'VEHICLES', color: '#556b8d', oficina: true, tables: ['vehicles', 'documents_vehicles'] },
     { label: 'ALTRES', color: '#b48ede', tables: ['tipus_iva', 'empresa', 'aigua_parametres_mensuals', 'avisos_piscina', 'comptes_bancaris', 'poblacions_sol', 'hores_sol'] },
   ],
   pages: {
@@ -1399,6 +1406,7 @@ const SCHEMA = {
     codis_qr: { label: 'Codis QR dels llocs', render: main => renderCodisQR(main) },
     nomines: { label: 'Nòmines', render: main => renderNomines(main) },
     documents_treballadors: { label: 'Documents', render: main => renderDocumentsTreballadors(main) },
+    documents_vehicles: { label: 'Documents', render: main => renderDocumentsVehicles(main) },
     vacances: { label: 'Vacances i baixes', render: main => renderVacances(main) },
     fitxar: { label: 'Fitxar', render: main => renderFitxar(main) },
     fitxatges: { label: 'Fitxatges', render: main => renderFitxatges(main) },
@@ -1893,6 +1901,32 @@ const SCHEMA = {
         { key: 'observacions', label: 'Observacions', type: 'textarea' },
       ],
     },
+    vehicles: {   // (v45, SQL 097)
+      label: 'Vehicles', nou: 'Nou vehicle', order: 'matricula',
+      display: r => nomVehicle(r),
+      actions: r => [{ label: 'Documents', noDesa: true, run: () => { Object.assign(state.docsV, { veh: String(r.id), sel: null }); state.mode = 'consulta'; state.table = 'documents_vehicles'; state.editing = null; renderApp(); window.scrollTo({ top: 0 }); } }],
+      list: ['matricula', 'tipus', 'marca', 'model', 'data_compra', 'proveidor_id', 'habituals', 'estat_documents'],
+      computed: {
+        habituals: { label: 'Treballadors habituals', fn: r => habitualsDe(r).map(nomCurtTreballador).join(', ') },
+        estat_documents: { label: 'Documents', fn: r => resumDocumentsVehicle(r) },
+      },
+      extras: comptaVehicleHTML, bindExtras: comptaVehicleBind,
+      fields: [
+        { key: 'matricula', label: 'Matrícula', type: 'text', required: true, dup: 'exact', hint: 'es desa en majúscules i sense espais ni guions: 1234ABC' },
+        { key: 'tipus', label: 'Tipus', type: 'text', suggest: () => tipusVehicleSuggerits(), hint: 'furgoneta, furgoneta mixta, pick-up, turisme (el cotxe del tècnic)…' },
+        { key: 'marca', label: 'Marca', type: 'text' },
+        { key: 'model', label: 'Model', type: 'text' },
+        { key: 'data_compra', label: 'Data de la compra', curt: 'Compra', type: 'date' },
+        { key: 'proveidor_id', label: 'Proveïdor', type: 'ref', ref: 'proveidors', hint: 'on es va comprar' },
+        { key: 'treballadors_ids', label: 'Treballadors habituals', type: 'multi', ref: 'treballadors', wide: true, filter: r => r.actiu, optionLabel: r => nomTreballador(r),
+          hint: 'els que el porten normalment, operaris o tècnics (n’hi pot haver més d’un): veuen els documents del vehicle a l’app i reben els avisos abans que caduquin' },
+        { key: 'immobilitzat_id', label: 'Bé de l’immobilitzat', type: 'ref', ref: 'immobilitzat', nomesCompta: true,
+          filter: (b, f) => Number(f.immobilitzat_id) === Number(b.id) || (b.actiu !== false && !C.rows('vehicles').some(v => Number(v.immobilitzat_id) === Number(b.id))),
+          optionLabel: b => b.descripcio + (C.get('comptes', b.compte_id) ? ' · ' + C.get('comptes', b.compte_id).codi : ''),
+          hint: 'el bé porta el compte de l’actiu (218…), el de l’amortització acumulada (2818…) i les amortitzacions de cada mes; si encara no hi és, «Dona d’alta el bé», a dalt' },
+        { key: 'observacions', label: 'Observacions', type: 'textarea' },
+      ],
+    },
     pressupostos_tasca: {
       label: 'Pressupostos de tasca', nou: 'Nou pressupost de tasca', order: 'data', desc: true,
       display: r => (r.numero || 'pressupost') + ' — ' + r.titol,
@@ -2178,7 +2212,8 @@ const SCHEMA = {
     immobilitzat: {
       label: 'Immobilitzat (béns)', nou: 'Nou bé de l’immobilitzat', order: 'data_compra',
       display: r => r.descripcio,
-      list: ['descripcio', 'compte_id', 'data_compra', 'valor', 'percentatge', 'amortitzat_inicial', 'amortitzat_fins', 'data_baixa'],
+      list: ['descripcio', 'compte_id', 'data_compra', 'valor', 'percentatge', 'amortitzat_inicial', 'amortitzat_fins', 'data_baixa', 'vehicle'],
+      computed: { vehicle: { label: 'Vehicle', fn: r => { const v = C.rows('vehicles').find(x => Number(x.immobilitzat_id) === Number(r.id)); return v ? v.matricula : ''; } } },   // (v45)
       extras: () => '<p><a href="#" data-torna-immob>← Immobilitzat i amortitzacions</a></p>',
       bindExtras: () => { const a = document.querySelector('[data-torna-immob]'); if (a) a.addEventListener('click', e => { e.preventDefault(); state.table = 'compta_immobilitzat'; state.editing = null; renderApp(); }); },
       validate: p => Number(p.amortitzat_inicial) > 0 && !p.amortitzat_fins ? 'Si hi ha amortització acumulada d’abans, cal dir fins quan (l’últim dia d’un mes).'
@@ -2258,16 +2293,18 @@ const SCHEMA = {
     tipus_document: {
       label: 'Tipus de document', nou: 'Nou tipus de document', order: 'ordre',
       display: r => r.nom,
-      list: ['nom', 'categoria', 'caduca', 'validesa_mesos', 'avis_dies', 'obligatori', 'visible_treballador', 'confidencial'],
+      list: ['nom', 'per_a', 'categoria', 'caduca', 'validesa_mesos', 'avis_dies', 'obligatori', 'visible_treballador', 'confidencial'],
+      validate: p => p.per_a === 'vehicle' && p.categoria !== 'vehicle' ? 'Els tipus de document dels vehicles van a la categoria «Vehicle».'
+        : p.per_a !== 'vehicle' && p.categoria === 'vehicle' ? 'La categoria «Vehicle» és només per als documents dels vehicles (a «És de», tria «Vehicles»).' : null,
       fields: [
         { key: 'nom', label: 'Nom', type: 'text', required: true, dup: 'similar' },
+        { key: 'per_a', label: 'És de', type: 'select', options: OPT.per_a_document, required: true, default: 'treballador', hint: 'dels treballadors (PERSONAL → Documents) o dels vehicles (VEHICLES → Documents)' },
         { key: 'categoria', label: 'Categoria', type: 'select', options: OPT.categoria_document, required: true, default: 'altres' },
-        { key: 'per_a', type: 'hidden', default: 'treballador' },
         { key: 'caduca', label: 'Caduca', type: 'boolean' },
         { key: 'validesa_mesos', label: 'Validesa (mesos)', type: 'integer', min: 1, hint: 'per calcular la caducitat a partir de la data del document (120 = 10 anys); buit = es posa a mà' },
         { key: 'avis_dies', label: 'Avisa (dies abans)', type: 'integer', min: 0, required: true, default: 30 },
-        { key: 'obligatori', label: 'Obligatori per a', type: 'select', options: OPT.obligatori_document, required: true, default: 'ningu', hint: 'a la graella, qui no el tingui surt amb «falta»' },
-        { key: 'visible_treballador', label: 'La persona el veu a l’app', type: 'boolean', default: true },
+        { key: 'obligatori', label: 'Obligatori per a', type: 'select', options: OPT.obligatori_document, required: true, default: 'ningu', hint: 'a la graella, qui no el tingui surt amb «falta»; per als vehicles, «Tothom» vol dir tots els vehicles' },
+        { key: 'visible_treballador', label: 'La persona el veu a l’app (si és d’un vehicle, els seus treballadors habituals)', type: 'boolean', default: true },
         { key: 'confidencial', label: '🔒 Només l’administrador (i la persona)', type: 'boolean', hint: 'per a salut, sancions… Sense la marca, el veuen la persona, l’oficina i l’administrador; cap altre treballador. La marca només la pot treure l’administrador' },
         { key: 'ordre', label: 'Ordre dins la categoria', type: 'integer', default: 0 },
         { key: 'observacions', label: 'Observacions', type: 'textarea', hint: 'surt d’ajuda en pujar-ne un' },
@@ -2522,7 +2559,7 @@ const C = {
   rows: t => cache[t] || [],
   get: (t, id) => { const pk = (SCHEMA.tables[t] || {}).pk; return pk ? (cache[t] || []).find(r => String(r[pk]) === String(id)) : (cache[t] || []).find(r => r.id === Number(id)); },
 };
-const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, copia: null, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, pagProv: { vista: 'marca', data: '', q: '', fets: {}, pagades: false }, ft: { id: null, form: null, vista: 'llista', nou: null, fets: false }, marques: {}, fac: { any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), avis: null }, ia: { missatges: [], enviant: false }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, docs: { cat: '', treb: '', sel: null }, pdff: { num: '', des: '', fins: '', client: '' }, calAcc: { vista: '', ref: '', meves: false, fetes: false, interns: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false, ed: null }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
+const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, copia: null, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, pagProv: { vista: 'marca', data: '', q: '', fets: {}, pagades: false }, ft: { id: null, form: null, vista: 'llista', nou: null, fets: false }, marques: {}, fac: { any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), avis: null }, ia: { missatges: [], enviant: false }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, docs: { cat: '', treb: '', sel: null }, docsV: { veh: '', sel: null }, pdff: { num: '', des: '', fins: '', client: '' }, calAcc: { vista: '', ref: '', meves: false, fetes: false, interns: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false, ed: null }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
 const L = (t, id) => { const r = C.get(t, id); return r ? SCHEMA.tables[t].display(r, L) : ''; };
 
 /* =====================================================================
@@ -4426,7 +4463,7 @@ function renderApp() {
     <div class="shell">
       <nav class="side">
         ${SCHEMA.groups.filter(g => !g.oficina || esOficina(treballadorActual())).map(g => `<div class="grp" style="--gc:${g.color}; min-height:${Math.max(70, Math.round(g.label.length * 9) + 28)}px"><div class="glw"><div class="gl">${h(g.label)}</div></div><div class="gi">
-          ${g.tables.length ? g.tables.map(t => `<button data-table="${t}" class="${state.table === t ? 'on' : ''}">${h((SCHEMA.tables[t] || SCHEMA.pages[t]).label)}${t === 'accions_meves' ? insigniaHTML('menu') : ''}${t === 'alarmes' ? (n => n ? `<b class="nou menu" title="alarmes per mirar">${n}</b>` : '')(nAlarmes()) : ''}${t === 'documents_treballadors' && nAlertesDocuments() ? `<b class="nou menu" title="documents caducats o que caduquen aviat">${nAlertesDocuments()}</b>` : ''}</button>`).join('') : '<div class="buit">encara res</div>'}
+          ${g.tables.length ? g.tables.map(t => `<button data-table="${t}" class="${state.table === t ? 'on' : ''}">${h((SCHEMA.tables[t] || SCHEMA.pages[t]).label)}${t === 'accions_meves' ? insigniaHTML('menu') : ''}${t === 'alarmes' ? (n => n ? `<b class="nou menu" title="alarmes per mirar">${n}</b>` : '')(nAlarmes()) : ''}${t === 'documents_treballadors' && nAlertesDocuments() ? `<b class="nou menu" title="documents caducats o que caduquen aviat">${nAlertesDocuments()}</b>` : ''}${t === 'documents_vehicles' && nAlertesDocumentsVehicles() ? `<b class="nou menu" title="documents dels vehicles caducats o que caduquen aviat">${nAlertesDocumentsVehicles()}</b>` : ''}</button>`).join('') : '<div class="buit">encara res</div>'}
         </div></div>`).join('')}
       </nav>
       <div class="main" id="main"></div>
@@ -4535,7 +4572,7 @@ function renderAppOperari() {
         <button data-go="informe_adob" style="${estilMenu('informe_adob')}"><strong>Adob</strong>${fonsMenu('informe_adob')}</button>
         <button data-go="nomines" style="${estilMenu('nomines')}"><strong>Nòmines</strong>${fonsMenu('nomines')}</button>
         <button data-go="vacances" style="${estilMenu('vacances')}"><strong>Vacances</strong>${fonsMenu('vacances')}</button>
-        <button class="ample" data-go="documents_treballadors" style="--p:#8e7cc3;--pf:#4b3a7a"><strong>Documents</strong>${(() => { const n = t ? alertesDocuments({ nomesMeus: true }).length : 0; return n ? `<span class="pend">${n} per renovar</span>` : '<span>DNI, contracte, carnets…</span>'; })()}${ESCENES_MENU.fulls_treball_app}</button>
+        <button class="ample" data-go="documents_treballadors" style="--p:#8e7cc3;--pf:#4b3a7a"><strong>Documents</strong>${(() => { const n = t ? alertesDocuments({ nomesMeus: true }).length + alertesDocumentsVehicles({ nomesMeus: true }).length : 0; return n ? `<span class="pend">${n} per renovar</span>` : '<span>DNI, contracte, carnets…</span>'; })()}${ESCENES_MENU.fulls_treball_app}</button>
       </div>`;
     main.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { state.table = b.dataset.go; state.editing = null; if (b.dataset.go === 'fulls_treball_app') Object.assign(state.ft, { id: null, form: null, nou: null }); if (b.dataset.go === 'lectures_app') state.lect = { id: null }; if (b.dataset.go === 'informes_lloc') state.inf = { nou: false }; state.inc.torna = null; if (b.dataset.go === 'inc_finalitzades') state.inc.qFin = ''; renderApp(); }));
     return;
@@ -4653,7 +4690,8 @@ function inputHTML(f, vals, row) {
         ${f.imatge ? (v ? `<img class="ic-mini foto-prev" data-adj="${h(v)}" alt="foto">` : '<span class="hint">cap foto</span>') : v ? `<span>${h(String(v).split('/').pop())}</span><button type="button" class="btn ghost small" data-open="${h(v)}">Obre</button>` : '<span class="hint">cap fitxer</span>'}
         <input type="file" ${n} accept="${f.imatge ? 'image/*' : 'application/pdf'}"><input type="hidden" name="${f.key}__actual" value="${h(v || '')}">
       </div>`;
-    default: return `<input type="text" ${n} ${req} lang="ca" value="${h(v)}">`;
+    default: return f.suggest ? `<input type="text" ${n} ${req} lang="ca" value="${h(v)}" list="dl-${f.key}" autocomplete="off"><datalist id="dl-${f.key}">${f.suggest(row).map(s => `<option value="${h(s)}"></option>`).join('')}</datalist>`   // (v45)
+      : `<input type="text" ${n} ${req} lang="ca" value="${h(v)}">`;
   }
 }
 
@@ -8119,8 +8157,10 @@ function documentsPerTipus(trebId) {
 const diesFinsA = iso => Math.round((new Date(String(iso).slice(0, 10) + 'T12:00:00') - new Date(avui() + 'T12:00:00')) / 86400000);
 const obligatoriPer = (tp, t) => !!t && (tp.obligatori === 'tots' || (tp.obligatori === 'operaris' && (t.rol === 'operari' || t.rol === 'tecnic')) || (tp.obligatori === 'oficina' && esOficina(t)));
 // l'estat d'un tipus per a una persona: vigent, aviat (caduca d'aquí a pocs dies), caducat, falta (és obligatori i no n'hi ha) o res (no li cal)
-function estatDocument(d, tp, t) {
-  if (!d) return obligatoriPer(tp, t) ? 'falta' : null;
+function estatDocument(d, tp, t) { return estatDocGen(d, tp, obligatoriPer(tp, t)); }
+// (v45) el mateix per a una persona o un vehicle: si cal i no n'hi ha, falta
+function estatDocGen(d, tp, oblig) {
+  if (!d) return oblig ? 'falta' : null;
   if (!d.data_caducitat) return 'vigent';
   const n = diesFinsA(d.data_caducitat);
   return n < 0 ? 'caducat' : n <= Number(tp.avis_dies || 0) ? 'aviat' : 'vigent';
@@ -8206,14 +8246,29 @@ function renderDocumentsTreballadors(main) {
   if (st.sel) bindPanellDocument();
 }
 
-// la finestra d'un tipus de document d'una persona: el vigent i l'historial, o el formulari per pujar-ne un o corregir-lo
+// (v45) els documents són d'una persona o d'un vehicle: cada pàgina en té el context (d'on surten, com es diuen, la carpeta dels fitxers i
+// el camp del document); la finestra i el formulari són els mateixos
+const DOC_TREB = {
+  st: () => state.docs, clau: 'treb', camp: 'treballador_id', carpeta: 'docs_treballadors', etiqueta: 'Persona', falta: 'Tria la persona.', cats: true,
+  existeix: id => !!C.get('treballadors', id), nom: id => nomTreballador(C.get('treballadors', id)), nomDe: x => nomTreballador(x),
+  subjectes: () => C.rows('treballadors').filter(x => x.actiu).sort((a, b) => nomTreballador(a).localeCompare(nomTreballador(b), 'ca')),
+  perTipus: id => documentsPerTipus(id), obligatori: (tp, id) => obligatoriPer(tp, C.get('treballadors', id)), tipus: () => tipusGestionables(),
+};
+const DOC_VEH = {
+  st: () => state.docsV, clau: 'veh', camp: 'vehicle_id', carpeta: 'docs_vehicles', etiqueta: 'Vehicle', falta: 'Tria el vehicle.', cats: false,
+  existeix: id => !!C.get('vehicles', id), nom: id => nomVehicle(C.get('vehicles', id)), nomDe: x => nomVehicle(x),
+  subjectes: () => vehiclesActius(),
+  perTipus: id => documentsPerTipusVehicle(id), obligatori: tp => obligatoriVehicle(tp), tipus: () => tipusGestionablesVehicle(),
+};
+const docCtx = () => state.table === 'documents_vehicles' ? DOC_VEH : DOC_TREB;
+// la finestra d'un tipus de document d'una persona (o d'un vehicle): el vigent i l'historial, o el formulari per pujar-ne un o corregir-lo
 function panellDocumentHTML() {
-  const sel = state.docs.sel;
+  const cx = docCtx(), st = cx.st(), sel = st.sel;
   if (sel.mode !== 'veure') return formDocumentHTML();
-  const p = C.get('treballadors', sel.treb), tp = C.get('tipus_document', sel.tipus);
-  if (!p || !tp) { state.docs.sel = null; return ''; }
-  const ll = documentsPerTipus(sel.treb).get(Number(sel.tipus)) || [], pot = potGestionarTipus(tp);
-  const versio = (d, i) => { const e = i ? null : estatDocument(d, tp, p);
+  const sid = sel[cx.clau], tp = C.get('tipus_document', sel.tipus);
+  if (!cx.existeix(sid) || !tp) { st.sel = null; return ''; }
+  const ll = cx.perTipus(sid).get(Number(sel.tipus)) || [], pot = potGestionarTipus(tp), oblig = cx.obligatori(tp, sid);
+  const versio = (d, i) => { const e = i ? null : estatDocGen(d, tp, oblig);
     return `<div class="dc-versio ${i ? 'antiga' : ''}">
       <div class="dc-versio-cap"><b>${i ? 'Anterior' : 'Vigent'}</b>${e ? ` <span class="dc-xip ${e}">${h(textEstatDoc(e, d))}</span>` : ''}</div>
       <div class="hint">Data del document: ${d.data_document ? dmy(d.data_document) : '—'} · Caducitat: ${d.data_caducitat ? dmy(d.data_caducitat) : 'no en té'} · Pujat el ${dmy(String(d.creat_el || '').slice(0, 10))}${d.pujat_per ? ' per ' + h(nomCurtTreballador(C.get('treballadors', d.pujat_per))) : ''}</div>
@@ -8223,25 +8278,26 @@ function panellDocumentHTML() {
     </div>`; };
   return `<div class="avisos-panell" id="dcp-panell"><div class="avisos-caixa dc-caixa" role="dialog" aria-modal="true" aria-labelledby="dcp-titol">
     <h3 id="dcp-titol">${h(tp.nom)}${tp.confidencial ? ' 🔒' : ''}</h3>
-    <p class="dc-qui">${h(nomTreballador(p))}${tp.observacions ? ` · <span class="hint">${h(tp.observacions)}</span>` : ''}</p>
-    ${ll.length ? ll.map(versio).join('') : `<p class="hint">Encara no n’hi ha cap.${obligatoriPer(tp, p) ? ' És obligatori.' : ''}</p>`}
+    <p class="dc-qui">${h(cx.nom(sid))}${tp.observacions ? ` · <span class="hint">${h(tp.observacions)}</span>` : ''}</p>
+    ${ll.length ? ll.map(versio).join('') : `<p class="hint">Encara no n’hi ha cap.${oblig ? ' És obligatori.' : ''}</p>`}
     <div id="dcp-err" class="msg err" hidden></div>
     <div class="accions">${pot ? `<button type="button" class="btn" id="dcp-nou">${ll.length ? 'Renova’l (puja’n un de nou)' : 'Puja’l'}</button>` : ''}<button type="button" class="btn ghost" id="dcp-tanca">Tanca</button></div>
   </div></div>`;
 }
 function formDocumentHTML() {
-  const sel = state.docs.sel, d = sel.mode === 'edita' ? C.get('documents', sel.id) : null;
-  const trebId = d ? Number(d.treballador_id) : sel.treb, tipusId = d ? Number(d.tipus_id) : sel.tipus;
+  const cx = docCtx(), sel = cx.st().sel, d = sel.mode === 'edita' ? C.get('documents', sel.id) : null;
+  const trebId = d ? Number(d[cx.camp]) : sel[cx.clau], tipusId = d ? Number(d.tipus_id) : sel.tipus;
   const tp = tipusId ? C.get('tipus_document', tipusId) : null;
-  const persones = C.rows('treballadors').filter(x => x.actiu).sort((a, b) => nomTreballador(a).localeCompare(nomTreballador(b), 'ca'));
-  const tipus = tipusGestionables();
+  const persones = cx.subjectes();
+  const tipus = cx.tipus();
   const dataIni = d ? (d.data_document || '') : avui(), cadIni = d ? (d.data_caducitat || '') : caducitatCalculada(dataIni, tp);
   return `<div class="avisos-panell" id="dcp-panell"><div class="avisos-caixa dc-caixa dc-form" role="dialog" aria-modal="true" aria-labelledby="dcp-titol">
-    <h3 id="dcp-titol">${d ? 'Corregeix el document' : sel.treb && sel.tipus && (documentsPerTipus(sel.treb).get(Number(sel.tipus)) || []).length ? 'Renova el document' : 'Puja un document'}</h3>
-    ${trebId && (d || sel.treb) ? `<p class="dc-qui"><b>${h(nomTreballador(C.get('treballadors', trebId)))}</b></p>`
-      : `<label class="f"><span class="l">Persona</span><select id="dcf-treb"><option value="">Tria…</option>${persones.map(p => `<option value="${p.id}">${h(nomTreballador(p))}</option>`).join('')}</select></label>`}
+    <h3 id="dcp-titol">${d ? 'Corregeix el document' : sel[cx.clau] && sel.tipus && (cx.perTipus(sel[cx.clau]).get(Number(sel.tipus)) || []).length ? 'Renova el document' : 'Puja un document'}</h3>
+    ${trebId && (d || sel[cx.clau]) ? `<p class="dc-qui"><b>${h(cx.nom(trebId))}</b></p>`
+      : `<label class="f"><span class="l">${cx.etiqueta}</span><select id="dcf-${cx.clau}"><option value="">Tria…</option>${persones.map(p => `<option value="${p.id}">${h(cx.nomDe(p))}</option>`).join('')}</select></label>`}
     ${tp && (d || sel.tipus) ? `<p class="dc-qui">${h(tp.nom)}${tp.confidencial ? ' 🔒' : ''}</p>`
-      : `<label class="f"><span class="l">Tipus de document</span><select id="dcf-tipus"><option value="">Tria…</option>${Object.keys(CAT_DOC).filter(c => tipus.some(t => t.categoria === c)).map(c => `<optgroup label="${h(CAT_DOC[c])}">${tipus.filter(t => t.categoria === c).map(t => `<option value="${t.id}">${h(t.nom)}${t.confidencial ? ' 🔒' : ''}</option>`).join('')}</optgroup>`).join('')}</select></label>`}
+      : `<label class="f"><span class="l">Tipus de document</span><select id="dcf-tipus"><option value="">Tria…</option>${cx.cats ? Object.keys(CAT_DOC).filter(c => tipus.some(t => t.categoria === c)).map(c => `<optgroup label="${h(CAT_DOC[c])}">${tipus.filter(t => t.categoria === c).map(t => `<option value="${t.id}">${h(t.nom)}${t.confidencial ? ' 🔒' : ''}</option>`).join('')}</optgroup>`).join('')
+        : tipus.map(t => `<option value="${t.id}">${h(t.nom)}${t.confidencial ? ' 🔒' : ''}</option>`).join('')}</select></label>`}
     <div class="dc-grid">
       <label class="f"><span class="l">Data del document</span><input type="date" id="dcf-data" value="${h(dataIni)}"></label>
       <label class="f"><span class="l">Caducitat</span><input type="date" id="dcf-cad" value="${h(cadIni)}" ${d && d.data_caducitat ? 'data-manual="1"' : ''}></label>
@@ -8259,21 +8315,21 @@ const pistaCaducitat = tp => !tp ? '' : !tp.caduca ? 'Aquest tipus no caduca: de
   : 'Posa la data de caducitat que diu el document.' + (tp.observacions ? ' (' + tp.observacions + ')' : '');
 function bindPanellDocument() {
   const panell = $('#dcp-panell'); if (!panell) return;
-  const st = state.docs, sel = st.sel;
+  const cx = docCtx(), st = cx.st(), sel = st.sel;
   const tanca = () => { st.sel = null; renderMain(); };
   const err = m => { const e = $('#dcp-err'); e.textContent = m; e.hidden = false; };
   panell.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); tanca(); } });
   panell.querySelectorAll('[data-dc-obre]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); obreFitxerDocument(a.dataset.dcObre); }));
   if (sel.mode === 'veure') {
     $('#dcp-tanca').addEventListener('click', tanca);
-    const nou = $('#dcp-nou'); if (nou) nou.addEventListener('click', () => { st.sel = { mode: 'nou', treb: sel.treb, tipus: sel.tipus }; renderMain(); });
-    panell.querySelectorAll('[data-dc-edita]').forEach(b => b.addEventListener('click', () => { st.sel = { mode: 'edita', id: Number(b.dataset.dcEdita), treb: sel.treb, tipus: sel.tipus }; renderMain(); }));
+    const nou = $('#dcp-nou'); if (nou) nou.addEventListener('click', () => { st.sel = { mode: 'nou', [cx.clau]: sel[cx.clau], tipus: sel.tipus }; renderMain(); });
+    panell.querySelectorAll('[data-dc-edita]').forEach(b => b.addEventListener('click', () => { st.sel = { mode: 'edita', id: Number(b.dataset.dcEdita), [cx.clau]: sel[cx.clau], tipus: sel.tipus }; renderMain(); }));
     panell.querySelectorAll('[data-dc-baixa]').forEach(b => b.addEventListener('click', async () => {
       const d = C.get('documents', b.dataset.dcBaixa), tp = C.get('tipus_document', sel.tipus);
       if (!confirm(`Eliminar aquest document (${tp ? tp.nom : ''}${d && d.data_document ? ', del ' + dmy(d.data_document) : ''})? Deixarà de sortir (el fitxer no s’esborra).`)) return;
       const r = await sb.from('documents').update({ actiu: false }).eq('id', Number(b.dataset.dcBaixa));
       if (r.error) return err(friendly(r.error));
-      await loadTable('documents'); if (!(documentsPerTipus(sel.treb).get(Number(sel.tipus)) || []).length) st.sel = null; renderMain(); toast('Document eliminat');
+      await loadTable('documents'); if (!(cx.perTipus(sel[cx.clau]).get(Number(sel.tipus)) || []).length) st.sel = null; renderMain(); toast('Document eliminat');
     }));
     $('#dcp-tanca').focus();
     return;
@@ -8284,17 +8340,18 @@ function bindPanellDocument() {
   const recalcula = () => { const tp = tipusActual(); $('#dcf-hint-cad').textContent = pistaCaducitat(tp); if (!cad.dataset.manual) cad.value = caducitatCalculada(data.value, tp); };
   cad.addEventListener('input', () => { cad.dataset.manual = cad.value ? '1' : ''; });
   data.addEventListener('change', recalcula); if (selTipus) selTipus.addEventListener('change', recalcula);
-  $('#dcf-cancel').addEventListener('click', () => { st.sel = sel.mode === 'edita' || (sel.treb && sel.tipus && (documentsPerTipus(sel.treb).get(Number(sel.tipus)) || []).length) ? { mode: 'veure', treb: sel.treb, tipus: sel.tipus } : null; renderMain(); });
+  $('#dcf-cancel').addEventListener('click', () => { st.sel = sel.mode === 'edita' || (sel[cx.clau] && sel.tipus && (cx.perTipus(sel[cx.clau]).get(Number(sel.tipus)) || []).length) ? { mode: 'veure', [cx.clau]: sel[cx.clau], tipus: sel.tipus } : null; renderMain(); });
   $('#dcf-desa').addEventListener('click', () => desaDocument().catch(e => err(friendly(e))));
-  const primer = $('#dcf-treb') || $('#dcf-tipus') || data; if (primer) primer.focus();
+  const primer = $('#dcf-' + cx.clau) || $('#dcf-tipus') || data; if (primer) primer.focus();
 }
-// desa: el registre primer, després els fitxers a docs_treballadors/<persona>/<document>/, i la llista de fitxers al registre
+// desa: el registre primer, després els fitxers a docs_treballadors/<persona>/<document>/ (o docs_vehicles/<vehicle>/<document>/), i la
+// llista de fitxers al registre
 async function desaDocument() {
-  const st = state.docs, sel = st.sel, err = m => { const e = $('#dcp-err'); e.textContent = m; e.hidden = false; };
+  const cx = docCtx(), st = cx.st(), sel = st.sel, err = m => { const e = $('#dcp-err'); e.textContent = m; e.hidden = false; };
   const d = sel.mode === 'edita' ? C.get('documents', sel.id) : null;
-  const treb = d ? Number(d.treballador_id) : sel.treb || Number(($('#dcf-treb') || {}).value || 0);
+  const treb = d ? Number(d[cx.camp]) : sel[cx.clau] || Number(($('#dcf-' + cx.clau) || {}).value || 0);
   const tipus = d ? Number(d.tipus_id) : sel.tipus || Number(($('#dcf-tipus') || {}).value || 0);
-  if (!treb) return err('Tria la persona.');
+  if (!treb) return err(cx.falta);
   if (!tipus) return err('Tria el tipus de document.');
   const dataDocument = $('#dcf-data').value || null, dataCaducitat = $('#dcf-cad').value || null, obs = $('#dcf-obs').value.trim() || null;
   if (dataDocument && dataCaducitat && dataCaducitat < dataDocument) return err('La caducitat no pot ser abans de la data del document.');
@@ -8305,15 +8362,15 @@ async function desaDocument() {
   try {
     let id = d ? d.id : null;
     if (d) { const r = await sb.from('documents').update({ data_document: dataDocument, data_caducitat: dataCaducitat, observacions: obs }).eq('id', id); if (r.error) throw r.error; }
-    else { const r = await sb.from('documents').insert({ tipus_id: tipus, treballador_id: treb, data_document: dataDocument, data_caducitat: dataCaducitat, observacions: obs, fitxers: [] }).select('id').single(); if (r.error) throw r.error; id = r.data.id; }
+    else { const r = await sb.from('documents').insert({ tipus_id: tipus, [cx.camp]: treb, data_document: dataDocument, data_caducitat: dataCaducitat, observacions: obs, fitxers: [] }).select('id').single(); if (r.error) throw r.error; id = r.data.id; }
     const pujats = [];
     for (const f0 of nous) {
       const f = await redueixFoto(f0, FOTO_DOCUMENT);
-      const path = `docs_treballadors/${treb}/${id}/${Date.now()}_${f.name.replace(/[^\w.\-]+/g, '_')}`;
+      const path = `${cx.carpeta}/${treb}/${id}/${Date.now()}_${f.name.replace(/[^\w.\-]+/g, '_')}`;
       const up = await sb.storage.from(BUCKET).upload(path, f, { contentType: f.type || undefined });
       if (up.error) {   // el registre ja hi és: es queda obert per tornar-ho a provar
         if (pujats.length) await sb.from('documents').update({ fitxers: [...((d && d.fitxers) || []), ...pujats] }).eq('id', id);   // (els que s'havien de treure, encara hi són)
-        await loadTable('documents'); st.sel = { mode: 'edita', id, treb, tipus }; renderMain();
+        await loadTable('documents'); st.sel = { mode: 'edita', id, [cx.clau]: treb, tipus }; renderMain();
         return err('El document s’ha desat, però «' + f.name + '» no s’ha pogut pujar: ' + friendly(up.error) + '. Torna-ho a provar des d’aquí.');
       }
       pujats.push({ path, nom: f.name, tipus: f.type || '', mida: f.size });
@@ -8324,7 +8381,7 @@ async function desaDocument() {
       const r = await sb.from('documents').update({ fitxers }).eq('id', id); if (r.error) throw r.error;
     }
     await loadTable('documents');
-    st.sel = { mode: 'veure', treb, tipus }; renderMain();
+    st.sel = { mode: 'veure', [cx.clau]: treb, tipus }; renderMain();
     toast(d ? 'Document corregit' : 'Document desat');
   } finally { botons.forEach(b => { b.disabled = false; }); }
 }
@@ -8335,16 +8392,222 @@ function renderMeusDocuments(main) {
   const tipus = tipusDocs().filter(tp => tp.visible_treballador && per.has(Number(tp.id)));
   const cats = Object.keys(CAT_DOC).filter(c => tipus.some(t => t.categoria === c));
   const avisos = jo ? alertesDocuments({ nomesMeus: true }) : [];
+  // (v45) els vehicles on és habitual: els documents que pot veure, i els avisos
+  const meusV = jo ? vehiclesDe(jo.id) : [], avisosV = jo ? alertesDocumentsVehicles({ nomesMeus: true }) : [];
   main.innerHTML = `<h1>Els meus documents</h1>
-    <p class="sub">Els documents que l’empresa té teus: DNI, contracte, carnets, formació… Només els veus tu i l’oficina. Toca un fitxer per obrir-lo. Si en renoves algun, porta’l a l’oficina.</p>
+    <p class="sub">Els documents que l’empresa té teus: DNI, contracte, carnets, formació…${meusV.length ? ' I els del vehicle que portes.' : ''} Només els veus tu i l’oficina. Toca un fitxer per obrir-lo. Si en renoves algun, porta’l a l’oficina.</p>
     ${!jo ? '<div class="msg err">El teu usuari no té fitxa de treballador amb aquest correu d’accés: demana a l’oficina que t’hi afegeixin.</div>' : ''}
-    ${avisos.length ? `<div class="msg ${avisos.some(x => x.estat === 'caducat') ? 'err' : 'dc-avis'}">${avisos.map(x => `${h(x.tp.nom)}: ${x.estat === 'caducat' ? 'caducat el ' : 'caduca el '}${dmy(x.d.data_caducitat)}`).join('<br>')}</div>` : ''}
-    ${cats.length ? cats.map(c => `<h3>${h(CAT_DOC[c])}</h3>${tipus.filter(t => t.categoria === c).map(tp => { const ll = per.get(Number(tp.id)), d = ll[0], e = estatDocument(d, tp, jo);
+    ${avisos.length || avisosV.length ? `<div class="msg ${[...avisos, ...avisosV].some(x => x.estat === 'caducat') ? 'err' : 'dc-avis'}">${[...avisos.map(x => `${h(x.tp.nom)}: ${x.estat === 'caducat' ? 'caducat el ' : 'caduca el '}${dmy(x.d.data_caducitat)}`),
+      ...avisosV.map(x => `${h(nomVehicle(x.v))} · ${h(x.tp.nom)}: ${x.estat === 'caducat' ? 'caducat el ' : 'caduca el '}${dmy(x.d.data_caducitat)}`)].join('<br>')}</div>` : ''}
+    ${cats.length ? cats.map(c => `<h3>${h(CAT_DOC[c])}</h3>${tipus.filter(t => t.categoria === c).map(tp => { const ll = per.get(Number(tp.id)), d = ll[0], e = estatDocument(d, tp, jo); return targetaDocHTML(tp, ll, e); }).join('')}`).join('') : (jo ? '<div class="empty">Encara no hi ha cap document teu.</div>' : '')}
+    ${meusV.map(v => { const perV = documentsPerTipusVehicle(v.id), tps = tipusDocsVehicle().filter(tp => tp.visible_treballador && perV.has(Number(tp.id)));
+      return `<h3>🚐 ${h(nomVehicle(v))}</h3>${tps.length ? tps.map(tp => { const ll = perV.get(Number(tp.id)); return targetaDocHTML(tp, ll, estatDocGen(ll[0], tp, obligatoriVehicle(tp))); }).join('') : '<p class="hint">Encara no hi ha cap document d’aquest vehicle.</p>'}`; }).join('')}`;
+  main.querySelectorAll('[data-dc-obre]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); obreFitxerDocument(a.dataset.dcObre); }));
+}
+// una targeta de «Els meus documents»: el tipus, l'estat, els fitxers del vigent i les versions anteriors
+function targetaDocHTML(tp, ll, e) {
+  const d = ll[0];
       return `<div class="dc-targeta"><div class="dc-targeta-cap"><b>${h(tp.nom)}</b> <span class="dc-xip ${e || ''}">${h(textEstatDoc(e, d))}</span></div>
         <div class="dc-fitxers">${fitxersHTML(d)}</div>
         ${ll.length > 1 ? `<details class="dc-anteriors"><summary>${ll.length - 1} ${ll.length === 2 ? 'versió anterior' : 'versions anteriors'}</summary>${ll.slice(1).map(a => `<div class="dc-anterior"><span class="hint">${a.data_document ? dmy(a.data_document) : dmy(String(a.creat_el || '').slice(0, 10))}${a.data_caducitat ? ' · caducitat ' + dmy(a.data_caducitat) : ''}</span><div class="dc-fitxers">${fitxersHTML(a)}</div></div>`).join('')}</details>` : ''}
-      </div>`; }).join('')}`).join('') : (jo ? '<div class="empty">Encara no hi ha cap document teu.</div>' : '')}`;
-  main.querySelectorAll('[data-dc-obre]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); obreFitxerDocument(a.dataset.dcObre); }));
+      </div>`;
+}
+
+/* =====================================================================
+   VEHICLES (SQL 097): les furgonetes i els cotxes de l'empresa (també els dels tècnics), amb els treballadors habituals (un o més) i el
+   seu bé de l'immobilitzat (el compte de l'actiu 218…, el de l'amortització acumulada 2818… i les amortitzacions). Els documents (fitxa
+   tècnica, permís, assegurança, ITV, revisió, targeta Solred, Via T…) van a la taula dels documents, amb la caducitat: l'oficina els veu tots
+   en una graella (vehicle × tipus) i els habituals veuen els del seu vehicle a l'app. Abans que caduquin, avisen (Alarmes) a l'oficina i als
+   habituals.
+   ===================================================================== */
+const TIPUS_VEHICLE = ['Furgoneta', 'Furgoneta mixta', 'Furgoneta amb caixa oberta', 'Pick-up', 'Camió', 'Turisme', 'Remolc'];
+const tipusVehicleSuggerits = () => [...new Set([...TIPUS_VEHICLE, ...C.rows('vehicles').map(v => v.tipus).filter(Boolean)])];
+const nomVehicle = v => !v ? '' : ([v.marca, v.model].filter(Boolean).join(' ') || v.tipus || 'Vehicle') + (v.matricula ? ' ' + v.matricula : '');
+const habitualsDe = v => (Array.isArray(v && v.treballadors_ids) ? v.treballadors_ids : []).map(id => C.get('treballadors', id)).filter(Boolean);
+const vehiclesActius = () => C.rows('vehicles').filter(v => v.actiu).sort((a, b) => nomVehicle(a).localeCompare(nomVehicle(b), 'ca'));
+const vehiclesDe = trebId => vehiclesActius().filter(v => (Array.isArray(v.treballadors_ids) ? v.treballadors_ids : []).map(Number).includes(Number(trebId)));
+const tipusDocsVehicle = () => C.rows('tipus_document').filter(t => t.actiu && t.per_a === 'vehicle')
+  .sort((a, b) => ((a.ordre || 0) - (b.ordre || 0)) || String(a.nom).localeCompare(String(b.nom), 'ca'));
+const tipusGestionablesVehicle = () => tipusDocsVehicle().filter(potGestionarTipus);
+const obligatoriVehicle = tp => !!tp && tp.obligatori === 'tots';   // «Tothom»: tots els vehicles
+// per tipus, els documents d'un vehicle: el primer és el vigent (el més recent) i la resta, l'historial
+function documentsPerTipusVehicle(vid) {
+  const m = new Map();
+  C.rows('documents').filter(d => d.actiu && Number(d.vehicle_id) === Number(vid)).sort(ordreDoc)
+    .forEach(d => { const k = Number(d.tipus_id); if (!m.has(k)) m.set(k, []); m.get(k).push(d); });
+  return m;
+}
+// a la llista de vehicles: com estan els seus documents
+function resumDocumentsVehicle(v) {
+  const per = documentsPerTipusVehicle(v.id), c = { caducat: 0, aviat: 0, falta: 0 };
+  tipusDocsVehicle().forEach(tp => { const e = estatDocGen((per.get(Number(tp.id)) || [])[0], tp, obligatoriVehicle(tp)); if (c[e] != null) c[e]++; });
+  return [c.caducat ? c.caducat + (c.caducat === 1 ? ' caducat' : ' caducats') : '', c.aviat ? c.aviat + (c.aviat === 1 ? ' caduca aviat' : ' caduquen aviat') : '',
+    c.falta ? c.falta + (c.falta === 1 ? ' falta' : ' falten') : ''].filter(Boolean).join(' · ') || 'al dia';
+}
+// el que cal renovar: els documents vigents caducats o que caduquen aviat (de tots els vehicles per a l'oficina, o dels vehicles on és habitual)
+function alertesDocumentsVehicles({ nomesMeus = false, dies = null } = {}) {
+  const jo = treballadorActual(); if (!jo) return [];
+  const tipus = new Map(tipusDocsVehicle().map(t => [Number(t.id), t]));
+  const out = [];
+  (nomesMeus ? vehiclesDe(jo.id) : vehiclesActius()).forEach(v => documentsPerTipusVehicle(v.id).forEach((llista, tid) => {
+    const tp = tipus.get(tid), d = llista[0];
+    if (!tp || !d.data_caducitat || (nomesMeus ? !tp.visible_treballador : !potGestionarTipus(tp))) return;
+    const n = diesFinsA(d.data_caducitat), limit = dies != null ? dies : Number(tp.avis_dies || 0);
+    if (n <= limit) out.push({ v, tp, d, n, estat: n < 0 ? 'caducat' : n <= Number(tp.avis_dies || 0) ? 'aviat' : 'vigent' });
+  }));
+  return out.sort((a, b) => a.n - b.n);
+}
+const nAlertesDocumentsVehicles = () => { try { return oficinaDocs() ? alertesDocumentsVehicles().length : 0; } catch (e) { return 0; } };
+
+// la pàgina: a l'oficina, la graella de tots els vehicles; a la resta, «Els meus documents» (amb els del seu vehicle)
+function renderDocumentsVehicles(main) {
+  if (!oficinaDocs()) { renderMeusDocuments(main); return; }
+  const st = state.docsV, vehicles = vehiclesActius();
+  if (st.veh && !vehicles.some(x => String(x.id) === String(st.veh))) st.veh = '';
+  const tipus = tipusGestionablesVehicle(), compte = { caducat: 0, aviat: 0, falta: 0 };
+  const files = (st.veh ? vehicles.filter(x => String(x.id) === String(st.veh)) : vehicles).map(v => { const per = documentsPerTipusVehicle(v.id);
+    return { v, cel: tipus.map(tp => { const d = (per.get(Number(tp.id)) || [])[0], e = estatDocGen(d, tp, obligatoriVehicle(tp)); if (compte[e] != null) compte[e]++; return { tp, d, e }; }) }; });
+  const celText = c => c.e === 'falta' ? 'falta' : c.d ? (c.d.data_caducitat ? dmyCurt(c.d.data_caducitat) : '✓') : '';
+  const llista = alertesDocumentsVehicles({ dies: 90 }).filter(x => !st.veh || String(x.v.id) === String(st.veh));
+  main.innerHTML = `<h1>Documents dels vehicles</h1>
+    <p class="sub">La fitxa tècnica, el permís de circulació, l’assegurança, l’ITV, la revisió, la targeta Solred, el Via T… de cada vehicle, amb la caducitat. Els veuen l’oficina, l’administrador i, a l’app, els treballadors habituals de cada vehicle; ningú més. Abans que caduquin (els dies d’avís de cada tipus), avisen a les Alarmes de l’oficina i dels habituals. Cada casella és un tipus de document: en verd, vigent; en taronja, caduca aviat; en vermell, caducat; ratllat, falta i és obligatori. Clica-la per veure’l, renovar-lo o pujar-lo.</p>
+    <div class="bar">
+      <select id="dv-veh" style="width:auto; min-width:220px"><option value="">Tots els vehicles</option>${vehicles.map(x => `<option value="${x.id}" ${String(x.id) === String(st.veh) ? 'selected' : ''}>${h(nomVehicle(x))}</option>`).join('')}</select>
+      <button class="btn" id="dc-puja" ${vehicles.length ? '' : 'disabled'}>Puja un document</button>
+      <span class="n">${compte.caducat ? `<b class="v-no">${compte.caducat} ${compte.caducat === 1 ? 'caducat' : 'caducats'}</b> · ` : ''}${compte.aviat} ${compte.aviat === 1 ? 'caduca' : 'caduquen'} aviat · ${compte.falta} ${compte.falta === 1 ? 'falta' : 'falten'}</span>
+    </div>
+    ${!vehicles.length ? '<div class="empty">Encara no hi ha cap vehicle: dona’ls d’alta a «Vehicles».</div>'
+      : tipus.length ? `<div class="dc-wrap"><table class="dc-taula"><thead><tr><th class="dc-nom">Vehicle</th>${tipus.map(tp => `<th title="${h(tp.nom)}${tp.observacions ? ' · ' + h(tp.observacions) : ''}">${h(tp.nom)}${tp.confidencial ? ' 🔒' : ''}</th>`).join('')}</tr></thead>
+      <tbody>${files.map(f => `<tr><th class="dc-nom"><a href="#" data-dv-vehicle="${f.v.id}" title="Només aquest vehicle">${h(nomVehicle(f.v))}</a>${habitualsDe(f.v).length ? `<small class="dv-hab">${h(habitualsDe(f.v).map(nomCurtTreballador).join(', '))}</small>` : ''}</th>${f.cel.map(c => `<td class="dc ${c.e || ''}" data-dc="${f.v.id}|${c.tp.id}" title="${h(c.tp.nom)}${c.e ? ': ' + h(textEstatDoc(c.e, c.d)) : ''}">${celText(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+      <div class="dc-llegenda"><span><i class="dc vigent"></i>vigent (amb la data de caducitat; ✓ si no caduca)</span><span><i class="dc aviat"></i>caduca aviat</span><span><i class="dc caducat"></i>caducat</span><span><i class="dc falta"></i>falta (obligatori)</span></div>`
+      : '<div class="empty">No hi ha cap tipus de document dels vehicles. Executa el fitxer SQL 097, o crea’n a «Tipus de document» (És de: Vehicles).</div>'}
+    <h3>Caduquen en els propers 90 dies (i els caducats)</h3>
+    ${llista.length ? `<table class="tbl"><thead><tr><th>Vehicle</th><th>Document</th><th>Caducitat</th><th></th></tr></thead><tbody>${llista.map(x => `<tr class="row" data-dc="${x.v.id}|${x.tp.id}"><td>${h(nomVehicle(x.v))}</td><td>${h(x.tp.nom)}</td><td>${dmy(x.d.data_caducitat)}</td><td><span class="dc-xip ${x.estat}">${x.n < 0 ? 'caducat fa ' + (-x.n) + (x.n === -1 ? ' dia' : ' dies') : x.n === 0 ? 'avui' : 'd’aquí a ' + x.n + (x.n === 1 ? ' dia' : ' dies')}</span></td></tr>`).join('')}</tbody></table>`
+      : '<div class="empty">Res no caduca en els propers 90 dies.</div>'}
+    <p class="hint">Per afegir-hi tipus de document o canviar-ne els dies d’avís: <a href="#" data-dv-tipus>Tipus de document</a> (És de: Vehicles).</p>
+    ${st.sel ? panellDocumentHTML() : ''}`;
+  $('#dv-veh').addEventListener('change', e => { st.veh = e.target.value; renderMain(); });
+  $('#dc-puja').addEventListener('click', () => { st.sel = { mode: 'nou', veh: st.veh ? Number(st.veh) : null, tipus: null }; renderMain(); });
+  main.querySelectorAll('[data-dv-vehicle]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); st.veh = a.dataset.dvVehicle; renderMain(); }));
+  const tt = main.querySelector('[data-dv-tipus]'); if (tt) tt.addEventListener('click', e => { e.preventDefault(); state.mode = 'consulta'; state.table = 'tipus_document'; state.editing = null; renderApp(); window.scrollTo({ top: 0 }); });
+  main.querySelectorAll('[data-dc]').forEach(c => c.addEventListener('click', () => {
+    const [veh, tipus] = c.dataset.dc.split('|').map(Number), hiEs = (documentsPerTipusVehicle(veh).get(tipus) || []).length;
+    st.sel = { mode: hiEs ? 'veure' : 'nou', veh, tipus }; renderMain();
+  }));
+  if (st.sel) bindPanellDocument();
+}
+
+// la comptabilitat del vehicle, a dalt de la fitxa (només l'oficina): el seu bé de l'immobilitzat, amb el compte de l'actiu (218…), el de
+// l'amortització acumulada (2818…) i el que porta amortitzat. Si encara no hi és, «Dona d'alta el bé» el crea, amb els seus subcomptes.
+function comptaVehicleHTML(v) {
+  if (!potVeureCompta()) return '';
+  if (!v) return '<p class="hint">Comptabilitat: quan hagis desat el vehicle, en podràs donar d’alta el bé a l’immobilitzat, amb els seus comptes.</p>';
+  const b = v.immobilitzat_id ? C.get('immobilitzat', v.immobilitzat_id) : null;
+  if (!b) return `<div class="vh-compta"><div class="vh-compta-cap"><b>Comptabilitat</b><span class="hint">encara no és a l’immobilitzat</span>${v.actiu ? '<button type="button" class="btn small" id="vh-alta-be">Dona d’alta el bé</button>' : ''}</div>
+    <p class="hint">Crea el bé amb el compte de l’actiu (218…) i el de l’amortització acumulada (2818…); a partir d’aquí s’amortitza cada mes (des d’«Immobilitzat»). Si el bé ja hi és, tria’l a «Bé de l’immobilitzat», a sota.</p></div>`;
+  return `<div class="vh-compta"><div class="vh-compta-cap"><b>Comptabilitat</b><span class="hint">bé de l’immobilitzat «${h(b.descripcio)}»</span><button type="button" class="btn ghost small" id="vh-obre-be">Obre el bé</button></div>
+    <dl class="vh-compta-g">
+      <dt>Compte de l’actiu</dt><dd>${h(compteDe(b.compte_id))}</dd>
+      <dt>Amortització acumulada</dt><dd>${h(compteDe(b.compte_amortitzacio_id))}</dd>
+      <dt>Valor de compra</dt><dd>${fmtEur(b.valor)}${b.data_compra ? ' · ' + dmy(b.data_compra) : ''} · ${num2(b.percentatge)} % l’any</dd>
+      <dt>Amortitzat fins ara</dt><dd id="vh-acumulat">…</dd>
+      <dt>Valor net</dt><dd id="vh-net">…</dd>
+    </dl></div>`;
+}
+function comptaVehicleBind() {
+  const v = state.editing ? C.get('vehicles', state.editing) : null; if (!v || !potVeureCompta()) return;
+  const alta = $('#vh-alta-be'); if (alta) alta.addEventListener('click', () => obreAltaBe(v));
+  const obre = $('#vh-obre-be');
+  if (obre) obre.addEventListener('click', () => { state.mode = 'entrada'; state.table = 'immobilitzat'; state.editing = Number(v.immobilitzat_id); state.copia = null; state.q = ''; reiniciaCaselles('immobilitzat'); renderApp(); window.scrollTo({ top: 0 }); });
+  if (v.immobilitzat_id && $('#vh-acumulat')) (async () => {
+    let x = null; try { const r = await sb.from('immobilitzat_estat').select('id, acumulat, valor_net').eq('id', Number(v.immobilitzat_id)); x = !r.error && r.data && r.data[0]; } catch (e) { x = null; }
+    const a = $('#vh-acumulat'), n = $('#vh-net'); if (!a || !n) return;
+    a.textContent = x ? fmtEur(x.acumulat) : '—'; n.textContent = x ? fmtEur(x.valor_net) : '—';
+  })();
+}
+// el subcompte següent dels que ja hi ha (p. ex. 2180007, 2180008 → 2180009); si no n'hi ha cap, el primer (2180001)
+function seguentSubcompte(pre) {
+  const xifres = 7 - pre.length, usats = C.rows('comptes').map(c => String(c.codi)).filter(c => c.length === 7 && c.startsWith(pre)).map(c => Number(c.slice(pre.length)));
+  const n = (usats.length ? Math.max(...usats) : 0) + 1;
+  return n < 10 ** xifres ? pre + String(n).padStart(xifres, '0') : '';
+}
+const tancaAltaBe = () => { const p = $('#vh-alta'); if (p) p.remove(); };
+// «Dona d'alta el bé»: les dades del bé i els seus subcomptes (els proposa el programa: el 218 següent i el 2818 amb el mateix final; si ja
+// existeixen, es fan servir, i si no, es creen)
+function obreAltaBe(v) {
+  tancaAltaBe();
+  const comptes = re => C.rows('comptes').filter(c => c.imputable && re.test(String(c.codi))).sort((a, b) => String(a.codi).localeCompare(String(b.codi)));
+  const bens = C.rows('immobilitzat').filter(b => b.actiu !== false && /^218/.test(String((C.get('comptes', b.compte_id) || {}).codi || ''))).sort((a, b) => b.id - a.id);
+  const actiu = seguentSubcompte('218'), amort = actiu && !compteCodi('2818' + actiu.slice(-3)) ? '2818' + actiu.slice(-3) : seguentSubcompte('2818');
+  const pct = bens.length ? Number(bens[0].percentatge) : 16;
+  const dot = bens.length ? Number(bens[0].compte_dotacio_id) : ((compteCodi('6818000') || compteCodi('6810000') || {}).id || null);
+  const div = document.createElement('div'); div.className = 'avisos-panell'; div.id = 'vh-alta';
+  div.innerHTML = `<div class="avisos-caixa dc-caixa dc-form" role="dialog" aria-modal="true" aria-labelledby="vh-alta-t">
+    <h3 id="vh-alta-t">Dona d’alta el bé a l’immobilitzat</h3>
+    <p class="dc-qui"><b>${h(nomVehicle(v))}</b></p>
+    <label class="f"><span class="l">Descripció del bé</span><input type="text" id="vha-desc" value="${h([v.tipus, v.marca, v.model, v.matricula].filter(Boolean).join(' '))}"></label>
+    <div class="dc-grid">
+      <label class="f"><span class="l">Data de compra</span><input type="date" id="vha-data" value="${h(v.data_compra ? String(v.data_compra).slice(0, 10) : '')}"></label>
+      <label class="f"><span class="l">Valor (sense IVA)</span><input type="number" id="vha-valor" step="0.01" min="0" inputmode="decimal"></label>
+    </div>
+    <div class="dc-grid">
+      <label class="f"><span class="l">Compte de l’actiu</span><input type="text" id="vha-actiu" value="${h(actiu)}" list="vha-ll-actiu" autocomplete="off" inputmode="numeric"></label>
+      <label class="f"><span class="l">Compte de l’amortització acumulada</span><input type="text" id="vha-amort" value="${h(amort)}" list="vha-ll-amort" autocomplete="off" inputmode="numeric"></label>
+    </div>
+    <datalist id="vha-ll-actiu">${comptes(/^218\d{4}$/).map(c => `<option value="${h(c.codi)}">${h(c.nom)}</option>`).join('')}</datalist>
+    <datalist id="vha-ll-amort">${comptes(/^2818\d{3}$/).map(c => `<option value="${h(c.codi)}">${h(c.nom)}</option>`).join('')}</datalist>
+    <p class="hint" id="vha-comptes"></p>
+    <div class="dc-grid">
+      <label class="f"><span class="l">% d’amortització anual (lineal)</span><input type="number" id="vha-pct" step="0.001" min="0" max="100" value="${h(String(pct))}"></label>
+      <label class="f"><span class="l">Compte de la dotació (la despesa)</span><select id="vha-dot">${comptes(/^68/).map(c => `<option value="${c.id}" ${Number(dot) === c.id ? 'selected' : ''}>${h(c.codi + ' — ' + c.nom)}</option>`).join('')}</select></label>
+    </div>
+    <p class="hint" id="vha-nota"></p>
+    <details class="vha-abans"><summary>Si ja s’amortitzava abans (a ContaSol)</summary>
+      <div class="dc-grid">
+        <label class="f"><span class="l">Amortització acumulada d’abans</span><input type="number" id="vha-acum" step="0.01" min="0" value="0" inputmode="decimal"></label>
+        <label class="f"><span class="l">Arriba fins al</span><input type="date" id="vha-fins"></label>
+      </div>
+      <p class="hint">l’últim dia d’un mes: es comptabilitza des del mes següent</p>
+    </details>
+    <div id="vha-err" class="msg err" hidden></div>
+    <div class="accions"><button type="button" class="btn desa" id="vha-desa">Dona d’alta el bé</button><button type="button" class="btn ghost" id="vha-cancel">Cancel·la</button></div>
+  </div>`;
+  document.body.appendChild(div);
+  const err = m => { const e = $('#vha-err'); e.textContent = m; e.hidden = false; };
+  const nota = () => {
+    const p = Number($('#vha-pct').value), val = Number($('#vha-valor').value), anys = p > 0 ? 100 / p : 0;
+    $('#vha-nota').textContent = p > 0 ? `${num2(p)} % l’any: s’amortitza en ${Math.floor(anys)} anys${Math.round((anys % 1) * 12) ? ' i ' + Math.round((anys % 1) * 12) + ' mesos' : ''}${val > 0 ? ' · quota mensual: ' + fmtEur(Math.round(val * p / 12) / 100) : ''}. Per a furgonetes i cotxes, Hisenda admet fins al 16 % (els camions, fins al 20 %).` : '';
+    const qui = (codi, que) => { const c = compteCodi(codi); return c ? `${codi} ja existeix («${c.nom}»): es farà servir` : /^\d{7}$/.test(codi) ? `${codi} es crearà (${que})` : ''; };
+    $('#vha-comptes').textContent = [qui($('#vha-actiu').value.trim(), 'amb la descripció del bé'), qui($('#vha-amort').value.trim(), '«Amortització acumulada» i la descripció')].filter(Boolean).join(' · ');
+  };
+  ['#vha-pct', '#vha-valor', '#vha-actiu', '#vha-amort'].forEach(s => $(s).addEventListener('input', nota)); nota();
+  // si es canvia el compte de l'actiu, el de l'amortització segueix el mateix final (mentre no s'hagi tocat a mà)
+  $('#vha-amort').addEventListener('input', () => { $('#vha-amort').dataset.manual = '1'; });
+  $('#vha-actiu').addEventListener('input', () => { const a = $('#vha-actiu').value.trim(); if (!$('#vha-amort').dataset.manual && /^218\d{4}$/.test(a)) { $('#vha-amort').value = '2818' + a.slice(-3); nota(); } });
+  div.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); tancaAltaBe(); } });
+  $('#vha-cancel').addEventListener('click', tancaAltaBe);
+  $('#vha-desa').addEventListener('click', async () => {
+    const desc = $('#vha-desc').value.trim(), data = $('#vha-data').value, valor = Number($('#vha-valor').value), pc = Number($('#vha-pct').value);
+    const ca = $('#vha-actiu').value.trim(), cm = $('#vha-amort').value.trim(), cd = Number($('#vha-dot').value), acum = Number($('#vha-acum').value || 0), fins = $('#vha-fins').value || null;
+    if (!desc) return err('Posa la descripció del bé.');
+    if (!data) return err('Posa la data de compra.');
+    if (!(valor > 0)) return err('Posa el valor del bé (sense IVA).');
+    if (!(pc > 0 && pc <= 100)) return err('El percentatge anual ha de ser entre 0 i 100.');
+    if (!/^218\d{4}$/.test(ca)) return err('El compte de l’actiu ha de ser un 218 de 7 xifres (p. ex. 2180009).');
+    if (!/^2818\d{3}$/.test(cm)) return err('El compte de l’amortització acumulada ha de ser un 2818 de 7 xifres (p. ex. 2818009).');
+    if (!cd) return err('Tria el compte de la dotació.');
+    if (acum < 0 || acum > valor) return err('L’amortització acumulada d’abans no pot ser negativa ni passar del valor del bé.');
+    if (acum > 0 && !fins) return err('Si ja s’amortitzava abans, digues fins quan (l’últim dia d’un mes).');
+    const b = $('#vha-desa'); b.disabled = true;
+    try {
+      const { error } = await sb.rpc('vehicle_alta_be', { p_vehicle: v.id, p_descripcio: desc, p_data_compra: data, p_valor: valor, p_percentatge: pc,
+        p_compte_actiu: ca, p_compte_amortitzacio: cm, p_compte_dotacio: cd, p_amortitzat_inicial: acum, p_amortitzat_fins: acum > 0 ? fins : null });
+      if (error) throw error;
+      await Promise.all(['comptes', 'immobilitzat', 'vehicles'].map(loadTable));
+      tancaAltaBe(); renderMain(); toast(`Bé donat d’alta a l’immobilitzat: ${ca} i ${cm}`);
+    } catch (e) { err(friendly(e)); } finally { b.disabled = false; }
+  });
+  $('#vha-valor').focus();
 }
 
 /* =====================================================================
@@ -8364,6 +8627,7 @@ const TIPUS_ALARMA = {   // (en aquest ordre a la pàgina)
   venciment_proveidor: { nom: 'Factures de proveïdor amb el venciment abans del que tenim pactat', color: '#a0522d' },
   accions:             { nom: 'Accions d’incidències fora de termini', color: '#d9534f' },
   documents:           { nom: 'Documents caducats o per renovar', color: '#7b61b0' },
+  vehicles:            { nom: 'Vehicles: ITV, assegurança, revisió… caducats o per renovar', color: '#556b8d' },
   fulls:               { nom: 'Fulls de treball de fa més d’un mes sense passar a albarà', color: '#a8740e' },
   albarans:            { nom: 'Albarans oberts de fa més de 3 mesos', color: '#8a7c10' },
   comptabilitat:       { nom: 'Comptabilitat: documents que no s’han pogut comptabilitzar', color: '#3f6f4f' },
@@ -8492,6 +8756,13 @@ function calculaAlarmes() {
       text: (oficina ? nomTreballador(x.p) + ' · ' : '') + x.tp.nom, detall: textEstatDoc(x.estat, x.d), ordre: String(x.d.data_caducitat),
       ves: ['documents_treballadors', null, () => Object.assign(state.docs, oficina ? { treb: String(x.p.id), cat: '', sel: null } : { sel: null })] }));
   } catch (e) { console.error('alarmes dels documents', e); }
+  // (v45) els documents dels vehicles caducats o que caducaran dins del termini d'avís del seu tipus: a l'oficina, els de tots els vehicles;
+  // a la resta, els dels vehicles on és habitual
+  try {
+    (oficina ? alertesDocumentsVehicles() : alertesDocumentsVehicles({ nomesMeus: true })).forEach(x => out.push({ tipus: 'vehicles', clau: `document:${x.d.id}:${x.estat}`,
+      text: nomVehicle(x.v) + ' · ' + x.tp.nom, detall: textEstatDoc(x.estat, x.d), ordre: String(x.d.data_caducitat),
+      ves: oficina ? ['documents_vehicles', null, () => Object.assign(state.docsV, { veh: String(x.v.id), sel: null })] : ['documents_treballadors', null, () => Object.assign(state.docs, { sel: null })] }));
+  } catch (e) { console.error('alarmes dels vehicles', e); }
   // una entrada de fa més de 12 hores sense sortida: segurament no s'ha fitxat la sortida (a l'oficina, de tothom; a l'app, la seva)
   const ultimFx = new Map();   // el darrer fitxatge de cada persona (en una sola passada)
   C.rows('fitxatges').forEach(f => { const k = Number(f.treballador_id), u = ultimFx.get(k), m = String(f.moment), mu = u ? String(u.moment) : ''; if (!u || m > mu || (m === mu && f.id > u.id)) ultimFx.set(k, f); });
