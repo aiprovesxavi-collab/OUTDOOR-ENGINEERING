@@ -2,7 +2,7 @@
 <html lang="ca">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-giAQSzV01Sjvc6AsghYwLcLVOlTbfiAcwbxUbSGTpK0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-iL9q6l3c3LvDIR47ZTPmmIFDIE/BakhLpenB5FARlpE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestió de manteniment</title>
 <meta name="theme-color" content="#2f7d4a">
@@ -150,6 +150,7 @@
   h3.seccio .avui{ font-weight:500; font-size:13px; color:#1f5fbf; }
   h4.seccio{ grid-column:1 / -1; margin:10px 0 0; font-size:14px; font-weight:600; color:var(--ink-2); }
   .seccio-nota{ grid-column:1 / -1; margin:-4px 0 2px; }
+  .ipc-efecte{ margin-top:6px; font-size:13px; } .ipc-efecte td, .ipc-efecte th{ padding:5px 8px; }   /* (v51) com queden les quotes amb l'IPC */
   .tl{ display:flex; height:14px; width:100%; max-width:560px; border-radius:4px; overflow:hidden; border:1px solid var(--line-2); } .tl i{ display:block; min-width:0; }
   .t-on{ background:#2e7d32; } .t-pos{ background:#ffb74d; } .t-off{ background:#e6e6e6; }
   .tl-esc{ display:flex; justify-content:space-between; max-width:560px; font-size:11px; color:var(--ink-3); } .tl-esc b{ font-weight:400; }
@@ -1194,6 +1195,71 @@ const delClientDelLloc = (r, f, C) => { const l = C.get('llocs', f.lloc_id); ret
 const claAgrupacio = r => !r.data_inici ? 'futur' : !r.data_fi ? 'actual' : 'finalitzat';
 const estatAgrupacio = r => ({ futur: 'Futur', actual: 'Actual', finalitzat: 'Finalitzat' })[claAgrupacio(r)] + (claAgrupacio(r) === 'finalitzat' && r.data_fi >= avui() ? ' (fins al ' + dmy(r.data_fi) + ')' : '');
 const inclouText = r => [r.inclou_jardi && 'jardí', r.inclou_piscina && 'piscina', r.inclou_aigues_grises && 'aigües grises'].filter(Boolean).join(' i ') || 'sense tipus';
+// (v51) L'IPC (PARÀMETRES › IPC): cada any, les quotes de les agrupacions s'apugen amb l'IPC de l'any anterior; les que van començar durant
+// aquell any, només la part dels mesos que portaven (començada al febrer: 11/12; al desembre: 1/12; el mes d'inici compta sencer). Si l'IPC és
+// negatiu, no baixen. Cada any, al cèntim. El preu de l'agrupació és el de l'any «preu_any» (buit: el de la data d'inici, mai abans del 2026,
+// l'any que es van passar els contractes al programa). Fa el mateix que quota_agrupacio de la base de dades (099), que és la que fa les factures.
+const anyActual = () => new Date().getFullYear();
+const pctIpc = v => v === '' || v == null || isNaN(Number(v)) ? '' : String(Number(v)).replace('.', ',') + ' %';
+const ipcRegistre = any => C.rows('ipc').find(x => x.actiu !== false && Number(x.exercici) === Number(any)) || null;
+const mesosIpc = (inici, any) => { if (!inici) return 0; const a = Number(String(inici).slice(0, 4)), m = Number(String(inici).slice(5, 7)); return a < any ? 12 : a > any ? 0 : 13 - m; };
+// × (1 + IPC % × mesos/12), arrodonit al cèntim (amb enters, perquè doni exactament el mateix que la base de dades)
+const revaloritza = (preu, ipc, mesos) => { const c = Math.round(Number(preu) * 100), i = Math.round(Math.max(0, Number(ipc)) * 100), num = c * (120000 + i * mesos), den = 120000; return Math.floor((2 * num + den) / (2 * den)) / 100; };
+const anyPreuAgrupacio = a => a.preu_any != null && a.preu_any !== '' ? Number(a.preu_any) : a.data_inici ? Math.max(Number(String(a.data_inici).slice(0, 4)), 2026) : null;
+// la quota d'un any: { quota, passos: [{ any, ipc, mesos, abans, despres }], falta: l'any de l'IPC que falta (o null) }; «sobre»: un IPC encara no desat
+function quotaAgrupacio(a, any, sobre) {
+  let v = Number(a.preu || 0); const passos = [], base = anyPreuAgrupacio(a);
+  if (!a.data_inici || base == null) return { quota: v, passos, falta: null };
+  for (let y = base; y < any; y++) {
+    const mesos = mesosIpc(a.data_inici, y); if (!mesos) continue;
+    const r = sobre && Number(sobre.exercici) === y ? sobre : ipcRegistre(y);
+    if (!r || r.ipc === '' || r.ipc == null || isNaN(Number(r.ipc))) return { quota: null, passos, falta: y };
+    const abans = v; v = revaloritza(v, r.ipc, mesos); passos.push({ any: y, ipc: Number(r.ipc), mesos, abans, despres: v });
+  }
+  return { quota: v, passos, falta: null };
+}
+const textPasIpc = p => `IPC ${p.any} del ${pctIpc(p.ipc)}${p.mesos < 12 ? ' × ' + p.mesos + '/12' : ''}${p.ipc < 0 ? ', negatiu: no baixa' : ''}`;
+// a la fitxa de l'agrupació, sota el preu: la quota d'enguany i la de l'any que ve
+function notaQuotesAgrupacio(vals) {
+  if (!vals.data_inici || vals.preu === '' || vals.preu == null || isNaN(Number(vals.preu))) return { text: '' };
+  const a = { preu: vals.preu, preu_any: vals.preu_any, data_inici: vals.data_inici }, Y = Math.max(anyActual(), Number(String(vals.data_inici).slice(0, 4)));
+  const tros = (q, any) => q.falta === any - 1 ? `s’apujarà amb l’IPC del ${any - 1}${mesosIpc(a.data_inici, any - 1) < 12 ? ' (' + mesosIpc(a.data_inici, any - 1) + '/12)' : ''}, que encara no és a PARÀMETRES › IPC`
+    : q.falta ? `falta l’IPC del ${q.falta}` : eur(q.quota) + (q.passos.length && q.passos[q.passos.length - 1].any === any - 1 ? ' (' + textPasIpc(q.passos[q.passos.length - 1]) + ')' : '');
+  return { text: `Quota ${Y}: ${tros(quotaAgrupacio(a, Y), Y)} · ${Y + 1}: ${tros(quotaAgrupacio(a, Y + 1), Y + 1)}` };
+}
+// si es canvia el preu d'una agrupació que ja anava, el preu nou és d'enguany («Any d'aquest preu»); si es torna a l'original, també l'any
+function bindPreuAgrupacio(frm) {
+  const row = frm.dataset.id ? C.get('agrupacions', Number(frm.dataset.id)) : null; if (!row) return;
+  const preu = frm.querySelector('[name="preu"]'), any = frm.querySelector('[name="preu_any"]'); if (!preu || !any) return;
+  let tocat = false; any.addEventListener('input', () => { tocat = true; });
+  const original = row.preu_any == null ? '' : String(row.preu_any), base = anyPreuAgrupacio(row), Y = anyActual();
+  preu.addEventListener('input', () => {
+    if (tocat) return;
+    const nou = preu.value !== '' && Number(preu.value) !== Number(row.preu) && base != null && base < Y ? String(Y) : original;
+    if (any.value !== nou) { any.value = nou; any.dispatchEvent(new Event('input', { bubbles: true })); tocat = false; }
+  });
+}
+// a la fitxa de l'IPC: com queden les quotes de l'any següent (amb el valor que s'està escrivint)
+function notaEfecteIpc(vals) {
+  const Y = Number(vals.exercici); if (!Y || Y < 2000 || Y > 2100) return { html: '' };
+  if (vals.ipc === '' || vals.ipc == null || isNaN(Number(vals.ipc))) return { html: `<p class="hint">Posa l’IPC del ${Y} i aquí veuràs com queden les quotes del ${Y + 1}.</p>` };
+  const sobre = { exercici: Y, ipc: vals.ipc }, fi = (Y + 1) + '-12-31', ini = (Y + 1) + '-01-01';
+  const files = C.rows('agrupacions').filter(a => a.actiu && a.data_inici && String(a.data_inici) <= fi && (!a.data_fi || String(a.data_fi) >= ini))
+    .map(a => ({ a, q0: quotaAgrupacio(a, Y, sobre), q1: quotaAgrupacio(a, Y + 1, sobre), mesos: mesosIpc(a.data_inici, Y), client: L('clients', a.client_id) }))
+    .sort((x, y) => x.client.localeCompare(y.client, 'ca') || String(x.a.nom).localeCompare(String(y.a.nom), 'ca'));
+  if (!files.length) return { html: `<p class="hint">Cap agrupació no factura el ${Y + 1}.</p>` };
+  const ok = files.filter(f => !f.q0.falta && !f.q1.falta), t0 = ok.reduce((s, f) => s + f.q0.quota, 0), t1 = ok.reduce((s, f) => s + f.q1.quota, 0);
+  const falten = [...new Set(files.map(f => f.q0.falta || f.q1.falta).filter(Boolean))].sort();
+  const part = f => f.mesos >= 12 ? 'tot l’IPC' : f.mesos ? f.mesos + '/12' : 'res (comença el ' + (Y + 1) + ')';
+  return { html: `<p class="hint">Amb l’IPC del ${Y} del <b>${pctIpc(vals.ipc)}</b>${Number(vals.ipc) < 0 ? ' (negatiu: les quotes no baixen)' : ''}: ${ok.length} agrupacion${ok.length === 1 ? 'ó' : 's'}, de ${eur(t0)} a <b>${eur(t1)}</b> al mes (${eur(t1 - t0)} més).`
+    + `${falten.length ? ` <b class="v-no">Falta l’IPC del ${falten.join(', ')}</b>: aquestes no es poden calcular.` : ''}</p>
+    <table class="tbl ipc-efecte"><thead><tr><th>Client</th><th>Agrupació</th><th>Inici</th><th class="num">Quota ${Y}</th><th>Part de l’IPC</th><th class="num">Quota ${Y + 1}</th><th class="num">Diferència</th></tr></thead>
+    <tbody>${files.map(f => `<tr><td>${h(f.client)}</td><td>${h(f.a.nom)}</td><td>${dmy(f.a.data_inici)}</td><td class="num">${f.q0.falta ? '—' : eur(f.q0.quota)}</td><td>${part(f)}</td>`
+      + `<td class="num">${f.q1.falta ? `<span class="v-no">falta l’IPC del ${f.q1.falta}</span>` : '<b>' + eur(f.q1.quota) + '</b>'}</td><td class="num">${f.q0.falta || f.q1.falta ? '' : eur(f.q1.quota - f.q0.quota)}</td></tr>`).join('')}</tbody></table>` };
+}
+// els IPC que falten per fer les factures d'un any (de les agrupacions que facturen)
+const ipcQueFalten = any => [...new Set(C.rows('agrupacions').filter(a => a.actiu && a.data_inici && String(a.data_inici) <= any + '-12-31' && (!a.data_fi || String(a.data_fi) >= any + '-01-01'))
+  .map(a => quotaAgrupacio(a, any).falta).filter(Boolean))].sort();
 const teJardi = f => { const a = f && f.agrupacio_id ? C.get('agrupacions', f.agrupacio_id) : null; return !!(a && a.inclou_jardi); };
 const cobreixMajuscules = r => { const it = [r.cobreix_jardi && 'JARDÍ', r.cobreix_piscina && 'PISCINA', r.cobreix_aigues_grises && 'AIGÜES GRISES'].filter(Boolean); return it.length <= 1 ? (it[0] || '') : it.slice(0, -1).join(', ') + ' I ' + it[it.length - 1]; };
 const cobreixText = r => [r.cobreix_jardi && 'jardí', r.cobreix_piscina && 'piscina', r.cobreix_aigues_grises && 'aigües grises'].filter(Boolean).join(' i ') || 'sense cobertura';
@@ -1384,6 +1450,7 @@ const SCHEMA = {
     { label: 'EQUIPAMENTS I INSTAL·LACIONS', color: '#e5b800', tables: ['programadors', 'bombes', 'filtres', 'cloradors_salins'] },
     { label: 'PERSONAL', color: '#222222', tables: ['treballadors', 'equips', 'fitxar', 'fitxatges', 'mapa_fitxatges', 'nomines', 'documents_treballadors', 'tipus_document', 'vacances', 'festius'] },
     { label: 'VEHICLES', color: '#556b8d', oficina: true, tables: ['vehicles', 'documents_vehicles'] },
+    { label: 'PARÀMETRES', color: '#4f7d8a', oficina: true, tables: ['ipc'] },   // (v51) penúltim; hi poden anar altres paràmetres
     { label: 'ALTRES', color: '#b48ede', tables: ['tipus_iva', 'empresa', 'aigua_parametres_mensuals', 'avisos_piscina', 'comptes_bancaris', 'poblacions_sol', 'hores_sol'] },
   ],
   pages: {
@@ -1566,8 +1633,10 @@ const SCHEMA = {
       // en donar-la de baixa, els seus esborranys de facturació recurrent pendents també
       enBaixa: async r => { const ids = C.rows('factures').filter(f => f.actiu && f.estat === 'esborrany' && Number(f.agrupacio_id) === r.id).map(f => f.id); if (!ids.length) return ''; const u = await sb.from('factures').update({ actiu: false }).in('id', ids); if (u.error) throw u.error; await loadTable('factures'); return ` · ${ids.length} esborran${ids.length === 1 ? 'y' : 'ys'} de facturació retirat${ids.length === 1 ? '' : 's'}`; },
       display: (r, L) => r.nom + ' — ' + L('clients', r.client_id),
-      list: ['estat', 'nom', 'client_id', 'inclou', 'concepte_factura', 'preu', 'data_inici', 'data_fi'],
-      computed: { inclou: { label: 'Inclou', fn: r => inclouText(r) }, estat: { label: 'Estat', fn: r => estatAgrupacio(r), color: r => ({ futur: 'c-taronja', actual: 'c-verd-suau', finalitzat: '' })[claAgrupacio(r)] } },
+      list: ['estat', 'nom', 'client_id', 'inclou', 'concepte_factura', 'preu', 'quota', 'data_inici', 'data_fi'],
+      computed: { inclou: { label: 'Inclou', fn: r => inclouText(r) },
+        // (v51) la quota d'enguany, amb l'IPC
+        quota: { label: 'Quota ' + anyActual(), num: true, fn: r => { if (!r.data_inici) return ''; const q = quotaAgrupacio(r, anyActual()); return q.falta ? 'falta l’IPC del ' + q.falta : q.quota.toFixed(2); } }, estat: { label: 'Estat', fn: r => estatAgrupacio(r), color: r => ({ futur: 'c-taronja', actual: 'c-verd-suau', finalitzat: '' })[claAgrupacio(r)] } },
       filtres: [{ key: '_estat', tipus: 'opcions', label: 'Estat', opcions: [['futur', 'Futur'], ['actual', 'Actual'], ['finalitzat', 'Finalitzat']], prova: (r, v) => claAgrupacio(r) === v }],
       validate: p => !(p.inclou_jardi || p.inclou_piscina || p.inclou_aigues_grises) ? 'Marca almenys què inclou l’agrupació: jardí, piscina o aigües grises.'
         : (p.data_fi && !p.data_inici) ? 'Una agrupació amb data de fi ha de tenir data d’inici.'
@@ -1579,7 +1648,8 @@ const SCHEMA = {
         { key: 'inclou_piscina', label: 'Inclou piscina', type: 'boolean' },
         { key: 'inclou_aigues_grises', label: 'Inclou aigües grises', type: 'boolean' },
         { key: 'concepte_factura', label: 'Concepte a la factura', type: 'text', required: true },
-        { key: 'preu', label: 'Preu mensual (sense IVA)', type: 'number', step: '0.01', required: true },
+        { key: 'preu', label: 'Preu mensual (sense IVA)', type: 'number', step: '0.01', required: true, nota: notaQuotesAgrupacio },
+        { key: 'preu_any', label: 'Any d’aquest preu', type: 'number', step: '1', hint: 'buit: el de la data d’inici. Cada any següent s’apuja amb l’IPC (PARÀMETRES › IPC). Si canvies el preu, s’hi posa l’any d’ara; si només corregeixes un error d’un preu d’un altre any, torna-hi a posar aquell any' },
         { key: 'estat', label: 'Estat', type: 'info', fmt: r => r ? estatAgrupacio(r) : 'Futur (sense data d’inici) · Actual (amb inici, sense fi) · Finalitzat (amb inici i fi)' },
         { key: 'data_inici', label: 'Data d’inici', type: 'date', hint: 'buida mentre el pressupost no estigui aprovat (estat Futur); en posar-la passa a Actual i entra a la facturació recurrent' },
         { key: 'data_fi', label: 'Data de fi', type: 'date', hint: 'buida mentre el contracte segueixi; en posar-la passa a Finalitzat', nota: vals => ({ text: 'Amb aquestes dates l’agrupació és: ' + estatAgrupacio(vals), classe: claAgrupacio(vals) === 'actual' ? 'v-ok' : claAgrupacio(vals) === 'futur' ? 'v-calc' : '' }) },
@@ -1587,6 +1657,7 @@ const SCHEMA = {
         { key: 'pdf_pressupost', label: 'PDF del pressupost signat', type: 'file', folder: 'contractes' },
         { key: 'observacions', label: 'Observacions', type: 'textarea' },
       ],
+      bindExtras: frm => bindPreuAgrupacio(frm),   // (v51) l'any del preu, si es canvia el preu
     },
     comptadors: {
       label: 'Comptadors', nou: 'Nou comptador', order: 'id',
@@ -1816,6 +1887,19 @@ const SCHEMA = {
         { key: 'dte', label: 'Dte %', type: 'number', step: '0.01', min: 0, max: 100, hideIfEmpty: true, ample: 0.3 },
         { key: 'preu_cost', label: 'Cost', type: 'number', step: '0.01', ample: 0.5 },
         { key: 'base', label: 'Total', type: 'info', fmt: r => eur(r.base) },
+      ],
+    },
+    ipc: {   // (v51) l'IPC de cada any: apuja les quotes de les agrupacions de l'any següent
+      label: 'IPC', nou: 'Nou IPC (d’un any)', order: 'exercici', desc: true,
+      display: r => 'IPC del ' + r.exercici + ': ' + pctIpc(r.ipc),
+      list: ['exercici', 'ipc', 'aplica', 'observacions'],
+      computed: { aplica: { label: 'S’aplica a', fn: r => 'les quotes del ' + (Number(r.exercici) + 1) } },
+      validate: p => !(Number(p.exercici) >= 2000 && Number(p.exercici) <= 2100) ? 'L’any no és vàlid.' : !(Number(p.ipc) >= -20 && Number(p.ipc) <= 50) ? 'L’IPC ha de ser un percentatge entre -20 i 50.' : null,
+      fields: [
+        { key: 'exercici', label: 'Any', type: 'number', step: '1', required: true, default: () => anyActual(), dup: 'exact', hint: 'l’any de l’IPC: s’aplica a les quotes de l’any següent (el del 2026, a les del 2027)' },
+        { key: 'ipc', label: 'IPC (%)', type: 'number', step: '0.01', required: true, hint: 'en percentatge, p. ex. 2,9. Les agrupacions que van començar durant l’any, la part dels mesos que portaven (al febrer, 11/12). Si és negatiu, les quotes no baixen' },
+        { key: 'observacions', label: 'Observacions', type: 'text', hint: 'p. ex. «INE: IPC general, variació anual de desembre»' },
+        { key: 'efecte__titol', type: 'seccio', label: 'Com queden les quotes de l’any següent', notaBloc: notaEfecteIpc },
       ],
     },
     tipus_iva: {
@@ -5794,6 +5878,7 @@ function renderFacturacio(main) {
   const avisTocats = tocatsAMa ? `\n\nAtenció: ${tocatsAMa} d’aquests esborranys s’ha${tocatsAMa === 1 ? '' : 'n'} modificat a mà després de crear-l${tocatsAMa === 1 ? 'o' : 'os'} (import, concepte, data…): aquests canvis es perdran.` : '';
   const treuRecurrents = async ids => { const { data, error } = await sb.rpc('treu_esborranys_recurrents', { p_ids: ids }); if (error) throw error; return Number(data) || 0; };
   const anys = []; for (let y = new Date().getFullYear() + 1; y >= new Date().getFullYear() - 2; y--) anys.push(String(y));
+  const faltaIpc = ipcQueFalten(Number(st.any));   // (v51) sense l'IPC de l'any anterior, les quotes no es poden calcular
   const pendents = factures.filter(r => r.estat === 'emesa').sort((a, b) => String(a.data_venciment).localeCompare(String(b.data_venciment)));
   const sensePdf = factures.filter(r => r.estat !== 'esborrany' && !r.pdf);
   const filaD = r => `<tr class="${String(r.data_factura || '').slice(0, 7) === mesTria ? '' : 'off'}"><td>${dmy(r.data_factura)}</td><td>${h(llocsFactura(r))}</td><td>${h(L('clients', r.client_id))}${motiuSobrant(r) ? `<br><b class="v-no">${h(motiuSobrant(r))}</b>` : ''}</td><td>${h(r.concepte)}</td><td class="hint">${r.periode_inici ? dmy(r.periode_inici) + ' – ' + dmy(r.periode_fi) : ''}</td><td class="num">${eur(r.base_imponible)}</td><td class="num">${eur(r.total)}</td><td>${dmy(cobramentPrevist(r))}</td>
@@ -5803,7 +5888,8 @@ function renderFacturacio(main) {
   main.innerHTML = `
     <h1>Facturació recurrent</h1>
     <p>Tria el mes i genera els esborranys: només els d’aquell mes. La factura de cada agrupació es fa dins del mateix mes, amb data del dia de facturació del seu client (octubre es factura el dia de facturació d’octubre, pel període d’octubre). El cobrament va a part: en emetre-la, el venciment es calcula amb el que hi ha pactat amb el client (termini de pagament i dia fix de pagament). Repassa'ls i emet. Un esborrany es pot obrir, corregir o eliminar; una factura emesa rep número i queda congelada.</p>
-    <p class="sub">${(() => { const ag = C.rows('agrupacions').filter(a => a.actiu); const n = k => ag.filter(a => claAgrupacio(a) === k).length; return `Agrupacions: <b>${n('actual')} actuals</b> (són les que facturen), ${n('futur')} futures (sense data d’inici: no facturen) i ${n('finalitzat')} finalitzades.`; })()}</p>
+    <p class="sub">${(() => { const ag = C.rows('agrupacions').filter(a => a.actiu); const n = k => ag.filter(a => claAgrupacio(a) === k).length; return `Agrupacions: <b>${n('actual')} actuals</b> (són les que facturen), ${n('futur')} futures (sense data d’inici: no facturen) i ${n('finalitzat')} finalitzades.`; })()}${(() => { const r = ipcRegistre(Number(st.any) - 1); return r ? ` Les quotes del ${st.any} porten l’IPC del ${Number(st.any) - 1} (${pctIpc(r.ipc)}).` : ''; })()}</p>
+    ${faltaIpc.length ? `<div class="msg err">Falta l’IPC del ${faltaIpc.join(', ')} (PARÀMETRES › IPC): sense, les quotes del ${h(st.any)} no es poden calcular i no se’n fa cap esborrany. <button type="button" class="btn small" id="posa-ipc">Posa l’IPC del ${faltaIpc[0]}</button></div>` : ''}
     <div class="bar fila-factura">
       <div class="ff-esq"><span class="nota">Mes a facturar</span>
       <select id="fac-mes" style="width:auto">${MESOS.map((m, i) => `<option value="${i + 1}" ${String(i + 1) === String(st.mes) ? 'selected' : ''}>${m}</option>`).join('')}</select>
@@ -5864,7 +5950,9 @@ function renderFacturacio(main) {
     try { const n = await treuRecurrents(recurrentsMes.map(x => x.id)); await loadTable('factures'); toast(`${n} esborranys esborrats`); renderMain(); }
     catch (e) { toastErr(friendly(e)); tm.disabled = false; }
   });
+  const pi = $('#posa-ipc'); if (pi) pi.addEventListener('click', () => { state.mode = 'entrada'; state.table = 'ipc'; state.editing = null; state.keep = { exercici: faltaIpc[0] }; renderApp(); window.scrollTo({ top: 0 }); });
   const rg = $('#regenera'); if (rg) rg.addEventListener('click', async () => {
+    if (faltaIpc.length) { toastErr(`Falta l’IPC del ${faltaIpc.join(', ')} (PARÀMETRES › IPC): sense, no es poden tornar a fer els esborranys del ${st.any}.`); return; }   // (v51) abans d'esborrar-los
     if (!confirm(`Tornar a generar ${nomMesDe}? S’esborren els ${recurrentsMes.length} esborranys recurrents d’aquest mes i es creen de nou amb les dades actuals dels clients i les agrupacions (dia de facturació, preu, concepte, IVA).${avisTocats}`)) return;
     rg.disabled = true;
     try {
