@@ -2,7 +2,7 @@
 <html lang="ca">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-U7+JF245hknuEm146RJwJqHM5llD7RB/LT66OESVoP4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-BGq7PLIPTY4Q3WcMXWt6Kr/N63FXMjo+rh7zsYUSVQM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestió de manteniment</title>
 <meta name="theme-color" content="#2f7d4a">
@@ -881,6 +881,10 @@
   .dc-targeta{ border:1px solid var(--line-2); border-radius:12px; padding:12px 14px; margin:0 0 10px; background:#fff; }
   .dc-targeta-cap{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:space-between; } .dc-targeta .dc-fitxer{ font-size:16px; }
   .msg.dc-avis{ background:#fff1d6; color:#8a5a00; }
+  /* (v53) importar una tarifa */
+  .tt-controls{ align-items:flex-end; gap:18px; flex-wrap:wrap; } .tt-controls .f{ margin:0; } .tt-controls .chk{ padding-bottom:8px; }
+  .tt-taula td{ vertical-align:middle; } .tt-taula input[type=number]{ width:5.8em; text-align:right; padding:4px 6px; } .tt-taula td.tt-prod{ min-width:13em; } .tt-desplaca{ overflow-x:auto; }
+  .tt-taula tr.off td{ color:var(--ink-3); } .tt-taula td.tt-estat b{ font-weight:600; }
   .dv-hab{ display:block; font-weight:400; font-size:11.5px; color:var(--ink-3); margin-top:2px; }   /* (v45) els habituals sota el vehicle */
   .vh-compta{ border:1px solid var(--line-2); border-radius:10px; padding:10px 14px; margin:0 0 14px; background:var(--bg-2); }
   .vh-compta-cap{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; } .vh-compta-cap .btn{ margin-left:auto; } .vh-compta p.hint{ margin:6px 0 0; }
@@ -1194,9 +1198,24 @@ function notaCostProducte(vals) {
   return { text: 'Preu de cost: ' + eur(c) + (d ? ` (${textPreu4(vals.preu_proveidor)} menys el ${textPct(d)})` : '') };
 }
 // sota el PVP: el que es proposa amb el % de venda del proveïdor, i el marge sobre el cost (en vermell, si es ven per sota del cost)
+// (v53) el PVP que es proposa: el PVP de la tarifa, si en porta; si el producte té descompte, el preu de tarifa (el descompte és el marge);
+// si no en té, el cost × el % de venda del proveïdor (el % del proveïdor és per al que no té fitxa, o no porta descompte). { pvp, perque } o null
+const normRef = s => String(s || '').toLowerCase().replace(/[\s.\-\/_]/g, '');
+const arrod2 = v => { const p = Math.round(Number(v) * 10000); return Math.floor((2 * p + 100) / 200) / 100; };   // al cèntim (la meitat, amunt)
+const arrod4 = v => Math.round(Number(v) * 10000) / 10000;
+const numONull = v => v === '' || v == null || isNaN(Number(v)) ? null : Number(v);
+function pvpProposatProducte({ preu, dte, pvpTarifa, proveidor }) {
+  if (numONull(pvpTarifa) != null) return { pvp: arrod2(pvpTarifa), perque: 'el PVP de la tarifa' };
+  if (numONull(preu) == null || Number(preu) < 0) return null;
+  if (Number(dte) > 0) return { pvp: arrod2(preu), perque: 'el preu de tarifa: el descompte és el marge' };
+  const pct = pctVendaProveidor(proveidor), c = costProducte(preu, dte);
+  if (pct != null && c != null) return { pvp: pvpProposat(c, pct), perque: `el cost × ${textPct(pct)} de ${L('proveidors', proveidor)}` };
+  return null;
+}
 function notaPvpProducte(vals) {
-  const c = costProducte(vals.preu_proveidor, vals.dte_proveidor), pct = pctVendaProveidor(vals.proveidor_id), parts = [];
-  if (pct != null && c != null) parts.push(`Amb el % de venda de ${L('proveidors', vals.proveidor_id)} (${textPct(pct)}): ${eur(pvpProposat(c, pct))}`);
+  const c = costProducte(vals.preu_proveidor, vals.dte_proveidor), parts = [];
+  const prop = pvpProposatProducte({ preu: vals.preu_proveidor, dte: vals.dte_proveidor, proveidor: vals.proveidor_id });
+  if (prop) parts.push(`Proposat: ${eur(prop.pvp)} (${prop.perque})`);
   const v = vals.pvp === '' || vals.pvp == null || isNaN(Number(vals.pvp)) ? null : Number(vals.pvp);
   if (c && v != null) parts.push(`marge: ${eur(Math.round((v - c) * 100) / 100)} (${textPct(Math.round((v / c - 1) * 1000) / 10)} sobre el cost)`);
   return { text: parts.join(' · '), classe: c != null && v != null && v < c ? 'v-no' : '' };
@@ -1212,7 +1231,7 @@ function notaAltresProveidors(vals, row) {
 // el PVP segueix el que es proposa (cost × % de venda del proveïdor) mentre no s'hagi escrit a mà; si s'esborra, hi torna
 function bindPvpProducte(frm) {
   const pvp = frm.querySelector('[name="pvp"]'); if (!pvp) return;
-  const proposta = () => { const v = formValues(frm), p = pvpProposat(costProducte(v.preu_proveidor, v.dte_proveidor), pctVendaProveidor(v.proveidor_id)); return p == null ? '' : p.toFixed(2); };
+  const proposta = () => { const v = formValues(frm), p = pvpProposatProducte({ preu: v.preu_proveidor, dte: v.dte_proveidor, proveidor: v.proveidor_id }); return p ? p.pvp.toFixed(2) : ''; };
   let darrera = proposta();
   const segueix = () => {
     const nova = proposta();
@@ -1221,6 +1240,41 @@ function bindPvpProducte(frm) {
   };
   ['preu_proveidor', 'dte_proveidor'].forEach(k => { const el = frm.querySelector(`[name="${k}"]`); if (el) el.addEventListener('input', segueix); });
   const pr = frm.querySelector('[name="proveidor_id"]'); if (pr) pr.addEventListener('change', segueix);
+}
+// (v53) a la fitxa: els preus que hi ha programats (d'una tarifa) per a una data, i el botó per anul·lar-los
+function preusProgramatsHTML(row) {
+  if (!row || !row.canvis_des_de) return '';
+  const parts = [];
+  if (row.baixa_programada) parts.push('<b>es donarà de baixa</b>');
+  if (row.preu_proveidor_nou != null) parts.push('preu del proveïdor ' + h(textPreu4(row.preu_proveidor_nou)));
+  if (row.dte_proveidor_nou != null) parts.push('descompte ' + h(textPct(row.dte_proveidor_nou)));
+  const c = row.preu_proveidor_nou != null ? costProducte(row.preu_proveidor_nou, row.dte_proveidor_nou != null ? row.dte_proveidor_nou : row.dte_proveidor) : null;
+  if (c != null) parts.push('cost ' + eur(c));
+  if (row.pvp_nou != null) parts.push('PVP ' + eur(row.pvp_nou));
+  return `<div class="msg dc-avis" id="preus-programats">A partir del <b>${dmy(row.canvis_des_de)}</b>${row.canvis_origen ? ' (' + h(row.canvis_origen) + ')' : ''}: ${parts.join(' · ')}. <button type="button" class="btn ghost small" id="treu-programats" data-id="${row.id}">Anul·la-ho</button></div>`;
+}
+function bindPreusProgramats() {
+  const b = $('#treu-programats'); if (!b) return;
+  b.addEventListener('click', async () => {
+    if (!confirm('Anul·lar el que hi ha programat per a aquest producte? Es queden els preus d’ara.')) return;
+    const r = await sb.from('productes').update({ preu_proveidor_nou: null, dte_proveidor_nou: null, pvp_nou: null, baixa_programada: false, canvis_des_de: null, canvis_origen: null }).eq('id', Number(b.dataset.id));
+    if (r.error) { toastErr(friendly(r.error)); return; }
+    await loadTable('productes'); toast('Anul·lat: es queden els preus d’ara'); renderMain();
+  });
+}
+// els preus programats que ja toquen s'apliquen en obrir la web de l'oficina (o en canviar de dia amb la web oberta): els preus només es
+// fan servir des d'aquí, així que el dia que toca ja hi són
+let preusComprovats = '';
+async function aplicaPreusSiToca() {
+  const avuiL = ymd(new Date());
+  if (preusComprovats === avuiL || APP_NOMES_TASQUES || !sb || !esOficina(treballadorActual())) return 0;
+  preusComprovats = avuiL;
+  if (!C.rows('productes').some(p => p.canvis_des_de && String(p.canvis_des_de).slice(0, 10) <= avuiL)) return 0;
+  const { data, error } = await sb.rpc('aplica_preus_programats');
+  if (error) { preusComprovats = ''; return 0; }
+  const n = Number(data) || 0;
+  if (n) { await loadTable('productes'); toast(`Preus de tarifa programats per a avui: aplicats a ${n} producte${n === 1 ? '' : 's'}`, 6000); }
+  return n;
 }
 // per nom: quins proveïdors el tenen i el cost més baix (es calcula un sol cop per pantalla)
 let memoNomsProductes = null;
@@ -1526,7 +1580,7 @@ const SCHEMA = {
     { label: 'ALARMES', color: '#c62828', tables: ['alarmes'] },
     { label: 'QUI · ON', color: '#e08a8a', tables: ['administradors', 'contactes', 'clients', 'llocs', 'informes_lloc', 'clients_per_administrador'] },
     { label: 'FACTURACIÓ', color: '#8a8a8a', tables: ['agrupacions', 'facturacio_recurrent', 'factures', 'pdf_factures', 'marcat_cobrats', 'calendari_facturacio', 'vencudes', 'grafiques_facturacio', 'pressupostos_tasca', 'pressupostos_agrupacio', 'clausules_pressupost'] },
-    { label: 'ALBARANS I PRODUCTES', color: '#c9c9c9', tables: ['productes', 'albarans', 'albarans_pendents'] },
+    { label: 'ALBARANS I PRODUCTES', color: '#c9c9c9', tables: ['productes', 'importa_tarifa', 'albarans', 'albarans_pendents'] },
     { label: 'PROVEÏDORS', color: '#c0691e', tables: ['proveidors', 'factures_proveidor', 'puja_factures_proveidor', 'pagaments_proveidor', 'comptes_despesa'] },
     { label: 'COMPTABILITAT', color: '#3f6f4f', oficina: true, tables: ['compta_diari', 'compta_major', 'compta_sumes', 'compta_nou', 'compta_banc', 'compta_remeses', 'compta_immobilitzat', 'compta_contasol', 'comptes', 'compta_config'] },
     { label: 'TASQUES', color: '#8b5a2b', tables: ['fulls_treball', 'tasques_piscina', 'informe_tasques_piscina', 'informe_tasques_dates'] },
@@ -1559,6 +1613,7 @@ const SCHEMA = {
     informe_tasques_piscina: { label: 'Tasques per cada piscina', render: main => renderInformeTasquesPiscina(main) },
     informe_tasques_dates: { label: 'Tasques per dates', render: main => renderInformeTasquesDates(main) },
     puja_factures_proveidor: { label: 'Puja factures (PDF)', render: main => renderPujaFactures(main) },
+    importa_tarifa: { label: 'Importa una tarifa (PDF)', render: main => renderImportaTarifa(main) },   // (v53)
     calendari_facturacio: { label: 'Calendari de facturació', render: main => renderCalendariFacturacio(main) },
     vencudes: { label: 'Vençudes i pendents', render: main => renderVencudes(main) },
     pdf_factures: { label: 'PDF de factures', render: main => renderPdfFactures(main) },
@@ -2001,19 +2056,20 @@ const SCHEMA = {
     productes: {   // (v52) cada producte és d'un proveïdor: el mateix producte de dos proveïdors són dos productes, amb el seu preu i el seu descompte
       label: 'Productes', nou: 'Nou producte', order: 'nom',
       display: (r, L) => r.nom + (r.proveidor_id ? ' · ' + L('proveidors', r.proveidor_id) : '') + (r.referencia ? ' (' + r.referencia + ')' : ''),
-      list: ['nom', 'proveidor_id', 'referencia', 'unitat', 'preu', 'dte', 'cost', 'venda'],
+      list: ['nom', 'proveidor_id', 'referencia', 'unitat', 'preu', 'dte', 'cost', 'venda', 'programat'],
       computed: {
         preu: { label: 'Preu prov.', num: true, fn: r => r.preu_proveidor == null || r.preu_proveidor === '' ? '' : Number(r.preu_proveidor).toFixed(4).replace(/0{1,2}$/, '') },
         dte: { label: 'Dte %', num: true, fn: r => Number(r.dte_proveidor) ? String(Number(r.dte_proveidor)) : '' },
         cost: { label: 'Cost', num: true, fn: r => r.preu_cost == null || r.preu_cost === '' ? '' : Number(r.preu_cost).toFixed(2), color: r => esElMesBarat(r) ? 'c-verd-suau' : '' },
         venda: { label: 'PVP', num: true, fn: r => r.pvp == null || r.pvp === '' ? '' : Number(r.pvp).toFixed(2) },
+        programat: { label: 'Programat', hideIfEmpty: true, fn: r => !r.canvis_des_de ? '' : (r.baixa_programada ? 'baixa' : 'preus nous') + ' el ' + dmy(r.canvis_des_de), color: r => r.canvis_des_de ? 'c-albara' : '' },   // (v53)
       },
       // per nom i, dins del mateix nom, per proveïdor: el mateix producte de diversos proveïdors surt junt
       sortBy: (a, b) => norm(a.nom).localeCompare(norm(b.nom), 'ca') || L('proveidors', a.proveidor_id).localeCompare(L('proveidors', b.proveidor_id), 'ca') || a.id - b.id,
       filtres: [{ key: 'proveidor_id', tipus: 'opcions', label: 'Proveïdor', totsLabel: 'Tots els proveïdors', get opcions() { return opcionsProveidorProductes(); }, prova: (r, v) => v === 'sense' ? !r.proveidor_id : String(r.proveidor_id) === v }],
       llegenda: () => hiHaDiversosProveidors() ? 'El mateix producte de diversos proveïdors surt un sota l’altre; el cost més baix, en verd.' : '',
       actions: r => r && r.actiu ? [{ label: 'Afegeix-lo d’un altre proveïdor', run: () => copiaProducteAltreProveidor(r.id) }] : [],
-      bindExtras: frm => bindPvpProducte(frm),
+      extras: preusProgramatsHTML, bindExtras: frm => { bindPvpProducte(frm); bindPreusProgramats(); },
       fields: [
         { key: 'proveidor_id', label: 'Proveïdor', type: 'ref', ref: 'proveidors', required: true, hint: 'si el mateix producte el tenen dos proveïdors, són dos productes, cadascun amb el seu preu i el seu descompte' },
         { key: 'referencia', label: 'Referència', type: 'text', dup: 'exact', dupScope: 'proveidor_id', hint: 'el codi del producte al proveïdor' },
@@ -2230,9 +2286,9 @@ const SCHEMA = {
       label: 'Proveïdors', nou: 'Nou proveïdor', order: 'nom',
       display: r => r.nom,
       list: ['nom', 'nif', 'poblacio', 'telefon', 'contacte', 'forma_pagament', 'dia_pagament', 'termini_dies', 'percentatge_venda'],
-      actions: r => accionsCopia('proveidors', r), extras: copiaAvisHTML, bindExtras: copiaAvisBind, despresCrear: acabaCopia,   // copiar-lo com a client
+      actions: r => [...accionsCopia('proveidors', r), ...(r && r.actiu && !APP_NOMES_TASQUES && esOficina(treballadorActual()) ? [{ label: 'Importa una tarifa (PDF)', noDesa: true, run: () => obreImportaTarifa(r.id) }] : [])], extras: copiaAvisHTML, bindExtras: copiaAvisBind, despresCrear: acabaCopia,   // copiar-lo com a client
       // (v52) els seus productes; un clic n'obre un i «Nou producte d'aquest proveïdor» en fa un amb el proveïdor ja posat
-      children: [{ table: 'productes', fk: 'proveidor_id', label: 'Productes d’aquest proveïdor', editable: () => false, obre: true, nou: 'Nou producte d’aquest proveïdor', cols: ['nom', 'referencia', 'unitat', 'preu', 'dte', 'cost', 'venda'] }],
+      children: [{ table: 'productes', fk: 'proveidor_id', label: 'Productes d’aquest proveïdor', editable: () => false, obre: true, nou: 'Nou producte d’aquest proveïdor', cols: ['nom', 'referencia', 'unitat', 'preu', 'dte', 'cost', 'venda', 'programat'] }],
       obreEnCrear: 'Proveïdor desat. Ara hi pots afegir els seus productes.',
       fields: [
         { key: 'nom', label: 'Nom o raó social', type: 'text', required: true, dup: 'similar' },
@@ -2921,6 +2977,7 @@ async function start() {
   const pAigua = carregaDadesAigua(), pLlegides = sb.from('alarmes_llegides').select('clau').then(r => r, e => ({ error: e }));
   try { faltes = await loadAll(); aplicaPanell(); }   // (v42) les regles de les incidències, del panell d'accions
   catch (e) { renderLogin('No s’han pogut carregar les taules: ' + friendly(e)); return; }
+  await aplicaPreusSiToca().catch(() => 0);   // (v53) els preus de tarifa programats per a avui
   await Promise.all([carregaComptaInici(), carregaAlarmes(pAigua, pLlegides).catch(() => {})]);
   recordaUsuari();
   const desDAvis = location.hash.match(/^#accio=(\d+)$|^#accions$/);   // s'ha obert des d'una notificació
@@ -4664,6 +4721,7 @@ function oblidaEsborranys() {
 }
 function renderApp() {
   if (esOperari()) { renderAppOperari(); return; }
+  if (preusComprovats !== ymd(new Date())) aplicaPreusSiToca().then(n => { if (n) renderMain(); }).catch(() => {});   // (v53) web oberta d'un dia per l'altre
   document.body.classList.remove('operari');
   document.body.dataset.mode = state.mode;
   $('#app').innerHTML = `
@@ -5157,7 +5215,7 @@ function sortRows(td, rows) {
 }
 function tableHTML(td, rows, clickable) {
   if (!rows.length) return `<div class="empty">Cap registre.</div>`;
-  const cols = td.list, ambMarca = clickable && !!td.marcable, marcats = marquesDe(td);
+  const cols = td.list.filter(k => { const cp = td.computed && td.computed[k]; return !(cp && cp.hideIfEmpty) || rows.some(r => cellText(td, k, r) !== ''); }), ambMarca = clickable && !!td.marcable, marcats = marquesDe(td);
   let grupAnt = null;
   return `<table class="tbl"><thead><tr>${cols.map(k => { const d = (td.computed && td.computed[k]) || fieldDef(td, k) || {}; return `<th${d.th ? ` class="${d.th}"` : ''}>${h(colLabel(td, k))}</th>`; }).join('')}${ambMarca ? '<th class="marca"></th>' : ''}</tr></thead><tbody>
     ${rows.map(r => { const id = td.pk ? r[td.pk] : r.id;
@@ -6770,7 +6828,18 @@ function destiDesDeText(text) {
 }
 const factorVenda = prov => prov && prov.percentatge_venda != null && prov.percentatge_venda !== '' ? Number(prov.percentatge_venda) / 100 : 1;
 const costLinia = l => l.import != null && l.import !== '' && Number(l.quantitat) ? Number(l.import) / Number(l.quantitat) : Number(l.preu_unitari || 0);
-const pvpLinia = (l, prov) => Math.round(costLinia(l) * factorVenda(prov) * 100) / 100;
+// (v53) la fitxa del producte mana: si la línia és d'un producte d'aquest proveïdor que té fitxa (la seva referència surt a la descripció, o
+// la descripció és el nom del producte), el PVP de la fitxa; si no, el cost × el % de venda del proveïdor
+function producteDeLinia(l, prov) {
+  if (!prov || !l) return null;
+  const ps = C.rows('productes').filter(p => p.actiu && Number(p.proveidor_id) === Number(prov.id)); if (!ps.length) return null;
+  const tokens = new Set(String(l.descripcio || '').split(/[\s,;:()\[\]"'«»]+/).map(normRef).filter(Boolean));
+  const refBona = r => r.length >= 3 && (/[a-z]/.test(r) || r.length >= 5);
+  let c = ps.filter(p => { const r = normRef(p.referencia); return refBona(r) && tokens.has(r); });
+  if (c.length !== 1) { const d = norm(l.descripcio); c = d ? ps.filter(p => norm(p.nom) === d) : []; }
+  return c.length === 1 ? c[0] : null;
+}
+const pvpLinia = (l, prov) => { const p = producteDeLinia(l, prov); return p ? Number(p.pvp) : Math.round(costLinia(l) * factorVenda(prov) * 100) / 100; };
 // les factures de proveïdor amb alguna línia ja passada a albarà (es calcula un sol cop per pantalla, no per fila)
 let memoFpAlbara = null;
 const fpAmbAlbara = () => {
@@ -6818,15 +6887,15 @@ function liniesProveidorHTML(row) {
   if (!row) return '';
   const ls = liniesDeFactura(row.id), prov = C.get('proveidors', row.proveidor_id), pct = prov && prov.percentatge_venda != null && prov.percentatge_venda !== '' ? Number(prov.percentatge_venda) : null;
   const pend = ls.filter(l => !l.albara_id && l.desti_tipus === 'lloc' && l.lloc_id);
-  const nota = pct == null
+  const nota = (pct == null
     ? `<b class="c-taronja">El proveïdor no té «% de venda sobre el cost»: els preus de venda sortirien iguals al cost.</b> Posa-l'hi a la fitxa del proveïdor.`
-    : `Preu de venda = cost × ${h(String(pct).replace('.', ','))} % (fitxa del proveïdor).`;
+    : `Preu de venda = cost × ${h(String(pct).replace('.', ','))} % (fitxa del proveïdor).`) + ' Si una línia és d’un producte que té fitxa (la seva referència surt a la descripció, o té el mateix nom), mana el PVP de la fitxa.';
   const files = ls.map(l => `<tr data-linia="${l.id}">
       <td class="num">${l.ordre || ''}</td>
       <td class="desc"><input type="text" data-camp="descripcio" value="${h(l.descripcio)}" ${l.albara_id ? 'disabled' : ''}></td>
       <td class="q num"><input type="number" step="0.01" data-camp="quantitat" value="${h(l.quantitat)}" ${l.albara_id ? 'disabled' : ''}></td>
       <td class="c num"><input type="number" step="0.0001" data-camp="cost" value="${h(costLinia(l).toFixed(4).replace(/0+$/, '').replace(/\.$/, ''))}" ${l.albara_id ? 'disabled' : ''}></td>
-      <td class="num pvp" data-pvp>${eur(pvpLinia(l, prov))}</td>
+      <td class="num pvp" data-pvp>${eur(pvpLinia(l, prov))}${(p => p ? ` <span class="hint" title="${h(p.nom)}">fitxa</span>` : '')(producteDeLinia(l, prov))}</td>
       <td class="llegit">${h(l.desti_llegit || '')}</td>
       <td class="d">${l.albara_id ? h(l.desti_tipus === 'lloc' ? L('llocs', l.lloc_id) : '') : `<select data-camp="desti">${opcionsDesti(l)}</select>`}</td>
       <td>${l.albara_id ? `<a href="#" class="fet" data-obre-taula="albarans" data-obre-id="${l.albara_id}">${h(numAlbara(l.albara_id, 'albarà'))}</a>` : (l.desti_tipus === 'lloc' && l.lloc_id ? '<span class="hint">pendent</span>' : l.desti_tipus ? '<span class="hint">sense albarà</span>' : '<b class="c-taronja">?</b>')}</td>
@@ -6890,7 +6959,7 @@ async function creaAlbaransProveidor(fpId) {
   if (!pend.length) { toastErr('Cap línia pendent amb lloc'); return; }
   const sense = liniesDeFactura(fpId).filter(l => !l.albara_id && !l.desti_tipus).length;
   const grups = new Map(); pend.forEach(l => { const k = Number(l.lloc_id); if (!grups.has(k)) grups.set(k, []); grups.get(k).push(l); });
-  const resum = [...grups.entries()].map(([llocId, ls]) => { const lloc = C.get('llocs', llocId) || {}; return `• ${lloc.nom || 'lloc ' + llocId} (${L('clients', lloc.client_id)}): ` + ls.map(l => `${String(l.quantitat).replace('.', ',')} × ${l.descripcio} a ${eur(pvpLinia(l, prov))}`).join('; ') + ` = ${eur(ls.reduce((t, l) => t + Math.round(Number(l.quantitat) * pvpLinia(l, prov) * 100) / 100, 0))}`; });
+  const resum = [...grups.entries()].map(([llocId, ls]) => { const lloc = C.get('llocs', llocId) || {}; return `• ${lloc.nom || 'lloc ' + llocId} (${L('clients', lloc.client_id)}): ` + ls.map(l => `${String(l.quantitat).replace('.', ',')} × ${l.descripcio} a ${eur(pvpLinia(l, prov))}${producteDeLinia(l, prov) ? ' (fitxa)' : ''}`).join('; ') + ` = ${eur(ls.reduce((t, l) => t + Math.round(Number(l.quantitat) * pvpLinia(l, prov) * 100) / 100, 0))}`; });
   const text = `Es crearan ${grups.size} albar${grups.size === 1 ? 'à' : 'ans'} amb data ${dmy(fp.data_factura)} (preu de venda = cost × ${pct == null ? '100' : String(pct).replace('.', ',')} %, sense IVA):\n\n${resum.join('\n')}${sense ? `\n\n(${sense} líni${sense === 1 ? 'a' : 'es'} sense destinació queden pendents.)` : ''}\n\nD’acord?`;
   if (!confirm(text)) return;
   let fets = 0;
@@ -6898,7 +6967,7 @@ async function creaAlbaransProveidor(fpId) {
     const lloc = C.get('llocs', llocId); if (!lloc || !lloc.client_id) { showFormError(`El lloc ${(lloc || {}).nom || llocId} no té client`); continue; }
     const alb = await sb.from('albarans').insert({ client_id: lloc.client_id, lloc_id: lloc.id, data: fp.data_factura || avui(), descripcio: `${prov ? prov.nom : 'Proveïdor'} · factura ${fp.numero || 'sense número'}`, factura_proveidor_id: fp.id, observacions: `Creat des de la factura de proveïdor ${fp.numero || ''} (${prov ? prov.nom : ''}), preu de venda = cost × ${pct == null ? 100 : pct} %` }).select('id').single();
     if (alb.error) { showFormError('Albarà: ' + friendly(alb.error)); break; }
-    const lin = await sb.from('albara_linies').insert(ls.map((l, i) => ({ albara_id: alb.data.id, ordre: i + 1, descripcio: l.descripcio, quantitat: Number(l.quantitat), preu_unitari: pvpLinia(l, prov), preu_cost: Math.round(costLinia(l) * 100) / 100 })));
+    const lin = await sb.from('albara_linies').insert(ls.map((l, i) => ({ albara_id: alb.data.id, ordre: i + 1, descripcio: l.descripcio, quantitat: Number(l.quantitat), preu_unitari: pvpLinia(l, prov), preu_cost: Math.round(costLinia(l) * 100) / 100, producte_id: (producteDeLinia(l, prov) || {}).id || null })));
     if (lin.error) { showFormError('Línies de l’albarà: ' + friendly(lin.error)); break; }
     const upd = await sb.from('factura_proveidor_linies').update({ albara_id: alb.data.id }).in('id', ls.map(l => l.id));
     if (upd.error) { showFormError(friendly(upd.error)); break; }
@@ -7759,6 +7828,268 @@ function fullsIncHTML(inc, potFer) {
 function resumAlbaransInc(inc) {
   const albs = C.rows('fulls_treball').filter(f => f.actiu && Number(f.incidencia_id) === inc.id && f.albara_id).map(f => (C.get('albarans', f.albara_id) || {}).numero_complet).filter(Boolean);
   return albs.length ? 'Albarans: ' + albs.join(', ') : '';
+}
+
+/* =====================================================================
+   (v53) IMPORTAR UNA TARIFA (SQL 101 i la funció «llegeix-tarifa»). El PDF de la tarifa d'un proveïdor es llegeix amb la IA a trossos de
+   poques pàgines. Abans de canviar res, es veu què canvia: els productes que ja hi ha d'aquest proveïdor s'hi reconeixen per la referència
+   (o, si no en tenen, pel nom); els nous surten desmarcats (se'n marquen els que es volen entrar). Descompte: el de la casella «per a
+   tots» o, si és buida, el de cada producte (el de la tarifa o el que ja tenia). PVP: pvpProposatProducte. En confirmar, importa_tarifa
+   ho fa tot d'un cop: els nous es creen ja; els canvis de preu i les baixes, ara o el dia triat (programats).
+   ===================================================================== */
+const PAGINES_PER_TROS = 3, TROSSOS_ALHORA = 2, MIDA_MAX_TROS = 13000000;
+let ESPERA_REINTENT_TARIFA = 4000;
+function bytesABase64(u8) { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); }
+function nouEstatTarifa(prov) { return { prov: prov ? String(prov) : '', fitxer: null, nomFitxer: '', pagDe: '', pagA: '', fase: 'tria', progres: null, errors: [], files: [], ivaInclos: false, ivaLlegit: false, dteTots: '', desDe: ymd(new Date()), filtre: '', q: '', baixes: new Set(), resultat: null }; }
+function obreImportaTarifa(provId) { state.tarifa = nouEstatTarifa(provId); state.mode = 'consulta'; state.table = 'importa_tarifa'; state.editing = null; renderApp(); window.scrollTo({ top: 0 }); }
+const productesDeProveidor = id => C.rows('productes').filter(p => p.actiu && Number(p.proveidor_id) === Number(id)).sort((a, b) => norm(a.nom).localeCompare(norm(b.nom), 'ca'));
+const unitatText = u => (OPT.unitat.find(o => o[0] === u) || [u, u || ''])[1];
+// cada producte llegit, amb el que ja hi ha (per la referència; o pel nom, si un dels dos no en té); el mateix producte dos cops: «repetit»
+function aparellaTarifa(provId, llegits) {
+  const meus = productesDeProveidor(provId), perRef = new Map(), perNom = new Map();
+  meus.forEach(p => { const r = normRef(p.referencia); if (r && !perRef.has(r)) perRef.set(r, p); const n = norm(p.nom); if (!perNom.has(n)) perNom.set(n, []); perNom.get(n).push(p); });
+  const vistos = new Set();
+  return llegits.map((l, i) => {
+    const r = normRef(l.referencia), n = norm(l.nom);
+    let prod = r ? perRef.get(r) || null : null;
+    if (!prod) { const c = (perNom.get(n) || []).filter(p => !r || !normRef(p.referencia)); if (c.length === 1) prod = c[0]; }
+    const clau = prod ? 'p' + prod.id : r ? 'r' + r : 'n' + n, repetit = vistos.has(clau); vistos.add(clau);
+    return { i, l, prod, repetit, preuMa: null, dteMa: null, pvpMa: null, marcaMa: null };
+  });
+}
+// el que queda de cada fila: preu (sense IVA), descompte, cost, PVP, què passa (nou, canvia, igual, repetit, sense preu) i si es marca
+function calculaFilaTarifa(st, f, provId) {
+  const iva = st.ivaInclos ? 1.21 : 1, llegit = v => numONull(v) == null ? null : arrod4(Number(v) / iva);
+  const preu = f.preuMa != null ? f.preuMa : (llegit(f.l.preu) ?? llegit(f.l.preu_net) ?? llegit(f.l.pvp));
+  let dteFila = f.dteMa != null ? f.dteMa : numONull(f.l.dte) != null ? Number(f.l.dte)
+    : numONull(f.l.preu) > 0 && numONull(f.l.preu_net) != null ? Math.round(10000 * (1 - Number(f.l.preu_net) / Number(f.l.preu))) / 100
+    : f.prod ? Number(f.prod.dte_proveidor) || 0 : 0;
+  if (!(dteFila >= 0 && dteFila < 100)) dteFila = 0;
+  const dte = numONull(st.dteTots) != null ? Number(st.dteTots) : dteFila;
+  const cost = costProducte(preu, dte);
+  const prop = pvpProposatProducte({ preu, dte, pvpTarifa: numONull(f.l.preu) != null ? llegit(f.l.pvp) : null, proveidor: provId });
+  const pvp = f.pvpMa != null ? f.pvpMa : prop ? prop.pvp : f.prod ? Number(f.prod.pvp) : preu == null ? null : arrod2(preu);
+  const difer = (a, b, eps) => a == null || b == null || b === '' ? a != b : Math.abs(Number(a) - Number(b)) > eps;
+  const estat = f.repetit ? 'repetit' : preu == null ? 'sense preu' : !f.prod ? 'nou'
+    : difer(preu, f.prod.preu_proveidor, 0.00005) || difer(dte, Number(f.prod.dte_proveidor) || 0, 0.005) || difer(pvp, f.prod.pvp, 0.005) ? 'canvia' : 'igual';
+  const canvi = f.prod && Number(f.prod.preu_proveidor) > 0 && preu != null ? Math.round((preu / Number(f.prod.preu_proveidor) - 1) * 1000) / 10 : null;
+  const marcat = estat === 'nou' || estat === 'canvia' ? (f.marcaMa != null ? f.marcaMa : estat === 'canvia') : false;
+  return { preu, dte, cost, pvp, prop, estat, canvi, marcat };
+}
+function renderImportaTarifa(main) {
+  if (!esOficina(treballadorActual())) { main.innerHTML = '<h1>Importa una tarifa (PDF)</h1><div class="empty">Només l’oficina pot importar tarifes.</div>'; return; }
+  const st = state.tarifa || (state.tarifa = nouEstatTarifa());
+  const provs = C.rows('proveidors').filter(p => p.actiu || String(p.id) === st.prov).sort((a, b) => String(a.nom).localeCompare(String(b.nom), 'ca'));
+  main.innerHTML = `
+    <h1>Importa una tarifa (PDF)</h1>
+    <p class="sub">Tria el proveïdor i el PDF de la seva tarifa. La IA en llegeix els productes i, abans de canviar res, et mostra què canvia. Els productes que ja teniu d’aquest proveïdor s’hi reconeixen per la referència (o, si no en tenen, pel nom). Els nous surten desmarcats: marca els que vulguis entrar. Si la tarifa és llarga i només t’interessen unes pàgines, posa-les: anirà més de pressa.</p>
+    <div class="bar">
+      <select id="tt-prov" style="width:auto;max-width:24em"><option value="">Tria el proveïdor…</option>${provs.map(p => `<option value="${p.id}" ${String(p.id) === st.prov ? 'selected' : ''}>${h(p.nom)}</option>`).join('')}</select>
+      <input type="file" id="tt-fitxer" accept="application/pdf" style="width:auto">
+      ${st.nomFitxer ? `<span class="nota" id="tt-nom-fitxer">Fitxer: <b>${h(st.nomFitxer)}</b></span>` : ''}
+      <span class="nota">Pàgines</span><input type="number" id="tt-de" min="1" step="1" placeholder="de" value="${h(st.pagDe)}" style="width:6em"><input type="number" id="tt-a" min="1" step="1" placeholder="a" value="${h(st.pagA)}" style="width:6em">
+      <button type="button" class="btn" id="tt-llegeix" ${st.fase === 'llegint' ? 'disabled' : ''}>Llegeix la tarifa</button>
+    </div>
+    <div id="tt-cos"></div>`;
+  $('#tt-prov').addEventListener('change', e => {
+    if (st.files.length && st.fase === 'revisa' && !confirm('Canviar de proveïdor? Es perd el que s’ha llegit.')) { e.target.value = st.prov; return; }
+    st.prov = e.target.value; st.files = []; st.errors = []; st.baixes = new Set(); st.fase = 'tria'; pintaCosTarifa();
+  });
+  $('#tt-fitxer').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; st.fitxer = f || null; st.nomFitxer = f ? f.name : ''; const s = $('#tt-nom-fitxer'); if (s) s.textContent = ''; });
+  $('#tt-de').addEventListener('input', e => { st.pagDe = e.target.value; });
+  $('#tt-a').addEventListener('input', e => { st.pagA = e.target.value; });
+  $('#tt-llegeix').addEventListener('click', () => llegeixTarifa());
+  pintaCosTarifa();
+}
+const progresTarifaText = st => { const p = st.progres || {}; return `Llegint la tarifa… <b>${p.fets || 0}</b> de <b>${p.total || 0}</b> trossos (pàgines ${p.de}–${p.a} de ${p.n}). Pot trigar una mica: no tanquis aquesta pantalla.${st.errors.length ? `<br><span class="v-no">${st.errors.map(h).join(' · ')}</span>` : ''}`; };
+async function llegeixTarifa() {
+  const st = state.tarifa, prov = st && st.prov ? C.get('proveidors', st.prov) : null;
+  if (!prov) { toastErr('Tria el proveïdor'); return; }
+  if (!st.fitxer) { toastErr('Tria el PDF de la tarifa'); return; }
+  if (st.files.length && st.fase === 'revisa' && !confirm('Tornar a llegir? Es perd el que s’ha llegit i revisat.')) return;
+  let PDFLib, src;
+  try { PDFLib = await carregaPdfLib(); src = await PDFLib.PDFDocument.load(await st.fitxer.arrayBuffer(), { ignoreEncryption: true }); }
+  catch (e) { toastErr('No s’ha pogut obrir el PDF: ' + (e && e.message || e)); return; }
+  const n = src.getPageCount(), de = Math.max(1, Math.min(n, parseInt(st.pagDe, 10) || 1)), a = Math.max(de, Math.min(n, parseInt(st.pagA, 10) || n));
+  const cua = []; for (let p = de; p <= a; p += PAGINES_PER_TROS) cua.push([p, Math.min(a, p + PAGINES_PER_TROS - 1)]);
+  Object.assign(st, { fase: 'llegint', progres: { fets: 0, total: cua.length, de, a, n }, errors: [], files: [], baixes: new Set(), resultat: null });
+  renderMain();
+  const llegits = [], ivaVots = [];
+  const pintaProgres = () => { const el = $('#tt-progres'); if (el) el.innerHTML = progresTarifaText(st); };
+  const llegeixTros = async ([p0, p1]) => {
+    const doc = await PDFLib.PDFDocument.create();
+    (await doc.copyPages(src, Array.from({ length: p1 - p0 + 1 }, (_, k) => p0 - 1 + k))).forEach(pg => doc.addPage(pg));
+    const b64 = bytesABase64(await doc.save());
+    if (b64.length > MIDA_MAX_TROS && p1 > p0) return { partir: true };   // massa gran: pàgina a pàgina
+    for (let intent = 1; ; intent++) {
+      const { data, error } = await sb.functions.invoke('llegeix-tarifa', { body: { pdf: b64, primera_pagina: p0, pagines: p1 - p0 + 1, proveidor: prov.nom } });
+      let err = null;
+      if (error) { err = error.message || String(error); try { if (error.context && error.context.json) { const j = await error.context.json(); if (j && j.error) err = j.error; } } catch (e2) {} }
+      else if (!data || data.error) err = (data && data.error) || 'resposta buida';
+      if (!err) return data;
+      if (/not found|Failed to send|404/i.test(err)) err += ' (la funció «llegeix-tarifa» és publicada a Supabase?)';
+      if (intent >= 2 || /oficina|GEMINI_API_KEY|massa gran|publicada/.test(err)) throw new Error(err);
+      await new Promise(r => setTimeout(r, ESPERA_REINTENT_TARIFA));
+    }
+  };
+  const treballa = async () => {
+    while (cua.length) {
+      const tros = cua.shift();
+      try {
+        const d = await llegeixTros(tros);
+        if (d.partir) { for (let p = tros[0]; p <= tros[1]; p++) cua.push([p, p]); st.progres.total += tros[1] - tros[0]; pintaProgres(); continue; }
+        (d.productes || []).forEach(x => llegits.push(x)); if (d.iva_inclos != null) ivaVots.push(d.iva_inclos);
+      } catch (e) { st.errors.push(`pàgines ${tros[0]}–${tros[1]}: ${e && e.message || e}`); }
+      st.progres.fets++; pintaProgres();
+    }
+  };
+  await Promise.all(Array.from({ length: TROSSOS_ALHORA }, treballa));
+  llegits.sort((x, y) => (Number(x.pagina) || 0) - (Number(y.pagina) || 0));
+  st.ivaLlegit = ivaVots.includes(true); st.ivaInclos = st.ivaLlegit;
+  st.files = aparellaTarifa(st.prov, llegits);
+  st.fase = 'revisa';
+  if (state.table === 'importa_tarifa') renderMain();
+}
+function pintaCosTarifa() {
+  const st = state.tarifa, box = $('#tt-cos'); if (!st || !box) return;
+  const prov = st.prov ? C.get('proveidors', st.prov) : null;
+  if (st.fase === 'llegint') { box.innerHTML = `<div class="msg" id="tt-progres">${progresTarifaText(st)}</div>`; return; }
+  if (st.fase === 'fet' && st.resultat && prov) {
+    const d = st.resultat;
+    box.innerHTML = `<div class="msg ok">Fet: <b>${d.nous}</b> producte${d.nous === 1 ? '' : 's'} nou${d.nous === 1 ? '' : 's'}, <b>${d.canvis}</b> canvi${d.canvis === 1 ? '' : 's'} de preu${d.baixes ? `, <b>${d.baixes}</b> de baixa` : ''}.${d.programat && (d.canvis || d.baixes) ? ` Els canvis de preu${d.baixes ? ' i les baixes' : ''} s’aplicaran sols el <b>${dmy(d.des_de)}</b>; fins llavors, els preus d’ara.` : ''}</div>
+      <div class="bar"><button type="button" class="btn" id="tt-veure">Veure els productes de ${h(prov.nom)}</button><button type="button" class="btn ghost" id="tt-altra">Importa’n una altra</button></div>`;
+    $('#tt-veure').addEventListener('click', () => { state.filtres.productes = { proveidor_id: String(prov.id) }; state.mode = 'consulta'; state.table = 'productes'; state.editing = null; renderApp(); window.scrollTo({ top: 0 }); });
+    $('#tt-altra').addEventListener('click', () => { state.tarifa = nouEstatTarifa(st.prov); renderMain(); });
+    return;
+  }
+  if (st.fase !== 'revisa' || !prov) { box.innerHTML = st.errors.length ? `<div class="msg err">${st.errors.map(h).join('<br>')}</div>` : ''; return; }
+  const calc = st.files.map(f => ({ f, c: calculaFilaTarifa(st, f, prov.id) })), nE = k => calc.filter(x => x.c.estat === k).length;
+  const usats = new Set(st.files.filter(f => f.prod && !f.repetit).map(f => f.prod.id)), noSurten = productesDeProveidor(prov.id).filter(p => !usats.has(p.id));
+  const p = st.progres || {};
+  box.innerHTML = `
+    ${st.errors.length ? `<div class="msg err">No s’han pogut llegir: ${st.errors.map(h).join(' · ')}. Pots tornar a llegir aquestes pàgines (Pàgines de … a …).</div>` : ''}
+    ${!st.files.length ? '<div class="empty">No s’ha trobat cap producte amb preu a les pàgines llegides.</div>' : `
+    <p>Llegits <b>${st.files.length}</b> productes de les pàgines ${p.de}–${p.a} (de ${p.n}). Ja els teniu: <b>${nE('canvia') + nE('igual')}</b> (${nE('canvia')} canvien, ${nE('igual')} igual). Nous: <b>${nE('nou')}</b>.${nE('repetit') ? ` Repetits: ${nE('repetit')}.` : ''}${noSurten.length ? ` ${noSurten.length} dels vostres no hi surten (a baix).` : ''}</p>
+    <div class="bar tt-controls">
+      <label class="f"><span class="l">Descompte per a tots (%)</span><input type="number" id="tt-dte" min="0" max="99.99" step="0.01" value="${h(st.dteTots)}" placeholder="cadascun el seu" style="width:11em"><span class="hint">només si tots tenen el mateix; buit: cadascun el seu</span></label>
+      <label class="chk"><input type="checkbox" id="tt-iva" ${st.ivaInclos ? 'checked' : ''}> Els preus de la tarifa porten IVA: treu-l’hi${st.ivaLlegit ? ' <span class="hint">(la tarifa diu que el porten)</span>' : ''}</label>
+      <label class="f"><span class="l">Aplica els preus a partir del</span><input type="date" id="tt-desde" value="${h(st.desDe)}" style="width:auto"><span class="hint">si és més endavant, queden programats i s’apliquen sols aquell dia</span></label>
+    </div>
+    <div class="bar">
+      <select id="tt-filtre" style="width:auto">${[['', 'Tots'], ['canvia', 'Canvien'], ['nou', 'Nous'], ['igual', 'Iguals'], ['marcats', 'Marcats']].map(o => `<option value="${o[0]}" ${o[0] === st.filtre ? 'selected' : ''}>${o[1]}</option>`).join('')}</select>
+      <input type="text" id="tt-q" placeholder="Busca…" value="${h(st.q)}" style="width:14em">
+      <button type="button" class="btn ghost small" id="tt-marca">Marca els que es veuen</button><button type="button" class="btn ghost small" id="tt-desmarca">Desmarca els que es veuen</button>
+      <span class="n" id="tt-n"></span>
+    </div>
+    <div class="tt-desplaca"><table class="tbl tt-taula"><thead><tr><th></th><th class="num">Pàg.</th><th>Referència</th><th>Producte</th><th class="num">Preu ara</th><th class="num">Preu nou</th><th class="num">Canvi</th><th class="num">Dte %</th><th class="num">Cost</th><th class="num">PVP ara</th><th class="num">PVP nou</th><th>Què passa</th></tr></thead>
+      <tbody id="tt-files"></tbody></table></div>`}
+    ${st.files.length && noSurten.length ? `<h3>Productes vostres de ${h(prov.nom)} que no surten a la tarifa (${noSurten.length})</h3>
+    <p class="sub">Si la tarifa és sencera, potser estan descatalogats; si n’has llegit només unes pàgines (o alguna no s’ha pogut llegir), és normal que no hi surtin. Marca els que vulguis donar de baixa.</p>
+    <table class="tbl"><thead><tr><th>Dona’l de baixa</th><th>Referència</th><th>Producte</th><th class="num">Preu</th><th class="num">PVP</th></tr></thead><tbody>
+      ${noSurten.map(x => `<tr><td><input type="checkbox" data-baixa="${x.id}" ${st.baixes.has(x.id) ? 'checked' : ''}></td><td>${h(x.referencia || '')}</td><td>${h(x.nom)}</td><td class="num">${h(textPreu4(x.preu_proveidor))}</td><td class="num">${eur(x.pvp)}</td></tr>`).join('')}
+    </tbody></table>` : ''}
+    <div class="bar fila-factura"><div class="ff-esq"></div><div class="ff-mig"><button type="button" class="btn" id="tt-aplica">Aplica</button></div><div class="ff-dre"></div><span class="nota nota-sota" id="tt-resum-aplica"></span></div>`;
+  pintaFilesTarifa();
+  bindRevisioTarifa(box, st, prov);
+}
+function filaTarifaHTML(st, f, c) {
+  const actiu = c.estat === 'nou' || c.estat === 'canvia', fort = c.canvi != null && Math.abs(c.canvi) > 30;
+  const estat = { nou: c.marcat ? '<b>es crearà</b>' : 'nou', canvia: c.marcat ? '<b>canvia</b>' : 'canvia (no es toca)', igual: 'igual', repetit: 'repetit', 'sense preu': 'sense preu' }[c.estat] || c.estat;
+  return `<tr data-fila="${f.i}" class="${actiu ? '' : 'off'}">
+    <td><input type="checkbox" data-marca ${c.marcat ? 'checked' : ''} ${actiu ? '' : 'disabled'} title="Marca’l per aplicar-lo"></td>
+    <td class="num">${h(f.l.pagina || '')}</td>
+    <td>${h(f.l.referencia || '')}</td>
+    <td class="tt-prod">${h(f.l.nom)}${f.l.unitat && f.l.unitat !== 'u' ? ` <span class="hint">(preu per ${h(unitatText(f.l.unitat))})</span>` : ''}${f.prod && norm(f.prod.nom) !== norm(f.l.nom) ? `<br><span class="hint">ara: ${h(f.prod.nom)}</span>` : ''}</td>
+    <td class="num">${f.prod ? h(textPreu4(f.prod.preu_proveidor)) : ''}</td>
+    <td class="num"><input type="number" step="0.0001" min="0" data-camp="preu" value="${c.preu == null ? '' : c.preu}" ${actiu ? '' : 'disabled'}></td>
+    <td class="num ${fort ? 'cel c-taronja' : ''}" data-c="canvi" title="${fort ? 'canvi gran: comprova-ho' : ''}">${c.canvi == null ? '' : (c.canvi > 0 ? '+' : '') + String(c.canvi).replace('.', ',') + ' %'}</td>
+    <td class="num"><input type="number" step="0.01" min="0" max="99.99" data-camp="dte" value="${c.dte}" ${actiu && numONull(st.dteTots) == null ? '' : 'disabled'}></td>
+    <td class="num" data-c="cost">${c.cost == null ? '' : eur(c.cost)}</td>
+    <td class="num">${f.prod ? eur(f.prod.pvp) : ''}</td>
+    <td class="num"><input type="number" step="0.01" min="0" data-camp="pvp" value="${c.pvp == null ? '' : c.pvp.toFixed(2)}" title="${c.prop ? 'proposat: ' + h(c.prop.perque) : ''}" ${actiu ? '' : 'disabled'}></td>
+    <td class="tt-estat" data-c="estat">${estat}</td>
+  </tr>`;
+}
+const filaVisibleTarifa = (st, f, c) => (!st.filtre || (st.filtre === 'marcats' ? c.marcat : c.estat === st.filtre)) && (!st.q.trim() || norm((f.l.referencia || '') + ' ' + f.l.nom).includes(norm(st.q)));
+function pintaFilesTarifa() {
+  const st = state.tarifa, tb = $('#tt-files'), prov = C.get('proveidors', st.prov); if (!tb || !prov) return;
+  const vis = st.files.map(f => ({ f, c: calculaFilaTarifa(st, f, prov.id) })).filter(x => filaVisibleTarifa(st, x.f, x.c));
+  tb.innerHTML = vis.map(x => filaTarifaHTML(st, x.f, x.c)).join('') || '<tr><td colspan="12" class="hint">Cap producte amb aquest filtre.</td></tr>';
+  const n = $('#tt-n'); if (n) n.textContent = `${vis.length} de ${st.files.length}`;
+  resumAplicaTarifa();
+}
+function resumAplicaTarifa() {
+  const st = state.tarifa, b = $('#tt-aplica'), s = $('#tt-resum-aplica'), prov = C.get('proveidors', st.prov); if (!b || !prov) return;
+  const calc = st.files.map(f => calculaFilaTarifa(st, f, prov.id)), nous = calc.filter(c => c.marcat && c.estat === 'nou').length, canvis = calc.filter(c => c.marcat && c.estat === 'canvia').length, baixes = st.baixes.size;
+  const programat = st.desDe && st.desDe > ymd(new Date());
+  b.textContent = `Aplica: ${nous} nou${nous === 1 ? '' : 's'}, ${canvis} canvi${canvis === 1 ? '' : 's'} de preu${baixes ? `, ${baixes} baixa${baixes === 1 ? '' : 'es'}` : ''}`;
+  b.disabled = !(nous || canvis || baixes);
+  if (s) s.textContent = !st.desDe ? 'Falta la data a partir de la qual s’apliquen els preus.' : programat
+    ? `Els nous es creen ara; els canvis de preu${baixes ? ' i les baixes' : ''} quedaran programats i s’aplicaran sols el ${dmy(st.desDe)}.`
+    : 'S’aplica tot ara mateix.';
+}
+function bindRevisioTarifa(box, st, prov) {
+  const tot = () => pintaFilesTarifa();
+  const on = (sel, ev, fn) => { const el = box.querySelector(sel); if (el) el.addEventListener(ev, fn); };
+  on('#tt-dte', 'input', e => { st.dteTots = e.target.value; tot(); });
+  on('#tt-iva', 'change', e => { st.ivaInclos = e.target.checked; tot(); });
+  on('#tt-desde', 'change', e => { st.desDe = e.target.value; resumAplicaTarifa(); });
+  on('#tt-filtre', 'change', e => { st.filtre = e.target.value; tot(); });
+  on('#tt-q', 'input', e => { st.q = e.target.value; tot(); });
+  const marca = v => { st.files.forEach(f => { const c = calculaFilaTarifa(st, f, prov.id); if ((c.estat === 'nou' || c.estat === 'canvia') && filaVisibleTarifa(st, f, c)) f.marcaMa = v; }); tot(); };
+  on('#tt-marca', 'click', () => marca(true)); on('#tt-desmarca', 'click', () => marca(false));
+  const tb = box.querySelector('#tt-files');
+  if (tb) {
+    tb.addEventListener('input', e => {
+      const el = e.target, tr = el.closest('tr[data-fila]'); if (!tr || !el.dataset.camp) return;
+      const f = st.files[Number(tr.dataset.fila)]; if (!f) return;
+      if (el.dataset.camp === 'preu') f.preuMa = numONull(el.value);
+      else if (el.dataset.camp === 'dte') f.dteMa = numONull(el.value);
+      else if (el.dataset.camp === 'pvp') f.pvpMa = numONull(el.value);   // buit: torna al proposat
+      const c = calculaFilaTarifa(st, f, prov.id), cel = k => tr.querySelector(`[data-c="${k}"]`);
+      const tmp = document.createElement('tbody'); tmp.innerHTML = filaTarifaHTML(st, f, c); const nova = tmp.firstElementChild;
+      ['canvi', 'cost', 'estat'].forEach(k => { const a = cel(k), b = nova.querySelector(`[data-c="${k}"]`); if (a && b) { a.innerHTML = b.innerHTML; a.className = b.className; a.title = b.title; } });
+      const pvp = tr.querySelector('[data-camp="pvp"]'); if (pvp && pvp !== el && f.pvpMa == null) pvp.value = c.pvp == null ? '' : c.pvp.toFixed(2);
+      const mc = tr.querySelector('[data-marca]'); if (mc) mc.checked = c.marcat;
+      resumAplicaTarifa();
+    });
+    tb.addEventListener('change', e => {
+      const el = e.target; if (!el.matches('[data-marca]')) return;
+      const f = st.files[Number(el.closest('tr[data-fila]').dataset.fila)]; if (!f) return;
+      f.marcaMa = el.checked;
+      const c = calculaFilaTarifa(st, f, prov.id), tr = el.closest('tr'), a = tr.querySelector('[data-c="estat"]');
+      const tmp = document.createElement('tbody'); tmp.innerHTML = filaTarifaHTML(st, f, c); const b = tmp.firstElementChild.querySelector('[data-c="estat"]'); if (a && b) a.innerHTML = b.innerHTML;
+      resumAplicaTarifa();
+    });
+  }
+  box.querySelectorAll('[data-baixa]').forEach(c => c.addEventListener('change', () => { const id = Number(c.dataset.baixa); if (c.checked) st.baixes.add(id); else st.baixes.delete(id); resumAplicaTarifa(); }));
+  on('#tt-aplica', 'click', () => aplicaTarifa());
+}
+async function aplicaTarifa() {
+  const st = state.tarifa, prov = st && C.get('proveidors', st.prov); if (!prov) return;
+  const calc = st.files.map(f => ({ f, c: calculaFilaTarifa(st, f, prov.id) }));
+  const nous = calc.filter(x => x.c.marcat && x.c.estat === 'nou'), canvis = calc.filter(x => x.c.marcat && x.c.estat === 'canvia'), baixes = [...st.baixes];
+  if (!nous.length && !canvis.length && !baixes.length) { toastErr('No hi ha res marcat per aplicar'); return; }
+  if (!st.desDe) { toastErr('Posa la data a partir de la qual s’apliquen els preus'); return; }
+  const dolent = [...nous, ...canvis].find(x => !(x.c.preu >= 0) || !(x.c.dte >= 0 && x.c.dte < 100) || !(x.c.pvp >= 0));
+  if (dolent) { toastErr(`Revisa «${dolent.f.l.nom}»: el preu, el descompte (de 0 a 99,99 %) o el PVP no són vàlids`); return; }
+  const programat = st.desDe > ymd(new Date());
+  const linies = [nous.length && `• ${nous.length} producte${nous.length === 1 ? '' : 's'} nou${nous.length === 1 ? '' : 's'}: es creen ara`,
+    canvis.length && `• ${canvis.length} canvi${canvis.length === 1 ? '' : 's'} de preu: ${programat ? 'programats per al ' + dmy(st.desDe) : 'ara mateix'}`,
+    baixes.length && `• ${baixes.length} de baixa: ${programat ? 'el ' + dmy(st.desDe) : 'ara mateix'}`].filter(Boolean);
+  if (!confirm(`Tarifa de ${prov.nom}${st.nomFitxer ? ' (' + st.nomFitxer + ')' : ''}:\n\n${linies.join('\n')}\n\nD’acord?`)) return;
+  const b = $('#tt-aplica'); if (b) b.disabled = true;
+  const { data, error } = await sb.rpc('importa_tarifa', {
+    p_proveidor: prov.id, p_des_de: st.desDe, p_origen: 'Tarifa' + (st.nomFitxer ? ' ' + st.nomFitxer : ''),
+    p_nous: nous.map(x => ({ referencia: x.f.l.referencia || null, nom: x.f.l.nom, unitat: x.f.l.unitat || 'u', preu: x.c.preu, dte: x.c.dte, pvp: x.c.pvp })),
+    p_canvis: canvis.map(x => ({ id: x.f.prod.id, preu: x.c.preu, dte: x.c.dte, pvp: x.c.pvp })),
+    p_baixes: baixes,
+  });
+  if (error) { toastErr(friendly(error)); if (b) b.disabled = false; return; }
+  await loadTable('productes');
+  st.resultat = data && typeof data === 'object' ? data : { nous: nous.length, canvis: canvis.length, baixes: baixes.length, programat, des_de: st.desDe };
+  st.fase = 'fet'; renderMain(); window.scrollTo({ top: 0 });
+  toast('Tarifa importada');
 }
 
 /* ---------- Pregunta-ho: preguntes en llenguatge natural a la base de dades, contestades amb IA (Edge Function pregunta-bd) ---------- */
