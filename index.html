@@ -2,7 +2,7 @@
 <html lang="ca">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-iL9q6l3c3LvDIR47ZTPmmIFDIE/BakhLpenB5FARlpE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-oYke91PDeTTcFxdGLknVwOlrt3Oh7lcNqcVE3ZxUX04='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestió de manteniment</title>
 <meta name="theme-color" content="#2f7d4a">
@@ -1172,7 +1172,93 @@ const colorSiNo = v => v === true || v === 'true' ? 'c-verd-suau' : (v === false
 const eur = v => v == null || v === '' ? '' : Number(v).toFixed(2).replace('.', ',') + ' €';
 const esEmesa = r => !!r && r.estat !== 'esborrany';
 const ivaVigent = (data) => { const d = data || avui(); const t = C.rows('tipus_iva').filter(x => x.actiu && x.vigent_des_de <= d).sort((a, b) => (a.vigent_des_de < b.vigent_des_de ? 1 : -1))[0]; return t ? Number(t.percentatge) : 21; };
-const producteLabel = r => (r.referencia ? r.referencia + ' — ' : '') + r.nom + ' (' + eur(r.pvp) + ')';
+// (v52) el producte, amb el seu proveïdor: el mateix producte de dos proveïdors surt dos cops, un sota l'altre (els desplegables van per nom)
+const producteLabel = r => r.nom + (r.proveidor_id ? ' · ' + L('proveidors', r.proveidor_id) : '') + (r.referencia ? ' · ' + r.referencia : '') + ' (' + eur(r.pvp) + ')';
+/* (v52) PRODUCTES PER PROVEÏDOR (SQL 100): cada producte és d'un proveïdor, amb el preu de la seva tarifa i el descompte que ens hi fa;
+   el cost és preu × (1 − descompte), al cèntim (com la base de dades, que és la que el desa). Si el proveïdor té «% de venda sobre el
+   cost», el PVP es proposa sol (cost × %) mentre no s'escrigui a mà. */
+const costProducte = (preu, dte) => {
+  if (preu === '' || preu == null || isNaN(Number(preu)) || Number(preu) < 0) return null;
+  const p = BigInt(Math.round(Number(preu) * 10000)), d = BigInt(Math.round(Math.min(100, Math.max(0, Number(dte) || 0)) * 100));
+  const num = p * (10000n - d), den = 1000000n;   // en cèntims: preu × (100 − dte) / 100, arrodonit (la meitat, amunt)
+  return Number((2n * num + den) / (2n * den)) / 100;
+};
+const pctVendaProveidor = id => { const pr = id ? C.get('proveidors', id) : null; return pr && pr.percentatge_venda != null && pr.percentatge_venda !== '' && !isNaN(Number(pr.percentatge_venda)) ? Number(pr.percentatge_venda) : null; };
+const pvpProposat = (cost, pct) => cost == null || pct == null ? null : Math.round(Math.round(cost * 100) * pct / 100) / 100;
+const textPct = v => String(Math.round(Number(v) * 100) / 100).replace('.', ',') + ' %';
+const textPreu4 = v => v == null || v === '' ? '' : Number(v).toFixed(4).replace(/0{1,2}$/, '').replace('.', ',') + ' €';
+// a la fitxa, sota el descompte: el preu de cost que en surt
+function notaCostProducte(vals) {
+  const c = costProducte(vals.preu_proveidor, vals.dte_proveidor); if (c == null) return { text: '' };
+  const d = Number(vals.dte_proveidor) || 0;
+  return { text: 'Preu de cost: ' + eur(c) + (d ? ` (${textPreu4(vals.preu_proveidor)} menys el ${textPct(d)})` : '') };
+}
+// sota el PVP: el que es proposa amb el % de venda del proveïdor, i el marge sobre el cost (en vermell, si es ven per sota del cost)
+function notaPvpProducte(vals) {
+  const c = costProducte(vals.preu_proveidor, vals.dte_proveidor), pct = pctVendaProveidor(vals.proveidor_id), parts = [];
+  if (pct != null && c != null) parts.push(`Amb el % de venda de ${L('proveidors', vals.proveidor_id)} (${textPct(pct)}): ${eur(pvpProposat(c, pct))}`);
+  const v = vals.pvp === '' || vals.pvp == null || isNaN(Number(vals.pvp)) ? null : Number(vals.pvp);
+  if (c && v != null) parts.push(`marge: ${eur(Math.round((v - c) * 100) / 100)} (${textPct(Math.round((v / c - 1) * 1000) / 10)} sobre el cost)`);
+  return { text: parts.join(' · '), classe: c != null && v != null && v < c ? 'v-no' : '' };
+}
+// sota el nom: el mateix producte (el mateix nom) d'altres proveïdors, per comparar-ne els preus
+function notaAltresProveidors(vals, row) {
+  const v = norm(vals.nom); if (v.length < 3) return { text: '' };
+  const altres = C.rows('productes').filter(p => p.actiu && (!row || p.id !== row.id) && norm(p.nom) === v && String(p.proveidor_id || '') !== String(vals.proveidor_id || ''))
+    .sort((a, b) => L('proveidors', a.proveidor_id).localeCompare(L('proveidors', b.proveidor_id), 'ca'));
+  if (!altres.length) return { text: '' };
+  return { text: (altres.length === 1 ? 'També el té ' : 'També el tenen ') + altres.map(p => `${p.proveidor_id ? L('proveidors', p.proveidor_id) : '(sense proveïdor)'}: cost ${p.preu_cost != null && p.preu_cost !== '' ? eur(p.preu_cost) : '—'}, PVP ${eur(p.pvp)}`).join(' · ') };
+}
+// el PVP segueix el que es proposa (cost × % de venda del proveïdor) mentre no s'hagi escrit a mà; si s'esborra, hi torna
+function bindPvpProducte(frm) {
+  const pvp = frm.querySelector('[name="pvp"]'); if (!pvp) return;
+  const proposta = () => { const v = formValues(frm), p = pvpProposat(costProducte(v.preu_proveidor, v.dte_proveidor), pctVendaProveidor(v.proveidor_id)); return p == null ? '' : p.toFixed(2); };
+  let darrera = proposta();
+  const segueix = () => {
+    const nova = proposta();
+    if (nova !== darrera && (pvp.value === '' || (darrera !== '' && Number(pvp.value) === Number(darrera)))) { pvp.value = nova; pvp.dispatchEvent(new Event('input', { bubbles: true })); }
+    darrera = nova;
+  };
+  ['preu_proveidor', 'dte_proveidor'].forEach(k => { const el = frm.querySelector(`[name="${k}"]`); if (el) el.addEventListener('input', segueix); });
+  const pr = frm.querySelector('[name="proveidor_id"]'); if (pr) pr.addEventListener('change', segueix);
+}
+// per nom: quins proveïdors el tenen i el cost més baix (es calcula un sol cop per pantalla)
+let memoNomsProductes = null;
+const nomsProductes = () => {
+  if (!memoNomsProductes) {
+    memoNomsProductes = new Map();
+    C.rows('productes').filter(p => p.actiu).forEach(p => {
+      const k = norm(p.nom), x = memoNomsProductes.get(k) || { provs: new Set(), min: Infinity };
+      x.provs.add(String(p.proveidor_id || '')); if (p.preu_cost != null && p.preu_cost !== '') x.min = Math.min(x.min, Number(p.preu_cost));
+      memoNomsProductes.set(k, x);
+    });
+    setTimeout(() => { memoNomsProductes = null; }, 0);
+  }
+  return memoNomsProductes;
+};
+const esElMesBarat = p => { if (!p.actiu || p.preu_cost == null || p.preu_cost === '') return false; const x = nomsProductes().get(norm(p.nom)); return !!x && x.provs.size > 1 && Number(p.preu_cost) === x.min; };
+const hiHaDiversosProveidors = () => [...nomsProductes().values()].some(x => x.provs.size > 1);
+// el filtre de la llista: els proveïdors que tenen productes (i, si n'hi ha, els productes encara sense proveïdor)
+function opcionsProveidorProductes() {
+  const ps = C.rows('productes').filter(p => p.actiu), ids = [...new Set(ps.filter(p => p.proveidor_id).map(p => Number(p.proveidor_id)))];
+  const o = ids.map(id => [String(id), L('proveidors', id)]).sort((a, b) => a[1].localeCompare(b[1], 'ca'));
+  return ps.some(p => !p.proveidor_id) ? [...o, ['sense', '(sense proveïdor)']] : o;
+}
+// «Afegeix-lo d'un altre proveïdor»: un producte nou amb el mateix nom, descripció i unitat; el proveïdor, el preu i el descompte, a posar
+function copiaProducteAltreProveidor(id) {
+  const p = C.get('productes', id); if (!p) return;
+  state.copia = null; state.keep = { nom: p.nom, descripcio: p.descripcio || '', unitat: p.unitat || 'u' };
+  state.mode = 'entrada'; state.table = 'productes'; state.editing = null; renderApp(); window.scrollTo({ top: 0 });
+  toast('Tria l’altre proveïdor i posa’n el preu i el descompte');
+}
+// el producte d'un material d'un full de treball: el que s'hi va lligar o, si no, el del mateix nom; si el tenen diversos proveïdors, el
+// de cost més baix. Torna { p, n } (n: quants productes tenen aquest nom)
+function producteDeMaterial(m) {
+  const lligat = m.producte_id ? C.get('productes', m.producte_id) : null; if (lligat) return { p: lligat, n: 1 };
+  const v = norm(m.nom), cands = C.rows('productes').filter(x => x.actiu && norm(x.nom) === v);
+  const cost = x => x.preu_cost == null || x.preu_cost === '' ? Infinity : Number(x.preu_cost);
+  return { p: [...cands].sort((a, b) => (cost(a) - cost(b)) || a.id - b.id)[0] || null, n: cands.length };
+}
 const totalLinies = (taula, fk) => (r, C) => eur(C.rows(taula).filter(l => l.actiu && Number(l[fk]) === r.id).reduce((t, l) => t + Number(l.base || 0), 0));
 
 /* =====================================================================
@@ -1912,17 +1998,31 @@ const SCHEMA = {
         { key: 'descripcio', label: 'Descripció', type: 'text' },
       ],
     },
-    productes: {
+    productes: {   // (v52) cada producte és d'un proveïdor: el mateix producte de dos proveïdors són dos productes, amb el seu preu i el seu descompte
       label: 'Productes', nou: 'Nou producte', order: 'nom',
-      display: r => (r.referencia ? r.referencia + ' — ' : '') + r.nom,
-      list: ['referencia', 'nom', 'unitat', 'preu_cost', 'pvp'],
+      display: (r, L) => r.nom + (r.proveidor_id ? ' · ' + L('proveidors', r.proveidor_id) : '') + (r.referencia ? ' (' + r.referencia + ')' : ''),
+      list: ['nom', 'proveidor_id', 'referencia', 'unitat', 'preu', 'dte', 'cost', 'venda'],
+      computed: {
+        preu: { label: 'Preu prov.', num: true, fn: r => r.preu_proveidor == null || r.preu_proveidor === '' ? '' : Number(r.preu_proveidor).toFixed(4).replace(/0{1,2}$/, '') },
+        dte: { label: 'Dte %', num: true, fn: r => Number(r.dte_proveidor) ? String(Number(r.dte_proveidor)) : '' },
+        cost: { label: 'Cost', num: true, fn: r => r.preu_cost == null || r.preu_cost === '' ? '' : Number(r.preu_cost).toFixed(2), color: r => esElMesBarat(r) ? 'c-verd-suau' : '' },
+        venda: { label: 'PVP', num: true, fn: r => r.pvp == null || r.pvp === '' ? '' : Number(r.pvp).toFixed(2) },
+      },
+      // per nom i, dins del mateix nom, per proveïdor: el mateix producte de diversos proveïdors surt junt
+      sortBy: (a, b) => norm(a.nom).localeCompare(norm(b.nom), 'ca') || L('proveidors', a.proveidor_id).localeCompare(L('proveidors', b.proveidor_id), 'ca') || a.id - b.id,
+      filtres: [{ key: 'proveidor_id', tipus: 'opcions', label: 'Proveïdor', totsLabel: 'Tots els proveïdors', get opcions() { return opcionsProveidorProductes(); }, prova: (r, v) => v === 'sense' ? !r.proveidor_id : String(r.proveidor_id) === v }],
+      llegenda: () => hiHaDiversosProveidors() ? 'El mateix producte de diversos proveïdors surt un sota l’altre; el cost més baix, en verd.' : '',
+      actions: r => r && r.actiu ? [{ label: 'Afegeix-lo d’un altre proveïdor', run: () => copiaProducteAltreProveidor(r.id) }] : [],
+      bindExtras: frm => bindPvpProducte(frm),
       fields: [
-        { key: 'referencia', label: 'Referència', type: 'text', dup: 'exact' },
-        { key: 'nom', label: 'Nom', type: 'text', required: true, dup: 'similar' },
+        { key: 'proveidor_id', label: 'Proveïdor', type: 'ref', ref: 'proveidors', required: true, hint: 'si el mateix producte el tenen dos proveïdors, són dos productes, cadascun amb el seu preu i el seu descompte' },
+        { key: 'referencia', label: 'Referència', type: 'text', dup: 'exact', dupScope: 'proveidor_id', hint: 'el codi del producte al proveïdor' },
+        { key: 'nom', label: 'Nom', type: 'text', required: true, dup: 'similar', dupScope: 'proveidor_id', nota: notaAltresProveidors },
         { key: 'descripcio', label: 'Descripció', type: 'textarea' },
         { key: 'unitat', label: 'Unitat', type: 'select', options: OPT.unitat, required: true, default: 'u' },
-        { key: 'preu_cost', label: 'Preu de cost (sense IVA)', type: 'number', step: '0.01' },
-        { key: 'pvp', label: 'PVP (sense IVA)', type: 'number', step: '0.01', required: true },
+        { key: 'preu_proveidor', label: 'Preu del proveïdor (sense IVA)', type: 'number', step: '0.0001', min: 0, hint: 'el de la seva tarifa, abans del descompte' },
+        { key: 'dte_proveidor', label: 'Descompte del proveïdor (%)', type: 'number', step: '0.01', min: 0, max: 100, nota: notaCostProducte },
+        { key: 'pvp', label: 'PVP (sense IVA)', type: 'number', step: '0.01', min: 0, required: true, nota: notaPvpProducte },
         { key: 'observacions', label: 'Observacions', type: 'textarea' },
       ],
     },
@@ -2131,6 +2231,9 @@ const SCHEMA = {
       display: r => r.nom,
       list: ['nom', 'nif', 'poblacio', 'telefon', 'contacte', 'forma_pagament', 'dia_pagament', 'termini_dies', 'percentatge_venda'],
       actions: r => accionsCopia('proveidors', r), extras: copiaAvisHTML, bindExtras: copiaAvisBind, despresCrear: acabaCopia,   // copiar-lo com a client
+      // (v52) els seus productes; un clic n'obre un i «Nou producte d'aquest proveïdor» en fa un amb el proveïdor ja posat
+      children: [{ table: 'productes', fk: 'proveidor_id', label: 'Productes d’aquest proveïdor', editable: () => false, obre: true, nou: 'Nou producte d’aquest proveïdor', cols: ['nom', 'referencia', 'unitat', 'preu', 'dte', 'cost', 'venda'] }],
+      obreEnCrear: 'Proveïdor desat. Ara hi pots afegir els seus productes.',
       fields: [
         { key: 'nom', label: 'Nom o raó social', type: 'text', required: true, dup: 'similar' },
         { key: 'nif', label: 'NIF', type: 'text', dup: 'exact' },
@@ -2617,6 +2720,7 @@ const MSG = {
   agrupacions_inclou_alguna: 'Marca almenys què inclou l’agrupació: jardí, piscina o aigües grises.',
   factures_numero_unic: 'Aquest número de factura ja existeix.',
   productes_referencia_unic: 'Ja hi ha un producte actiu amb aquesta referència.',
+  productes_referencia_proveidor_unic: 'Aquest proveïdor ja té un producte actiu amb aquesta referència.',
   treballadors_email_acces_unic: 'Ja hi ha un treballador actiu amb aquest correu d’accés.',
   lectures_una_per_dia: 'Aquest comptador ja té una lectura en aquesta data.',
   contactes_un_sol_pare: 'Un contacte ha de ser d’un client o d’un administrador, però no dels dos ni de cap.',
@@ -4983,7 +5087,7 @@ function childrenHTML(td, row) {
     const ct = SCHEMA.tables[ch.table];
     const editable = !ch.editable || ch.editable(row);
     const rows = sortRows(ct, C.rows(ch.table).filter(r => r.actiu && Number(r[ch.fk]) === row.id));
-    const cols = ct.list.filter(k => { const f = fieldDef(ct, k), cp = ct.computed && ct.computed[k]; if (cp && cp.hideIfEmpty) return rows.some(r => cellText(ct, k, r) !== ''); return !(f && f.hideIfEmpty) || rows.some(r => r[k] != null && r[k] !== ''); });
+    const cols = (ch.cols || ct.list).filter(k => { const f = fieldDef(ct, k), cp = ct.computed && ct.computed[k]; if (cp && cp.hideIfEmpty) return rows.some(r => cellText(ct, k, r) !== ''); return !(f && f.hideIfEmpty) || rows.some(r => r[k] != null && r[k] !== ''); });
     const suma = ch.sum && rows.length ? `<tr class="total"><td colspan="${cols.length - 1}">${h(ch.sum.label)}</td><td class="num">${eur(rows.reduce((t, r) => t + Number(r[ch.sum.field] || 0), 0))}</td>${editable ? '<td></td>' : ''}</tr>` : '';
     const tbl = rows.length
       ? `<table class="tbl informe"><thead><tr>${cols.map(k => `<th class="${isNum(ct, k) || k === ch.sum?.field ? 'num' : ''}">${h(colLabel(ct, k))}</th>`).join('')}${editable ? '<th></th>' : ''}</tr></thead><tbody>
@@ -5141,7 +5245,7 @@ function listHTML(td) {
       ${td.senseBaixes ? '' : `<label class="chk" style="padding:0"><input type="checkbox" id="inact" ${state.showInactive ? 'checked' : ''}> Mostra els eliminats</label>`}
       <span class="n">${h(n)}</span>
     </div>
-    <div class="llista">${tableHTML(td, rows, true)}${selBarHTML(td)}</div>`;
+    <div class="llista">${(l => l ? `<p class="sub">${h(l)}</p>` : '')(typeof td.llegenda === 'function' ? td.llegenda() : td.llegenda)}${tableHTML(td, rows, true)}${selBarHTML(td)}</div>`;
 }
 
 /* ---------- Esdeveniments ---------- */
@@ -7466,7 +7570,8 @@ function bindFull(f, cont) {
   const apuntaMaterial = async () => {
     const v = k => (box.querySelector(`[data-nm="${k}"]`) || {}).value || '', on = $('#ft-nova-material');
     if (!v('nom').trim()) { err('Escriu quin material és.', on); return false; }
-    const nom = v('nom').trim(), prod = C.rows('productes').find(p => p.actiu && p.nom.trim().toLowerCase() === nom.toLowerCase());
+    // (v52) es lliga al producte si n'hi ha un sol amb aquest nom; si el tenen diversos proveïdors, es tria en fer l'albarà
+    const nom = v('nom').trim(), cands = C.rows('productes').filter(p => p.actiu && norm(p.nom) === norm(nom)), prod = cands.length === 1 ? cands[0] : null;
     const r = await sb.from('full_treball_material').insert({ full_id: f.id, data: v('data') || ymd(new Date()), nom, quantitat: Number(v('quantitat')) || 1, producte_id: prod ? prod.id : null });
     if (r.error) { err(friendly(r.error), on); return false; }
     return true;
@@ -7623,10 +7728,12 @@ async function creaAlbaraDeFull(id, opts) {
   if (!jorn.length && !mat.length) { showFormError('El full no té ni jornades ni material: no hi ha res a facturar.'); return; }
   const linies = [];
   jorn.forEach(j => { const q = Math.round(horesJornada(j) * Number(j.persones || 1) * 100) / 100; linies.push({ descripcio: `Mà d’obra ${dmy(j.data)} · ${j.persones} ${Number(j.persones) === 1 ? 'persona' : 'persones'} · ${String(j.hora_inici || '').slice(0, 5)}–${String(j.hora_fi || '').slice(0, 5)}${j.feina ? ' · ' + j.feina : ''}`, quantitat: q || 1, preu_unitari: preuHora || 0, preu_cost: null, producte_id: null }); });
-  mat.forEach(m => { const p = m.producte_id ? C.get('productes', m.producte_id) : C.rows('productes').find(x => x.actiu && x.nom.trim().toLowerCase() === String(m.nom).trim().toLowerCase()); linies.push({ descripcio: m.nom, quantitat: Number(m.quantitat) || 1, preu_unitari: p ? Number(p.pvp || 0) : 0, preu_cost: p && p.preu_cost != null ? Number(p.preu_cost) : null, producte_id: p ? p.id : null }); });
+  let diversos = 0;   // (v52) materials que tenen diversos proveïdors: s'agafa el de cost més baix
+  mat.forEach(m => { const { p, n } = producteDeMaterial(m); if (n > 1) diversos++; linies.push({ descripcio: m.nom, quantitat: Number(m.quantitat) || 1, preu_unitari: p ? Number(p.pvp || 0) : 0, preu_cost: p && p.preu_cost != null ? Number(p.preu_cost) : null, producte_id: p ? p.id : null }); });
   const total = linies.reduce((t, l) => t + Math.round(l.quantitat * l.preu_unitari * 100) / 100, 0);
   // sense confirmar: l'albarà es crea i, si cal, es corregeix (o es dona de baixa) a Albarans abans de facturar
-  const avisAlb = (preuHora == null && jorn.length ? ' · l’empresa no té «preu de l’hora»: la mà d’obra surt a 0 €' : '') + (linies.some(l => !l.preu_unitari) ? ' · revisa les línies a 0 €' : '');
+  const avisAlb = (preuHora == null && jorn.length ? ' · l’empresa no té «preu de l’hora»: la mà d’obra surt a 0 €' : '') + (linies.some(l => !l.preu_unitari) ? ' · revisa les línies a 0 €' : '')
+    + (diversos ? ` · ${diversos === 1 ? 'un material el tenen' : diversos + ' materials els tenen'} diversos proveïdors: s’ha posat el de cost més baix` : '');
   const alb = await sb.from('albarans').insert({ client_id: lloc.client_id, lloc_id: lloc.id, data: f.finalitzat_el ? ymd(new Date(f.finalitzat_el)) : ymd(new Date()), descripcio: `${f.numero || 'Full de treball'} · ${f.nom}`, observacions: `Creat des del full de treball ${f.numero || ''}` + (f.incidencia_id ? ` (incidència ${(C.get('incidencies', f.incidencia_id) || {}).numero || ''})` : '') }).select('id').single();
   if (alb.error) { showFormError('Albarà: ' + friendly(alb.error)); return; }
   const lin = await sb.from('albara_linies').insert(linies.map((l, i) => ({ albara_id: alb.data.id, ordre: i + 1, ...l })));
