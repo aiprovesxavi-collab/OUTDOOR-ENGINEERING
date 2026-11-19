@@ -2,7 +2,7 @@
 <html lang="ca">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-2ec8FPCClqKvJTAM53o7DvK7IMt0btfDyARwPjaiO6I='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-/+DhZx+Mf16f6g5NTcHhEfFF7MgYuDqR8eCztCREkHc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestió de manteniment</title>
 <meta name="theme-color" content="#2f7d4a">
@@ -224,6 +224,34 @@
   .fpl .pvp{ font-weight:600; white-space:nowrap; } .fpl .fet{ color:#2e7d32; font-weight:600; white-space:nowrap; }
   .fpl .llegit{ font-family:ui-monospace, monospace; font-size:13px; color:var(--ink-2); }
   .fpl .bar{ margin-top:10px; }
+  /* (v55) el càlcul de la quota als pressupostos d'agrupació: petit, els components; gran, els totals */
+  .cq{ display:flex; flex-direction:column; gap:10px; margin:4px 0 6px; }
+  .cq-part{ border:1px solid var(--line-2); border-left:5px solid var(--blue); border-radius:8px; padding:10px 14px 9px; background:#fff; }
+  .cq-part.cq-jardi{ border-left-color:var(--green); }
+  .cq-cap{ display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 12px; }
+  .cq-tit{ font-weight:600; font-size:13px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-2); min-width:62px; }
+  .cq-gran{ font-size:30px; font-weight:600; line-height:1.15; color:var(--ink); font-variant-numeric:tabular-nums; }
+  .cq-mes{ font-size:13px; color:var(--ink-3); }
+  .cq-posat{ margin-left:auto; font-size:13.5px; color:var(--ink-2); }
+  .cq-posat b{ color:var(--ink); font-weight:600; }
+  .cq-dif{ display:inline-block; padding:1px 8px; border-radius:10px; font-size:12.5px; font-weight:600; font-variant-numeric:tabular-nums; }
+  .cq-dif.pos{ background:var(--green-2); color:var(--green); } .cq-dif.neg{ background:var(--red-2); color:var(--red); }
+  .cq-inst{ margin-top:5px; font-size:12.5px; line-height:1.45; color:var(--ink-3); }
+  .cq-inst .cq-sub{ color:var(--ink-2); font-weight:600; }
+  .cq-items{ display:flex; flex-wrap:wrap; gap:0 14px; color:var(--ink-2); }
+  .cq-items b{ color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums; }
+  .cq-resum{ display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 14px; font-size:14px; color:var(--ink-2); padding:2px 2px 0; }
+  .cq-resum b{ color:var(--ink); font-size:16px; font-variant-numeric:tabular-nums; }
+  .cq-avisos{ margin:0; padding:0 0 0 18px; font-size:12.5px; color:#8a4b00; }
+  .cq-peu{ font-size:12px; color:var(--ink-3); }
+  .am-lin td.d select{ min-width:220px; max-width:340px; }
+  .am-lin td.c input{ width:92px; }
+  .calc-param .fila{ display:grid; grid-template-columns:minmax(200px, 300px) 1fr; gap:6px 14px; align-items:center; margin:6px 0; }
+  .calc-param .fila input{ width:110px; padding:6px 8px; font:inherit; }
+  .calc-param h3{ margin:20px 0 6px; font-size:16px; }
+  .calc-param .calc-com{ margin:4px 0 0; padding-left:20px; }
+  .calc-param .pc-hint{ display:block; font-size:12.5px; color:var(--ink-3); margin-top:3px; }
+  @media (max-width: 700px){ .cq-gran{ font-size:24px; } .cq-posat{ margin-left:0; } .calc-param .fila{ grid-template-columns:1fr; } }
   .children h3{ font-size:17px; font-weight:600; color:var(--ink); margin:22px 0 10px; }
   .toast.err{ background:var(--red); }
   .addrow{ display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-top:10px; }
@@ -971,6 +999,7 @@ const OPT = {
   apagada_tipus: [['sol','Sortida del sol (± minuts)'],['fix','Horari fix'],['sensor','Sensor de llum'],['off','Apagat']],
   termini: [['0','Al comptat'],['30','A 30 dies'],['60','A 60 dies'],['90','A 90 dies']],
   estat_factura: [['esborrany','Esborrany'],['emesa','Emesa'],['cobrada','Cobrada'],['anul_lada','Anul·lada']],
+  aplica_amortitzacio: [['hidrolisi','Piscina · cloració salina: l’equip que arriba als g/h que calen'],['piscina','Piscina · un cop per piscina'],['m3','Piscina · segons els m³'],['m2_parets','Piscina · segons els m² de parets'],['jardi','Jardí · un cop per jardí'],['m2_jardi','Jardí · segons els m²']],
 };
 const f1 = v => v == null || v === '' ? '' : Number(v).toFixed(1).replace('.', ',');
 const entreEstiu = d => { const md = String(d || avui()).slice(5, 10); return md >= '06-15' && md <= '09-15'; };
@@ -1590,11 +1619,12 @@ const SCHEMA = {
     { label: 'EQUIPAMENTS I INSTAL·LACIONS', color: '#e5b800', tables: ['programadors', 'bombes', 'filtres', 'cloradors_salins'] },
     { label: 'PERSONAL', color: '#222222', tables: ['treballadors', 'equips', 'fitxar', 'fitxatges', 'mapa_fitxatges', 'nomines', 'documents_treballadors', 'tipus_document', 'vacances', 'festius'] },
     { label: 'VEHICLES', color: '#556b8d', oficina: true, tables: ['vehicles', 'documents_vehicles'] },
-    { label: 'PARÀMETRES', color: '#4f7d8a', oficina: true, tables: ['ipc'] },   // (v51) penúltim; hi poden anar altres paràmetres
+    { label: 'PARÀMETRES', color: '#4f7d8a', oficina: true, tables: ['ipc', 'calcul_quotes', 'amortitzacions'] },   // (v51) penúltim; (v55) el cost de l'hora i les amortitzacions del càlcul de les quotes
     { label: 'ALTRES', color: '#b48ede', tables: ['tipus_iva', 'empresa', 'aigua_parametres_mensuals', 'avisos_piscina', 'comptes_bancaris', 'poblacions_sol', 'hores_sol'] },
   ],
   pages: {
     pregunta_ia: { label: 'Pregunta-ho (IA)', render: main => renderPreguntaIA(main) },
+    calcul_quotes: { label: 'Cost hora i càlcul', render: main => renderCalculQuotes(main) },   // (v55)
     alarmes: { label: 'Alarmes', render: main => renderAlarmes(main) },
     compta_diari: { label: 'Llibre diari', render: main => renderComptaDiari(main) },
     compta_major: { label: 'Llibre major', render: main => renderComptaMajor(main) },
@@ -1738,6 +1768,7 @@ const SCHEMA = {
         { key: 'longitud', label: 'Longitud (GPS)', type: 'number', step: '0.000001' },
         { key: 'instruccions_acces', label: 'Instruccions d’accés', type: 'textarea', hint: 'claus, codis, alarma' },
         { key: 'horari_acces', label: 'Horari d’accés', type: 'text' },
+        { key: 'minuts_anada_tornada', label: 'Temps d’anar i tornar (minuts)', type: 'number', step: '1', min: 0, hint: 'per visita, des de la base: el càlcul de la quota dels pressupostos d’agrupació el suma a cada visita' },   // (v55)
         { key: 'observacions', label: 'Observacions', type: 'textarea' },
         { key: 'codi_qr', label: 'Codi del QR d’avisos', type: 'info', fmt: r => r.codi_qr || '(es genera en desar; cal el SQL 048)' },
       ],
@@ -2043,6 +2074,57 @@ const SCHEMA = {
         { key: 'efecte__titol', type: 'seccio', label: 'Com queden les quotes de l’any següent', notaBloc: notaEfecteIpc },
       ],
     },
+    // (v55, SQL 102) els paràmetres del càlcul de les quotes: una sola fila, que es canvia a PARÀMETRES › Cost hora i càlcul
+    parametres_calcul: {
+      label: 'Paràmetres del càlcul', nou: '', order: 'id',
+      display: () => 'Paràmetres del càlcul',
+      list: ['cost_hora'],
+      fields: [{ key: 'cost_hora', label: 'Cost de l’hora d’un operari (€)', type: 'number', step: '0.01', min: 0 }],
+    },
+    // (v55, SQL 102) els equips i els costos que posem nosaltres i es reparteixen en quotes, per al càlcul de les quotes
+    amortitzacions: {
+      label: 'Amortitzacions', nou: 'Nova amortització', order: 'nom',
+      display: r => r.nom,
+      list: ['nom', 'com_entra', 'quan', 'anys', 'total', 'al_mes'],
+      computed: {
+        com_entra: { label: 'Com entra al càlcul', fn: r => textAplica(r) },
+        quan: { label: 'Quan', fn: r => quanAmortitzacio(r) },
+        total: { label: 'Total', num: true, fn: r => totalAmortitzacio(r).toFixed(2) },
+        al_mes: { label: 'Al mes', num: true, fn: r => quotaAmortitzacio(r).toFixed(2) },
+      },
+      sortBy: (a, b) => ordreAmortitzacio(a, b),
+      grupDe: r => PART_APLICA[r.aplica] === 'jardi' ? 'Jardí' : 'Piscina',
+      llegenda: 'Els equips i els costos que posem nosaltres i es reparteixen en quotes: al mes = total / anys / 12. Les línies lligades a un producte agafen el seu preu de cost (s’actualitza amb les tarifes); les d’hores, el cost de l’hora (PARÀMETRES › Cost hora i càlcul).',
+      obreEnCrear: 'Amortització desada. Ara hi pots afegir què s’amortitza.',
+      validate: p => p.aplica === 'hidrolisi' && !(Number(p.produccio_g_h) > 0) ? 'Posa la producció de l’equip (g/h).'
+        : ['m3', 'm2_parets', 'm2_jardi'].includes(p.aplica) && !(Number(p.base) > 0) ? 'Posa per a quants m³ o m² són els costos (p. ex. 100).'
+        : !(Number(p.anys) > 0) ? 'Els anys han de ser més de 0.'
+        : p.clausula_id && (C.get('clausules_pressupost', p.clausula_id) || {}).ambit !== PART_APLICA[p.aplica] ? 'La clàusula ha de ser de la mateixa part (piscina o jardí).' : null,
+      extrasFinal: liniesAmortHTML, bindExtras: liniesAmortBind,
+      fields: [
+        { key: 'nom', label: 'Nom', type: 'text', required: true, dup: 'exact', hint: 'surt així al càlcul del pressupost: «Bombes», «Hidròlisi salina TEC 100»…' },
+        { key: 'aplica', label: 'Com entra al càlcul', type: 'select', options: OPT.aplica_amortitzacio, required: true, default: 'piscina' },
+        { key: 'produccio_g_h', label: 'Producció de l’equip (g/h)', type: 'number', step: '0.1', min: 0, visible: v => v.aplica === 'hidrolisi', neteja: true,
+          hint: 'a cada piscina hi entra l’equip de producció més petita que arribi als g/h que calen: (veïns × 12 + m³) / 12' },
+        { key: 'base', label: 'Els costos són per a (m³ o m²)', type: 'number', step: '1', min: 0, visible: v => ['m3', 'm2_parets', 'm2_jardi'].includes(v.aplica), neteja: true,
+          hint: '100 = els costos de les línies són per a 100 m³: una piscina de 50 m³ en paga la meitat. Els m² de parets: m³/2 + 3·√m³, de 5 en 5 (com l’Excel)' },
+        { key: 'anys', label: 'Anys', type: 'number', step: '0.5', min: 0, required: true, default: 8, nota: notaAnysAmortitzacio },
+        { key: 'clausula_id', label: 'Només si el pressupost porta la clàusula', type: 'ref', ref: 'clausules_pressupost', dependsOn: 'aplica', autoUnic: false,
+          filter: (c, v) => c.ambit === PART_APLICA[v.aplica], optionLabel: c => c.nom + (c.obligatoria ? ' (obligatòria: hi és sempre)' : ''),
+          hint: 'buit = sempre que el pressupost inclou la part (piscina o jardí); si no, només quan porta aquesta clàusula (FACTURACIÓ › Clàusules de pressupost)' },
+        { key: 'observacions', label: 'Observacions', type: 'textarea' },
+      ],
+    },
+    // (v55) les línies d'una amortització: es canvien dins de l'amortització (liniesAmortHTML)
+    amortitzacio_linies: {
+      label: 'Línies d’amortització', nou: '', order: 'id',
+      display: r => r.descripcio,
+      list: ['descripcio', 'quantitat'],
+      fields: [
+        { key: 'descripcio', label: 'Material', type: 'text', required: true },
+        { key: 'quantitat', label: 'Nº', type: 'number', step: '0.01', min: 0, required: true },
+      ],
+    },
     tipus_iva: {
       label: 'Tipus d’IVA', nou: 'Nou tipus d’IVA', order: 'vigent_des_de', desc: true,
       display: r => String(r.percentatge).replace('.', ',') + ' % des de ' + dmy(r.vigent_des_de),
@@ -2248,10 +2330,13 @@ const SCHEMA = {
     pressupostos_agrupacio: {
       label: 'Pressupostos d’agrupació', nou: 'Nou pressupost d’agrupació', order: 'data', desc: true,
       display: r => (r.numero || 'pressupost') + ' — ' + L('clients', r.client_id),
-      list: ['numero', 'data', 'client_id', 'lloc_id', 'inclou', 'preu_mensual', 'estat', 'treballador_id'],
+      list: ['numero', 'data', 'client_id', 'lloc_id', 'inclou', 'preu_mensual', 'calculat', 'dif', 'estat', 'treballador_id'],
       computed: {
         inclou: { label: 'Inclou', fn: r => inclouText(r) },
         preu_mensual: { label: 'Preu mensual', num: true, fn: r => eur(preuMensualPressupost(r)) },
+        // (v55) la quota calculada (jardí + piscina, amb els costos d'avui) i la diferència del preu posat (sense les aigües grises)
+        calculat: { label: 'Calculat', num: true, fn: r => { const c = calculQuota(r); return c.buit ? '' : eur(c.total); } },
+        dif: { label: 'Dif.', num: true, fn: r => { const d = difPressupost(r); return d == null ? '' : textDif(d); }, color: r => { const d = difPressupost(r); return d == null ? '' : d < 0 ? 'c-taronja' : 'c-verd-suau'; } },
       },
       filtres: [{ key: 'data', tipus: 'dates', label: 'Data' }, { key: 'lloc_id', tipus: 'ref', ref: 'llocs', label: 'Lloc' }],
       validate: p => (p.inclou_jardi || p.inclou_piscina || p.inclou_aigues_grises) ? null : 'Marca almenys una part: jardí, piscina o aigües grises.',
@@ -2268,12 +2353,15 @@ const SCHEMA = {
         { key: 'inclou_jardi', label: 'Inclou el jardí', type: 'boolean', grup: 'I' },
         { key: 'inclou_piscina', label: 'Inclou la piscina', type: 'boolean', grup: 'I' },
         { key: 'inclou_aigues_grises', label: 'Inclou les aigües grises', type: 'boolean', grup: 'I' },
-        { key: 'preu_jardi', label: 'Preu mensual del jardí (sense IVA)', type: 'number', step: '0.01' },
-        { key: 'preu_piscina', label: 'Preu mensual de la piscina (sense IVA)', type: 'number', step: '0.01' },
-        { key: 'preu_aigues_grises', label: 'Preu mensual de les aigües grises (sense IVA)', type: 'number', step: '0.01' },
         { key: 'clausules_ids', label: 'Clàusules opcionals', type: 'multi', ref: 'clausules_pressupost', wide: true,
           filter: (r, f) => !r.obligatoria && (r.ambit === 'general' || !!f['inclou_' + r.ambit]), optgroup: r => ambitLabel(r.ambit), ordreGrups: ORDRE_PARTS.map(ambitLabel), optionLabel: r => r.nom,
-          hint: 'les obligatòries de cada part marcada hi surten sempre, no cal triar-les' },
+          hint: 'les obligatòries de cada part marcada hi surten sempre, no cal triar-les. Algunes (cloració salina, bombes, vorada) també compten al càlcul de la quota' },
+        // (v55) el càlcul de la quota (el de l'Excel), amb els costos d'avui; a sota, els preus que s'hi posen (surten al PDF)
+        { key: 'calcul__titol', type: 'seccio', label: 'Càlcul de la quota', notaBloc: notaCalculQuota },
+        { key: 'preu_jardi', label: 'Preu mensual del jardí (sense IVA)', type: 'number', step: '0.01', hint: 'el que s’hi posa (surt al PDF)' },
+        { key: 'preu_piscina', label: 'Preu mensual de la piscina (sense IVA)', type: 'number', step: '0.01', hint: 'el que s’hi posa (surt al PDF)' },
+        { key: 'preu_aigues_grises', label: 'Preu mensual de les aigües grises (sense IVA)', type: 'number', step: '0.01' },
+        { key: 'signatura__titol', type: 'seccio', label: 'Signatura i estat' },
         { key: 'signant_id', label: 'Qui el signa', type: 'ref', ref: 'treballadors', default: () => { const t = C.rows('treballadors').filter(x => x.actiu && x.titol_signatura).sort((a, b) => a.id - b.id)[0]; return t ? t.id : ''; }, hint: 'nom i titulació al peu del pressupost (la titulació és a la fitxa del treballador)' },
         { key: 'tema', label: 'Caràtula', type: 'select', options: OPT.tema_factura, hint: 'buit = automàtica: verda si inclou jardí, blava si no' },
         { key: 'estat', label: 'Estat', type: 'select', options: OPT.estat_pressupost, required: true, default: 'esborrany' },
@@ -2374,6 +2462,9 @@ const SCHEMA = {
         defecte: r => r.estat !== 'anul_lat', prova: (r, v) => v === 'tots' || r.estat === v || (v === 'en_curs' && r.estat === 'pendent') }],
       canBaixa: () => false, senseBaixes: true,   // no es donen de baixa: els que no s'han de passar a albarà s'eliminen (estat Eliminat)
       filaClass: r => r.estat === 'anul_lat' ? 'off' : '',
+      // (v54) els finalitzats que encara no tenen albarà es poden marcar i passar a albarà tots d'un cop (un albarà per full)
+      marcable: r => r.actiu && r.finalitzat && !r.albara_id && r.estat !== 'anul_lat', marcaNom: n => n === 1 ? 'full marcat' : 'fulls marcats',
+      marcaAccions: [{ label: n => n === 1 ? 'Converteix-lo en albarà' : 'Converteix-los en albarans', min: 1, classe: 'albara', run: ids => creaAlbaransDeFulls(ids) }],
       // al final d'un full obert, dues opcions: «Deixar obert» (groc suau: desa i el deixa obert) i «Finalitzar» (verd, al mig)
       botoDesa: r => fullObert(r) ? { label: 'Deixar obert', classe: 'obert' } : null,
       avisDesat: r => fullObert(r) ? 'Desat: el full queda obert' : '',
@@ -2714,6 +2805,15 @@ const SCHEMA = {
         { key: 'hra', label: 'Homogeneïtat reg arbusts (%)', type: 'integer', min: 0, max: 100 },
         { key: 'hrp', label: 'Homogeneïtat reg prat (%)', type: 'integer', min: 0, max: 100 },
         { key: 'hrap', label: 'Homogeneïtat reg arbusts del prat (%)', type: 'integer', min: 0, max: 100 },
+        // (v55) per al càlcul de la quota dels pressupostos d'agrupació
+        { key: 'calcul__titol', type: 'seccio', label: 'Per al càlcul de la quota (pressupostos d’agrupació)', nota: vals => (m2 => ({ text: m2 ? `m² del càlcul: ${nDec(m2, 2)} (gespa + arbusts + prat)` : '' }))(m2JardiCalcul(vals)) },
+        { key: 'hores_setmana_estiu', label: 'Hores a la setmana a l’estiu', type: 'number', step: '0.05', min: 0 },
+        { key: 'hores_setmana_preestiu', label: 'Hores a la setmana al preestiu', type: 'number', step: '0.05', min: 0 },
+        { key: 'hores_setmana_hivern', label: 'Hores a la setmana a l’hivern', type: 'number', step: '0.05', min: 0, hint: 'sense l’anada i la tornada: si el pressupost no porta piscina, el càlcul hi suma el temps de la fitxa del lloc' },
+        { key: 'retalls_any', label: 'Retalls l’any', type: 'number', step: '1', min: 0 },
+        { key: 'hores_retall', label: 'Hores per retall', type: 'number', step: '0.5', min: 0 },
+        { key: 'flors_any', label: 'Flors: cost l’any (€)', type: 'number', step: '0.01', min: 0 },
+        { key: 'asseguranca_gespa_mes', label: 'Assegurança de la gespa (€ al mes)', type: 'number', step: '0.01', min: 0 },
         ...campsEstiu,
         ...campsLinia('l1', 'Línia d’il·luminació 1 (fanals)'),
         ...campsLinia('l2', 'Línia d’il·luminació 2 (fanals)'),
@@ -2747,11 +2847,16 @@ const SCHEMA = {
         { key: 'amplada', label: 'Amplada (m)', type: 'number', step: '0.01', required: true },
         { key: 'profunditat', label: 'Profunditat mitjana (m)', type: 'number', step: '0.01', required: true },
         { key: 'tractament', label: 'Tractament', type: 'select', options: OPT.tractament, required: true, default: 'clor' },
-        { key: 'num_veins', label: 'Nombre de veïns', type: 'integer', min: 0, hint: 'per al càlcul de les dutxes' },
+        { key: 'num_veins', label: 'Nombre de veïns', type: 'integer', min: 0, hint: 'per al càlcul de les dutxes i de l’equip d’hidròlisi de la quota' },
         { key: 'afluencia', label: 'Afluència (1–10)', type: 'number', step: '0.1', min: 0 },
         { key: 'cabal_dutxes', label: 'Cabal de les dutxes (l/polsació)', type: 'number', step: '0.1', min: 0, default: 6 },
         { key: 'interior', label: 'Interior', type: 'boolean' },
         { key: 'climatitzada', label: 'Climatitzada', type: 'boolean' },
+        // (v55) per al càlcul de la quota dels pressupostos d'agrupació
+        { key: 'calcul__titol', type: 'seccio', label: 'Per al càlcul de la quota (pressupostos d’agrupació)', nota: vals => (m3 => ({ text: m3 ? `${nDec(m3, 1)} m³ · ${nDec(m2ParetsPiscina(m3), 0)} m² de parets` : '' }))(volumPiscina(vals) || 0) },
+        { key: 'hores_visita_estiu', label: 'Hores per visita a l’estiu', type: 'number', step: '0.05', min: 0 },
+        { key: 'hores_visita_preestiu', label: 'Hores per visita al preestiu', type: 'number', step: '0.05', min: 0 },
+        { key: 'hores_visita_hivern', label: 'Hores per visita a l’hivern', type: 'number', step: '0.05', min: 0, hint: 'sense l’anada i la tornada (és a la fitxa del lloc)' },
         ...campsEstiu,
         ...campsLinia('focus', 'Línia de focus de dins de la piscina'),
         ...campsBombes,
@@ -2773,6 +2878,10 @@ const MSG = {
   piscina_filtres_unic: 'Aquest model ja és a la llista: canvia’n la quantitat en lloc d’afegir-lo dos cops.',
   piscina_cloradors_unic: 'Aquest model ja és a la llista: canvia’n la quantitat en lloc d’afegir-lo dos cops.',
   _model_unic: 'Aquest model ja és al catàleg.',
+  amortitzacio_linies_preu: 'Cada línia ha de tenir un preu: tria un producte, marca-la com a hores d’operari o posa-hi el preu a mà.',
+  amortitzacio_linies_hores: 'Una línia d’hores d’operari no pot anar lligada a un producte.',
+  amortitzacions_base: 'Posa per a quants m³ o m² són els costos (p. ex. 100).',
+  amortitzacions_produccio: 'Posa la producció de l’equip d’hidròlisi (g/h).',
   agrupacions_inclou_alguna: 'Marca almenys què inclou l’agrupació: jardí, piscina o aigües grises.',
   factures_numero_unic: 'Aquest número de factura ja existeix.',
   productes_referencia_unic: 'Ja hi ha un producte actiu amb aquesta referència.',
@@ -5217,7 +5326,7 @@ function tableHTML(td, rows, clickable) {
   if (!rows.length) return `<div class="empty">Cap registre.</div>`;
   const cols = td.list.filter(k => { const cp = td.computed && td.computed[k]; return !(cp && cp.hideIfEmpty) || rows.some(r => cellText(td, k, r) !== ''); }), ambMarca = clickable && !!td.marcable, marcats = marquesDe(td);
   let grupAnt = null;
-  return `<table class="tbl"><thead><tr>${cols.map(k => { const d = (td.computed && td.computed[k]) || fieldDef(td, k) || {}; return `<th${d.th ? ` class="${d.th}"` : ''}>${h(colLabel(td, k))}</th>`; }).join('')}${ambMarca ? '<th class="marca"></th>' : ''}</tr></thead><tbody>
+  return `<table class="tbl"><thead><tr>${cols.map(k => { const d = (td.computed && td.computed[k]) || fieldDef(td, k) || {}; return `<th${d.th ? ` class="${d.th}"` : ''}>${h(colLabel(td, k))}</th>`; }).join('')}${ambMarca ? `<th class="marca">${(m => m.length ? `<input type="checkbox" id="marca-tots" title="Marca’ls tots (els que es veuen)" ${m.every(r => marcats.has(td.pk ? r[td.pk] : r.id)) ? 'checked' : ''}>` : '')(rows.filter(r => td.marcable(r)))}</th>` : ''}</tr></thead><tbody>
     ${rows.map(r => { const id = td.pk ? r[td.pk] : r.id;
       let cap = ''; if (clickable && td.grupDe) { const g = td.grupDe(r); if (g !== grupAnt) { grupAnt = g; cap = `<tr class="grup-fila"><td colspan="${cols.length + (ambMarca ? 1 : 0)}">${h(g)}</td></tr>`; } }
       return cap + `<tr class="${clickable ? 'row' : ''} ${r.actiu ? '' : 'off'} ${td.filaClass ? td.filaClass(r) : ''}" data-id="${id}">${cols.map(k => { const f = fieldDef(td, k); const cp = td.computed && td.computed[k]; const c = f && f.color ? f.color(r[k], r) : (cp && cp.color ? cp.color(r) : ''); return `<td class="${isNum(td, k) ? 'num' : ''} ${c ? 'cel ' + c : ''}">${h(cellText(td, k, r))}</td>`; }).join('')}${ambMarca ? `<td class="marca">${td.marcable(r) ? `<input type="checkbox" data-marca-id="${id}" ${marcats.has(id) ? 'checked' : ''} title="Marca’l">` : ''}</td>` : ''}</tr>`; }).join('')}
@@ -5248,6 +5357,9 @@ function bindMarques(td) {
     c.addEventListener('change', () => { const id = td.pk ? c.dataset.marcaId : Number(c.dataset.marcaId), m = marquesDe(td); if (c.checked) m.add(id); else m.delete(id); const bar = $('#sel-bar'); if (bar) { const tmp = document.createElement('div'); tmp.innerHTML = selBarHTML(td); bar.replaceWith(tmp.firstElementChild); bindMarques(td); } });
   });
   main.querySelectorAll('[data-marca-accio]').forEach(b => b.addEventListener('click', () => { const ids = [...marquesDe(td)]; td.marcaAccions[Number(b.dataset.marcaAccio)].run(ids); }));
+  // (v54) la casella de la capçalera: marca o desmarca tots els que es veuen
+  const tots = main.querySelector('#marca-tots');
+  if (tots) { tots.addEventListener('click', e => e.stopPropagation()); tots.addEventListener('change', () => main.querySelectorAll('input[data-marca-id]').forEach(c => { if (c.checked !== tots.checked) { c.checked = tots.checked; c.dispatchEvent(new Event('change')); } })); }
   const cap = $('#sel-cap'); if (cap) cap.addEventListener('click', () => { marquesDe(td).clear(); refreshList(td); });
 }
 function recentHTML(td) {
@@ -6281,6 +6393,303 @@ function clausulesPressupost(pr) {
     .sort((a, b) => (ambits.indexOf(a.ambit) - ambits.indexOf(b.ambit)) || ((a.ordre || 0) - (b.ordre || 0)) || (a.id - b.id));
 }
 
+/* (v55, SQL 102) CÀLCUL DE LA QUOTA DELS PRESSUPOSTOS D'AGRUPACIÓ: el de l'Excel «COSTOS DESPREOCUPAT», amb els costos d'avui (el cost
+   de l'hora i les constants de PARÀMETRES › Cost hora i càlcul, i les amortitzacions de PARÀMETRES › Amortitzacions, amb el preu de cost
+   dels productes que hi van lligats). Agafa les piscines i els jardins actius del lloc del pressupost.
+   PISCINA (cada piscina, si el pressupost inclou la piscina):
+     · manteniment = Σ temporades (hores per visita + anar i tornar) × visites l'any × cost de l'hora / 12 (si la piscina té mides)
+     · hidròlisi (si el pressupost porta la clàusula): l'equip de producció més petita que arribi a arrodonit((veïns × 12 + m³) / 12) g/h
+     · la resta d'amortitzacions de la piscina: un cop per piscina, segons els m³ (m³ / base) o segons els m² de parets
+       (m³/2 + 3·√m³, de 5 en 5, com l'Excel; / base)
+   JARDÍ (cada jardí, si el pressupost inclou el jardí), m² = gespa + arbusts + prat; si té m²:
+     · manteniment = (fitosanitaris × m² + Σ temporades setmanes × (hores a la setmana + anar i tornar si el pressupost no porta piscina)
+       × cost de l'hora) / 12; retalls = retalls × hores per retall × cost de l'hora / 12; flors = flors l'any / 12
+     · i les amortitzacions del jardí (un cop per jardí o segons els m²) i l'assegurança de la gespa (al mes)
+   Una amortització lligada a una clàusula només compta si el pressupost la porta (les obligatòries de la part hi són sempre).
+   Diferències amb l'Excel: «Productes» es compta un cop (a l'Excel, la columna AB el suma dues vegades) i una piscina sense jardí no suma
+   programadors ni pintura (a l'Excel, totes les files els sumaven). */
+const PARAMS_CALCUL = { cost_hora: 30, visites_estiu: 44, visites_preestiu: 33.6, visites_hivern: 21, setmanes_estiu: 14, setmanes_preestiu: 17, setmanes_hivern: 21, fitosanitaris_m2: 0.3 };
+const TEMPORADES_CALCUL = ['estiu', 'preestiu', 'hivern'];
+const PART_APLICA = { hidrolisi: 'piscina', piscina: 'piscina', m3: 'piscina', m2_parets: 'piscina', jardi: 'jardi', m2_jardi: 'jardi' };
+function paramsCalcul() {   // (numONull: la de les tarifes, v53)
+  const r = C.rows('parametres_calcul').find(x => Number(x.id) === 1) || {}, o = { ...PARAMS_CALCUL };
+  Object.keys(o).forEach(k => { const v = numONull(r[k]); if (v != null) o[k] = v; });
+  return o;
+}
+// el cost d'una unitat d'una línia: el preu de cost del producte, el cost de l'hora o el preu a mà menys el descompte
+function costLiniaAmort(l, P) {
+  if (l.hores) return (P || paramsCalcul()).cost_hora;
+  if (l.producte_id) { const p = C.get('productes', l.producte_id); if (!p) return 0; const c = numONull(p.preu_cost); return c != null ? c : (costProducte(p.preu_proveidor, p.dte_proveidor) || 0); }
+  return (Number(l.preu) || 0) * (100 - (Number(l.dte) || 0)) / 100;
+}
+const liniesAmortitzacio = id => C.rows('amortitzacio_linies').filter(l => l.actiu && Number(l.amortitzacio_id) === Number(id)).sort((a, b) => a.id - b.id);
+const totalAmortitzacio = (a, P) => liniesAmortitzacio(a.id).reduce((s, l) => s + (Number(l.quantitat) || 0) * costLiniaAmort(l, P), 0);
+const quotaAmortitzacio = (a, P, anys) => { const n = Number(anys != null && anys !== '' ? anys : a.anys) || 0; return n > 0 ? totalAmortitzacio(a, P) / n / 12 : 0; };
+const ordreAmortitzacio = (a, b) => (PART_APLICA[a.aplica] === 'jardi' ? 1 : 0) - (PART_APLICA[b.aplica] === 'jardi' ? 1 : 0)
+  || (a.aplica === 'hidrolisi' ? 0 : 1) - (b.aplica === 'hidrolisi' ? 0 : 1) || (Number(a.produccio_g_h) || 0) - (Number(b.produccio_g_h) || 0) || a.id - b.id;
+function textAplica(a) {
+  const b = numONull(a.base), bt = b == null ? '…' : nDec(b, 2), g = numONull(a.produccio_g_h);
+  return ({ hidrolisi: `Cloració salina: equip de ${g == null ? '…' : nDec(g, 1)} g/h`, piscina: 'Un cop per piscina', m3: `Per cada ${bt} m³ de piscina`,
+    m2_parets: `Per cada ${bt} m² de parets de piscina`, jardi: 'Un cop per jardí', m2_jardi: `Per cada ${bt} m² de jardí` })[a.aplica] || a.aplica || '';
+}
+const quanAmortitzacio = a => { if (!a.clausula_id) return 'sempre'; const c = C.get('clausules_pressupost', a.clausula_id); return !c ? 'clàusula ' + a.clausula_id : (c.actiu ? 'amb «' + c.nom + '»' : 'amb «' + c.nom + '» (donada de baixa: no entra mai)'); };
+function notaAnysAmortitzacio(vals, row) { if (!row) return { text: '' }; const n = numONull(vals.anys); return { text: n > 0 ? `Total ${fmtEur(totalAmortitzacio(row))} → al mes ${fmtEur(quotaAmortitzacio(row, null, n))}` : '' }; }
+const m2ParetsPiscina = m3 => m3 > 0 ? Math.round((m3 / 2 + 3 * Math.sqrt(m3)) / 5) * 5 : 0;   // com l'Excel: MROUND(m³/2 + 3·√m³; 5)
+const m2JardiCalcul = j => (Number(j.m2_gespa) || 0) + (Number(j.m2_arbusts) || 0) + (Number(j.m2_prat) || 0);
+const nomCurtHidrolisi = a => String(a.nom || '').replace(/^hidr[oò]lisi( salina)?\s*/i, '') || a.nom;
+const arrodoneix2 = v => Math.round((Number(v) || 0) * 100) / 100;
+
+function calculQuota(pr, clausulesIds) {
+  const P = paramsCalcul();
+  const out = { P, piscines: [], jardins: [], avisos: [], piscina: 0, jardi: 0, total: 0, buit: true };
+  if (!pr || !(pr.inclou_piscina || pr.inclou_jardi)) return out;
+  const lloc = pr.lloc_id ? C.get('llocs', pr.lloc_id) : null;
+  if (!lloc) { out.avisos.push('Tria el lloc: el càlcul agafa les seves piscines i els seus jardins.'); return out; }
+  const anada = (Number(lloc.minuts_anada_tornada) || 0) / 60;
+  if (numONull(lloc.minuts_anada_tornada) == null) out.avisos.push('Falta el temps d’anar i tornar del lloc (QUI · ON › Llocs): ara compta 0 minuts.');
+  const actives = new Set(clausulesPressupost({ ...pr, clausules_ids: clausulesIds != null ? clausulesIds : (pr.clausules_ids || []) }).map(c => Number(c.id)));
+  const entra = a => !a.clausula_id || actives.has(Number(a.clausula_id));
+  const amort = C.rows('amortitzacions').filter(a => a.actiu).sort(ordreAmortitzacio);
+  const afegeix = (r, nom, valor) => { if (valor) r.items.push({ nom, valor }); };
+  // PISCINA
+  const piscines = pr.inclou_piscina ? C.rows('piscines').filter(p => p.actiu && Number(p.lloc_id) === Number(lloc.id)).sort((a, b) => a.id - b.id) : [];
+  if (pr.inclou_piscina && !piscines.length) out.avisos.push('El lloc no té cap piscina (INSTAL·LACIONS › Piscines): la part de la piscina no es pot calcular.');
+  const hidro = amort.filter(a => a.aplica === 'hidrolisi' && entra(a) && numONull(a.produccio_g_h) != null).sort((a, b) => Number(a.produccio_g_h) - Number(b.produccio_g_h));
+  piscines.forEach(p => {
+    const nom = p.nom || 'piscina', m3 = volumPiscina(p) || 0, veins = numONull(p.num_veins);
+    const r = { id: p.id, nom, m3, parets: m2ParetsPiscina(m3), veins, items: [], total: 0 };
+    if (!m3) out.avisos.push(`Falten les mides de la piscina «${nom}» (INSTAL·LACIONS › Piscines).`);
+    const hv = TEMPORADES_CALCUL.map(k => numONull(p['hores_visita_' + k]));
+    if (hv.some(x => x == null)) out.avisos.push(`Falten les hores per visita de la piscina «${nom}» (INSTAL·LACIONS › Piscines).`);
+    if (m3) afegeix(r, 'Manteniment', TEMPORADES_CALCUL.reduce((s, k, i) => s + ((hv[i] || 0) + anada) * P['visites_' + k] * P.cost_hora, 0) / 12);
+    if (hidro.length && m3) {
+      if (veins == null) out.avisos.push(`Falten els veïns de la piscina «${nom}»: calen per triar l’equip d’hidròlisi.`);
+      r.gcl = Math.round(((veins || 0) * 12 + m3) / 12);
+      const eq = hidro.find(a => Number(a.produccio_g_h) >= r.gcl);
+      if (eq) { r.equip = nomCurtHidrolisi(eq); afegeix(r, 'Hidròlisi ' + r.equip, quotaAmortitzacio(eq, P)); }
+      else out.avisos.push(`Cap equip d’hidròlisi arriba als ${r.gcl} g/h que calen a la piscina «${nom}» (PARÀMETRES › Amortitzacions).`);
+    }
+    amort.filter(a => ['piscina', 'm3', 'm2_parets'].includes(a.aplica) && entra(a)).forEach(a => {
+      const base = numONull(a.base) || 0;
+      afegeix(r, a.nom, quotaAmortitzacio(a, P) * (a.aplica === 'piscina' ? 1 : !base ? 0 : (a.aplica === 'm3' ? m3 : r.parets) / base));
+    });
+    r.total = arrodoneix2(r.items.reduce((s, x) => s + x.valor, 0));
+    out.piscines.push(r);
+  });
+  // JARDÍ
+  const jardins = pr.inclou_jardi ? C.rows('jardins').filter(j => j.actiu && Number(j.lloc_id) === Number(lloc.id)).sort((a, b) => a.id - b.id) : [];
+  if (pr.inclou_jardi && !jardins.length) out.avisos.push('El lloc no té cap jardí (INSTAL·LACIONS › Jardins): la part del jardí no es pot calcular.');
+  const ambPiscina = out.piscines.some(p => p.m3 > 0);   // amb piscina, l'anada i la tornada ja la compten les visites a la piscina
+  jardins.forEach(j => {
+    const nom = j.nom || 'jardí', m2 = m2JardiCalcul(j);
+    const r = { id: j.id, nom, m2, items: [], total: 0 };
+    if (!m2) out.avisos.push(`Falten els m² del jardí «${nom}» (INSTAL·LACIONS › Jardins): sense m², el manteniment no es calcula.`);
+    const hs = TEMPORADES_CALCUL.map(k => numONull(j['hores_setmana_' + k]));
+    if (hs.some(x => x == null)) out.avisos.push(`Falten les hores a la setmana del jardí «${nom}» (INSTAL·LACIONS › Jardins).`);
+    if (m2) {
+      const viatge = ambPiscina ? 0 : anada;
+      afegeix(r, 'Manteniment', (P.fitosanitaris_m2 * m2 + TEMPORADES_CALCUL.reduce((s, k, i) => s + P['setmanes_' + k] * ((hs[i] || 0) + viatge) * P.cost_hora, 0)) / 12);
+      afegeix(r, 'Retalls', (Number(j.retalls_any) || 0) * (Number(j.hores_retall) || 0) * P.cost_hora / 12);
+      afegeix(r, 'Flors', (Number(j.flors_any) || 0) / 12);
+    }
+    amort.filter(a => (a.aplica === 'jardi' || a.aplica === 'm2_jardi') && entra(a)).forEach(a => {
+      const base = numONull(a.base) || 0;
+      afegeix(r, a.nom, quotaAmortitzacio(a, P) * (a.aplica === 'jardi' ? 1 : base ? m2 / base : 0));
+    });
+    afegeix(r, 'Assegurança de la gespa', Number(j.asseguranca_gespa_mes) || 0);
+    r.total = arrodoneix2(r.items.reduce((s, x) => s + x.valor, 0));
+    out.jardins.push(r);
+  });
+  out.piscina = arrodoneix2(out.piscines.reduce((s, x) => s + x.total, 0));
+  out.jardi = arrodoneix2(out.jardins.reduce((s, x) => s + x.total, 0));
+  out.total = arrodoneix2(out.piscina + out.jardi);
+  out.buit = !(out.piscines.length || out.jardins.length);
+  return out;
+}
+// el preu posat de cada part (si el pressupost la inclou i hi ha preu) i la diferència respecte del calculat, en %
+const posatQuota = (pr, k) => pr && pr['inclou_' + k] ? numONull(pr['preu_' + k]) : null;
+const difQuota = (posat, calc) => posat == null || !(calc > 0) ? null : (posat - calc) * 100 / calc;
+const textDif = d => (d > 0.05 ? '+' : d < -0.05 ? '−' : '') + nDec(Math.abs(d), 1) + ' %';
+// la diferència del pressupost sencer: només si totes les parts calculades tenen preu posat
+function difPressupost(pr, c) {
+  c = c || calculQuota(pr); if (c.buit || !(c.total > 0)) return null;
+  const parts = [['piscina', c.piscines], ['jardi', c.jardins]].filter(([, f]) => f.length);
+  if (parts.some(([k]) => posatQuota(pr, k) == null)) return null;
+  return difQuota(parts.reduce((s, [k]) => s + posatQuota(pr, k), 0), c.total);
+}
+const difHTML = d => d == null ? '' : `<b class="cq-dif ${d < 0 ? 'neg' : 'pos'}">${h(textDif(d))}</b>`;
+function calculQuotaHTML(pr, clausulesIds) {
+  if (!pr || !(pr.inclou_piscina || pr.inclou_jardi)) return pr && pr.inclou_aigues_grises ? '<p class="cq-peu">Les aigües grises no tenen càlcul de quota.</p>' : '';
+  const c = calculQuota(pr, clausulesIds);
+  const eurN = v => fmtEur(v).replace(' €', '');
+  const items = r => `<div class="cq-items">${r.items.map(x => `<span>${h(x.nom)} <b>${h(eurN(x.valor))}</b></span>`).join('') || '<span>—</span>'}</div>`;
+  const descP = r => [r.m3 ? nDec(r.m3, 1) + ' m³' : null, r.veins != null ? r.veins + ' veïns' : null, r.gcl ? `${r.gcl} g/h${r.equip ? ' → ' + r.equip : ''}` : null].filter(Boolean).join(' · ');
+  const descJ = r => r.m2 ? nDec(r.m2, 2) + ' m²' : '';
+  const part = (k, titol, files, desc) => {
+    if (!files.length) return '';
+    const posat = posatQuota(pr, k), diversos = files.length > 1;
+    return `<div class="cq-part cq-${k}"><div class="cq-cap"><span class="cq-tit">${titol}</span><span class="cq-gran">${h(fmtEur(c[k]))}</span><span class="cq-mes">al mes</span>`
+      + `<span class="cq-posat">${posat != null ? `posat <b>${h(fmtEur(posat))}</b> ${difHTML(difQuota(posat, c[k]))}` : 'encara sense preu posat'}</span></div>`
+      + files.map(r => `<div class="cq-inst"><span class="cq-sub">«${h(r.nom)}»</span>${desc(r) ? ' · ' + h(desc(r)) : ''}${diversos ? ` · <b>${h(fmtEur(r.total))}</b>` : ''}${items(r)}</div>`).join('') + '</div>';
+  };
+  const ambDues = c.piscines.length && c.jardins.length, d = difPressupost(pr, c);
+  const resum = ambDues ? `<div class="cq-resum"><span>Quota calculada <b>${h(fmtEur(c.total))}</b></span>${d != null ? `<span>posada <b>${h(fmtEur(posatQuota(pr, 'piscina') + posatQuota(pr, 'jardi')))}</b></span>${difHTML(d)}` : ''}</div>` : '';
+  const avisos = c.avisos.length ? `<ul class="cq-avisos">${c.avisos.map(a => `<li>${h(a)}</li>`).join('')}</ul>` : '';
+  return `<div class="cq">${part('jardi', 'Jardí', c.jardins, descJ)}${part('piscina', 'Piscina', c.piscines, descP)}${resum}${avisos}`
+    + `<div class="cq-peu">Al mes i sense IVA, amb els costos d’avui: hora d’operari a ${h(fmtEur(c.P.cost_hora))} (PARÀMETRES › Cost hora i càlcul) i les amortitzacions amb els preus dels seus productes.</div></div>`;
+}
+// al formulari del pressupost: es refà a cada canvi (les clàusules marcades es llegeixen de les caselles)
+function notaCalculQuota(vals, row) {
+  const frm = document.querySelector('#frm'), box = frm && frm.querySelector('[data-multi="clausules_ids"]');
+  const ids = box ? [...box.querySelectorAll('[name="clausules_ids"]:checked')].map(e => Number(e.value)) : ((row && row.clausules_ids) || []);
+  const pr = { ...(row || {}), ...vals, clausules_ids: ids };
+  ['inclou_jardi', 'inclou_piscina', 'inclou_aigues_grises'].forEach(k => { pr[k] = vals[k] === true || vals[k] === 'true' || vals[k] === '1'; });
+  return { html: calculQuotaHTML(pr, ids) };
+}
+
+/* (v55) PARÀMETRES › Cost hora i càlcul: una sola fila (id 1) */
+const CAMPS_PARAMS_CALCUL = [
+  ['cost_hora', 'Cost de l’hora d’un operari', '€', '0.01', 'el que costa a l’empresa; el preu de venda de l’hora (albarans) és a ALTRES › Empresa'],
+  ['visites_estiu', 'Piscina: visites l’any a l’estiu', 'visites', '0.1'], ['visites_preestiu', 'Piscina: visites l’any al preestiu', 'visites', '0.1'], ['visites_hivern', 'Piscina: visites l’any a l’hivern', 'visites', '0.1'],
+  ['setmanes_estiu', 'Jardí: setmanes d’estiu', 'setmanes', '0.5'], ['setmanes_preestiu', 'Jardí: setmanes de preestiu', 'setmanes', '0.5'], ['setmanes_hivern', 'Jardí: setmanes d’hivern', 'setmanes', '0.5'],
+  ['fitosanitaris_m2', 'Jardí: productes fitosanitaris', '€ per m² l’any', '0.01'],
+];
+function renderCalculQuotes(main) {
+  if (!esOficina(treballadorActual())) { main.innerHTML = '<div class="panel"><p class="msg err">Només l’administrador i l’oficina.</p></div>'; return; }
+  const r = C.rows('parametres_calcul').find(x => Number(x.id) === 1);
+  if (!r) { main.innerHTML = '<h1>Cost hora i càlcul de les quotes</h1><div class="panel"><p class="msg err">Encara no hi ha els paràmetres del càlcul.</p><p class="hint">Cal executar el fitxer 102_calcul_quotes.sql al SQL Editor de Supabase.</p></div>'; return; }
+  const P = paramsCalcul();
+  const fila = ([k, label, unitat, step, hint]) => `<div class="fila"><span>${h(label)}</span><span><input type="number" step="${step}" min="0" data-param="${k}" value="${h(String(P[k]))}"> ${h(unitat)}${hint ? `<span class="pc-hint">${h(hint)}</span>` : ''}</span></div>`;
+  const [hora, ...resta] = CAMPS_PARAMS_CALCUL;
+  main.innerHTML = `<h1>Cost hora i càlcul de les quotes</h1>
+    <div class="panel calc-param">
+      <p class="hint">Serveixen per calcular la quota dels pressupostos d’agrupació (FACTURACIÓ › Pressupostos d’agrupació), amb les dades de cada piscina i jardí i les amortitzacions (PARÀMETRES › Amortitzacions).</p>
+      ${fila(hora)}
+      <h3>Temporades i fitosanitaris</h3>
+      ${resta.map(fila).join('')}
+      <div class="actions"><button class="btn desa" id="pc-desa">Desa</button></div>
+      <h3>Com es calcula</h3>
+      <ul class="hint calc-com">
+        <li><b>Piscina, manteniment:</b> per a cada temporada, (hores per visita + anar i tornar) × visites × cost de l’hora; tot, dividit per 12.</li>
+        <li><b>Hidròlisi</b> (si el pressupost porta la clàusula): l’equip de producció més petita que arribi a (veïns × 12 + m³) / 12 g/h.</li>
+        <li><b>Jardí, manteniment:</b> fitosanitaris × m² + per a cada temporada setmanes × (hores a la setmana + anar i tornar si no hi ha piscina) × cost de l’hora; més retalls i flors; tot, dividit per 12.</li>
+        <li><b>Amortitzacions:</b> total / anys / 12, un cop per piscina o per jardí o segons la mida (m³, m² de parets o m² de jardí).</li>
+      </ul>
+    </div>`;
+  main.querySelector('#pc-desa').addEventListener('click', async () => {
+    const b = main.querySelector('#pc-desa'), p = {};
+    for (const [k, label] of CAMPS_PARAMS_CALCUL) {
+      const v = main.querySelector(`[data-param="${k}"]`).value;
+      if (v === '' || isNaN(Number(v)) || Number(v) < 0) { toastErr(`«${label}»: posa-hi un número (0 o més)`); return; }
+      p[k] = Number(v);
+    }
+    if (!(p.cost_hora > 0)) { toastErr('El cost de l’hora ha de ser més de 0'); return; }
+    b.disabled = true;
+    const res = await sb.from('parametres_calcul').update(p).eq('id', 1);
+    if (res.error) { b.disabled = false; toastErr(friendly(res.error)); return; }
+    await loadTable('parametres_calcul');
+    toast('Desat: els pressupostos d’agrupació ja calculen amb aquests valors');
+    renderCalculQuotes(main);
+  });
+}
+
+/* (v55) PARÀMETRES › Amortitzacions: què s'amortitza. Cada línia es canvia al moment (com les línies de les factures de proveïdor) */
+const producteCostLabel = p => p.nom + (p.proveidor_id ? ' · ' + L('proveidors', p.proveidor_id) : '') + (p.referencia ? ' · ' + p.referencia : '')
+  + ' (cost ' + (numONull(p.preu_cost) != null ? fmtEur(p.preu_cost) : 'sense preu') + ')';
+function preuBaseLiniaAmort(l, P) {   // el preu (abans del descompte) i el descompte de la línia, per mostrar-los
+  if (l.hores) return { preu: P.cost_hora, dte: 0 };
+  if (l.producte_id) { const p = C.get('productes', l.producte_id) || {}; const preu = numONull(p.preu_proveidor); return preu != null ? { preu, dte: numONull(p.dte_proveidor) || 0 } : { preu: numONull(p.preu_cost), dte: 0 }; }
+  return { preu: numONull(l.preu), dte: numONull(l.dte) || 0 };
+}
+function liniesAmortHTML(row) {
+  if (!row) return '';
+  const P = paramsCalcul(), ls = liniesAmortitzacio(row.id);
+  const prods = C.rows('productes').filter(p => p.actiu).sort((a, b) => norm(a.nom).localeCompare(norm(b.nom), 'ca') || a.id - b.id);
+  const opcions = l => {
+    const pid = l && l.producte_id ? Number(l.producte_id) : null, baixa = pid && !prods.some(p => p.id === pid) ? C.get('productes', pid) : null;
+    return `<option value="ma" ${!l || (!pid && !l.hores) ? 'selected' : ''}>Preu a mà</option><option value="hores" ${l && l.hores ? 'selected' : ''}>Hores d’operari (${h(fmtEur(P.cost_hora))} l’hora)</option>`
+      + `<optgroup label="Un producte (agafa el seu preu de cost)">${[...(baixa ? [baixa] : []), ...prods].map(p => `<option value="${p.id}" ${pid === p.id ? 'selected' : ''}>${h(producteCostLabel(p))}${p.actiu ? '' : ' · DONAT DE BAIXA'}</option>`).join('')}</optgroup>`;
+  };
+  const n2 = v => v == null ? '' : fmtEur(v).replace(' €', '');
+  const preuTxt = v => v == null ? '' : Math.abs(v * 100 - Math.round(v * 100)) > 1e-6 ? textPreu4(v).replace(' €', '') : n2(v);
+  const files = ls.map(l => {
+    const ma = !l.producte_id && !l.hores, b = preuBaseLiniaAmort(l, P), cost = costLiniaAmort(l, P), q = Number(l.quantitat) || 0;
+    const p = l.producte_id ? C.get('productes', l.producte_id) : null, senseCost = !!p && numONull(p.preu_cost) == null && costProducte(p.preu_proveidor, p.dte_proveidor) == null;
+    return `<tr data-am-linia="${l.id}">
+      <td class="desc"><input type="text" data-camp="descripcio" value="${h(l.descripcio)}"></td>
+      <td class="d"><select data-camp="origen">${opcions(l)}</select></td>
+      <td class="q num"><input type="number" step="0.01" min="0" data-camp="quantitat" value="${h(l.quantitat)}"></td>
+      <td class="c num">${ma ? `<input type="number" step="0.0001" min="0" data-camp="preu" value="${h(l.preu ?? '')}">` : h(preuTxt(b.preu))}</td>
+      <td class="c num">${ma ? `<input type="number" step="0.01" min="0" max="100" data-camp="dte" value="${h(l.dte ?? '')}">` : h(b.dte ? textPct(b.dte) : '')}</td>
+      <td class="num">${senseCost ? '<b class="c-taronja">sense preu</b>' : h(n2(cost))}</td>
+      <td class="num pvp">${h(n2(q * cost))}</td>
+      <td><button type="button" class="btn ghost small" data-treu-am="${l.id}">Treu</button></td>
+    </tr>`;
+  }).join('');
+  return `<div class="fpl am-lin" id="am-lin">
+    <h3>Què s’amortitza</h3>
+    <p class="sub">Cada línia agafa el preu d’un producte (el seu preu de cost, que s’actualitza amb les tarifes del proveïdor), el cost de l’hora d’un operari o un preu a mà. Per lligar una línia a un producte, tria’l a «D’on surt el preu». Els canvis es desen sols.</p>
+    ${ls.length ? `<table class="tbl informe"><thead><tr><th>Material</th><th>D’on surt el preu</th><th class="num">Nº</th><th class="num">Preu</th><th class="num">Dte</th><th class="num">Cost</th><th class="num">Total</th><th></th></tr></thead><tbody>${files}
+      <tr class="total"><td colspan="6">Total · en ${h(nDec(row.anys, 2))} anys, <b>${h(fmtEur(quotaAmortitzacio(row, P)))}</b> al mes</td><td class="num">${h(n2(totalAmortitzacio(row, P)))}</td><td></td></tr></tbody></table>` : '<p class="hint">Encara no hi ha cap línia.</p>'}
+    <div class="addrow" id="am-nova">
+      <label class="f" style="flex:2.2 1 0"><span class="l">Material</span><input type="text" data-nou="descripcio"></label>
+      <label class="f" style="flex:2.4 1 0"><span class="l">D’on surt el preu</span><select data-nou="origen">${opcions(null)}</select></label>
+      <label class="f" style="flex:.6 1 0"><span class="l">Nº</span><input type="number" step="0.01" min="0" data-nou="quantitat" value="1"></label>
+      <label class="f" style="flex:.8 1 0"><span class="l">Preu (a mà)</span><input type="number" step="0.0001" min="0" data-nou="preu"></label>
+      <label class="f" style="flex:.6 1 0"><span class="l">Dte %</span><input type="number" step="0.01" min="0" max="100" data-nou="dte"></label>
+      <button type="button" class="btn small" id="am-afegeix">Afegeix</button>
+    </div>
+  </div>`;
+}
+function liniesAmortBind(frm, td) {
+  const box = document.querySelector('#am-lin'), amId = Number(frm && frm.dataset.id); if (!box || !amId) return;
+  const refresca = async () => {
+    await loadTable('amortitzacio_linies');
+    const nou = document.createElement('div'); nou.innerHTML = liniesAmortHTML(C.get('amortitzacions', amId));
+    const vell = document.querySelector('#am-lin'); if (vell && nou.firstElementChild) vell.replaceWith(nou.firstElementChild);
+    liniesAmortBind(frm, td); pintaNotes(td, frm);
+  };
+  // d'on surt el preu: a mà (si venia d'un producte o d'hores, s'hi posa el mateix preu i descompte, perquè el cost no canviï), hores o un producte
+  const origen = (v, l) => {
+    if (v === 'hores') return { hores: true, producte_id: null };
+    if (v === 'ma') { if (!l) return { hores: false, producte_id: null }; const b = preuBaseLiniaAmort(l, paramsCalcul()); return { hores: false, producte_id: null, preu: l.preu != null ? l.preu : b.preu, dte: l.dte != null ? l.dte : (b.dte || null) }; }
+    return { hores: false, producte_id: Number(v) };
+  };
+  box.querySelectorAll('tr[data-am-linia]').forEach(tr => {
+    const id = Number(tr.dataset.amLinia);
+    tr.querySelectorAll('[data-camp]').forEach(el => el.addEventListener('change', async () => {
+      const l = C.get('amortitzacio_linies', id); if (!l) return;
+      const camp = el.dataset.camp, v = el.value; let p;
+      if (camp === 'origen') p = origen(v, l);
+      else if (camp === 'descripcio') { if (!v.trim()) { el.value = l.descripcio; return; } p = { descripcio: v.trim() }; }
+      else if (camp === 'quantitat') { if (v === '' || isNaN(Number(v)) || Number(v) < 0) { showFormError('Posa la quantitat (Nº)'); el.value = l.quantitat; return; } p = { quantitat: Number(v) }; }
+      else p = { [camp]: v === '' ? null : Number(v) };
+      const r = await sb.from('amortitzacio_linies').update(p).eq('id', id);
+      if (r.error) { showFormError(friendly(r.error)); return; }
+      await refresca();
+    }));
+  });
+  box.querySelectorAll('[data-treu-am]').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('Treure aquesta línia de l’amortització?')) return;
+    const r = await sb.from('amortitzacio_linies').update({ actiu: false }).eq('id', Number(b.dataset.treuAm));
+    if (r.error) { showFormError(friendly(r.error)); return; }
+    await refresca();
+  }));
+  const af = box.querySelector('#am-afegeix'); if (af) af.addEventListener('click', async () => {
+    const v = k => String((box.querySelector(`[data-nou="${k}"]`) || {}).value ?? '');
+    const o = v('origen'), prod = /^\d+$/.test(o) ? C.get('productes', Number(o)) : null;
+    const desc = v('descripcio').trim() || (prod ? prod.nom : '');
+    if (!desc) { showFormError('Posa el material (o tria un producte)'); return; }
+    const q = v('quantitat') === '' ? 1 : Number(v('quantitat'));
+    if (isNaN(q) || q < 0) { showFormError('La quantitat (Nº) no és vàlida'); return; }
+    const p = { amortitzacio_id: amId, descripcio: desc, quantitat: q, ...origen(o, null) };
+    if (o === 'ma') { if (v('preu') === '') { showFormError('Posa-hi el preu (o tria un producte o hores d’operari)'); return; } p.preu = Number(v('preu')); p.dte = v('dte') === '' ? null : Number(v('dte')); }
+    const r = await sb.from('amortitzacio_linies').insert(p);
+    if (r.error) { showFormError(friendly(r.error)); return; }
+    toast('Línia afegida'); await refresca();
+  });
+}
+
 function pdfPressupostAgrupacio(pr) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
@@ -7001,12 +7410,15 @@ async function agrupaAlbarans(ids) {
 async function facturaAlbarans(ids) {
   if (!ids.length) { toastErr('Marca almenys un albarà'); return; }
   if (!confirm(`Fer una factura esborrany amb ${ids.length} albar${ids.length === 1 ? 'à' : 'ans'}?`)) return;
+  const cli = (a => a ? L('clients', a.client_id) : '')(C.get('albarans', ids[0]));
   const { data, error } = await sb.rpc('factura_des_albarans', { p_ids: ids });
   if (error) { toastErr(friendly(error)); const fe = $('#ferr'); if (fe) fe.innerHTML = `<div class="msg err">${h(friendly(error))}</div>`; return; }
   await Promise.all([loadTable('albarans'), loadTable('factures'), loadTable('factura_linies')]);
   if (state.marques.albarans) state.marques.albarans.clear();
-  toast('Factura esborrany creada');
-  state.mode = 'consulta'; state.table = 'factures'; state.editing = Number(data); renderApp(); window.scrollTo({ top: 0 });
+  // (v54) es queda on era (Albarans o Albarans pendents), per passar-ne d'altres; l'esborrany es revisa i s'emet després, a Factures
+  toast(`Factura esborrany creada${cli ? ' per a ' + cli : ''} (${ids.length} albar${ids.length === 1 ? 'à' : 'ans'}): la trobaràs a Factures per revisar-la i emetre-la`, 7000);
+  if (state.table === 'albarans') { state.mode = 'consulta'; state.editing = null; }
+  renderApp();
 }
 
 // el número d'un albarà on surt (fulls, línies de proveïdor…), amb «(eliminat)» si ho està
@@ -7786,15 +8198,15 @@ function fullExtresBind(frm, td) {
   const f = C.get('fulls_treball', id); if (f) bindFull(f, $('#main'));
 }
 // l'albarà d'un full totalment finalitzat: una línia per jornada (hores × persones a preu de l'hora) i una per material (a PVP del producte, si es troba)
-async function creaAlbaraDeFull(id, opts) {
-  const f = C.get('fulls_treball', id); if (!f) return;
-  if (f.estat === 'anul_lat') { showFormError('El full està eliminat: torna’l a obrir abans de passar-lo a albarà.'); return; }
-  if (!f.finalitzat) { showFormError('El full ha d’estar totalment finalitzat abans de fer-ne l’albarà.'); return; }
-  if (f.albara_id) { showFormError('Aquest full ja té albarà.'); return; }
-  const lloc = C.get('llocs', f.lloc_id); if (!lloc || !lloc.client_id) { showFormError('El lloc del full no té client.'); return; }
+async function ferAlbaraDeFull(id) {
+  const f = C.get('fulls_treball', id); if (!f) return { error: 'No es troba el full' };
+  if (f.estat === 'anul_lat') return { error: 'El full està eliminat: torna’l a obrir abans de passar-lo a albarà.' };
+  if (!f.finalitzat) return { error: 'El full ha d’estar totalment finalitzat abans de fer-ne l’albarà.' };
+  if (f.albara_id) return { error: 'Aquest full ja té albarà.' };
+  const lloc = C.get('llocs', f.lloc_id); if (!lloc || !lloc.client_id) return { error: 'El lloc del full no té client.' };
   const emp = C.rows('empresa')[0] || {}, preuHora = emp.preu_hora != null && emp.preu_hora !== '' ? Number(emp.preu_hora) : null;
   const jorn = jornadesFull(id), mat = materialFull(id);
-  if (!jorn.length && !mat.length) { showFormError('El full no té ni jornades ni material: no hi ha res a facturar.'); return; }
+  if (!jorn.length && !mat.length) return { error: 'El full no té ni jornades ni material: no hi ha res a facturar.' };
   const linies = [];
   jorn.forEach(j => { const q = Math.round(horesJornada(j) * Number(j.persones || 1) * 100) / 100; linies.push({ descripcio: `Mà d’obra ${dmy(j.data)} · ${j.persones} ${Number(j.persones) === 1 ? 'persona' : 'persones'} · ${String(j.hora_inici || '').slice(0, 5)}–${String(j.hora_fi || '').slice(0, 5)}${j.feina ? ' · ' + j.feina : ''}`, quantitat: q || 1, preu_unitari: preuHora || 0, preu_cost: null, producte_id: null }); });
   let diversos = 0;   // (v52) materials que tenen diversos proveïdors: s'agafa el de cost més baix
@@ -7804,16 +8216,43 @@ async function creaAlbaraDeFull(id, opts) {
   const avisAlb = (preuHora == null && jorn.length ? ' · l’empresa no té «preu de l’hora»: la mà d’obra surt a 0 €' : '') + (linies.some(l => !l.preu_unitari) ? ' · revisa les línies a 0 €' : '')
     + (diversos ? ` · ${diversos === 1 ? 'un material el tenen' : diversos + ' materials els tenen'} diversos proveïdors: s’ha posat el de cost més baix` : '');
   const alb = await sb.from('albarans').insert({ client_id: lloc.client_id, lloc_id: lloc.id, data: f.finalitzat_el ? ymd(new Date(f.finalitzat_el)) : ymd(new Date()), descripcio: `${f.numero || 'Full de treball'} · ${f.nom}`, observacions: `Creat des del full de treball ${f.numero || ''}` + (f.incidencia_id ? ` (incidència ${(C.get('incidencies', f.incidencia_id) || {}).numero || ''})` : '') }).select('id').single();
-  if (alb.error) { showFormError('Albarà: ' + friendly(alb.error)); return; }
+  if (alb.error) return { error: 'Albarà: ' + friendly(alb.error) };
   const lin = await sb.from('albara_linies').insert(linies.map((l, i) => ({ albara_id: alb.data.id, ordre: i + 1, ...l })));
-  if (lin.error) { showFormError('Línies de l’albarà: ' + friendly(lin.error)); return; }
+  if (lin.error) return { error: 'Línies de l’albarà: ' + friendly(lin.error) };
   const upd = await sb.from('fulls_treball').update({ albara_id: alb.data.id, estat: 'albara' }).eq('id', id);
-  if (upd.error) { showFormError(friendly(upd.error)); return; }
+  if (upd.error) return { error: friendly(upd.error) };
+  return { ok: true, albaraId: alb.data.id, linies: linies.length, total, avis: avisAlb };
+}
+// un full → el seu albarà, des de la fitxa del full o des d'una incidència. (v54) Es queda a Fulls de treball (a la llista), per passar-ne
+// un altre; des d'una incidència, a la incidència
+async function creaAlbaraDeFull(id, opts) {
+  const r = await ferAlbaraDeFull(id);
+  if (r.error) { showFormError(r.error); return; }
   await Promise.all([loadTable('albarans'), loadTable('albara_linies'), loadTable('fulls_treball')]);
-  const albNou = C.get('albarans', alb.data.id);
-  toast('Albarà ' + ((albNou || {}).numero_complet || '') + ' creat: ' + linies.length + (linies.length === 1 ? ' línia' : ' línies') + ' · ' + eur(total) + ' sense IVA' + avisAlb, 8000);
+  const albNou = C.get('albarans', r.albaraId);
+  toast('Albarà ' + ((albNou || {}).numero_complet || '') + ' creat: ' + r.linies + (r.linies === 1 ? ' línia' : ' línies') + ' · ' + eur(r.total) + ' sense IVA' + r.avis, 8000);
   if (opts && opts.quedar) { renderMain(); return; }   // des d'una incidència: s'hi queda
-  state.mode = 'consulta'; state.table = 'albarans'; state.editing = alb.data.id; renderApp(); window.scrollTo({ top: 0 });
+  state.mode = 'consulta'; state.table = 'fulls_treball'; state.editing = null; renderApp(); window.scrollTo({ top: 0 });
+}
+// (v54) diversos fulls d'un cop (els marcats a la llista): un albarà per full, per ordre de finalització; es queda a la llista
+async function creaAlbaransDeFulls(ids) {
+  const fulls = ids.map(id => C.get('fulls_treball', id)).filter(f => f && f.actiu && f.finalitzat && !f.albara_id && f.estat !== 'anul_lat')
+    .sort((a, b) => String(a.finalitzat_el || a.creat_el || '').localeCompare(String(b.finalitzat_el || b.creat_el || '')) || a.id - b.id);
+  if (!fulls.length) { toastErr('Marca almenys un full finalitzat que encara no tingui albarà'); return; }
+  if (!confirm(fulls.length === 1 ? `Passar el full ${fulls[0].numero || ''} a albarà?` : `Passar aquests ${fulls.length} fulls a albarà? Se’n farà un albarà per full:\n\n${fulls.map(f => `• ${f.numero || 'full'} · ${f.nom}`).join('\n')}`)) return;
+  const fets = [], errors = [], avisos = new Set();
+  for (const f of fulls) {
+    const r = await ferAlbaraDeFull(f.id);
+    if (r.error) errors.push(`${f.numero || 'full'}: ${r.error}`);
+    else { fets.push(r.albaraId); String(r.avis || '').split(' · ').map(s => s.trim()).filter(Boolean).forEach(a => avisos.add(a)); }
+  }
+  await Promise.all([loadTable('albarans'), loadTable('albara_linies'), loadTable('fulls_treball')]);
+  const m = state.marques.fulls_treball; if (m) fulls.forEach(f => m.delete(f.id));
+  const nums = fets.map(id => (C.get('albarans', id) || {}).numero_complet).filter(Boolean);
+  const fet = fets.length ? (fets.length === 1 ? `Albarà ${nums[0] || ''} creat` : `${fets.length} albarans creats (${nums.join(', ')})`) + [...avisos].map(a => ' · ' + a).join('') : '';
+  if (errors.length) toastErr((fet ? fet + '. ' : '') + 'No s’han pogut passar: ' + errors.join(' · '));
+  else toast(fet, 9000);
+  renderMain();
 }
 // els fulls de treball d'una incidència, per a l'acció «Convertir fulls de treball en albarans»: estat de cadascun, i el botó per fer-ne l'albarà
 function fullsIncHTML(inc, potFer) {
