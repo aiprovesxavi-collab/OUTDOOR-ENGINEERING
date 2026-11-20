@@ -2,7 +2,7 @@
 <html lang="ca">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-cV0+H8WrnGqLMyQj+NvTEp6xC7lzM7e+zVSs+7nnfq0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-owf506+I7eWq3lZCuyWXr0tI2R3JFISnCiE4KRkLCAM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestió de manteniment</title>
 <meta name="theme-color" content="#2f7d4a">
@@ -259,6 +259,72 @@
   .calc-param .pc-taula input.vis{ width:72px; }
   .calc-param .pc-taula input.dolenta{ border-color:var(--red); background:var(--red-2); }
   .calc-param .pc-nota{ font-size:12.5px; color:var(--ink-3); margin-left:4px; }
+  .calc-param .pc-calc td{ color:var(--ink-2); font-size:13.5px; } .calc-param .pc-calc td:first-child{ color:var(--ink-3); }
+  .calc-param .pc-frac{ color:var(--ink-3); margin-right:2px; }
+  /* (v58) previsió setmanal: el calendari a l'esquerra, els blocs per posar a la dreta */
+  .pv-barra .seg button{ white-space:nowrap; }
+  .pv{ display:flex; gap:14px; align-items:flex-start; margin-top:10px; }
+  .pv-cal-wrap{ flex:1 1 auto; min-width:0; overflow-x:auto; border:1px solid var(--line-2); border-radius:8px; background:#fff; }
+  body.pv-ample .main{ max-width:none; }
+  .pv-cal{ display:flex; min-width:max-content; }
+  .pv-eix{ flex:0 0 46px; border-right:1px solid var(--line-2); position:sticky; left:0; background:#fff; z-index:4; }
+  .pv-eix-cap{ height:74px; border-bottom:1px solid var(--line-2); }
+  .pv-eix-cos{ position:relative; }
+  .pv-eix-cos span{ position:absolute; right:6px; transform:translateY(-50%); font-size:11px; color:var(--ink-3); font-variant-numeric:tabular-nums; }
+  .pv-dia{ flex:1 0 auto; display:flex; flex-direction:column; border-right:2px solid var(--line-2); }
+  .pv-dia-cap{ height:52px; padding:4px 6px; border-bottom:1px solid var(--line-2); background:var(--bg-2); overflow:hidden; }
+  .pv-dia-cap b{ display:block; font-size:13px; }
+  .pv-hores{ display:flex; flex-wrap:wrap; gap:0 8px; font-size:11px; color:var(--ink-2); }
+  .pv-massa{ color:var(--red); font-weight:600; }
+  .pv-fora{ font-size:11px; color:var(--ink-3); margin-right:6px; }
+  .pv-cols{ display:flex; flex:1 0 auto; }
+  .pv-col{ flex:1 0 74px; min-width:74px; border-right:1px solid var(--line); }
+  .pv-col:last-child{ border-right:0; }
+  .pv-col-cap{ height:22px; font-size:11px; padding:3px 4px; border-bottom:1px solid var(--line-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--ink-2); text-align:center; }
+  .pv-cos{ position:relative; }
+  .pv-cos.pv-sobre{ background:#fff8e1; }
+  .pv-linia{ position:absolute; left:0; right:0; border-top:1px solid var(--line); pointer-events:none; }
+  .pv-esmorzar{ position:absolute; left:0; right:0; background:repeating-linear-gradient(45deg, #f4f4f4, #f4f4f4 6px, #e9e9e9 6px, #e9e9e9 12px); font-size:10px; color:var(--ink-3); text-align:center; pointer-events:none; z-index:1; }
+  .pv-festiu .pv-cos-buit{ background:repeating-linear-gradient(45deg, #fff, #fff 8px, #fbeaea 8px, #fbeaea 16px); }
+  .pv-bloc, .pv-peca{ border:1px solid; border-left-width:5px; border-radius:5px; cursor:grab; color:var(--ink); }
+  .pv-bloc{ position:absolute; left:2px; right:2px; padding:2px 4px; font-size:11px; line-height:1.25; overflow:hidden; z-index:2; }
+  .pv-bloc b, .pv-peca b{ display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; }
+  .pv-tipus{ display:block; font-size:9.5px; letter-spacing:.04em; font-weight:600; opacity:.8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pv-dur{ display:block; font-size:10.5px; color:var(--ink-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pv-t-jardi{ background:#e3f1e6; border-color:#2f7d4a; }
+  .pv-t-jardic{ background:#f3f9f4; border-color:#8dbd9b; border-style:dashed; border-left-style:solid; }
+  .pv-t-pisc{ background:#dfeaf8; border-color:#1f5fa8; }
+  .pv-t-piscc{ background:#f1f6fd; border-color:#8db3de; border-style:dashed; border-left-style:solid; }
+  .pv-t-retall{ background:#fbe8d6; border-color:#b0611c; }
+  .pv-bloc.pv-conflicte{ box-shadow:0 0 0 2px var(--red); }
+  .pv-bloc.pv-mini{ padding:0 4px; } .pv-bloc.pv-mini b{ font-size:10px; line-height:1.2; }
+  .pv-sel{ box-shadow:0 0 0 3px #f2b705 !important; }
+  .pv-viatge{ position:absolute; left:3px; right:3px; border-left:2px dashed #9aa79a; z-index:3; cursor:pointer; }
+  .pv-viatge span{ position:absolute; left:4px; top:0; transform:translateY(-55%); font-size:10px; line-height:1; padding:1px 4px; border-radius:7px; background:#fff; border:1px solid var(--line-2); color:var(--ink-2); white-space:nowrap; }
+  .pv-viatge.pv-ama{ border-left-color:var(--blue); } .pv-viatge.pv-ama span{ color:var(--blue); border-color:var(--blue); font-weight:600; }
+  .pv-btns{ position:absolute; bottom:1px; right:2px; display:none; gap:2px; }
+  .pv-bloc:hover .pv-btns{ display:flex; }
+  .pv-btns button{ font:inherit; font-size:11px; line-height:1; padding:2px 4px; border:1px solid var(--line-2); border-radius:4px; background:#fff; cursor:pointer; }
+  .pv-paleta{ flex:0 0 280px; position:sticky; top:8px; max-height:calc(100vh - 24px); overflow:auto; border:1px solid var(--line-2); border-radius:8px; background:#fff; padding:10px 12px; }
+  .pv-paleta h3{ margin:0 0 4px; font-size:15px; }
+  .pv-paleta h4{ margin:12px 0 6px; font-size:11.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); }
+  .pv-ajuda{ font-size:12px; color:var(--ink-3); margin:0 0 6px; }
+  .pv-peca{ position:relative; padding:4px 7px; margin:0 0 6px; font-size:12px; }
+  .pv-treu-peca{ position:absolute; top:3px; right:4px; font:inherit; font-size:11px; line-height:1; padding:2px 4px; border:1px solid var(--line-2); border-radius:4px; background:#fff; cursor:pointer; }
+  .pv-peca .pv-tipus i{ font-style:normal; font-weight:700; }
+  .pv-peca .pv-dur{ font-size:11.5px; }
+  .pv-plena{ opacity:.45; }
+  .pv-avisos{ margin:0; padding-left:16px; font-size:12px; color:#8a4b00; }
+  .pv-total{ list-style:none; margin:0; padding:0; font-size:12.5px; }
+  .pv-total li{ padding:2px 0; }
+  .pv-peu{ font-size:12px; color:var(--ink-3); margin-top:8px; }
+  .pv-config{ margin-top:10px; }
+  .pv-config h3{ margin:0 0 8px; font-size:16px; }
+  .pv-config h4{ margin:14px 0 6px; font-size:11.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); }
+  .pv-config .grid{ grid-template-columns:repeat(4, minmax(0,1fr)); }
+  .pv-config .actions{ margin-top:14px; }
+  @media (max-width: 1100px){ .pv{ flex-direction:column; } .pv-paleta{ position:static; flex:none; width:100%; max-height:none; } .pv-config .grid{ grid-template-columns:repeat(2, minmax(0,1fr)); } }
+  @media (max-width: 700px){ .pv-config .grid{ grid-template-columns:1fr; } }
   @media (max-width: 700px){ .cq-gran{ font-size:24px; } .cq-posat{ margin-left:0; } .calc-param .fila{ grid-template-columns:1fr; } }
   .children h3{ font-size:17px; font-weight:600; color:var(--ink); margin:22px 0 10px; }
   .toast.err{ background:var(--red); }
@@ -1625,7 +1691,7 @@ const SCHEMA = {
     { label: 'CONSUM', color: '#1f5fbf', tables: ['comptadors', 'lectures', 'consum_aigua'] },
     { label: 'INSTAL·LACIONS', color: '#8fcf9a', tables: ['jardins', 'piscines', 'informe_sal', 'informe_adob'] },
     { label: 'EQUIPAMENTS I INSTAL·LACIONS', color: '#e5b800', tables: ['programadors', 'bombes', 'filtres', 'cloradors_salins'] },
-    { label: 'PERSONAL', color: '#222222', tables: ['treballadors', 'equips', 'fitxar', 'fitxatges', 'mapa_fitxatges', 'nomines', 'documents_treballadors', 'tipus_document', 'vacances', 'festius'] },
+    { label: 'PERSONAL', color: '#222222', tables: ['treballadors', 'equips', 'previsio', 'fitxar', 'fitxatges', 'mapa_fitxatges', 'nomines', 'documents_treballadors', 'tipus_document', 'vacances', 'festius'] },
     { label: 'VEHICLES', color: '#556b8d', oficina: true, tables: ['vehicles', 'documents_vehicles'] },
     { label: 'PARÀMETRES', color: '#4f7d8a', oficina: true, tables: ['ipc', 'calcul_quotes', 'amortitzacions'] },   // (v51) penúltim; (v55) el cost de l'hora i les amortitzacions del càlcul de les quotes
     { label: 'ALTRES', color: '#b48ede', tables: ['tipus_iva', 'empresa', 'aigua_parametres_mensuals', 'avisos_piscina', 'comptes_bancaris', 'poblacions_sol', 'hores_sol'] },
@@ -1633,6 +1699,7 @@ const SCHEMA = {
   pages: {
     pregunta_ia: { label: 'Pregunta-ho (IA)', render: main => renderPreguntaIA(main) },
     calcul_quotes: { label: 'Cost hora i càlcul', render: main => renderCalculQuotes(main) },   // (v55)
+    previsio: { label: 'Previsió setmanal', render: main => renderPrevisio(main) },   // (v58)
     alarmes: { label: 'Alarmes', render: main => renderAlarmes(main) },
     compta_diari: { label: 'Llibre diari', render: main => renderComptaDiari(main) },
     compta_major: { label: 'Llibre major', render: main => renderComptaMajor(main) },
@@ -2123,6 +2190,11 @@ const SCHEMA = {
         { key: 'observacions', label: 'Observacions', type: 'textarea' },
       ],
     },
+    // (v58, SQL 105) la previsió setmanal: es fa a PERSONAL › Previsió setmanal (no surten com a llistes)
+    parametres_previsio: { label: 'Paràmetres de la previsió', nou: '', order: 'id', display: () => 'Paràmetres de la previsió', list: ['hora_inici'], fields: [{ key: 'hora_inici', label: 'Hora d’inici', type: 'text' }] },
+    previsio_blocs: { label: 'Blocs de la previsió', nou: '', order: 'id', display: r => r.tipus || '', list: ['tipus'], fields: [] },
+    previsio_setmanes: { label: 'Setmanes amb pla propi', nou: '', order: 'id', display: r => dmy(r.setmana), list: ['setmana'], fields: [] },
+    desplacaments: { label: 'Desplaçaments corregits', nou: '', order: 'id', display: r => (r.minuts || '') + ' min', list: ['minuts'], fields: [] },
     // (v55) les línies d'una amortització: es canvien dins de l'amortització (liniesAmortHTML)
     amortitzacio_linies: {
       label: 'Línies d’amortització', nou: '', order: 'id',
@@ -2817,7 +2889,7 @@ const SCHEMA = {
         { key: 'calcul__titol', type: 'seccio', label: 'Per al càlcul de la quota (pressupostos d’agrupació)', nota: vals => (m2 => ({ text: m2 ? `m² del càlcul: ${nDec(m2, 2)} (gespa + arbusts + prat)` : '' }))(m2JardiCalcul(vals)) },
         { key: 'hores_setmana_estiu', label: 'Hores a la setmana a l’estiu', type: 'number', step: '0.05', min: 0 },
         { key: 'hores_setmana_preestiu', label: 'Hores a la setmana al preestiu', type: 'number', step: '0.05', min: 0 },
-        { key: 'hores_setmana_hivern', label: 'Hores a la setmana a l’hivern', type: 'number', step: '0.05', min: 0, hint: 'sense l’anada i la tornada: si el pressupost no porta piscina, el càlcul hi suma el temps de la fitxa del lloc' },
+        { key: 'hores_setmana_hivern', label: 'Hores a la setmana a l’hivern', type: 'number', step: '0.05', min: 0, hint: 'les d’una visita completa (a l’hivern, un cop al mes; les altres setmanes, només la part de PARÀMETRES › Cost hora i càlcul), sense l’anada i la tornada: si el pressupost no porta piscina, el càlcul hi suma el temps de la fitxa del lloc' },
         { key: 'retalls_any', label: 'Retalls l’any', type: 'number', step: '1', min: 0 },
         { key: 'hores_retall', label: 'Hores per retall', type: 'number', step: '0.5', min: 0 },
         { key: 'flors_any', label: 'Flors: cost l’any (€)', type: 'number', step: '0.01', min: 0 },
@@ -2864,7 +2936,7 @@ const SCHEMA = {
         { key: 'calcul__titol', type: 'seccio', label: 'Per al càlcul de la quota (pressupostos d’agrupació)', nota: vals => (m3 => ({ text: m3 ? `${nDec(m3, 1)} m³ · ${nDec(m2ParetsPiscina(m3), 0)} m² de parets` : '' }))(volumPiscina(vals) || 0) },
         { key: 'hores_visita_estiu', label: 'Hores per visita a l’estiu', type: 'number', step: '0.05', min: 0 },
         { key: 'hores_visita_preestiu', label: 'Hores per visita al preestiu', type: 'number', step: '0.05', min: 0 },
-        { key: 'hores_visita_hivern', label: 'Hores per visita a l’hivern', type: 'number', step: '0.05', min: 0, hint: 'sense l’anada i la tornada (és a la fitxa del lloc)' },
+        { key: 'hores_visita_hivern', label: 'Hores per visita a l’hivern', type: 'number', step: '0.05', min: 0, hint: 'les d’una visita completa (les de control en fan només una part: PARÀMETRES › Cost hora i càlcul), sense l’anada i la tornada (és a la fitxa del lloc)' },
         ...campsEstiu,
         ...campsLinia('focus', 'Línia de focus de dins de la piscina'),
         ...campsBombes,
@@ -2888,6 +2960,15 @@ const MSG = {
   _model_unic: 'Aquest model ja és al catàleg.',
   parametres_calcul_dates: 'Les dates de les temporades han de ser dd/mm i existir (per exemple, 15/06).',
   parametres_calcul_visites: 'Les visites a la setmana han de ser de 0 a 7.',
+  parametres_calcul_piscina: 'Visites de piscina: cada 1 a 8 setmanes, un control triga com a mínim 1/1 i no més de 7 visites a la setmana.',
+  parametres_calcul_jardi: 'Visites de jardí: cada 1 a 8 setmanes, un control triga com a mínim 1/1 i no més de 7 visites a la setmana.',
+  previsio_blocs_on: 'Un bloc de piscina ha de ser d’una piscina, i un de jardí o de retall, d’un jardí.',
+  previsio_blocs_retall: 'Els retalls només van a les setmanes concretes.',
+  previsio_setmanes_unica: 'Aquesta setmana ja té pla propi.',
+  desplacaments_ordre: 'El desplaçament s’ha de desar amb el lloc de número més baix primer.',
+  desplacaments_parella: 'Aquest desplaçament ja està corregit.',
+  parametres_previsio_hores: 'Les hores han de ser hh:mm (per exemple, 08:00).',
+  parametres_previsio_dates: 'Les dates dels retalls han de ser dd/mm i existir (per exemple, 15/05).',
   amortitzacio_linies_preu: 'Cada línia ha de tenir un preu: tria un producte, marca-la com a hores d’operari o posa-hi el preu a mà.',
   amortitzacio_linies_hores: 'Una línia d’hores d’operari no pot anar lligada a un producte.',
   amortitzacions_base: 'Posa per a quants m³ o m² són els costos (p. ex. 100).',
@@ -5113,7 +5194,7 @@ function renderAppOperari() {
 
 function renderMain() {
   const main = $('#main');
-  document.body.classList.remove('ic-full');
+  document.body.classList.remove('ic-full', 'pv-ample');
   if (state.table === 'informes_lloc' && esOperari()) { renderInformesApp(main); return; }   // els informes a l'app (després de desar, etc.)
   if (!state.table) {
     main.innerHTML = `
@@ -6409,19 +6490,29 @@ function clausulesPressupost(pr) {
    PISCINA (cada piscina, si el pressupost inclou la piscina):
      · manteniment = Σ temporades (hores per visita + anar i tornar) × visites de la temporada × cost de l'hora / 12 (si té mides)
        (v56) visites de la temporada = dies de la temporada (en un any de 365 dies) / 7 × visites a la setmana (PARÀMETRES)
+       (v57) les visites de cada cicle (cada N setmanes) són completes (les hores de la fitxa) o de control (1/part de les hores);
+       totes amb l'anar i tornar: manteniment = Σ temporades (visites completes equivalents × hores + visites × anar i tornar) × cost
      · hidròlisi (si el pressupost porta la clàusula): l'equip de producció més petita que arribi a arrodonit((veïns × 12 + m³) / 12) g/h
      · la resta d'amortitzacions de la piscina: un cop per piscina, segons els m³ (m³ / base) o segons els m² de parets
        (m³/2 + 3·√m³, de 5 en 5, com l'Excel; / base)
    JARDÍ (cada jardí, si el pressupost inclou el jardí), m² = gespa + arbusts + prat; si té m²:
      · manteniment = (fitosanitaris × m² + Σ temporades (setmanes × hores a la setmana + visites × anar i tornar, si el pressupost no
-       porta piscina) × cost de l'hora) / 12, amb setmanes = dies / 7 i visites = setmanes × visites a la setmana (v56);
+       porta piscina) × cost de l'hora) / 12, amb setmanes = dies / 7 i visites = setmanes × visites a la setmana (v56); (v57) com a
+       la piscina, «setmanes × hores» és la feina en visites completes: a l'hivern, 1 completa i 3 de control a 1/3 cada 4 setmanes;
        retalls = retalls × hores per retall × cost de l'hora / 12; flors = flors l'any / 12
      · i les amortitzacions del jardí (un cop per jardí o segons els m²) i l'assegurança de la gespa (al mes)
    Una amortització lligada a una clàusula només compta si el pressupost la porta (les obligatòries de la part hi són sempre).
    Diferències amb l'Excel: «Productes» es compta un cop (a l'Excel, la columna AB el suma dues vegades) i una piscina sense jardí no suma
    programadors ni pintura (a l'Excel, totes les files els sumaven). */
 const PARAMS_CALCUL = { cost_hora: 30, estiu_inici: '15/06', estiu_fi: '15/09', preestiu_inici: '01/03', preestiu_fi: '31/10',
-  piscina_setmana_estiu: 3, piscina_setmana_preestiu: 2, piscina_setmana_hivern: 1, jardi_setmana_estiu: 1, jardi_setmana_preestiu: 1, jardi_setmana_hivern: 1, fitosanitaris_m2: 0.3 };
+  // (v57) la piscina, per temporada: cada «cicle» setmanes, «completes» visites completes i «controls» de control, que triguen 1/«part» del temps
+  piscina_cicle_estiu: 1, piscina_completes_estiu: 2, piscina_controls_estiu: 1, piscina_control_part_estiu: 3,
+  piscina_cicle_preestiu: 1, piscina_completes_preestiu: 1, piscina_controls_preestiu: 1, piscina_control_part_preestiu: 3,
+  piscina_cicle_hivern: 4, piscina_completes_hivern: 1, piscina_controls_hivern: 3, piscina_control_part_hivern: 2,
+  // el jardí, igual: a l'estiu i al preestiu, cada setmana una visita completa; a l'hivern, cada 4 setmanes, 1 completa i 3 de control a 1/3
+  jardi_cicle_estiu: 1, jardi_completes_estiu: 1, jardi_controls_estiu: 0, jardi_control_part_estiu: 3,
+  jardi_cicle_preestiu: 1, jardi_completes_preestiu: 1, jardi_controls_preestiu: 0, jardi_control_part_preestiu: 3,
+  jardi_cicle_hivern: 4, jardi_completes_hivern: 1, jardi_controls_hivern: 3, jardi_control_part_hivern: 3, fitosanitaris_m2: 0.3 };
 const TEMPORADES_CALCUL = ['estiu', 'preestiu', 'hivern'];
 const DATES_CALCUL = ['estiu_inici', 'estiu_fi', 'preestiu_inici', 'preestiu_fi'];
 // (v56) una data dd/mm que existeix (el febrer, fins al 28)
@@ -6441,8 +6532,22 @@ function diesTemporades(P) {
 // (v56) amb els dies, les setmanes i les visites de cada temporada: visites = dies / 7 × visites a la setmana
 function derivaTemporades(o) {
   o.dies = diesTemporades(o);
-  TEMPORADES_CALCUL.forEach(k => { o['setmanes_' + k] = o.dies[k] / 7; o['visites_' + k] = o.dies[k] / 7 * o['piscina_setmana_' + k]; o['visites_jardi_' + k] = o.dies[k] / 7 * o['jardi_setmana_' + k]; });
+  TEMPORADES_CALCUL.forEach(k => {
+    const setm = o.dies[k] / 7;
+    o['setmanes_' + k] = setm;
+    // per a la piscina (sense sufix) i per al jardí (_jardi): les visites a la setmana, totes les visites (cadascuna amb el seu anar i
+    // tornar), les completes i la feina en visites completes (un control compta 1/part)
+    [['piscina', ''], ['jardi', '_jardi']].forEach(([p, suf]) => {
+      const cicle = o[`${p}_cicle_${k}`] || 1, comp = o[`${p}_completes_${k}`], ctrl = o[`${p}_controls_${k}`], part = o[`${p}_control_part_${k}`] || 1;
+      o[`${p}_setmana_${k}`] = (comp + ctrl) / cicle;
+      o[`visites${suf}_${k}`] = setm * (comp + ctrl) / cicle;
+      o[`completes${suf}_${k}`] = setm * comp / cicle;
+      o[`feina${suf}_${k}`] = setm * (comp + ctrl / part) / cicle;
+    });
+  });
   o.visites_any = TEMPORADES_CALCUL.reduce((s, k) => s + o['visites_' + k], 0);
+  o.completes_any = TEMPORADES_CALCUL.reduce((s, k) => s + o['completes_' + k], 0);
+  o.completes_jardi_any = TEMPORADES_CALCUL.reduce((s, k) => s + o['completes_jardi_' + k], 0);
   o.visites_jardi_any = TEMPORADES_CALCUL.reduce((s, k) => s + o['visites_jardi_' + k], 0);
   return o;
 }
@@ -6497,7 +6602,7 @@ function calculQuota(pr, clausulesIds) {
     if (!m3) out.avisos.push(`Falten les mides de la piscina «${nom}» (INSTAL·LACIONS › Piscines).`);
     const hv = TEMPORADES_CALCUL.map(k => numONull(p['hores_visita_' + k]));
     if (hv.some(x => x == null)) out.avisos.push(`Falten les hores per visita de la piscina «${nom}» (INSTAL·LACIONS › Piscines).`);
-    if (m3) afegeix(r, 'Manteniment', TEMPORADES_CALCUL.reduce((s, k, i) => s + ((hv[i] || 0) + anada) * P['visites_' + k] * P.cost_hora, 0) / 12);
+    if (m3) afegeix(r, 'Manteniment', TEMPORADES_CALCUL.reduce((s, k, i) => s + ((hv[i] || 0) * P['feina_' + k] + anada * P['visites_' + k]) * P.cost_hora, 0) / 12);
     if (hidro.length && m3) {
       if (veins == null) out.avisos.push(`Falten els veïns de la piscina «${nom}»: calen per triar l’equip d’hidròlisi.`);
       r.gcl = Math.round(((veins || 0) * 12 + m3) / 12);
@@ -6524,7 +6629,7 @@ function calculQuota(pr, clausulesIds) {
     if (hs.some(x => x == null)) out.avisos.push(`Falten les hores a la setmana del jardí «${nom}» (INSTAL·LACIONS › Jardins).`);
     if (m2) {
       const viatge = ambPiscina ? 0 : anada;
-      afegeix(r, 'Manteniment', (P.fitosanitaris_m2 * m2 + TEMPORADES_CALCUL.reduce((s, k, i) => s + (P['setmanes_' + k] * (hs[i] || 0) + P['visites_jardi_' + k] * viatge) * P.cost_hora, 0)) / 12);
+      afegeix(r, 'Manteniment', (P.fitosanitaris_m2 * m2 + TEMPORADES_CALCUL.reduce((s, k, i) => s + (P['feina_jardi_' + k] * (hs[i] || 0) + P['visites_jardi_' + k] * viatge) * P.cost_hora, 0)) / 12);
       afegeix(r, 'Retalls', (Number(j.retalls_any) || 0) * (Number(j.hores_retall) || 0) * P.cost_hora / 12);
       afegeix(r, 'Flors', (Number(j.flors_any) || 0) / 12);
     }
@@ -6572,7 +6677,7 @@ function calculQuotaHTML(pr, clausulesIds) {
   const resum = ambDues ? `<div class="cq-resum"><span>Quota calculada <b>${h(fmtEur(c.total))}</b></span>${d != null ? `<span>posada <b>${h(fmtEur(posatQuota(pr, 'piscina') + posatQuota(pr, 'jardi')))}</b></span>${difHTML(d)}` : ''}</div>` : '';
   const avisos = c.avisos.length ? `<ul class="cq-avisos">${c.avisos.map(a => `<li>${h(a)}</li>`).join('')}</ul>` : '';
   return `<div class="cq">${part('jardi', 'Jardí', c.jardins, descJ)}${part('piscina', 'Piscina', c.piscines, descP)}${resum}${avisos}`
-    + `<div class="cq-peu">Al mes i sense IVA, amb els costos d’avui: hora d’operari a ${h(fmtEur(c.P.cost_hora))}; ${h(nDec(c.P.visites_any, 1))} visites l’any a la piscina i ${h(nDec(c.P.visites_jardi_any, 1))} al jardí, amb les temporades de PARÀMETRES › Cost hora i càlcul; i les amortitzacions amb els preus dels seus productes.</div></div>`;
+    + `<div class="cq-peu">Al mes i sense IVA, amb els costos d’avui: hora d’operari a ${h(fmtEur(c.P.cost_hora))}; ${h(nDec(c.P.visites_any, 1))} visites l’any a la piscina (${h(nDec(c.P.completes_any, 1))} completes) i ${h(nDec(c.P.visites_jardi_any, 1))} al jardí, amb les temporades de PARÀMETRES › Cost hora i càlcul; i les amortitzacions amb els preus dels seus productes.</div></div>`;
 }
 // al formulari del pressupost: es refà a cada canvi (les clàusules marcades es llegeixen de les caselles)
 function notaCalculQuota(vals, row) {
@@ -6587,7 +6692,11 @@ function notaCalculQuota(vals, row) {
    dies, les setmanes i les visites l'any que en surten */
 const NUMS_PARAMS_CALCUL = [
   ['cost_hora', 'Cost de l’hora d’un operari', 0, null], ['fitosanitaris_m2', 'Productes fitosanitaris', 0, null],
-  ...['piscina', 'jardi'].flatMap(p => TEMPORADES_CALCUL.map(k => [`${p}_setmana_${k}`, `${p === 'piscina' ? 'Piscina' : 'Jardí'}: visites a la setmana (${k})`, 0, 7])),
+  // (v57) la piscina: cada quantes setmanes, completes, de control i la part del temps d'un control
+  ...TEMPORADES_CALCUL.flatMap(k => [[`piscina_cicle_${k}`, `Piscina (${k}): cada quantes setmanes`, 1, 8], [`piscina_completes_${k}`, `Piscina (${k}): visites completes`, 0, 56],
+    [`piscina_controls_${k}`, `Piscina (${k}): visites de control`, 0, 56], [`piscina_control_part_${k}`, `Piscina (${k}): un control triga 1/…`, 1, 100]]),
+  ...TEMPORADES_CALCUL.flatMap(k => [[`jardi_cicle_${k}`, `Jardí (${k}): cada quantes setmanes`, 1, 8], [`jardi_completes_${k}`, `Jardí (${k}): visites completes`, 0, 56],
+    [`jardi_controls_${k}`, `Jardí (${k}): visites de control`, 0, 56], [`jardi_control_part_${k}`, `Jardí (${k}): un control triga 1/…`, 1, 100]]),
 ];
 const NOMS_TEMPORADA = { estiu: 'Estiu', preestiu: 'Preestiu', hivern: 'Hivern' };
 function renderCalculQuotes(main) {
@@ -6599,7 +6708,12 @@ function renderCalculQuotes(main) {
   const dm = k => `<input type="text" inputmode="numeric" maxlength="5" placeholder="dd/mm" data-param="${k}" class="dm" value="${h(P[k])}">`;
   const filaTemp = k => `<tr><td>${NOMS_TEMPORADA[k]}</td><td>${k === 'hivern' ? 'la resta de l’any' : `del ${dm(k + '_inici')} al ${dm(k + '_fi')}${k === 'preestiu' ? ' <span class="pc-nota">sense l’estiu</span>' : ''}`}</td>`
     + `<td class="num" data-dies="${k}"></td><td class="num" data-setmanes="${k}"></td></tr>`;
-  const filaVis = (p, nom) => `<tr><td>${nom}</td>${TEMPORADES_CALCUL.map(k => `<td class="num">${num(`${p}_setmana_${k}`, '0.5', 'vis')}</td>`).join('')}<td class="num"><b data-any="${p}"></b></td></tr>`;
+  // (v57) la piscina: una fila per cada dada de les tres temporades; a sota, les visites que en surten
+  const filaPisc = (camp, nom, step, pre, p = 'piscina') => `<tr><td>${nom}</td>${TEMPORADES_CALCUL.map(k => `<td class="num">${pre || ''}${num(`${p}_${camp}_${k}`, step, 'vis')}</td>`).join('')}<td></td></tr>`;
+  const filaCalc = (clau, nom) => `<tr class="pc-calc"><td>${nom}</td>${TEMPORADES_CALCUL.map(k => `<td class="num" data-${clau}="${k}"></td>`).join('')}<td class="num"><b data-${clau}="any"></b></td></tr>`;
+  const taulaVisites = (p, clau) => `<table class="tbl pc-taula"><thead><tr><th></th>${TEMPORADES_CALCUL.map(k => `<th class="num">${NOMS_TEMPORADA[k]}</th>`).join('')}<th class="num">L’any</th></tr></thead>
+        <tbody>${filaPisc('cicle', 'Cada (setmanes)', '1', '', p)}${filaPisc('completes', 'Visites completes', '1', '', p)}${filaPisc('controls', 'Visites de control', '1', '', p)}${filaPisc('control_part', 'Un control triga', '0.5', '<span class="pc-frac">1/</span>', p)}
+          ${filaCalc(clau + 'setm', 'Visites a la setmana')}${filaCalc(clau + 'vis', 'Visites')}${filaCalc(clau + 'comp', 'de les quals, completes')}</tbody></table>`;
   main.innerHTML = `<h1>Cost hora i càlcul de les quotes</h1>
     <div class="panel calc-param">
       <p class="hint">Serveixen per calcular la quota dels pressupostos d’agrupació (FACTURACIÓ › Pressupostos d’agrupació), amb les dades de cada piscina i jardí i les amortitzacions (PARÀMETRES › Amortitzacions).</p>
@@ -6608,18 +6722,19 @@ function renderCalculQuotes(main) {
       <p class="pc-hint">Les mateixes per a la piscina i el jardí. Les dates, dd/mm.</p>
       <table class="tbl pc-taula"><thead><tr><th>Temporada</th><th>Dates</th><th class="num">Dies</th><th class="num">Setmanes</th></tr></thead>
         <tbody>${TEMPORADES_CALCUL.map(filaTemp).join('')}</tbody></table>
-      <h3>Visites a la setmana</h3>
-      <table class="tbl pc-taula"><thead><tr><th></th>${TEMPORADES_CALCUL.map(k => `<th class="num">${NOMS_TEMPORADA[k]}</th>`).join('')}<th class="num">Visites l’any</th></tr></thead>
-        <tbody>${filaVis('piscina', 'Piscina')}${filaVis('jardi', 'Jardí')}</tbody></table>
-      <p class="pc-hint">Les visites de cada temporada són els seus dies / 7 × les visites a la setmana (en un any de 365 dies). Les hores de cada visita (piscina) o de cada setmana (jardí) són a la fitxa de cada piscina i jardí.</p>
+      <h3>Visites a la piscina</h3>
+      ${taulaVisites('piscina', '')}
+      <h3>Visites al jardí</h3>
+      ${taulaVisites('jardi', 'j')}
+      <p class="pc-hint">Una visita completa dura les hores de la fitxa de la piscina o del jardí; una de control, només la part que hi posis (1/3 = un terç del temps). Totes compten l’anar i tornar. Les visites de cada temporada són les setmanes (els dies / 7, en un any de 365 dies) × les visites de cada cicle / les setmanes del cicle.</p>
       <h3>Jardí: productes fitosanitaris</h3>
       <div class="fila"><span>Cost</span><span>${num('fitosanitaris_m2', '0.01')} € per m² l’any</span></div>
       <div class="actions"><button class="btn desa" id="pc-desa">Desa</button></div>
       <h3>Com es calcula</h3>
       <ul class="hint calc-com">
-        <li><b>Piscina, manteniment:</b> per a cada temporada, (hores per visita + anar i tornar) × visites de la temporada × cost de l’hora; tot, dividit per 12.</li>
+        <li><b>Piscina, manteniment:</b> per a cada temporada, (visites completes × hores per visita + visites de control × la part de les hores + totes les visites × anar i tornar) × cost de l’hora; tot, dividit per 12.</li>
         <li><b>Hidròlisi</b> (si el pressupost porta la clàusula): l’equip de producció més petita que arribi a (veïns × 12 + m³) / 12 g/h.</li>
-        <li><b>Jardí, manteniment:</b> fitosanitaris × m² + per a cada temporada (setmanes × hores a la setmana + visites × anar i tornar, si no hi ha piscina) × cost de l’hora; més retalls i flors; tot, dividit per 12.</li>
+        <li><b>Jardí, manteniment:</b> fitosanitaris × m² + per a cada temporada (visites completes × hores de la setmana + visites de control × la part de les hores + totes les visites × anar i tornar, si no hi ha piscina) × cost de l’hora; més retalls i flors; tot, dividit per 12.</li>
         <li><b>Amortitzacions:</b> total / anys / 12, un cop per piscina o per jardí o segons la mida (m³, m² de parets o m² de jardí).</li>
       </ul>
     </div>`;
@@ -6628,10 +6743,15 @@ function renderCalculQuotes(main) {
   const resum = () => {
     const v = llegeix(), dolentes = DATES_CALCUL.filter(k => !esDiaMes(v[k]));
     main.querySelectorAll('input.dm').forEach(i => i.classList.toggle('dolenta', dolentes.includes(i.dataset.param)));
-    if (dolentes.length) { main.querySelectorAll('[data-dies], [data-setmanes], [data-any]').forEach(e => { e.textContent = '—'; }); return; }
-    const Q = paramsCalcul(v);
-    TEMPORADES_CALCUL.forEach(k => { main.querySelector(`[data-dies="${k}"]`).textContent = Q.dies[k]; main.querySelector(`[data-setmanes="${k}"]`).textContent = nDec(Q.dies[k] / 7, 1); });
-    main.querySelector('[data-any="piscina"]').textContent = nDec(Q.visites_any, 1); main.querySelector('[data-any="jardi"]').textContent = nDec(Q.visites_jardi_any, 1);
+    if (dolentes.length) { main.querySelectorAll('[data-dies], [data-setmanes], [data-setm], [data-vis], [data-comp], [data-jsetm], [data-jvis], [data-jcomp]').forEach(e => { e.textContent = '—'; }); return; }
+    const Q = paramsCalcul(v), posa = (sel, x) => { const e = main.querySelector(sel); if (e) e.textContent = x; };
+    TEMPORADES_CALCUL.forEach(k => {
+      posa(`[data-dies="${k}"]`, Q.dies[k]); posa(`[data-setmanes="${k}"]`, nDec(Q.dies[k] / 7, 1));
+      posa(`[data-setm="${k}"]`, nDec(Q['piscina_setmana_' + k], 2)); posa(`[data-vis="${k}"]`, nDec(Q['visites_' + k], 1)); posa(`[data-comp="${k}"]`, nDec(Q['completes_' + k], 1));
+      posa(`[data-jsetm="${k}"]`, nDec(Q['jardi_setmana_' + k], 2)); posa(`[data-jvis="${k}"]`, nDec(Q['visites_jardi_' + k], 1)); posa(`[data-jcomp="${k}"]`, nDec(Q['completes_jardi_' + k], 1));
+    });
+    posa('[data-vis="any"]', nDec(Q.visites_any, 1)); posa('[data-comp="any"]', nDec(Q.completes_any, 1));
+    posa('[data-jvis="any"]', nDec(Q.visites_jardi_any, 1)); posa('[data-jcomp="any"]', nDec(Q.completes_jardi_any, 1));
   };
   main.querySelectorAll('[data-param]').forEach(i => i.addEventListener('input', resum));
   resum();
@@ -6647,6 +6767,10 @@ function renderCalculQuotes(main) {
       p[k] = Number(x);
     }
     if (!(p.cost_hora > 0)) { toastErr('El cost de l’hora ha de ser més de 0'); return; }
+    for (const [q, nom] of [['piscina', 'Piscina'], ['jardi', 'Jardí']]) {
+      const massa = TEMPORADES_CALCUL.find(k => (p[`${q}_completes_${k}`] + p[`${q}_controls_${k}`]) / p[`${q}_cicle_${k}`] > 7);
+      if (massa) { toastErr(`${nom}, ${massa}: surten més de 7 visites a la setmana`); return; }
+    }
     b.disabled = true;
     const res = await sb.from('parametres_calcul').update(p).eq('id', 1);
     if (res.error) { b.disabled = false; toastErr(friendly(res.error)); return; }
@@ -6751,6 +6875,455 @@ function liniesAmortBind(frm, td) {
     if (r.error) { showFormError(friendly(r.error)); return; }
     toast('Línia afegida'); await refresca();
   });
+}
+
+/* (v58, SQL 105) PREVISIÓ SETMANAL (PERSONAL › Previsió setmanal): calendaris només orientatius de cada equip, fets com un trencaclosques.
+   A l'esquerra, el calendari de la setmana: una columna per a cada combinació dels operaris de l'equip (cadascun sol, de dos en dos…),
+   de l'hora d'inici fins a la jornada de la temporada (estiu i preestiu 8 h, hivern 7 h) més l'esmorzar, que no compta com a treballat.
+   A la dreta, els blocs per posar: JARDÍ, JARDÍ CONTROL, PISCINA COMPLETA, PISCINA CONTROL (les piscines, només a la columna del seu
+   operari habitual) i RETALL (només a les setmanes concretes de les seves dates).
+   · Setmana tipus: per equip, temporada i setmana del cicle (a l'hivern, 4: cada jardí i piscina hi té 1 completa i 3 controls).
+   · Setmana concreta: la setmana tipus de la seva temporada; els blocs de qui fa vacances o està de baixa aquell dia (o d'un festiu) queden
+     «per reassignar»; si s'hi canvia res, la setmana passa a tenir pla propi (la setmana tipus no canvia).
+   Un bloc dura les hores de la fitxa (de la temporada; un control, la part de PARÀMETRES) dividides entre els qui el fan. Entre dos llocs
+   seguits de cada operari hi ha el desplaçament: el corregit a mà o l'estimat amb les coordenades (línia recta × factor ÷ velocitat +
+   aparcar); si un lloc no té coordenades, 10 min. Amb la base posada, també es compta la sortida i la tornada. */
+const PARAMS_PREVISIO = { hora_inici: '08:00', esmorzar_inici: '10:00', esmorzar_minuts: 30, jornada_estiu: 8, jornada_preestiu: 8, jornada_hivern: 7, dies_setmana: 5,
+  retall1_inici: '15/05', retall1_fi: '15/06', retall2_inici: '15/10', retall2_fi: '15/11', base_latitud: null, base_longitud: null, factor_carretera: 1.35, velocitat_kmh: 35, minuts_aparcar: 3 };
+const TEXTOS_PREVISIO = ['hora_inici', 'esmorzar_inici', 'retall1_inici', 'retall1_fi', 'retall2_inici', 'retall2_fi'];
+const TIPUS_PREVISIO = {
+  jardi: { nom: 'JARDÍ', curt: 'JARDÍ', cls: 'pv-t-jardi' }, jardi_control: { nom: 'JARDÍ CONTROL', curt: 'JARDÍ CONTROL', cls: 'pv-t-jardic' },
+  piscina_completa: { nom: 'PISCINA COMPLETA', curt: 'PISCINA', cls: 'pv-t-pisc' }, piscina_control: { nom: 'PISCINA CONTROL', curt: 'PISC. CONTROL', cls: 'pv-t-piscc' },
+  retall: { nom: 'RETALL', curt: 'RETALL', cls: 'pv-t-retall' },
+};
+const PV_ESCALA = 1.15;          // píxels per minut
+const PV_SENSE_GPS = 10;         // minuts de desplaçament entre dos llocs si a algun li falten les coordenades
+const PV_FORA = { vacances: 'de vacances', baixa: 'de baixa' };
+function pvParams() {
+  const r = C.rows('parametres_previsio').find(x => Number(x.id) === 1) || {}, o = { ...PARAMS_PREVISIO };
+  Object.keys(o).forEach(k => { if (TEXTOS_PREVISIO.includes(k)) { if (r[k]) o[k] = String(r[k]); } else { const v = numONull(r[k]); if (v != null) o[k] = v; } });
+  o.teBase = o.base_latitud != null && o.base_longitud != null;
+  return o;
+}
+const pvMin = s => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(s || '').trim()); return m && Number(m[1]) < 24 && Number(m[2]) < 60 ? Number(m[1]) * 60 + Number(m[2]) : null; };
+const pvHora = m => { m = Math.round(m); return Math.floor(m / 60) + ':' + String(((m % 60) + 60) % 60).padStart(2, '0'); };
+const pvDurText = m => { m = Math.round(m); const hh = Math.floor(m / 60), mm = m % 60; return hh ? hh + ' h' + (mm ? ' ' + String(mm).padStart(2, '0') : '') : mm + ' min'; };
+// la temporada d'un dia, amb les dates de PARÀMETRES › Cost hora i càlcul
+function pvTemporadaDia(iso, Pc) {
+  Pc = Pc || paramsCalcul();
+  const md = v => { const [d, m] = String(v).split('/').map(Number); return m * 100 + d; }, dins = (a, b, x) => a <= b ? x >= a && x <= b : x >= a || x <= b;
+  const [, m, d] = String(iso).split('-').map(Number), x = m * 100 + d;
+  return dins(md(Pc.estiu_inici), md(Pc.estiu_fi), x) ? 'estiu' : dins(md(Pc.preestiu_inici), md(Pc.preestiu_fi), x) ? 'preestiu' : 'hivern';
+}
+const pvSetmanaIso = d => { const x = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())), dn = x.getUTCDay() || 7; x.setUTCDate(x.getUTCDate() + 4 - dn); const y0 = new Date(Date.UTC(x.getUTCFullYear(), 0, 1)); return Math.ceil(((x - y0) / 864e5 + 1) / 7); };
+// quantes setmanes té el cicle d'una temporada (la més llarga de la piscina i del jardí)
+const pvNCicle = (temp, Pc) => Math.max(1, Math.round(Pc['piscina_cicle_' + temp] || 1), Math.round(Pc['jardi_cicle_' + temp] || 1));
+// els operaris de l'equip i totes les seves combinacions (cadascun sol, de dos en dos…; amb més de 4, només sols, de dos en dos i tots)
+function pvOperaris(equipId) {
+  const a = avui();
+  return C.rows('treballadors').filter(t => t.actiu && Number(t.equip_id) === Number(equipId) && (!t.data_baixa || t.data_baixa >= a)).sort((x, y) => nomTreballador(x).localeCompare(nomTreballador(y), 'ca'));
+}
+const pvNomCurt = t => String((t && (t.nom || nomTreballador(t))) || '?').trim().split(/\s+/)[0];
+function pvCombos(ops) {
+  const out = [];
+  for (let mask = 1; mask < (1 << ops.length); mask++) out.push(ops.filter((_, i) => mask & (1 << i)));
+  return out.map((c, i) => ({ c, i })).filter(x => ops.length <= 4 || x.c.length <= 2 || x.c.length === ops.length)
+    .sort((a, b) => a.c.length - b.c.length || a.i - b.i).map(x => x.c);
+}
+const pvClau = ids => [...ids].map(Number).sort((a, b) => a - b).join('-');
+const pvIds = b => (Array.isArray(b.treballadors) ? b.treballadors : String(b.treballadors || '').replace(/[{}]/g, '').split(',')).map(Number).filter(Boolean);
+// els jardins de l'equip (camp «Equip») i les piscines dels seus operaris (camp «Operari habitual»)
+const pvPerLloc = (a, b) => nomInstal(a, 'x').localeCompare(nomInstal(b, 'x'), 'ca') || a.id - b.id;
+const pvJardins = (equipId, contracte) => C.rows('jardins').filter(j => j.actiu && Number(j.equip_id) === Number(equipId) && (!contracte || contracteVigent(j, 'inclou_jardi'))).sort(pvPerLloc);
+const pvPiscines = (ops, contracte) => { const ids = new Set(ops.map(t => t.id)); return C.rows('piscines').filter(p => p.actiu && ids.has(Number(p.treballador_id)) && (!contracte || contracteVigent(p, 'inclou_piscina'))).sort(pvPerLloc); };
+const pvInstal = b => b.piscina_id ? C.get('piscines', b.piscina_id) : C.get('jardins', b.jardi_id);
+const pvLloc = b => Number((pvInstal(b) || {}).lloc_id) || null;
+const pvNomInstal = b => { const r = pvInstal(b); return r ? nomInstal(r, b.piscina_id ? 'piscina' : 'jardí') : '?'; };
+const pvNomLloc = id => id ? ((C.get('llocs', id) || {}).nom || 'lloc ' + id) : 'la base';
+// els minuts de feina d'un bloc (d'una persona): les hores de la fitxa per a la temporada; un control, la part de PARÀMETRES
+function pvMinutsFeina(b, temp, Pc) {
+  const r = pvInstal(b) || {};
+  if (b.tipus === 'retall') return Math.round((Number(r.hores_retall) || 0) * 60);
+  if (b.jardi_id) return Math.round((Number(r['hores_setmana_' + temp]) || 0) * 60 / (b.tipus === 'jardi_control' ? (Pc['jardi_control_part_' + temp] || 1) : 1));
+  return Math.round((Number(r['hores_visita_' + temp]) || 0) * 60 / (b.tipus === 'piscina_control' ? (Pc['piscina_control_part_' + temp] || 1) : 1));
+}
+// el que dura a la columna: la feina entre els qui la fan (com a mínim 5 min)
+const pvDurada = (b, temp, Pc) => Math.max(5, Math.round(pvMinutsFeina(b, temp, Pc) / Math.max(1, pvIds(b).length)));
+// on acaba un bloc: si passa per l'esmorzar, l'esmorzar s'hi afegeix (no compta com a treballat)
+function pvFi(ini, dur, PP) { const e0 = pvMin(PP.esmorzar_inici), e1 = e0 + PP.esmorzar_minuts; let fi = ini + dur; if (PP.esmorzar_minuts && e0 != null && ini < e1 && fi > e0) fi += PP.esmorzar_minuts; return fi; }
+// els minuts d'anar d'un lloc a un altre (buit = la base): el corregit a mà o l'estimat amb les coordenades
+const pvPos = (id, PP) => { if (!id) return PP.teBase ? [PP.base_latitud, PP.base_longitud] : null; const l = C.get('llocs', id); return l && numONull(l.latitud) != null && numONull(l.longitud) != null ? [Number(l.latitud), Number(l.longitud)] : null; };
+function pvKm([a1, o1], [a2, o2]) { const r = Math.PI / 180, dA = (a2 - a1) * r, dO = (o2 - o1) * r, x = Math.sin(dA / 2) ** 2 + Math.cos(a1 * r) * Math.cos(a2 * r) * Math.sin(dO / 2) ** 2; return 2 * 6371 * Math.asin(Math.sqrt(x)); }
+function pvDesplacament(a, b, PP) {
+  a = Number(a) || null; b = Number(b) || null;
+  if (a === b) return { min: 0 };
+  const [x, y] = [a || 0, b || 0].sort((p, q) => p - q);
+  const ma = C.rows('desplacaments').find(d => d.actiu && (Number(d.lloc_a) || 0) === x && (Number(d.lloc_b) || 0) === y);
+  if (ma) return { min: Number(ma.minuts), aMa: true };
+  if ((!a || !b) && !PP.teBase) return { min: 0, senseBase: true };
+  const pa = pvPos(a, PP), pb = pvPos(b, PP);
+  if (!pa || !pb) return { min: PV_SENSE_GPS, sense: [pa ? null : a, pb ? null : b].filter(Boolean) };
+  return { min: Math.round(pvKm(pa, pb) * PP.factor_carretera / PP.velocitat_kmh * 60 + PP.minuts_aparcar), km: pvKm(pa, pb) };
+}
+
+// la vista: l'equip, la temporada i la setmana del cicle (o la setmana concreta), els dies amb qui hi és i els blocs
+function pvVista(st) {
+  const PP = pvParams(), Pc = paramsCalcul(), equipId = Number(st.equip), ops = pvOperaris(equipId);
+  let temporada, setmanaCicle, monday = null, personal = false;
+  if (st.mode === 'setmana') {
+    const dl = dillunsDe(new Date(String(st.dia || avui()) + 'T12:00:00'));
+    monday = ymd(dl); temporada = pvTemporadaDia(ymd(sumaDies(dl, 2)), Pc);
+    setmanaCicle = ((pvSetmanaIso(dl) - 1) % pvNCicle(temporada, Pc)) + 1;
+    personal = C.rows('previsio_setmanes').some(s => s.actiu && Number(s.equip_id) === equipId && s.setmana === monday);
+  } else { temporada = st.temporada || 'estiu'; setmanaCicle = Math.min(Math.max(1, Number(st.cicle) || 1), pvNCicle(temporada, Pc)); }
+  const tots = C.rows('previsio_blocs').filter(b => b.actiu && Number(b.equip_id) === equipId);
+  const tipus = b => !b.setmana && b.temporada === temporada && Number(b.setmana_cicle) === setmanaCicle;
+  const blocs = monday ? [...tots.filter(b => personal ? b.setmana === monday && b.tipus !== 'retall' : tipus(b)), ...tots.filter(b => b.setmana === monday && b.tipus === 'retall')] : tots.filter(tipus);
+  const dies = Array.from({ length: PP.dies_setmana }, (_, i) => {
+    const iso = monday ? ymd(sumaDies(new Date(monday + 'T12:00:00'), i)) : null, festiu = iso ? festiuDe(iso) : null;
+    const absents = new Map(iso ? absenciesActives().filter(a => a.dia === iso && ops.some(t => t.id === Number(a.treballador_id))).map(a => [Number(a.treballador_id), a.tipus]) : []);
+    const presents = festiu ? [] : ops.filter(t => !absents.has(t.id));
+    return { n: i + 1, iso, festiu, absents, presents, combos: pvCombos(presents) };
+  });
+  // al calendari, els blocs del dia amb tots els seus operaris presents; la resta, per reassignar
+  const alCal = [], perReassignar = [];
+  blocs.forEach(b => { const d = dies[b.dia - 1], ids = pvIds(b); (d && !d.festiu && ids.length && ids.every(id => d.presents.some(t => t.id === id)) ? alCal : perReassignar).push(b); });
+  return { PP, Pc, st, equipId, ops, temporada, setmanaCicle, nCicle: pvNCicle(temporada, Pc), monday, personal, blocs, alCal, perReassignar, dies, jornada: Number(PP['jornada_' + temporada]) || 8 };
+}
+// un dia: on és cada bloc, el desplaçament per arribar-hi, els conflictes i les hores de cada operari (feina + desplaçaments)
+function pvDia(v, d) {
+  const PP = v.PP, ini0 = pvMin(PP.hora_inici), fiDia = ini0 + v.jornada * 60 + PP.esmorzar_minuts, senseGps = new Set();
+  const blocs = v.alCal.filter(b => Number(b.dia) === d.n).map(b => { const dur = pvDurada(b, v.temporada, v.Pc); return { b, ini: Number(b.inici), dur, fi: pvFi(Number(b.inici), dur, PP), lloc: pvLloc(b), viatge: 0, des: null, conflictes: [] }; });
+  const perOp = new Map();
+  d.presents.forEach(t => {
+    const seus = blocs.filter(x => pvIds(x.b).includes(t.id)).sort((a, b) => a.ini - b.ini || a.b.id - b.b.id);
+    let feina = 0, viatge = 0, prev = null;
+    seus.forEach(x => {
+      feina += x.dur;
+      const dsp = pvDesplacament(prev ? prev.lloc : null, x.lloc, PP); (dsp.sense || []).forEach(id => senseGps.add(id));
+      viatge += dsp.min;
+      if (dsp.min >= x.viatge) { x.viatge = dsp.min; x.des = prev ? prev.lloc : null; x.aMa = !!dsp.aMa; }
+      if (prev && x.ini < prev.fi) x.conflictes.push(`${pvNomCurt(t)} encara és a ${pvNomLloc(prev.lloc)} fins a les ${pvHora(prev.fi)}`);
+      else if (dsp.min > 0 && x.ini < (prev ? prev.fi : ini0) + dsp.min) x.conflictes.push(`${pvNomCurt(t)} no hi arriba: calen ${dsp.min} min des de ${pvNomLloc(prev ? prev.lloc : null)}`);
+      prev = x;
+    });
+    if (prev) { const dsp = pvDesplacament(prev.lloc, null, PP); viatge += dsp.min; if (dsp.min && prev.fi + dsp.min > fiDia) prev.conflictes.push(`${pvNomCurt(t)} no torna a la base abans de les ${pvHora(fiDia)}`); }
+    perOp.set(t.id, { feina, viatge, total: feina + viatge });
+  });
+  blocs.forEach(x => { if (x.fi > fiDia) x.conflictes.push(`acaba a les ${pvHora(x.fi)}, després del final del dia (${pvHora(fiDia)})`); if (x.ini < ini0) x.conflictes.push(`comença abans de les ${pvHora(ini0)}`); });
+  return { blocs, perOp, ini0, fiDia, senseGps };
+}
+// el que falta posar a la setmana tipus: per a cada jardí i piscina, les completes i els controls de tot el cicle
+function pvFalta(v) {
+  const tots = C.rows('previsio_blocs').filter(b => b.actiu && Number(b.equip_id) === v.equipId && !b.setmana && b.temporada === v.temporada && Number(b.setmana_cicle) <= v.nCicle);
+  const items = [], sobren = [];
+  [...pvJardins(v.equipId, v.st.contracte).map(r => ({ q: 'jardi', r, c: 'jardi', k: 'jardi_control' })), ...pvPiscines(v.ops, v.st.contracte).map(r => ({ q: 'piscina', r, c: 'piscina_completa', k: 'piscina_control' }))].forEach(({ q, r, c, k }) => {
+    const t = v.temporada, cicle = Math.max(1, Math.round(v.Pc[`${q}_cicle_${t}`] || 1)), comp = v.Pc[`${q}_completes_${t}`] || 0, ctrl = v.Pc[`${q}_controls_${t}`] || 0;
+    const cal = { [c]: Math.round(comp * v.nCicle / cicle), [k]: Math.round(ctrl * v.nCicle / cicle) }, perSetmana = Math.ceil((comp + ctrl) / cicle - 1e-9);
+    const seus = tots.filter(b => Number(b[q + '_id']) === r.id), aquesta = seus.filter(b => Number(b.setmana_cicle) === v.setmanaCicle).length;
+    [c, k].forEach(tp => {
+      const n = seus.filter(b => b.tipus === tp).length;
+      if (n < cal[tp]) items.push({ q, r, tipus: tp, falta: cal[tp] - n, plena: aquesta >= perSetmana });
+      else if (n > cal[tp]) sobren.push(`${nomInstal(r, q === 'piscina' ? 'piscina' : 'jardí')}: ${n} ${TIPUS_PREVISIO[tp].nom.toLowerCase()} (en calen ${cal[tp]})`);
+    });
+  });
+  return { items, sobren };
+}
+// els retalls per posar en una setmana concreta: un entre les dates del primer període i un altre al segon (si n'hi ha un sol, en
+// qualsevol dels dos; si n'hi ha més de dos, només dos)
+const pvIsoDdMm = (v, any) => { const [d, m] = String(v).split('/'); return any + '-' + m + '-' + d; };
+function pvRetalls(v) {
+  if (!v.monday) return [];
+  const PP = v.PP, any = v.monday.slice(0, 4), dg = ymd(sumaDies(new Date(v.monday + 'T12:00:00'), 6));
+  const per = (a, b) => { const x = pvIsoDdMm(a, any), y = pvIsoDdMm(b, any); return x <= y ? [x, y] : [x, (Number(any) + 1) + y.slice(4)]; };
+  const P1 = per(PP.retall1_inici, PP.retall1_fi), P2 = per(PP.retall2_inici, PP.retall2_fi);
+  const toca = ([a, b], dl, dgx) => a <= dgx && b >= dl, enP1 = toca(P1, v.monday, dg), enP2 = toca(P2, v.monday, dg);
+  if (!enP1 && !enP2) return [];
+  const retalls = C.rows('previsio_blocs').filter(b => b.actiu && b.tipus === 'retall' && b.setmana);
+  return pvJardins(v.equipId, v.st.contracte).filter(j => (Number(j.retalls_any) || 0) > 0).filter(j => {
+    const seus = retalls.filter(b => Number(b.jardi_id) === j.id), dgDe = s => ymd(sumaDies(new Date(s + 'T12:00:00'), 6));
+    const n1 = seus.filter(b => toca(P1, b.setmana, dgDe(b.setmana))).length, n2 = seus.filter(b => toca(P2, b.setmana, dgDe(b.setmana))).length;
+    return Math.min(2, Math.round(Number(j.retalls_any))) >= 2 ? (enP1 && n1 < 1) || (enP2 && n2 < 1) : n1 + n2 < 1;
+  }).map(r => ({ q: 'jardi', r, tipus: 'retall', falta: 1 }));
+}
+
+/* la pantalla */
+function renderPrevisio(main) {
+  if (!esOficina(treballadorActual())) { main.innerHTML = '<div class="panel"><p class="msg err">Només l’administrador i l’oficina.</p></div>'; return; }
+  if (!C.rows('parametres_previsio').length) { main.innerHTML = '<h1>Previsió setmanal</h1><div class="panel"><p class="msg err">Encara no hi ha la previsió setmanal.</p><p class="hint">Cal executar el fitxer 105_previsio_setmanal.sql al SQL Editor de Supabase.</p></div>'; return; }
+  const st = state.prev || (state.prev = { equip: '', mode: 'tipus', temporada: pvTemporadaDia(avui()), cicle: 1, dia: avui(), contracte: true, sel: null, config: false });
+  const equips = C.rows('equips').filter(e => e.actiu && pvOperaris(e.id).length).sort((a, b) => String(a.nom).localeCompare(String(b.nom), 'ca'));
+  if (!equips.some(e => String(e.id) === String(st.equip))) st.equip = String((equips[0] || {}).id || '');
+  if (!equips.length) { main.innerHTML = '<h1>Previsió setmanal</h1><div class="panel"><p class="msg err">Encara no hi ha cap equip amb operaris.</p><p class="hint">Fes els equips a PERSONAL › Equips i posa a cada treballador el seu equip.</p></div>'; return; }
+  document.body.classList.add('pv-ample');
+  const v = pvVista(st), PP = v.PP, scroll = (main.querySelector('.pv-cal-wrap') || {}).scrollLeft || 0;
+  const dies = v.dies.map(d => ({ d, c: pvDia(v, d) }));
+  const ini0 = pvMin(PP.hora_inici), fiDia = ini0 + v.jornada * 60 + PP.esmorzar_minuts, alt = Math.round((fiDia - ini0) * PV_ESCALA);
+  const e0 = pvMin(PP.esmorzar_inici), y = m => Math.round((m - ini0) * PV_ESCALA);
+  const sel = st.sel || {};
+  const marques = []; for (let m = Math.ceil(ini0 / 60) * 60; m <= fiDia; m += 60) marques.push(m);
+  // les hores de cada operari (per dia i de la setmana)
+  const setm = new Map(v.ops.map(t => [t.id, { total: 0, jornada: 0 }]));
+  dies.forEach(({ d, c }) => d.presents.forEach(t => { const s = setm.get(t.id); s.total += c.perOp.get(t.id).total; s.jornada += v.jornada * 60; }));
+  const blocHTML = (x, d) => {
+    const b = x.b, tp = TIPUS_PREVISIO[b.tipus] || {}, conf = x.conflictes.length, h0 = Math.max(16, Math.round((x.fi - x.ini) * PV_ESCALA) - 2);
+    const titol = `${tp.nom} · ${pvNomInstal(b)} · ${pvDurText(x.dur)} (${pvHora(x.ini)}–${pvHora(x.fi)})${x.viatge ? ` · desplaçament ${x.viatge} min des de ${pvNomLloc(x.des)}` : ''}${conf ? '\n⚠ ' + x.conflictes.join('\n⚠ ') : ''}`;
+    const canvi = b.tipus !== 'retall';
+    const mini = h0 < 34;   // un bloc curt: només el lloc (la resta, en passar-hi el ratolí)
+    return `<div class="pv-bloc ${tp.cls} ${conf ? 'pv-conflicte' : ''} ${sel.bloc === b.id ? 'pv-sel' : ''} ${mini ? 'pv-mini' : ''}" draggable="true" data-bloc="${b.id}" style="top:${y(x.ini)}px; height:${h0}px" title="${h(titol)}">`
+      + `<span class="pv-btns">${canvi ? `<button type="button" class="pv-canvi" data-canvi="${b.id}" title="Canvia entre completa i control">⇄</button>` : ''}<button type="button" class="pv-treu" data-treu="${b.id}" title="Treu el bloc">✕</button></span>`
+      + (mini ? `<b>${h(pvNomInstal(b))}</b></div>` : `<span class="pv-tipus">${h(tp.curt)}</span><b>${h(pvNomInstal(b))}</b><span class="pv-dur">${h(pvDurText(x.dur))} · ${h(pvHora(x.ini))}</span></div>`);
+  };
+  // el desplaçament per arribar a un bloc: un tram just a sobre (si no cap, trepitja el bloc d'abans i el bloc surt en vermell)
+  const viatgeHTML = x => !x.viatge ? '' : `<div class="pv-viatge ${x.aMa ? 'pv-ama' : ''}" data-despl="${x.des || 0}-${x.lloc || 0}" style="top:${y(x.ini - x.viatge)}px; height:${Math.max(10, Math.round(x.viatge * PV_ESCALA))}px" title="Desplaçament des de ${h(pvNomLloc(x.des))}: ${x.viatge} min${x.aMa ? ' (corregit a mà)' : ' (estimat)'}. Clica per corregir-lo."><span>${x.viatge}′</span></div>`;
+  const colHTML = (d, c, combo) => {
+    const clau = pvClau(combo.map(t => t.id)), meus = c.blocs.filter(x => pvClau(pvIds(x.b)) === clau);
+    const nom = combo.length >= 3 && combo.length === d.presents.length ? 'Tots' : combo.map(pvNomCurt).join(' + ');   // tres o més: «Tots»
+    return `<div class="pv-col"><div class="pv-col-cap" title="${h(combo.map(nomTreballador).join(' + '))}">${h(nom)}</div>`
+      + `<div class="pv-cos" data-dia="${d.n}" data-combo="${clau}" style="height:${alt}px">`
+      + marques.map(m => `<div class="pv-linia" style="top:${y(m)}px"></div>`).join('')
+      + (PP.esmorzar_minuts && e0 != null ? `<div class="pv-esmorzar" style="top:${y(e0)}px; height:${Math.round(PP.esmorzar_minuts * PV_ESCALA)}px">esmorzar</div>` : '')
+      + meus.map(viatgeHTML).join('') + meus.map(x => blocHTML(x, d)).join('') + '</div></div>';
+  };
+  const diaHTML = ({ d, c }) => {
+    const nom = DIES_SETMANA[d.n % 7] + (d.iso ? ' ' + dmy(d.iso).slice(0, 5) : '');
+    const hores = d.presents.map(t => { const o = c.perOp.get(t.id), sobra = v.jornada * 60 - o.total; return `<span class="${sobra < 0 ? 'pv-massa' : ''}" title="${h(nomTreballador(t))}: feina ${pvDurText(o.feina)} + desplaçaments ${pvDurText(o.viatge)} de ${pvDurText(v.jornada * 60)}">${h(pvNomCurt(t))} ${h(pvDurText(o.total))}</span>`; });
+    const fora = [...d.absents].map(([id, tipus]) => `<span class="pv-fora">${h(pvNomCurt(C.get('treballadors', id)))} ${h(PV_FORA[tipus] || tipus)}</span>`);
+    return `<div class="pv-dia ${d.festiu ? 'pv-festiu' : ''}"><div class="pv-dia-cap"><b>${h(nom)}</b>${d.festiu ? `<span class="pv-fora">Festiu: ${h(d.festiu)}</span>` : `<span class="pv-hores">${[...hores, ...fora].join('')}</span>`}</div>`
+      + `<div class="pv-cols">${d.festiu ? `<div class="pv-col pv-col-festiu"><div class="pv-col-cap">festiu</div><div class="pv-cos-buit" style="height:${alt}px"></div></div>` : d.combos.map(combo => colHTML(d, c, combo)).join('')}</div></div>`;
+  };
+  const eix = `<div class="pv-eix"><div class="pv-eix-cap"></div><div class="pv-eix-cos" style="height:${alt}px">${marques.map(m => `<span style="top:${y(m)}px">${pvHora(m)}</span>`).join('')}</div></div>`;
+  // la paleta
+  // per què un bloc no és al calendari: el dia no es treballa, és festiu, algú fa vacances o és de baixa, o ja no és de l'equip
+  const motiu = b => {
+    const d = v.dies[b.dia - 1]; if (!d) return 'aquest dia no es treballa'; if (d.festiu) return 'festiu';
+    return pvIds(b).filter(id => !d.presents.some(t => t.id === id)).map(id => { const t = C.get('treballadors', id); return (t ? pvNomCurt(t) : 'algú') + ' ' + (d.absents.has(id) ? (PV_FORA[d.absents.get(id)] || 'no hi és') : 'ja no és de l’equip'); }).join(', ') || 'no hi són';
+  };
+  const pecaHTML = (it, extra, blocId) => {
+    const tp = TIPUS_PREVISIO[it.tipus], b = { tipus: it.tipus, [it.q + '_id']: it.r.id, treballadors: [1] }, durP = pvMinutsFeina(b, v.temporada, v.Pc);
+    const op = it.q === 'piscina' ? C.get('treballadors', it.r.treballador_id) : null, clau = `${it.tipus}:${it.r.id}`;
+    return `<div class="pv-peca ${tp.cls} ${it.plena ? 'pv-plena' : ''} ${(blocId ? sel.bloc === blocId : sel.peca === clau) ? 'pv-sel' : ''}" draggable="true" ${blocId ? `data-bloc="${blocId}"` : `data-peca="${clau}"`} title="${h(tp.nom + ' · ' + nomInstal(it.r, it.q === 'piscina' ? 'piscina' : 'jardí') + (it.plena ? ' · aquesta setmana ja hi és' : ''))}">`
+      + (blocId ? `<button type="button" class="pv-treu-peca" data-treu="${blocId}" title="Treu el bloc (aquesta setmana no es fa)">✕</button>` : '')
+      + `<span class="pv-tipus">${h(tp.nom)}${it.falta > 1 ? ` <i>×${it.falta}</i>` : ''}</span><b>${h(nomInstal(it.r, it.q === 'piscina' ? 'piscina' : 'jardí'))}</b>`
+      + `<span class="pv-dur">${durP ? h(pvDurText(durP)) : '<span class="pv-massa">sense hores</span>'}${op ? ' · ' + h(pvNomCurt(op)) : ''}${extra || ''}</span></div>`;
+  };
+  const falta = v.monday ? { items: [], sobren: [] } : pvFalta(v), retalls = pvRetalls(v);
+  const senseGps = [...new Set(dies.flatMap(({ c }) => [...c.senseGps]))].map(pvNomLloc);
+  const senseHores = falta.items.filter(it => !pvMinutsFeina({ tipus: it.tipus, [it.q + '_id']: it.r.id }, v.temporada, v.Pc)).map(it => nomInstal(it.r, it.q === 'piscina' ? 'piscina' : 'jardí'));
+  const avisos = [
+    ...(senseGps.length ? [`Sense coordenades (hi compten ${PV_SENSE_GPS} min): ${[...new Set(senseGps)].join(', ')}. Posa-les a QUI · ON › Llocs.`] : []),
+    ...(senseHores.length ? [`Sense hores per a aquesta temporada: ${[...new Set(senseHores)].join(', ')} (fitxa del jardí o de la piscina).`] : []),
+    ...falta.sobren.map(s => 'N’hi ha de més: ' + s + '.'),
+    ...(!PP.teBase ? ['Sense la base (⚙ Configuració), la sortida i la tornada no compten.'] : []),
+  ];
+  const ordenaPeces = arr => arr.sort((a, b) => (a.plena ? 1 : 0) - (b.plena ? 1 : 0) || nomInstal(a.r, 'x').localeCompare(nomInstal(b.r, 'x'), 'ca'));
+  const paleta = `<aside class="pv-paleta" data-paleta="1">
+    <h3>Per posar</h3>
+    <p class="pv-ajuda">Arrossega un bloc a la columna i l’hora on va, o clica’l i després clica a la columna. Per treure’l, arrossega’l aquí o clica’n la ✕.</p>
+    ${v.perReassignar.length ? `<h4>Per reassignar</h4>${v.perReassignar.map(b => pecaHTML({ q: b.piscina_id ? 'piscina' : 'jardi', r: pvInstal(b) || {}, tipus: b.tipus, falta: 1 }, ` · ${h(DIES_SETMANA[b.dia % 7].toLowerCase())} · ${h(motiu(b))}`, b.id)).join('')}` : ''}
+    ${v.monday ? `
+      ${retalls.length ? `<h4>Retalls d’aquestes dates</h4>${ordenaPeces(retalls).map(it => pecaHTML(it)).join('')}` : ''}
+      ${!v.perReassignar.length && !retalls.length ? '<p class="pv-ajuda">Res per posar: aquesta setmana fa la setmana tipus. Els blocs nous es posen a la setmana tipus.</p>' : ''}`
+    : (falta.items.length ? `${['jardi', 'piscina'].map(q => { const its = ordenaPeces(falta.items.filter(it => it.q === q)); return its.length ? `<h4>${q === 'jardi' ? 'Jardins' : 'Piscines'}</h4>${its.map(it => pecaHTML(it)).join('')}` : ''; }).join('')}` : '<p class="pv-ajuda">Tot posat.</p>')}
+    ${avisos.length ? `<h4>Avisos</h4><ul class="pv-avisos">${avisos.map(a => `<li>${h(a)}</li>`).join('')}</ul>` : ''}
+    <h4>La setmana</h4>
+    <ul class="pv-total">${v.ops.map(t => { const s = setm.get(t.id); return `<li class="${s.total > s.jornada ? 'pv-massa' : ''}"><b>${h(nomTreballador(t))}</b> ${h(pvDurText(s.total))} de ${h(pvDurText(s.jornada))}</li>`; }).join('')}</ul>
+  </aside>`;
+  // la barra de dalt
+  const NOMS_T = { estiu: 'Estiu', preestiu: 'Preestiu', hivern: 'Hivern' };
+  const barra = `<div class="bar pv-barra">
+      <select id="pv-equip" style="width:auto">${equips.map(e => `<option value="${e.id}" ${String(e.id) === String(st.equip) ? 'selected' : ''}>${h(e.nom)}</option>`).join('')}</select>
+      <span class="seg"><button class="${st.mode !== 'setmana' ? 'on' : ''}" data-pv-mode="tipus">Setmana tipus</button><button class="${st.mode === 'setmana' ? 'on' : ''}" data-pv-mode="setmana">Setmana concreta</button></span>
+      ${st.mode === 'setmana'
+        ? `<span class="nom-any"><button class="btn ghost small" data-pv-set="-7" title="Setmana anterior">◀</button><input type="date" id="pv-dia" value="${h(v.monday)}" style="width:150px"><button class="btn ghost small" data-pv-set="7" title="Setmana següent">▶</button></span>
+           <span class="n">${h(NOMS_T[v.temporada])}${v.nCicle > 1 ? ` · setmana ${v.setmanaCicle} de ${v.nCicle}` : ''} · ${v.personal ? '<b>pla propi</b>' : 'fa la setmana tipus'}</span>
+           ${v.personal ? '<button class="btn ghost small" id="pv-torna">Torna a la setmana tipus</button>' : ''}`
+        : `<span class="seg">${TEMPORADES_CALCUL.map(k => `<button class="${v.temporada === k ? 'on' : ''}" data-pv-temp="${k}">${NOMS_T[k]} · ${h(nDec(PP['jornada_' + k], 2))} h</button>`).join('')}</span>
+           ${v.nCicle > 1 ? `<span class="seg">${Array.from({ length: v.nCicle }, (_, i) => `<button class="${v.setmanaCicle === i + 1 ? 'on' : ''}" data-pv-cicle="${i + 1}">Setmana ${i + 1}</button>`).join('')}</span>
+             <button class="btn ghost small" id="pv-copia">Copia-la a la setmana…</button>` : ''}`}
+      <label class="chk" style="padding:0"><input type="checkbox" id="pv-contracte" ${st.contracte ? 'checked' : ''}> només amb contracte vigent</label>
+      <button class="btn ghost small" id="pv-config">⚙ Configuració</button>
+    </div>`;
+  main.innerHTML = `<h1>Previsió setmanal</h1>${barra}${st.config ? pvConfigHTML(PP) : ''}<div id="ferr"></div>
+    <div class="pv"><div class="pv-cal-wrap"><div class="pv-cal">${eix}${dies.map(diaHTML).join('')}</div></div>${paleta}</div>
+    <p class="pv-peu">Només orientatiu: no es comprova si es compleix. Cada operari: ${h(pvDurText(v.jornada * 60))} de feina i desplaçaments; l’esmorzar (${h(String(PP.esmorzar_minuts))} min a les ${h(PP.esmorzar_inici)}) no compta. Un bloc fet entre dos dura la meitat. En vermell, el que no quadra (passa el ratolí per sobre per veure-ho).</p>`;
+  const wrap = main.querySelector('.pv-cal-wrap'); if (wrap) wrap.scrollLeft = scroll;
+  pvBind(main, v);
+}
+
+function pvConfigHTML(PP) {
+  const t = (k, label, ph, hint) => `<label class="f"><span class="l">${h(label)}</span><input type="text" data-pvc="${k}" value="${h(PP[k] == null ? '' : String(PP[k]))}" placeholder="${h(ph || '')}">${hint ? `<span class="hint">${h(hint)}</span>` : ''}</label>`;
+  const n = (k, label, step, hint) => `<label class="f"><span class="l">${h(label)}</span><input type="number" step="${step}" data-pvc="${k}" value="${h(PP[k] == null ? '' : String(PP[k]))}">${hint ? `<span class="hint">${h(hint)}</span>` : ''}</label>`;
+  return `<div class="panel pv-config"><h3>Configuració de la previsió</h3>
+    <h4>La jornada</h4><div class="grid">
+    ${t('hora_inici', 'Hora d’inici', 'hh:mm')}${t('esmorzar_inici', 'Esmorzar a les', 'hh:mm')}${n('esmorzar_minuts', 'Minuts d’esmorzar', '5', 'no compten com a treballats')}
+    <label class="f"><span class="l">Dies de feina</span><select data-pvc="dies_setmana"><option value="5" ${PP.dies_setmana === 5 ? 'selected' : ''}>De dilluns a divendres</option><option value="6" ${PP.dies_setmana === 6 ? 'selected' : ''}>De dilluns a dissabte</option></select></label>
+    ${n('jornada_estiu', 'Hores a l’estiu', '0.5')}${n('jornada_preestiu', 'Hores al preestiu', '0.5')}${n('jornada_hivern', 'Hores a l’hivern', '0.5')}
+    </div>
+    <h4>Els retalls (només per planificar; el càlcul els compta tots)</h4><div class="grid">
+    ${t('retall1_inici', 'Primer retall: des del', 'dd/mm')}${t('retall1_fi', 'Primer retall: fins al', 'dd/mm')}${t('retall2_inici', 'Segon retall: des del', 'dd/mm')}${t('retall2_fi', 'Segon retall: fins al', 'dd/mm')}
+    </div>
+    <h4>Els desplaçaments</h4><div class="grid">
+    ${n('base_latitud', 'Base: latitud', '0.000001', 'de Google Maps: clic dret al magatzem i copia les coordenades')}${n('base_longitud', 'Base: longitud', '0.000001')}
+    ${n('factor_carretera', 'Factor de carretera', '0.05', 'quant s’allarga la línia recta per carretera (1,35 = un 35 % més)')}${n('velocitat_kmh', 'Velocitat mitjana (km/h)', '1')}${n('minuts_aparcar', 'Minuts d’aparcar', '1', 'a cada arribada')}
+    </div><div class="actions"><button class="btn desa" id="pv-config-desa">Desa</button> <button class="btn ghost" id="pv-config-tanca">Tanca</button></div></div>`;
+}
+
+// posar un bloc nou o moure'n un a una columna (dia + operaris) i un minut; l'inici s'ajusta: no abans que els operaris puguin
+// arribar-hi des del bloc d'abans (ni dins de l'esmorzar)
+async function pvPosa(v, peca, dia, comboIds, minut) {
+  const PP = v.PP, ids = [...comboIds].map(Number).sort((a, b) => a - b), d = v.dies[dia - 1];
+  if (!d || d.festiu) { toastErr('Aquest dia no es treballa'); return false; }
+  let bloc = peca.bloc ? C.get('previsio_blocs', peca.bloc) : null;
+  const b0 = bloc ? { ...bloc } : { tipus: peca.tipus, jardi_id: peca.tipus.startsWith('piscina') ? null : peca.id, piscina_id: peca.tipus.startsWith('piscina') ? peca.id : null };
+  // les piscines, a la columna del seu operari (si aquell dia hi és)
+  if (b0.piscina_id) {
+    const p = C.get('piscines', b0.piscina_id), op = Number(p && p.treballador_id);
+    if (op && d.presents.some(t => t.id === op) && !(ids.length === 1 && ids[0] === op)) { toastErr(`Aquesta piscina és d’en ${pvNomCurt(C.get('treballadors', op))}: va a la seva columna`); return false; }
+  }
+  if (b0.tipus === 'retall' && !v.monday) { toastErr('Els retalls van a les setmanes concretes'); return false; }
+  // l'inici: arrodonit a 5 min; després del bloc anterior de cada operari més el desplaçament; fora de l'esmorzar
+  const prova = { ...b0, treballadors: ids, dia }, dur = pvDurada(prova, v.temporada, v.Pc), lloc = pvLloc(prova);
+  let ini = Math.round(minut / 5) * 5;
+  const c = pvDia(v, d);
+  ids.forEach(id => {
+    const abans = c.blocs.filter(x => x.b.id !== (bloc && bloc.id) && pvIds(x.b).includes(id) && x.ini <= ini).sort((a, b) => b.ini - a.ini)[0];
+    const des = abans ? abans.fi + pvDesplacament(abans.lloc, lloc, PP).min : pvMin(PP.hora_inici) + pvDesplacament(null, lloc, PP).min;
+    if (ini < des) ini = Math.ceil(des / 5) * 5;
+  });
+  const e0 = pvMin(PP.esmorzar_inici), e1 = e0 + PP.esmorzar_minuts;
+  if (PP.esmorzar_minuts && ini >= e0 && ini < e1) ini = e1;
+  ini = Math.max(0, Math.min(1435, ini));
+  try {
+    // en una setmana concreta sense pla propi, primer s'hi copia la setmana tipus (els retalls no cal)
+    if (v.monday && !v.personal && bloc && bloc.tipus !== 'retall') { const mapa = await pvPersonalitza(v); bloc = C.get('previsio_blocs', mapa.get(bloc.id)); toast('Aquesta setmana ara té pla propi; la setmana tipus no canvia', 6000); }
+    const r = bloc
+      ? await sb.from('previsio_blocs').update({ dia, treballadors: ids, inici: ini }).eq('id', bloc.id)
+      : await sb.from('previsio_blocs').insert({ equip_id: v.equipId, temporada: v.temporada, setmana_cicle: v.setmanaCicle, setmana: b0.tipus === 'retall' ? v.monday : null,
+          dia, treballadors: ids, tipus: b0.tipus, jardi_id: b0.jardi_id, piscina_id: b0.piscina_id, inici: ini });
+    if (r.error) throw r.error;
+    await loadTable('previsio_blocs');
+    return true;
+  } catch (e) { showFormError(friendly(e)); return false; }
+}
+// en una setmana concreta, la setmana passa a tenir pla propi: es copien els blocs de la setmana tipus (torna la correspondència)
+async function pvPersonalitza(v) {
+  const ex = C.rows('previsio_setmanes').find(s => Number(s.equip_id) === v.equipId && s.setmana === v.monday);
+  const r1 = ex ? await sb.from('previsio_setmanes').update({ actiu: true }).eq('id', ex.id) : await sb.from('previsio_setmanes').insert({ equip_id: v.equipId, setmana: v.monday });
+  if (r1.error) throw r1.error;
+  const tpl = C.rows('previsio_blocs').filter(b => b.actiu && Number(b.equip_id) === v.equipId && !b.setmana && b.temporada === v.temporada && Number(b.setmana_cicle) === v.setmanaCicle);
+  const mapa = new Map();
+  if (tpl.length) {
+    const r2 = await sb.from('previsio_blocs').insert(tpl.map(b => ({ equip_id: v.equipId, temporada: v.temporada, setmana_cicle: v.setmanaCicle, setmana: v.monday, dia: b.dia, treballadors: pvIds(b), tipus: b.tipus, jardi_id: b.jardi_id, piscina_id: b.piscina_id, inici: b.inici })))
+      .select('id, dia, treballadors, tipus, jardi_id, piscina_id, inici');
+    if (r2.error) throw r2.error;
+    const clauB = b => [b.dia, pvClau(pvIds(b)), b.tipus, b.jardi_id || 0, b.piscina_id || 0, b.inici].join('|'), lliures = [...(r2.data || [])];
+    tpl.forEach(b => { const i = lliures.findIndex(n => clauB(n) === clauB(b)); if (i >= 0) mapa.set(b.id, lliures.splice(i, 1)[0].id); });
+  }
+  if (mapa.size !== tpl.length) { await Promise.all([loadTable('previsio_blocs'), loadTable('previsio_setmanes')]); throw new Error('No s’ha pogut copiar bé la setmana tipus: torna-ho a provar'); }
+  await Promise.all([loadTable('previsio_blocs'), loadTable('previsio_setmanes')]);
+  v.personal = true;
+  return mapa;
+}
+async function pvTreu(v, id) {
+  let b = C.get('previsio_blocs', id); if (!b) return false;
+  try {
+    if (v.monday && !v.personal && b.tipus !== 'retall') { const mapa = await pvPersonalitza(v); b = C.get('previsio_blocs', mapa.get(b.id)); }
+    const r = await sb.from('previsio_blocs').update({ actiu: false }).eq('id', b.id); if (r.error) throw r.error;
+    await loadTable('previsio_blocs'); return true;
+  } catch (e) { showFormError(friendly(e)); return false; }
+}
+// completa ⇄ control
+async function pvCanvia(v, id) {
+  let b = C.get('previsio_blocs', id); if (!b) return false;
+  const nou = { jardi: 'jardi_control', jardi_control: 'jardi', piscina_completa: 'piscina_control', piscina_control: 'piscina_completa' }[b.tipus]; if (!nou) return false;
+  try {
+    if (v.monday && !v.personal) { const mapa = await pvPersonalitza(v); b = C.get('previsio_blocs', mapa.get(b.id)); }
+    const r = await sb.from('previsio_blocs').update({ tipus: nou }).eq('id', b.id); if (r.error) throw r.error;
+    await loadTable('previsio_blocs'); return true;
+  } catch (e) { showFormError(friendly(e)); return false; }
+}
+
+function pvBind(main, v) {
+  const st = v.st, torna = () => renderPrevisio(main);
+  const minutDe = (cos, ev) => pvMin(v.PP.hora_inici) + (ev.clientY - cos.getBoundingClientRect().top) / PV_ESCALA;
+  const pecaDe = s => { const [tipus, id] = String(s).split(':'); return { tipus, id: Number(id) }; };
+  main.querySelector('#pv-equip').addEventListener('change', e => { st.equip = e.target.value; st.sel = null; torna(); });
+  main.querySelectorAll('[data-pv-mode]').forEach(b => b.addEventListener('click', () => { st.mode = b.dataset.pvMode; st.sel = null; if (st.mode === 'tipus') { st.temporada = v.temporada; st.cicle = v.setmanaCicle; } torna(); }));
+  main.querySelectorAll('[data-pv-temp]').forEach(b => b.addEventListener('click', () => { st.temporada = b.dataset.pvTemp; st.cicle = 1; st.sel = null; torna(); }));
+  main.querySelectorAll('[data-pv-cicle]').forEach(b => b.addEventListener('click', () => { st.cicle = Number(b.dataset.pvCicle); st.sel = null; torna(); }));
+  main.querySelectorAll('[data-pv-set]').forEach(b => b.addEventListener('click', () => { st.dia = ymd(sumaDies(new Date(v.monday + 'T12:00:00'), Number(b.dataset.pvSet))); st.sel = null; torna(); }));
+  const dia = main.querySelector('#pv-dia'); if (dia) dia.addEventListener('change', () => { if (dia.value) { st.dia = dia.value; st.sel = null; torna(); } });
+  const ct = main.querySelector('#pv-contracte'); if (ct) ct.addEventListener('change', () => { st.contracte = ct.checked; torna(); });
+  main.querySelector('#pv-config').addEventListener('click', () => { st.config = !st.config; torna(); });
+  const tanca = main.querySelector('#pv-config-tanca'); if (tanca) tanca.addEventListener('click', () => { st.config = false; torna(); });
+  const desa = main.querySelector('#pv-config-desa'); if (desa) desa.addEventListener('click', async () => {
+    const val = k => String((main.querySelector(`[data-pvc="${k}"]`) || {}).value ?? '').trim(), p = {};
+    for (const k of ['hora_inici', 'esmorzar_inici']) { if (pvMin(val(k)) == null) { toastErr(`L’hora «${val(k)}» no és bona: posa-la hh:mm (per exemple, 08:00)`); return; } const m = pvMin(val(k)); p[k] = String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
+    for (const k of ['retall1_inici', 'retall1_fi', 'retall2_inici', 'retall2_fi']) { if (!esDiaMes(val(k))) { toastErr(`La data «${val(k)}» no és bona: posa-la dd/mm (per exemple, 15/05)`); return; } p[k] = val(k); }
+    const nums = [['esmorzar_minuts', 0, 120], ['jornada_estiu', 1, 12], ['jornada_preestiu', 1, 12], ['jornada_hivern', 1, 12], ['dies_setmana', 5, 6], ['factor_carretera', 1, 3], ['velocitat_kmh', 5, 120], ['minuts_aparcar', 0, 30]];
+    for (const [k, mn, mx] of nums) { const x = val(k); if (x === '' || isNaN(Number(x)) || Number(x) < mn || Number(x) > mx) { toastErr(`Posa un número de ${mn} a ${mx}`); return; } p[k] = Number(x); }
+    for (const [k, mx] of [['base_latitud', 90], ['base_longitud', 180]]) { const x = val(k).replace(',', '.'); if (x === '') p[k] = null; else if (isNaN(Number(x)) || Math.abs(Number(x)) > mx) { toastErr('Les coordenades de la base no són bones'); return; } else p[k] = Number(x); }
+    const r = await sb.from('parametres_previsio').update(p).eq('id', 1);
+    if (r.error) { toastErr(friendly(r.error)); return; }
+    await loadTable('parametres_previsio'); st.config = false; toast('Desat'); torna();
+  });
+  const tornaTipus = main.querySelector('#pv-torna'); if (tornaTipus) tornaTipus.addEventListener('click', async () => {
+    if (!confirm('Aquesta setmana tornarà a fer la setmana tipus: es perden els canvis que s’hi han fet (els retalls s’hi queden). Endavant?')) return;
+    const r1 = await sb.from('previsio_blocs').update({ actiu: false }).eq('equip_id', v.equipId).eq('setmana', v.monday).neq('tipus', 'retall');
+    const r2 = await sb.from('previsio_setmanes').update({ actiu: false }).eq('equip_id', v.equipId).eq('setmana', v.monday);
+    if (r1.error || r2.error) { toastErr(friendly(r1.error || r2.error)); return; }
+    await Promise.all([loadTable('previsio_blocs'), loadTable('previsio_setmanes')]); torna();
+  });
+  const copia = main.querySelector('#pv-copia'); if (copia) copia.addEventListener('click', async () => {
+    const n = Number(prompt(`A quina setmana del cicle la copio (1 a ${v.nCicle})? Els blocs s’hi afegeixen; després pots canviar les completes i els controls amb ⇄.`, String(v.setmanaCicle % v.nCicle + 1)));
+    if (!n || n < 1 || n > v.nCicle || n === v.setmanaCicle) return;
+    const rows = v.blocs.map(b => ({ equip_id: v.equipId, temporada: v.temporada, setmana_cicle: n, setmana: null, dia: b.dia, treballadors: pvIds(b), tipus: b.tipus, jardi_id: b.jardi_id, piscina_id: b.piscina_id, inici: b.inici }));
+    if (!rows.length) return;
+    const r = await sb.from('previsio_blocs').insert(rows); if (r.error) { toastErr(friendly(r.error)); return; }
+    await loadTable('previsio_blocs'); st.cicle = n; toast(`Copiada a la setmana ${n}`); torna();
+  });
+  // seleccionar (clic) i arrossegar
+  const posa = async (cos, minut) => {
+    const s = st.sel; if (!s) return;
+    const peca = s.bloc ? { bloc: s.bloc } : pecaDe(s.peca);
+    if (await pvPosa(v, peca, Number(cos.dataset.dia), cos.dataset.combo.split('-').map(Number), minut)) { st.sel = null; torna(); }
+  };
+  main.querySelectorAll('[data-peca]').forEach(el => {
+    el.addEventListener('click', () => { st.sel = st.sel && st.sel.peca === el.dataset.peca ? null : { peca: el.dataset.peca }; torna(); });
+    el.addEventListener('dragstart', e => { st.sel = { peca: el.dataset.peca }; e.dataTransfer.setData('text/plain', 'peca:' + el.dataset.peca); e.dataTransfer.effectAllowed = 'move'; });
+  });
+  main.querySelectorAll('.pv-paleta [data-bloc], .pv-bloc[data-bloc]').forEach(el => {
+    el.addEventListener('click', e => { if (e.target.closest('button, .pv-despl')) return; e.stopPropagation(); const id = Number(el.dataset.bloc); st.sel = st.sel && st.sel.bloc === id ? null : { bloc: id }; torna(); });
+    el.addEventListener('dragstart', e => { st.sel = { bloc: Number(el.dataset.bloc) }; e.dataTransfer.setData('text/plain', 'bloc:' + el.dataset.bloc); e.dataTransfer.effectAllowed = 'move'; });
+  });
+  main.querySelectorAll('.pv-cos').forEach(cos => {
+    cos.addEventListener('dragover', e => { e.preventDefault(); cos.classList.add('pv-sobre'); });
+    cos.addEventListener('dragleave', () => cos.classList.remove('pv-sobre'));
+    cos.addEventListener('drop', e => { e.preventDefault(); cos.classList.remove('pv-sobre'); posa(cos, minutDe(cos, e)); });
+    cos.addEventListener('click', e => { if (e.target.closest('.pv-bloc')) return; if (st.sel) posa(cos, minutDe(cos, e)); });
+  });
+  const pal = main.querySelector('.pv-paleta');
+  pal.addEventListener('dragover', e => { if (st.sel && st.sel.bloc) e.preventDefault(); });
+  pal.addEventListener('drop', async e => { e.preventDefault(); const s = st.sel; if (s && s.bloc && C.get('previsio_blocs', s.bloc) && v.alCal.some(b => b.id === s.bloc)) { if (await pvTreu(v, s.bloc)) { st.sel = null; torna(); } } });
+  main.querySelectorAll('[data-treu]').forEach(b => b.addEventListener('click', async e => { e.stopPropagation(); if (await pvTreu(v, Number(b.dataset.treu))) { st.sel = null; torna(); } }));
+  main.querySelectorAll('[data-canvi]').forEach(b => b.addEventListener('click', async e => { e.stopPropagation(); if (await pvCanvia(v, Number(b.dataset.canvi))) torna(); }));
+  // corregir a mà un desplaçament (buit = torna a l'estimació)
+  main.querySelectorAll('[data-despl]').forEach(el => el.addEventListener('click', async e => {
+    e.stopPropagation();
+    const [a, b] = el.dataset.despl.split('-').map(Number), [x, y] = [a || 0, b || 0].sort((p, q) => p - q);
+    const ara = pvDesplacament(a, b, v.PP), ex = C.rows('desplacaments').find(d => d.actiu && (Number(d.lloc_a) || 0) === x && (Number(d.lloc_b) || 0) === y);
+    const resp = prompt(`Minuts de ${pvNomLloc(a || null)} a ${pvNomLloc(b || null)}${ara.aMa ? ' (corregit a mà)' : ' (estimat)'}. Buit = torna a l’estimació.`, String(ara.min));
+    if (resp == null) return;
+    const txt = resp.trim().replace(',', '.');
+    let r;
+    if (txt === '') { if (!ex) return; r = await sb.from('desplacaments').update({ actiu: false }).eq('id', ex.id); }
+    else if (isNaN(Number(txt)) || Number(txt) < 0 || Number(txt) > 300) { toastErr('Posa els minuts (de 0 a 300)'); return; }
+    else r = ex ? await sb.from('desplacaments').update({ minuts: Number(txt) }).eq('id', ex.id) : await sb.from('desplacaments').insert({ lloc_a: x || null, lloc_b: y || null, minuts: Number(txt) });
+    if (r.error) { toastErr(friendly(r.error)); return; }
+    await loadTable('desplacaments'); torna();
+  }));
+  if (!window.__pvEsc) { window.__pvEsc = true; document.addEventListener('keydown', e => { if (e.key === 'Escape' && state.table === 'previsio' && state.prev && state.prev.sel) { state.prev.sel = null; renderMain(); } }); }
 }
 
 function pdfPressupostAgrupacio(pr) {
