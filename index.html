@@ -2,7 +2,7 @@
 <html lang="ca">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-/+DhZx+Mf16f6g5NTcHhEfFF7MgYuDqR8eCztCREkHc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-+1WqNLJt54QHxbPsp25nXGPSLwwkMGJyXTgAOJgt7Ao='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestió de manteniment</title>
 <meta name="theme-color" content="#2f7d4a">
@@ -251,6 +251,14 @@
   .calc-param h3{ margin:20px 0 6px; font-size:16px; }
   .calc-param .calc-com{ margin:4px 0 0; padding-left:20px; }
   .calc-param .pc-hint{ display:block; font-size:12.5px; color:var(--ink-3); margin-top:3px; }
+  .calc-param p.pc-hint{ margin:2px 0 8px; }
+  .calc-param .pc-taula{ width:auto; min-width:0; margin:4px 0 6px; }
+  .calc-param .pc-taula td, .calc-param .pc-taula th{ padding:6px 12px 6px 0; vertical-align:middle; }
+  .calc-param .pc-taula td.num, .calc-param .pc-taula th.num{ padding-left:14px; text-align:right; }
+  .calc-param .pc-taula input.dm{ width:76px; padding:6px 8px; font:inherit; text-align:center; }
+  .calc-param .pc-taula input.vis{ width:72px; }
+  .calc-param .pc-taula input.dolenta{ border-color:var(--red); background:var(--red-2); }
+  .calc-param .pc-nota{ font-size:12.5px; color:var(--ink-3); margin-left:4px; }
   @media (max-width: 700px){ .cq-gran{ font-size:24px; } .cq-posat{ margin-left:0; } .calc-param .fila{ grid-template-columns:1fr; } }
   .children h3{ font-size:17px; font-weight:600; color:var(--ink); margin:22px 0 10px; }
   .toast.err{ background:var(--red); }
@@ -2878,6 +2886,8 @@ const MSG = {
   piscina_filtres_unic: 'Aquest model ja és a la llista: canvia’n la quantitat en lloc d’afegir-lo dos cops.',
   piscina_cloradors_unic: 'Aquest model ja és a la llista: canvia’n la quantitat en lloc d’afegir-lo dos cops.',
   _model_unic: 'Aquest model ja és al catàleg.',
+  parametres_calcul_dates: 'Les dates de les temporades han de ser dd/mm i existir (per exemple, 15/06).',
+  parametres_calcul_visites: 'Les visites a la setmana han de ser de 0 a 7.',
   amortitzacio_linies_preu: 'Cada línia ha de tenir un preu: tria un producte, marca-la com a hores d’operari o posa-hi el preu a mà.',
   amortitzacio_linies_hores: 'Una línia d’hores d’operari no pot anar lligada a un producte.',
   amortitzacions_base: 'Posa per a quants m³ o m² són els costos (p. ex. 100).',
@@ -6397,24 +6407,50 @@ function clausulesPressupost(pr) {
    de l'hora i les constants de PARÀMETRES › Cost hora i càlcul, i les amortitzacions de PARÀMETRES › Amortitzacions, amb el preu de cost
    dels productes que hi van lligats). Agafa les piscines i els jardins actius del lloc del pressupost.
    PISCINA (cada piscina, si el pressupost inclou la piscina):
-     · manteniment = Σ temporades (hores per visita + anar i tornar) × visites l'any × cost de l'hora / 12 (si la piscina té mides)
+     · manteniment = Σ temporades (hores per visita + anar i tornar) × visites de la temporada × cost de l'hora / 12 (si té mides)
+       (v56) visites de la temporada = dies de la temporada (en un any de 365 dies) / 7 × visites a la setmana (PARÀMETRES)
      · hidròlisi (si el pressupost porta la clàusula): l'equip de producció més petita que arribi a arrodonit((veïns × 12 + m³) / 12) g/h
      · la resta d'amortitzacions de la piscina: un cop per piscina, segons els m³ (m³ / base) o segons els m² de parets
        (m³/2 + 3·√m³, de 5 en 5, com l'Excel; / base)
    JARDÍ (cada jardí, si el pressupost inclou el jardí), m² = gespa + arbusts + prat; si té m²:
-     · manteniment = (fitosanitaris × m² + Σ temporades setmanes × (hores a la setmana + anar i tornar si el pressupost no porta piscina)
-       × cost de l'hora) / 12; retalls = retalls × hores per retall × cost de l'hora / 12; flors = flors l'any / 12
+     · manteniment = (fitosanitaris × m² + Σ temporades (setmanes × hores a la setmana + visites × anar i tornar, si el pressupost no
+       porta piscina) × cost de l'hora) / 12, amb setmanes = dies / 7 i visites = setmanes × visites a la setmana (v56);
+       retalls = retalls × hores per retall × cost de l'hora / 12; flors = flors l'any / 12
      · i les amortitzacions del jardí (un cop per jardí o segons els m²) i l'assegurança de la gespa (al mes)
    Una amortització lligada a una clàusula només compta si el pressupost la porta (les obligatòries de la part hi són sempre).
    Diferències amb l'Excel: «Productes» es compta un cop (a l'Excel, la columna AB el suma dues vegades) i una piscina sense jardí no suma
    programadors ni pintura (a l'Excel, totes les files els sumaven). */
-const PARAMS_CALCUL = { cost_hora: 30, visites_estiu: 44, visites_preestiu: 33.6, visites_hivern: 21, setmanes_estiu: 14, setmanes_preestiu: 17, setmanes_hivern: 21, fitosanitaris_m2: 0.3 };
+const PARAMS_CALCUL = { cost_hora: 30, estiu_inici: '15/06', estiu_fi: '15/09', preestiu_inici: '01/03', preestiu_fi: '31/10',
+  piscina_setmana_estiu: 3, piscina_setmana_preestiu: 2, piscina_setmana_hivern: 1, jardi_setmana_estiu: 1, jardi_setmana_preestiu: 1, jardi_setmana_hivern: 1, fitosanitaris_m2: 0.3 };
 const TEMPORADES_CALCUL = ['estiu', 'preestiu', 'hivern'];
-const PART_APLICA = { hidrolisi: 'piscina', piscina: 'piscina', m3: 'piscina', m2_parets: 'piscina', jardi: 'jardi', m2_jardi: 'jardi' };
-function paramsCalcul() {   // (numONull: la de les tarifes, v53)
-  const r = C.rows('parametres_calcul').find(x => Number(x.id) === 1) || {}, o = { ...PARAMS_CALCUL };
-  Object.keys(o).forEach(k => { const v = numONull(r[k]); if (v != null) o[k] = v; });
+const DATES_CALCUL = ['estiu_inici', 'estiu_fi', 'preestiu_inici', 'preestiu_fi'];
+// (v56) una data dd/mm que existeix (el febrer, fins al 28)
+const esDiaMes = v => { const m = /^(\d{2})\/(\d{2})$/.exec(String(v == null ? '' : v).trim()); if (!m) return false; const d = Number(m[1]), mes = Number(m[2]); return mes >= 1 && mes <= 12 && d >= 1 && d <= [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mes - 1]; };
+// (v56) els dies de cada temporada en un any de 365 dies: l'estiu; el preestiu (el seu període, sense l'estiu); l'hivern, la resta.
+// Un període pot passar d'any (de l'01/11 al 28/02)
+function diesTemporades(P) {
+  const md = v => { const [d, m] = String(v).split('/').map(Number); return m * 100 + d; };
+  const dins = (a, b, x) => a <= b ? x >= a && x <= b : x >= a || x <= b;
+  const e0 = md(P.estiu_inici), e1 = md(P.estiu_fi), p0 = md(P.preestiu_inici), p1 = md(P.preestiu_fi), out = { estiu: 0, preestiu: 0, hivern: 0 };
+  for (let ms = Date.UTC(2025, 0, 1); ms < Date.UTC(2026, 0, 1); ms += 864e5) {
+    const d = new Date(ms), x = (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
+    out[dins(e0, e1, x) ? 'estiu' : dins(p0, p1, x) ? 'preestiu' : 'hivern']++;
+  }
+  return out;
+}
+// (v56) amb els dies, les setmanes i les visites de cada temporada: visites = dies / 7 × visites a la setmana
+function derivaTemporades(o) {
+  o.dies = diesTemporades(o);
+  TEMPORADES_CALCUL.forEach(k => { o['setmanes_' + k] = o.dies[k] / 7; o['visites_' + k] = o.dies[k] / 7 * o['piscina_setmana_' + k]; o['visites_jardi_' + k] = o.dies[k] / 7 * o['jardi_setmana_' + k]; });
+  o.visites_any = TEMPORADES_CALCUL.reduce((s, k) => s + o['visites_' + k], 0);
+  o.visites_jardi_any = TEMPORADES_CALCUL.reduce((s, k) => s + o['visites_jardi_' + k], 0);
   return o;
+}
+const PART_APLICA = { hidrolisi: 'piscina', piscina: 'piscina', m3: 'piscina', m2_parets: 'piscina', jardi: 'jardi', m2_jardi: 'jardi' };
+function paramsCalcul(r) {   // (numONull: la de les tarifes, v53); r: una fila (per defecte, la desada)
+  r = r || C.rows('parametres_calcul').find(x => Number(x.id) === 1) || {}; const o = { ...PARAMS_CALCUL };
+  Object.keys(o).forEach(k => { if (DATES_CALCUL.includes(k)) { if (esDiaMes(r[k])) o[k] = String(r[k]).trim(); } else { const v = numONull(r[k]); if (v != null) o[k] = v; } });
+  return derivaTemporades(o);
 }
 // el cost d'una unitat d'una línia: el preu de cost del producte, el cost de l'hora o el preu a mà menys el descompte
 function costLiniaAmort(l, P) {
@@ -6488,7 +6524,7 @@ function calculQuota(pr, clausulesIds) {
     if (hs.some(x => x == null)) out.avisos.push(`Falten les hores a la setmana del jardí «${nom}» (INSTAL·LACIONS › Jardins).`);
     if (m2) {
       const viatge = ambPiscina ? 0 : anada;
-      afegeix(r, 'Manteniment', (P.fitosanitaris_m2 * m2 + TEMPORADES_CALCUL.reduce((s, k, i) => s + P['setmanes_' + k] * ((hs[i] || 0) + viatge) * P.cost_hora, 0)) / 12);
+      afegeix(r, 'Manteniment', (P.fitosanitaris_m2 * m2 + TEMPORADES_CALCUL.reduce((s, k, i) => s + (P['setmanes_' + k] * (hs[i] || 0) + P['visites_jardi_' + k] * viatge) * P.cost_hora, 0)) / 12);
       afegeix(r, 'Retalls', (Number(j.retalls_any) || 0) * (Number(j.hores_retall) || 0) * P.cost_hora / 12);
       afegeix(r, 'Flors', (Number(j.flors_any) || 0) / 12);
     }
@@ -6536,7 +6572,7 @@ function calculQuotaHTML(pr, clausulesIds) {
   const resum = ambDues ? `<div class="cq-resum"><span>Quota calculada <b>${h(fmtEur(c.total))}</b></span>${d != null ? `<span>posada <b>${h(fmtEur(posatQuota(pr, 'piscina') + posatQuota(pr, 'jardi')))}</b></span>${difHTML(d)}` : ''}</div>` : '';
   const avisos = c.avisos.length ? `<ul class="cq-avisos">${c.avisos.map(a => `<li>${h(a)}</li>`).join('')}</ul>` : '';
   return `<div class="cq">${part('jardi', 'Jardí', c.jardins, descJ)}${part('piscina', 'Piscina', c.piscines, descP)}${resum}${avisos}`
-    + `<div class="cq-peu">Al mes i sense IVA, amb els costos d’avui: hora d’operari a ${h(fmtEur(c.P.cost_hora))} (PARÀMETRES › Cost hora i càlcul) i les amortitzacions amb els preus dels seus productes.</div></div>`;
+    + `<div class="cq-peu">Al mes i sense IVA, amb els costos d’avui: hora d’operari a ${h(fmtEur(c.P.cost_hora))}; ${h(nDec(c.P.visites_any, 1))} visites l’any a la piscina i ${h(nDec(c.P.visites_jardi_any, 1))} al jardí, amb les temporades de PARÀMETRES › Cost hora i càlcul; i les amortitzacions amb els preus dels seus productes.</div></div>`;
 }
 // al formulari del pressupost: es refà a cada canvi (les clàusules marcades es llegeixen de les caselles)
 function notaCalculQuota(vals, row) {
@@ -6547,41 +6583,68 @@ function notaCalculQuota(vals, row) {
   return { html: calculQuotaHTML(pr, ids) };
 }
 
-/* (v55) PARÀMETRES › Cost hora i càlcul: una sola fila (id 1) */
-const CAMPS_PARAMS_CALCUL = [
-  ['cost_hora', 'Cost de l’hora d’un operari', '€', '0.01', 'el que costa a l’empresa; el preu de venda de l’hora (albarans) és a ALTRES › Empresa'],
-  ['visites_estiu', 'Piscina: visites l’any a l’estiu', 'visites', '0.1'], ['visites_preestiu', 'Piscina: visites l’any al preestiu', 'visites', '0.1'], ['visites_hivern', 'Piscina: visites l’any a l’hivern', 'visites', '0.1'],
-  ['setmanes_estiu', 'Jardí: setmanes d’estiu', 'setmanes', '0.5'], ['setmanes_preestiu', 'Jardí: setmanes de preestiu', 'setmanes', '0.5'], ['setmanes_hivern', 'Jardí: setmanes d’hivern', 'setmanes', '0.5'],
-  ['fitosanitaris_m2', 'Jardí: productes fitosanitaris', '€ per m² l’any', '0.01'],
+/* (v55) PARÀMETRES › Cost hora i càlcul: una sola fila (id 1). (v56) Les temporades amb dates i les visites a la setmana; en directe, els
+   dies, les setmanes i les visites l'any que en surten */
+const NUMS_PARAMS_CALCUL = [
+  ['cost_hora', 'Cost de l’hora d’un operari', 0, null], ['fitosanitaris_m2', 'Productes fitosanitaris', 0, null],
+  ...['piscina', 'jardi'].flatMap(p => TEMPORADES_CALCUL.map(k => [`${p}_setmana_${k}`, `${p === 'piscina' ? 'Piscina' : 'Jardí'}: visites a la setmana (${k})`, 0, 7])),
 ];
+const NOMS_TEMPORADA = { estiu: 'Estiu', preestiu: 'Preestiu', hivern: 'Hivern' };
 function renderCalculQuotes(main) {
   if (!esOficina(treballadorActual())) { main.innerHTML = '<div class="panel"><p class="msg err">Només l’administrador i l’oficina.</p></div>'; return; }
   const r = C.rows('parametres_calcul').find(x => Number(x.id) === 1);
   if (!r) { main.innerHTML = '<h1>Cost hora i càlcul de les quotes</h1><div class="panel"><p class="msg err">Encara no hi ha els paràmetres del càlcul.</p><p class="hint">Cal executar el fitxer 102_calcul_quotes.sql al SQL Editor de Supabase.</p></div>'; return; }
   const P = paramsCalcul();
-  const fila = ([k, label, unitat, step, hint]) => `<div class="fila"><span>${h(label)}</span><span><input type="number" step="${step}" min="0" data-param="${k}" value="${h(String(P[k]))}"> ${h(unitat)}${hint ? `<span class="pc-hint">${h(hint)}</span>` : ''}</span></div>`;
-  const [hora, ...resta] = CAMPS_PARAMS_CALCUL;
+  const num = (k, step, cls) => `<input type="number" step="${step}" min="0" data-param="${k}" class="${cls || ''}" value="${h(String(P[k]))}">`;
+  const dm = k => `<input type="text" inputmode="numeric" maxlength="5" placeholder="dd/mm" data-param="${k}" class="dm" value="${h(P[k])}">`;
+  const filaTemp = k => `<tr><td>${NOMS_TEMPORADA[k]}</td><td>${k === 'hivern' ? 'la resta de l’any' : `del ${dm(k + '_inici')} al ${dm(k + '_fi')}${k === 'preestiu' ? ' <span class="pc-nota">sense l’estiu</span>' : ''}`}</td>`
+    + `<td class="num" data-dies="${k}"></td><td class="num" data-setmanes="${k}"></td></tr>`;
+  const filaVis = (p, nom) => `<tr><td>${nom}</td>${TEMPORADES_CALCUL.map(k => `<td class="num">${num(`${p}_setmana_${k}`, '0.5', 'vis')}</td>`).join('')}<td class="num"><b data-any="${p}"></b></td></tr>`;
   main.innerHTML = `<h1>Cost hora i càlcul de les quotes</h1>
     <div class="panel calc-param">
       <p class="hint">Serveixen per calcular la quota dels pressupostos d’agrupació (FACTURACIÓ › Pressupostos d’agrupació), amb les dades de cada piscina i jardí i les amortitzacions (PARÀMETRES › Amortitzacions).</p>
-      ${fila(hora)}
-      <h3>Temporades i fitosanitaris</h3>
-      ${resta.map(fila).join('')}
+      <div class="fila"><span>Cost de l’hora d’un operari</span><span>${num('cost_hora', '0.01')} €<span class="pc-hint">el que costa a l’empresa; el preu de venda de l’hora (albarans) és a ALTRES › Empresa</span></span></div>
+      <h3>Temporades</h3>
+      <p class="pc-hint">Les mateixes per a la piscina i el jardí. Les dates, dd/mm.</p>
+      <table class="tbl pc-taula"><thead><tr><th>Temporada</th><th>Dates</th><th class="num">Dies</th><th class="num">Setmanes</th></tr></thead>
+        <tbody>${TEMPORADES_CALCUL.map(filaTemp).join('')}</tbody></table>
+      <h3>Visites a la setmana</h3>
+      <table class="tbl pc-taula"><thead><tr><th></th>${TEMPORADES_CALCUL.map(k => `<th class="num">${NOMS_TEMPORADA[k]}</th>`).join('')}<th class="num">Visites l’any</th></tr></thead>
+        <tbody>${filaVis('piscina', 'Piscina')}${filaVis('jardi', 'Jardí')}</tbody></table>
+      <p class="pc-hint">Les visites de cada temporada són els seus dies / 7 × les visites a la setmana (en un any de 365 dies). Les hores de cada visita (piscina) o de cada setmana (jardí) són a la fitxa de cada piscina i jardí.</p>
+      <h3>Jardí: productes fitosanitaris</h3>
+      <div class="fila"><span>Cost</span><span>${num('fitosanitaris_m2', '0.01')} € per m² l’any</span></div>
       <div class="actions"><button class="btn desa" id="pc-desa">Desa</button></div>
       <h3>Com es calcula</h3>
       <ul class="hint calc-com">
-        <li><b>Piscina, manteniment:</b> per a cada temporada, (hores per visita + anar i tornar) × visites × cost de l’hora; tot, dividit per 12.</li>
+        <li><b>Piscina, manteniment:</b> per a cada temporada, (hores per visita + anar i tornar) × visites de la temporada × cost de l’hora; tot, dividit per 12.</li>
         <li><b>Hidròlisi</b> (si el pressupost porta la clàusula): l’equip de producció més petita que arribi a (veïns × 12 + m³) / 12 g/h.</li>
-        <li><b>Jardí, manteniment:</b> fitosanitaris × m² + per a cada temporada setmanes × (hores a la setmana + anar i tornar si no hi ha piscina) × cost de l’hora; més retalls i flors; tot, dividit per 12.</li>
+        <li><b>Jardí, manteniment:</b> fitosanitaris × m² + per a cada temporada (setmanes × hores a la setmana + visites × anar i tornar, si no hi ha piscina) × cost de l’hora; més retalls i flors; tot, dividit per 12.</li>
         <li><b>Amortitzacions:</b> total / anys / 12, un cop per piscina o per jardí o segons la mida (m³, m² de parets o m² de jardí).</li>
       </ul>
     </div>`;
+  const llegeix = () => { const o = {}; main.querySelectorAll('[data-param]').forEach(i => { o[i.dataset.param] = i.value; }); return o; };
+  // el resum en directe: dies i setmanes de cada temporada i visites l'any (si les dates són bones)
+  const resum = () => {
+    const v = llegeix(), dolentes = DATES_CALCUL.filter(k => !esDiaMes(v[k]));
+    main.querySelectorAll('input.dm').forEach(i => i.classList.toggle('dolenta', dolentes.includes(i.dataset.param)));
+    if (dolentes.length) { main.querySelectorAll('[data-dies], [data-setmanes], [data-any]').forEach(e => { e.textContent = '—'; }); return; }
+    const Q = paramsCalcul(v);
+    TEMPORADES_CALCUL.forEach(k => { main.querySelector(`[data-dies="${k}"]`).textContent = Q.dies[k]; main.querySelector(`[data-setmanes="${k}"]`).textContent = nDec(Q.dies[k] / 7, 1); });
+    main.querySelector('[data-any="piscina"]').textContent = nDec(Q.visites_any, 1); main.querySelector('[data-any="jardi"]').textContent = nDec(Q.visites_jardi_any, 1);
+  };
+  main.querySelectorAll('[data-param]').forEach(i => i.addEventListener('input', resum));
+  resum();
   main.querySelector('#pc-desa').addEventListener('click', async () => {
-    const b = main.querySelector('#pc-desa'), p = {};
-    for (const [k, label] of CAMPS_PARAMS_CALCUL) {
-      const v = main.querySelector(`[data-param="${k}"]`).value;
-      if (v === '' || isNaN(Number(v)) || Number(v) < 0) { toastErr(`«${label}»: posa-hi un número (0 o més)`); return; }
-      p[k] = Number(v);
+    const b = main.querySelector('#pc-desa'), v = llegeix(), p = {};
+    for (const k of DATES_CALCUL) {
+      if (!esDiaMes(v[k])) { toastErr(`La data «${v[k] || ''}» no és bona: posa-la dd/mm (per exemple, 15/06)`); return; }
+      p[k] = String(v[k]).trim();
+    }
+    for (const [k, label, min, max] of NUMS_PARAMS_CALCUL) {
+      const x = v[k];
+      if (x === '' || isNaN(Number(x)) || Number(x) < min || (max != null && Number(x) > max)) { toastErr(`«${label}»: posa-hi un número${max != null ? ` de ${min} a ${max}` : ' (0 o més)'}`); return; }
+      p[k] = Number(x);
     }
     if (!(p.cost_hora > 0)) { toastErr('El cost de l’hora ha de ser més de 0'); return; }
     b.disabled = true;
