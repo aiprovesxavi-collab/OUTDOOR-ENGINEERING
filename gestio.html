@@ -2,7 +2,7 @@
 <html lang="ca">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-MyzQYqLiZHkta1xxi7r8dA4sVlNwYR8yW1poYgLoW8o='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-CnaGoa5xCDOdUy4B2wcJEQHgseX9ytJEGd4ZIboQKnc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestió de manteniment</title>
 <meta name="theme-color" content="#2f7d4a">
@@ -368,6 +368,8 @@
   .msg{ border-radius:5px; padding:10px 14px; margin:0 0 16px; font-size:14px; }
   .msg.err{ background:var(--red-2); color:var(--red); }
   .msg.ok{ background:var(--green-2); color:var(--green); }
+  .msg.gps-ajuda{ background:#fff4d6; color:#5f4300; margin:8px 0 14px; line-height:1.45; text-align:left; } .gps-ajuda b{ font-weight:600; }
+  .gps-ajuda ol{ margin:6px 0 6px 20px; padding:0; } .gps-ajuda li{ margin:3px 0; }
   .compta-filtres{ display:flex; flex-wrap:wrap; gap:8px 14px; align-items:flex-end; margin:4px 0 12px; }
   .compta-filtres label{ display:flex; flex-direction:column; gap:3px; font-size:13px; color:var(--ink-2); }
   .compta-filtres .cf-compte input{ min-width:320px; } .compta-filtres .cf-q input{ min-width:220px; }
@@ -3062,7 +3064,7 @@ const C = {
   rows: t => cache[t] || [],
   get: (t, id) => { const pk = (SCHEMA.tables[t] || {}).pk; return pk ? (cache[t] || []).find(r => String(r[pk]) === String(id)) : (cache[t] || []).find(r => r.id === Number(id)); },
 };
-const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, copia: null, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, pagProv: { vista: 'marca', data: '', q: '', fets: {}, pagades: false }, ft: { id: null, form: null, vista: 'llista', nou: null, fets: false }, marques: {}, fac: { any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), avis: null }, ia: { missatges: [], enviant: false }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, docs: { cat: '', treb: '', sel: null }, docsV: { veh: '', sel: null }, pdff: { num: '', des: '', fins: '', client: '' }, calAcc: { vista: '', ref: '', meves: false, fetes: false, interns: false, sel: null }, fx: { ocupat: false, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false, ed: null }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
+const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, copia: null, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, pagProv: { vista: 'marca', data: '', q: '', fets: {}, pagades: false }, ft: { id: null, form: null, vista: 'llista', nou: null, fets: false }, marques: {}, fac: { any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), avis: null }, ia: { missatges: [], enviant: false }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, docs: { cat: '', treb: '', sel: null }, docsV: { veh: '', sel: null }, pdff: { num: '', des: '', fins: '', client: '' }, calAcc: { vista: '', ref: '', meves: false, fetes: false, interns: false, sel: null }, fx: { ocupat: false, gpsAjuda: null, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false, ed: null }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
 const L = (t, id) => { const r = C.get(t, id); return r ? SCHEMA.tables[t].display(r, L) : ''; };
 
 /* =====================================================================
@@ -5799,10 +5801,10 @@ function gpsBind(frm, td) {
   $('#mostra-tot').addEventListener('change', () => aplicaVisibilitat(td, frm));
   btn.addEventListener('click', () => {
     if (!navigator.geolocation) { nota.textContent = 'Aquest navegador no té GPS.'; return; }
-    btn.disabled = true; nota.textContent = 'Buscant…';
-    navigator.geolocation.getCurrentPosition(pos => {
+    btn.disabled = true; nota.textContent = 'Buscant…'; mostraAjudaGps(nota, null);
+    posicioActual(60000).then(pos => {
       btn.disabled = false;
-      const { latitude: la, longitude: lo } = pos.coords;
+      const la = pos.lat, lo = pos.lng;
       const gl = frm.querySelector('[name="gps_lat"]'), gn = frm.querySelector('[name="gps_lng"]');
       if (gl) gl.value = la.toFixed(6); if (gn) gn.value = lo.toFixed(6);
       const cand = C.rows('llocs').filter(l => l.actiu && l.latitud != null && l.longitud != null).map(l => ({ l, d: distKm(la, lo, Number(l.latitud), Number(l.longitud)) })).sort((a, b) => a.d - b.d);
@@ -5810,7 +5812,7 @@ function gpsBind(frm, td) {
       const m = cand[0];
       if (m.d > 2) { nota.textContent = `El lloc més proper (${m.l.nom}) és a ${m.d.toFixed(1)} km: tria’l a mà.`; return; }
       posa(m.l.id, `${m.l.nom} (${Math.round(m.d * 1000)} m)`);
-    }, err => { btn.disabled = false; nota.textContent = 'No s’ha pogut llegir el GPS (' + err.message + '). Tria el lloc a mà.'; }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
+    }, err => { btn.disabled = false; nota.textContent = 'No s’ha pogut llegir el GPS (' + err.message + '). Tria el lloc a mà.'; mostraAjudaGps(nota, err); });
   });
   // en obrir el formulari nou, intenta-ho sol si ja tenim permís
   if (!frm.dataset.id && navigator.geolocation && navigator.permissions) {
@@ -7134,11 +7136,22 @@ function pvVista(st) {
 function pvDia(v, d) {
   const PP = v.PP, em = PP.esmorzar_minuts, falten = new Set();
   const esm = new Map(d.presents.map(t => [t.id, v.esmorzarDe(d.n, t.id)]));
-  const blocs = v.alCal.filter(b => Number(b.dia) === d.n).map(b => {
-    const ids = pvIds(b), dur = pvDurada(b, v.temporada, v.Pc), ini = Number(b.inici);
+  // ENGANXADES, com amb imants (v62): l'ordre és el de l'inici desat; cada feina comença tan aviat com hi poden ser tots els qui la fan:
+  // la primera de cadascú, a la primera hora de la temporada més el desplaçament; les altres, quan acaba l'anterior més el desplaçament
+  // (0, al mateix lloc). La que té l'hora fixada (📌), a la seva hora (o quan s'hi pugui ser, si no s'hi arriba).
+  const blocs = v.alCal.filter(b => Number(b.dia) === d.n)
+    .map(b => ({ b, ids: pvIds(b), dur: pvDurada(b, v.temporada, v.Pc), clau: Number(b.inici), fixa: !!b.hora_fixa, lloc: pvLloc(b), viatges: new Map(), conflictes: [] }))
+    .sort((p, q) => p.clau - q.clau || (Number(p.b.id) || 0) - (Number(q.b.id) || 0));
+  const ultim = new Map();
+  blocs.forEach(x => {
+    let pot = v.hora0;
+    x.ids.forEach(id => { const p = ultim.get(id); pot = Math.max(pot, p ? p.fi + pvDesplacament(p.lloc, x.lloc, PP).min : v.hora0 + pvSortida(v, x.lloc).min); });
+    x.ini = x.fixa ? Math.max(x.clau, pot) : pot;
+    if (x.fixa && x.ini > x.clau) x.conflictes.push(`té l’hora fixada a les ${pvHora(x.clau)}, però no s’hi pot ser fins a les ${pvHora(x.ini)}`);
     // si passa per l'esmorzar d'algun dels qui el fan, s'allarga el que dura l'esmorzar
-    const ext = em && ids.some(id => { const e = esm.get(id); return e && e.ini != null && ini < e.ini + em && ini + dur > e.ini; }) ? em : 0;
-    return { b, ids, ini, dur, fi: ini + dur + ext, lloc: pvLloc(b), viatges: new Map(), conflictes: [] };
+    const ext = em && x.ids.some(id => { const e = esm.get(id); return e && e.ini != null && x.ini < e.ini + em && x.ini + x.dur > e.ini; }) ? em : 0;
+    x.fi = x.ini + x.dur + ext;
+    x.ids.forEach(id => ultim.set(id, x));
   });
   const perOp = new Map();
   d.presents.forEach(t => {
@@ -7240,12 +7253,12 @@ function renderPrevisio(main) {
   const posDreta = (i, N) => `left:calc(${(100 * (i + .3) / N).toFixed(4)}% + 2px); width:calc(${(100 * .7 / N).toFixed(4)}% - 6px)`;   // la part dreta d'una columna
   const blocHTML = (x, tram, N) => {
     const b = x.b, tp = TIPUS_PREVISIO[b.tipus] || {}, conf = x.conflictes.length, h0 = Math.max(16, Math.round((x.fi - x.ini) * PV_ESCALA) - 2);
-    const hores = `${pvHora(x.ini)}–${pvHora(x.fi)}`, qui = x.ids.map(id => pvNomCurt(C.get('treballadors', id))).join(' + ');
-    const titol = `${tp.nom} · ${pvNomInstal(b)}\n${hores} · ${qui} · feina ${pvDurText(x.dur)}${x.fi - x.ini > x.dur ? ' (més l’esmorzar)' : ''}${conf ? '\n⚠ ' + x.conflictes.join('\n⚠ ') : ''}`;
+    const hores = `${x.fixa ? '📌 ' : ''}${pvHora(x.ini)}–${pvHora(x.fi)}`, qui = x.ids.map(id => pvNomCurt(C.get('treballadors', id))).join(' + ');
+    const titol = `${tp.nom} · ${pvNomInstal(b)}\n${hores} · ${qui} · feina ${pvDurText(x.dur)}${x.fi - x.ini > x.dur ? ' (més l’esmorzar)' : ''}${x.fixa ? '\n📌 hora fixada' : ''}${conf ? '\n⚠ ' + x.conflictes.join('\n⚠ ') : ''}`;
     const mini = h0 < 34, ample = tram[1] > tram[0];   // curt: l'hora i el lloc (la resta, en passar-hi el ratolí); de més d'una columna: tot en una ratlla
     return `<div class="pv-bloc ${conf ? 'pv-conflicte' : ''} ${sel.bloc === b.id && !sel.ops ? 'pv-sel' : ''} ${mini ? 'pv-mini' : ''} ${ample && !mini ? 'pv-ample' : ''}" draggable="true" data-bloc="${b.id}" data-tipus="${h(b.tipus)}" style="top:${y(x.ini)}px; height:${h0}px; ${pos(tram[0], tram[1], N)}; ${pvEstil(b, v.equipId)}" title="${h(titol)}">`
       + `<span class="pv-btns">${b.tipus !== 'retall' ? `<button type="button" data-canvi="${b.id}" title="Canvia entre completa i control">⇄</button>` : ''}<button type="button" data-treu="${b.id}" title="Treu el bloc">✕</button></span>`
-      + (mini ? `<span class="pv-h">${h(pvHora(x.ini))}</span><b>${h(pvNomInstal(b))}</b>`
+      + (mini ? `<span class="pv-h">${h((x.fixa ? '📌 ' : '') + pvHora(x.ini))}</span><b>${h(pvNomInstal(b))}</b>`
         : ample ? `<span class="pv-l1"><span class="pv-h">${h(hores)}</span><span class="pv-tipus">${h(tp.curt)}</span><b>${h(pvNomInstal(b))}</b></span><span class="pv-dur">${h(pvDurText(x.dur))} cadascú · ${h(qui)}</span>`
         : `<span class="pv-h">${h(hores)}</span><span class="pv-tipus">${h(tp.curt)}</span><b>${h(pvNomInstal(b))}</b>${h0 >= 58 ? `<span class="pv-dur">${h(pvDurText(x.dur))}</span>` : ''}`)
       + '</div>';
@@ -7318,8 +7331,8 @@ function renderPrevisio(main) {
     const vs = pvVariants(v, b, b.dia).map(combo => { const ops = pvClau(combo.map(t => t.id)); return `<button type="button" class="pv-qui ${ops === ara ? 'on' : ''}" data-qui="${ops}">${h(pvNomCombo(combo, nOps))}</button>`; }).join('');
     triat = `<div class="pv-triat"><b>${h(tp.nom)} · ${h(pvNomInstal(b))}</b><div class="pv-dur">${h(DIES_SETMANA[b.dia % 7])} · ${h(pvHora(xSel.ini))}–${h(pvHora(xSel.fi))} · feina ${h(pvDurText(xSel.dur))}${xSel.ids.length > 1 ? ' cadascú' : ''}</div>`
       + `<div class="pv-triat-l">Qui el fa:</div><div class="pv-quis">${vs}</div>`
-      + `<div class="pv-triat-acc">${b.tipus !== 'retall' ? `<button type="button" class="btn ghost small" data-canvi="${b.id}">⇄ ${b.tipus.endsWith('control') ? 'Fes-lo complet' : 'Fes-lo control'}</button>` : ''}<button type="button" class="btn ghost small" data-treu="${b.id}">Treu-lo</button></div>`
-      + `<p class="pv-ajuda">Per moure’l, arrossega’l o clica on va (dia i hora). Esc: deixar-lo.</p>${xSel.conflictes.length ? `<ul class="pv-avisos">${xSel.conflictes.map(c => `<li>${h(c)}</li>`).join('')}</ul>` : ''}</div>`;
+      + `<div class="pv-triat-acc">${b.tipus !== 'retall' ? `<button type="button" class="btn ghost small" data-canvi="${b.id}">⇄ ${b.tipus.endsWith('control') ? 'Fes-lo complet' : 'Fes-lo control'}</button>` : ''}<button type="button" class="btn ghost small" id="pv-fixa">${xSel.fixa ? '📌 Treu l’hora fixa' : '📌 Fixa l’hora'}</button><button type="button" class="btn ghost small" data-treu="${b.id}">Treu-lo</button></div>`
+      + `<p class="pv-ajuda">${xSel.fixa ? `Té l’hora fixada a les ${h(pvHora(xSel.clau))}: si l’arrossegues, queda fixada on el deixis; amb «Treu l’hora fixa», torna a anar enganxat a la feina d’abans.` : 'Va enganxat a la feina d’abans (amb el desplaçament). Per moure’l, arrossega’l o clica on va: davant de la feina on el deixis (o al final). Per posar-lo a una hora concreta, «📌 Fixa l’hora».'} Esc: deixar-lo.</p>${xSel.conflictes.length ? `<ul class="pv-avisos">${xSel.conflictes.map(c => `<li>${h(c)}</li>`).join('')}</ul>` : ''}</div>`;
   } else if (sel.esm) {
     const [dE, opE] = sel.esm.split('-').map(Number), e = v.esmorzarDe(dE, opE), t = C.get('treballadors', opE);
     triat = `<div class="pv-triat"><b>Esmorzar · ${h(pvNomCurt(t))}</b><div class="pv-dur">${h(DIES_SETMANA[dE % 7])} · ${h(pvHora(e.ini))}–${h(pvHora(e.ini + em))} · no compta com a treballat</div>`
@@ -7341,7 +7354,7 @@ function renderPrevisio(main) {
     ${triat}
     ${faltenG.length || !te107 ? google : ''}
     <h3>Per posar</h3>
-    <p class="pv-ajuda">Cada feina té les maneres de fer-la: tria qui la fa i arrossega-la al dia i l’hora (o clica-la i clica al calendari). Ocupa la columna de cadascun dels qui la fan. Per treure un bloc, arrossega’l aquí o clica’n la ✕.</p>
+    <p class="pv-ajuda">Cada feina té les maneres de fer-la: tria qui la fa i arrossega-la al dia (o clica-la i clica al calendari). S’enganxa sola darrere de l’última feina, amb el desplaçament (o, si la deixes sobre una feina, davant seu). Ocupa la columna de cadascun dels qui la fan. Per treure un bloc, arrossega’l aquí o clica’n la ✕.</p>
     ${v.perReassignar.length ? `<h4>Per reassignar</h4>${v.perReassignar.map(b => tascaHTML({ q: b.piscina_id ? 'piscina' : 'jardi', r: pvInstal(b) || {}, tipus: b.tipus, falta: 1 }, { bloc: b.id, dia: b.dia, extra: DIES_SETMANA[b.dia % 7].toLowerCase() + ' · ' + motiu(b) })).join('')}` : ''}
     ${v.monday ? `
       ${retalls.length ? `<h4>Retalls d’aquestes dates</h4>${ordena(retalls).map(it => tascaHTML(it)).join('')}` : ''}
@@ -7370,7 +7383,7 @@ function renderPrevisio(main) {
   const onSurten = v.alsJardins ? 'Aquest equip comença i acaba en qualsevol dels seus jardins.' : `Surten del despatx (${PP.despatx_adreca}): el desplaçament fins a la primera feina compta${PP.tornada_despatx ? ', i la tornada també' : ''}. Els desplaçaments són de Google Maps (en cotxe, sense trànsit) més ${PP.minuts_aparcar} min d’aparcar.`;
   main.innerHTML = `<h1>Previsió setmanal</h1>${barra}${st.config ? pvConfigHTML(PP, equips) : ''}<div id="ferr"></div>
     <div class="pv"><div class="pv-cal-wrap"><div class="pv-cal">${eix}${dies.map(diaHTML).join('')}</div></div>${paleta}</div>
-    <p class="pv-peu">Només orientatiu: no es comprova si es compleix. Cada persona: ${h(pvDurText(v.jornada * 60))} de feina i desplaçaments, des de les ${h(pvHora(v.hora0))}; l’esmorzar (gris, ${h(String(em))} min) no compta. ${h(onSurten)} Un bloc fet entre dos dura la meitat. En vermell, el que no quadra (passa el ratolí per sobre per veure-ho).</p>`;
+    <p class="pv-peu">Només orientatiu: no es comprova si es compleix. Les feines van enganxades l’una darrere l’altra amb el desplaçament (📌: a una hora fixada). Cada persona: ${h(pvDurText(v.jornada * 60))} de feina i desplaçaments, des de les ${h(pvHora(v.hora0))}; l’esmorzar (gris, ${h(String(em))} min) no compta. ${h(onSurten)} Un bloc fet entre dos dura la meitat. En vermell, el que no quadra (passa el ratolí per sobre per veure-ho).</p>`;
   const wrap = main.querySelector('.pv-cal-wrap'); if (wrap) wrap.scrollLeft = scroll;
   pvBind(main, v);
 }
@@ -7399,7 +7412,7 @@ function pvConfigHTML(PP, equips) {
     <div class="actions"><button class="btn desa" id="pv-config-desa">Desa</button> <button class="btn ghost" id="pv-config-tanca">Tanca</button></div></div>`;
 }
 
-// posar una feina nova o moure'n una a un dia, les persones que la fan i un minut; l'inici s'ajusta: no abans que tots hi puguin arribar
+// posar una feina nova o moure'n una a un dia, amb les persones que la fan i el minut on s'ha deixat anar (que en diu l'ordre)
 // des del bloc d'abans (ni abans de la primera hora més el desplaçament de sortida), i fora de l'esmorzar de cadascú
 async function pvPosa(v, peca, dia, idsIn, minut) {
   const PP = v.PP, ids = [...idsIn].map(Number).filter(Boolean).sort((a, b) => a - b), d = v.dies[dia - 1];
@@ -7414,27 +7427,81 @@ async function pvPosa(v, peca, dia, idsIn, minut) {
     if (op && d.presents.some(t => t.id === op) && !(ids.length === 1 && ids[0] === op)) { toastErr(`Aquesta piscina la fa el seu operari habitual (${pvNomCurt(C.get('treballadors', op))})`); return false; }
   }
   if (b0.tipus === 'retall' && !v.monday) { toastErr('Els retalls van a les setmanes concretes'); return false; }
-  const prova = { ...b0, treballadors: ids, dia }, lloc = pvLloc(prova);
-  let ini = Math.round(minut / 5) * 5;
-  const c = pvDia(v, d);
-  ids.forEach(id => {
-    const abans = c.blocs.filter(x => x.b.id !== (bloc && bloc.id) && x.ids.includes(id) && x.ini <= ini).sort((a, b) => b.ini - a.ini)[0];
-    const des = abans ? abans.fi + pvDesplacament(abans.lloc, lloc, PP).min : v.hora0 + pvSortida(v, lloc).min;
-    if (ini < des) ini = Math.ceil(des / 5) * 5;
+  // on va: entre les feines del dia de les mateixes persones, davant de la primera que, on s'ha deixat anar, queda per sota de la meitat
+  // (o al final); després s'hi enganxa sola. Si té l'hora fixada (📌), la nova hora és on s'ha deixat anar.
+  const fixa = !!(bloc && bloc.hora_fixa), c = pvDia(v, d), k = x => x.fixa ? x.clau : x.ini;
+  let clau;
+  if (fixa) clau = Math.max(0, Math.min(1435, Math.round(minut / 5) * 5));
+  else {
+    const seus = c.blocs.filter(x => (!bloc || x.b.id !== bloc.id) && x.ids.some(id => ids.includes(id))).sort((p, q) => k(p) - k(q) || (Number(p.b.id) || 0) - (Number(q.b.id) || 0));
+    const seg = seus.find(x => minut < (x.ini + x.fi) / 2);
+    clau = seg ? k(seg) - 0.5 : seus.length ? k(seus[seus.length - 1]) + 0.5 : Math.max(0, minut);
+  }
+  return pvDesaDia(v, d, { ...b0, id: bloc ? bloc.id : -1, dia, treballadors: ids, inici: clau, hora_fixa: fixa }, { dia, treballadors: ids });
+}
+// l'ordre que es desa a cada feina (inici): l'hora on queda enganxada (la fixada, la seva hora), sempre creixent per a cada persona
+function pvClausDia(c) {
+  const k = new Map(), seg = new Map();
+  [...c.blocs].reverse().forEach(x => {
+    let n = x.fixa ? x.clau : Math.round(x.ini);
+    if (!x.fixa) x.ids.forEach(id => { if (seg.has(id)) n = Math.min(n, seg.get(id) - 1); });
+    n = Math.max(0, Math.min(1439, n));
+    k.set(x.b.id, n); x.ids.forEach(id => seg.set(id, n));
   });
-  if (PP.esmorzar_minuts) ids.forEach(id => { const e = v.esmorzarDe(dia, id).ini; if (e != null && ini >= e && ini < e + PP.esmorzar_minuts) ini = e + PP.esmorzar_minuts; });
-  ini = Math.max(0, Math.min(1435, ini));
+  return k;
+}
+// en una setmana concreta que segueix la setmana tipus: l'inici d'una feina pròpia de la setmana (un retall) entre els de les feines que
+// té al costat, sense tocar les de la setmana tipus (null si no n'hi cap)
+function pvClauEntre(c, id) {
+  const i = c.blocs.findIndex(x => x.b.id === id), x = c.blocs[i]; if (!x) return null;
+  const desat = y => { const r = C.get('previsio_blocs', y.b.id); return r ? Number(r.inici) : null; };
+  let lo = -1, hi = 1440;
+  x.ids.forEach(p => {
+    const abans = c.blocs.slice(0, i).reverse().find(y => y.ids.includes(p)), despres = c.blocs.slice(i + 1).find(y => y.ids.includes(p));
+    if (abans && desat(abans) != null) lo = Math.max(lo, desat(abans));
+    if (despres && desat(despres) != null) hi = Math.min(hi, desat(despres));
+  });
+  return lo + 1 <= hi - 1 ? Math.min(Math.max(Math.round(x.ini), lo + 1), hi - 1) : null;
+}
+// desa un dia després de posar-hi, moure-hi, fixar o deixar anar una feina (nou: el bloc com queda, amb id -1 si és nou i amb un inici
+// que en diu l'ordre; camps: el que es desa del bloc, a més de l'inici). Totes queden enganxades i a cadascuna es desa el seu inici
+// (l'ordre). En una setmana concreta que segueix la setmana tipus: si es toca una feina de la setmana tipus, primer la setmana passa a
+// tenir pla propi (la setmana tipus no canvia); un retall hi entra sense tocar-ne cap altra, si es pot.
+async function pvDesaDia(v, d, nou, camps) {
+  const altres = pvDia(v, d).blocs.filter(x => x.b.id !== nou.id);
+  const c = pvDia({ ...v, alCal: [...altres.map(x => ({ ...x.b, inici: x.fixa ? x.clau : x.ini })), nou] }, d);
+  const claus = pvClausDia(c);
+  let canvis = altres.filter(x => !x.fixa && Number(x.b.inici) !== claus.get(x.b.id)).map(x => [x.b.id, claus.get(x.b.id)]);
+  let clauNou = claus.get(nou.id), mapa = null;
   try {
-    // en una setmana concreta sense pla propi, primer s'hi copia la setmana tipus (els retalls no cal)
-    if (v.monday && !v.personal && bloc && bloc.tipus !== 'retall') { const mapa = await pvPersonalitza(v); bloc = C.get('previsio_blocs', mapa.get(bloc.id)); toast('Aquesta setmana ara té pla propi; la setmana tipus no canvia', 6000); }
-    const r = bloc
-      ? await sb.from('previsio_blocs').update({ dia, treballadors: ids, inici: ini }).eq('id', bloc.id)
-      : await sb.from('previsio_blocs').insert({ equip_id: v.equipId, temporada: v.temporada, setmana_cicle: v.setmanaCicle, setmana: b0.tipus === 'retall' ? v.monday : null,
-          dia, treballadors: ids, tipus: b0.tipus, jardi_id: b0.jardi_id, piscina_id: b0.piscina_id, inici: ini });
+    if (v.monday && !v.personal) {
+      const deTipus = nou.id > 0 && !(C.get('previsio_blocs', nou.id) || {}).setmana;
+      const entre = deTipus ? null : nou.hora_fixa ? clauNou : pvClauEntre(c, nou.id);
+      if (entre == null) { mapa = await pvPersonalitza(v); toast('Aquesta setmana ara té pla propi; la setmana tipus no canvia', 6000); }
+      else { clauNou = entre; canvis = []; }
+    }
+    const idDe = id => (mapa && mapa.get(id)) || id;
+    const r = nou.id > 0
+      ? await sb.from('previsio_blocs').update({ ...camps, inici: clauNou }).eq('id', idDe(nou.id))
+      : await sb.from('previsio_blocs').insert({ equip_id: v.equipId, temporada: v.temporada, setmana_cicle: v.setmanaCicle, setmana: nou.tipus === 'retall' ? v.monday : null,
+          dia: nou.dia, treballadors: pvIds(nou), tipus: nou.tipus, jardi_id: nou.jardi_id, piscina_id: nou.piscina_id, inici: clauNou });
     if (r.error) throw r.error;
+    const rs = await Promise.all(canvis.map(([id, n]) => sb.from('previsio_blocs').update({ inici: n }).eq('id', idDe(id))));
+    const ko = rs.find(x => x.error); if (ko) throw ko.error;
     await loadTable('previsio_blocs');
     return true;
-  } catch (e) { showFormError(friendly(e)); return false; }
+  } catch (e) {
+    if (mapa) await loadTable('previsio_blocs');
+    if (/hora_fixa/.test(String(e && e.message || ''))) toastErr('Per fixar hores, cal executar el fitxer 108_previsio_hora_fixa.sql al SQL Editor de Supabase');
+    else showFormError(friendly(e));
+    return false;
+  }
+}
+// l'hora fixada d'una feina (📌): a una hora (minuts) o, amb null, tornar-la a enganxar
+async function pvFixa(v, id, hora) {
+  const b = C.get('previsio_blocs', id), d = b && v.dies[b.dia - 1]; if (!d) return false;
+  const x = pvDia(v, d).blocs.find(y => y.b.id === id); if (!x) return false;
+  return pvDesaDia(v, d, { ...b, inici: hora == null ? x.ini : hora, hora_fixa: hora != null }, { hora_fixa: hora != null });
 }
 // l'esmorzar d'una persona un dia: a una altra hora (o, amb «torna», a la de la configuració)
 async function pvPosaEsmorzar(v, dia, op, minut, torna) {
@@ -7460,7 +7527,7 @@ async function pvPersonalitza(v) {
   const tpl = C.rows('previsio_blocs').filter(b => b.actiu && Number(b.equip_id) === v.equipId && !b.setmana && b.temporada === v.temporada && Number(b.setmana_cicle) === v.setmanaCicle);
   const mapa = new Map();
   if (tpl.length) {
-    const r2 = await sb.from('previsio_blocs').insert(tpl.map(b => ({ equip_id: v.equipId, temporada: v.temporada, setmana_cicle: v.setmanaCicle, setmana: v.monday, dia: b.dia, treballadors: pvIds(b), tipus: b.tipus, jardi_id: b.jardi_id, piscina_id: b.piscina_id, inici: b.inici })))
+    const r2 = await sb.from('previsio_blocs').insert(tpl.map(b => ({ equip_id: v.equipId, temporada: v.temporada, setmana_cicle: v.setmanaCicle, setmana: v.monday, dia: b.dia, treballadors: pvIds(b), tipus: b.tipus, jardi_id: b.jardi_id, piscina_id: b.piscina_id, inici: b.inici, ...(b.hora_fixa ? { hora_fixa: true } : {}) })))
       .select('id, dia, treballadors, tipus, jardi_id, piscina_id, inici');
     if (r2.error) throw r2.error;
     const clauB = b => [b.dia, pvClau(pvIds(b)), b.tipus, b.jardi_id || 0, b.piscina_id || 0, b.inici].join('|'), lliures = [...(r2.data || [])];
@@ -7538,7 +7605,7 @@ function pvBind(main, v) {
   const copia = main.querySelector('#pv-copia'); if (copia) copia.addEventListener('click', async () => {
     const n = Number(prompt(`A quina setmana del cicle la copio (1 a ${v.nCicle})? Els blocs s’hi afegeixen; després pots canviar les completes i els controls amb ⇄.`, String(v.setmanaCicle % v.nCicle + 1)));
     if (!n || n < 1 || n > v.nCicle || n === v.setmanaCicle) return;
-    const rows = v.blocs.map(b => ({ equip_id: v.equipId, temporada: v.temporada, setmana_cicle: n, setmana: null, dia: b.dia, treballadors: pvIds(b), tipus: b.tipus, jardi_id: b.jardi_id, piscina_id: b.piscina_id, inici: b.inici }));
+    const rows = v.blocs.map(b => ({ equip_id: v.equipId, temporada: v.temporada, setmana_cicle: n, setmana: null, dia: b.dia, treballadors: pvIds(b), tipus: b.tipus, jardi_id: b.jardi_id, piscina_id: b.piscina_id, inici: b.inici, ...(b.hora_fixa ? { hora_fixa: true } : {}) }));
     if (!rows.length) return;
     const r = await sb.from('previsio_blocs').insert(rows); if (r.error) { toastErr(friendly(r.error)); return; }
     await loadTable('previsio_blocs'); st.cicle = n; toast(`Copiada a la setmana ${n}`); torna();
@@ -7546,7 +7613,7 @@ function pvBind(main, v) {
   // posar el que hi ha triat en un dia, a una hora (i, un bloc d'una sola persona, a la columna on es deixa)
   const posa = async (cos, ev) => {
     const s = st.sel; if (!s) return;
-    const diaN = Number(cos.dataset.dia), minut = minutDe(cos, ev), op = columnaDe(cos, ev);
+    const diaN = Number(cos.dataset.dia), minut = minutDe(cos, ev) - (ev.type === 'drop' ? (st.agafat || 0) / PV_ESCALA : 0), op = columnaDe(cos, ev);
     let ok = false;
     if (s.esm) { const [dE, opE] = s.esm.split('-').map(Number); if (dE !== diaN) { toastErr('L’esmorzar es mou dins del mateix dia'); return; } ok = await pvPosaEsmorzar(v, diaN, opE, minut); }
     else if (s.peca) ok = await pvPosa(v, pecaDe(s.peca), diaN, opsDe(s.ops), minut);
@@ -7558,21 +7625,21 @@ function pvBind(main, v) {
     }
     if (ok) { st.sel = null; torna(); }
   };
-  const tria = (nou, igual) => { st.sel = st.sel && igual(st.sel) ? null : nou; torna(); };
+  const tria = (nou, igual) => { st.sel = st.sel && igual(st.sel) ? null : nou; st.agafat = 0; torna(); };
   // les maneres de fer una feina (paleta)
   main.querySelectorAll('.pv-var').forEach(el => {
     const nou = () => el.dataset.bloc ? { bloc: Number(el.dataset.bloc), ops: el.dataset.ops } : { peca: el.dataset.peca, ops: el.dataset.ops };
     el.addEventListener('click', () => { const n = nou(); tria(n, s => s.ops === n.ops && (n.bloc ? s.bloc === n.bloc : s.peca === n.peca)); });
-    el.addEventListener('dragstart', e => { st.sel = nou(); e.dataTransfer.setData('text/plain', 'pv'); e.dataTransfer.effectAllowed = 'move'; });
+    el.addEventListener('dragstart', e => { st.sel = nou(); st.agafat = 0; e.dataTransfer.setData('text/plain', 'pv'); e.dataTransfer.effectAllowed = 'move'; });
   });
   // els blocs del calendari
   main.querySelectorAll('.pv-bloc[data-bloc]').forEach(el => {
     el.addEventListener('click', e => { if (e.target.closest('button')) return; e.stopPropagation(); const id = Number(el.dataset.bloc); tria({ bloc: id }, s => s.bloc === id && !s.ops); });
-    el.addEventListener('dragstart', e => { st.sel = { bloc: Number(el.dataset.bloc) }; e.dataTransfer.setData('text/plain', 'pv'); e.dataTransfer.effectAllowed = 'move'; });
+    el.addEventListener('dragstart', e => { st.sel = { bloc: Number(el.dataset.bloc) }; st.agafat = e.clientY - el.getBoundingClientRect().top; e.dataTransfer.setData('text/plain', 'pv'); e.dataTransfer.effectAllowed = 'move'; });
   });
   main.querySelectorAll('.pv-esm[data-esm]').forEach(el => {
     el.addEventListener('click', e => { e.stopPropagation(); const k = el.dataset.esm; tria({ esm: k }, s => s.esm === k); });
-    el.addEventListener('dragstart', e => { st.sel = { esm: el.dataset.esm }; e.dataTransfer.setData('text/plain', 'pv'); e.dataTransfer.effectAllowed = 'move'; });
+    el.addEventListener('dragstart', e => { st.sel = { esm: el.dataset.esm }; st.agafat = e.clientY - el.getBoundingClientRect().top; e.dataTransfer.setData('text/plain', 'pv'); e.dataTransfer.effectAllowed = 'move'; });
   });
   main.querySelectorAll('.pv-cos').forEach(cos => {
     cos.addEventListener('dragover', e => { e.preventDefault(); cos.classList.add('pv-sobre'); });
@@ -7588,8 +7655,21 @@ function pvBind(main, v) {
   // el bloc triat: qui el fa (al mateix dia i hora)
   main.querySelectorAll('[data-qui]').forEach(b => b.addEventListener('click', async () => {
     const bl = C.get('previsio_blocs', st.sel && st.sel.bloc); if (!bl) return;
-    if (await pvPosa(v, { bloc: bl.id }, Number(bl.dia), opsDe(b.dataset.qui), Number(bl.inici))) { st.sel = null; torna(); }
+    const ara = pvDia(v, v.dies[bl.dia - 1]).blocs.find(x => x.b.id === bl.id);
+    if (await pvPosa(v, { bloc: bl.id }, Number(bl.dia), opsDe(b.dataset.qui), ara ? ara.ini : Number(bl.inici))) { st.sel = null; torna(); }
   }));
+  const fixa = main.querySelector('#pv-fixa'); if (fixa) fixa.addEventListener('click', async () => {
+    const bl = C.get('previsio_blocs', st.sel && st.sel.bloc); if (!bl) return;
+    let hora = null;
+    if (!bl.hora_fixa) {
+      const ara = pvDia(v, v.dies[bl.dia - 1]).blocs.find(x => x.b.id === bl.id);
+      const r = prompt('A quina hora ha de començar? (hh:mm)', pvHH(Math.round(ara ? ara.ini : Number(bl.inici)))); if (r == null) return;
+      hora = pvMin(r);
+      if (hora == null) { toastErr(`L’hora «${r}» no és bona: posa-la hh:mm (per exemple, 09:30)`); return; }
+      if (hora < v.hora0) { toastErr(`Ha de ser a partir de les ${pvHora(v.hora0)}, la primera hora de la temporada`); return; }
+    }
+    if (await pvFixa(v, bl.id, hora)) torna();
+  });
   const esmTorna = main.querySelector('#pv-esm-torna'); if (esmTorna) esmTorna.addEventListener('click', async () => {
     const [dE, opE] = String(st.sel && st.sel.esm).split('-').map(Number);
     if (await pvPosaEsmorzar(v, dE, opE, 0, true)) { st.sel = null; torna(); }
@@ -11688,14 +11768,14 @@ function reportBind(frm, td) {
   const btn = $('#gps-report'), nota = $('#gps-nota');
   if (btn) btn.addEventListener('click', () => {
     if (!navigator.geolocation) { nota.textContent = 'Aquest navegador no té GPS.'; return; }
-    btn.disabled = true; nota.textContent = 'Buscant…';
-    navigator.geolocation.getCurrentPosition(pos => {
-      btn.disabled = false; const { latitude: la, longitude: lo } = pos.coords;
+    btn.disabled = true; nota.textContent = 'Buscant…'; mostraAjudaGps(nota, null);
+    posicioActual(60000).then(pos => {
+      btn.disabled = false; const la = pos.lat, lo = pos.lng;
       const cand = C.rows('llocs').filter(l => l.actiu && l.latitud != null && l.longitud != null).map(l => ({ l, d: distKm(la, lo, Number(l.latitud), Number(l.longitud)) })).sort((a, b) => a.d - b.d);
       if (!cand.length) { nota.textContent = 'Cap lloc té coordenades encara: tria’l a mà.'; return; }
       const m = cand[0]; if (m.d > 2) { nota.textContent = `El lloc més proper (${m.l.nom}) és a ${m.d.toFixed(1)} km: tria’l a mà.`; return; }
       const sel = frm.querySelector('select[name="lloc_id"]'); sel.value = String(m.l.id); sel.dispatchEvent(new Event('change', { bubbles: true })); nota.textContent = `${m.l.nom} (${Math.round(m.d * 1000)} m)`;
-    }, err => { btn.disabled = false; nota.textContent = 'No s’ha pogut llegir el GPS (' + err.message + '). Tria el lloc a mà.'; }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
+    }, err => { btn.disabled = false; nota.textContent = 'No s’ha pogut llegir el GPS (' + err.message + '). Tria el lloc a mà.'; mostraAjudaGps(nota, err); });
   });
   // en triar una persona registrada, s'omplen nom, correu i telèfon (si eren buits)
   const selC = frm.querySelector('[name="contacte_id"]');
@@ -13455,13 +13535,37 @@ function enllacGps(f, llocs) {
   const titol = 'Posició en fitxar' + (f.precisio ? ' (±' + Math.round(f.precisio) + ' m)' : '') + (p ? ' · ' + (cls === 'dins' ? 'dins dels ' + RADI_LLOC_FEINA_M + ' m de ' : '⚠ a ' + distText(p.m) + ' de ') + p.nom : '');
   return `<a class="fx-gps ${cls}" href="https://maps.google.com/?q=${f.lat},${f.lng}" target="_blank" rel="noopener" title="${h(titol)}">${PIN_SVG}</a>`;
 }
-function posicioActual() {
+// La posició del mòbil (fitxar i «Localitza’m»). Amb un límit propi: a l'app instal·lada a la pantalla d'inici de l'iPhone, a vegades el
+// navegador no mostra la pregunta del permís i no respon mai (ni posició ni error), i el límit del navegador (timeout) només compta un cop
+// donat el permís. Si en GPS_ESPERA_MAX_MS no hi ha resposta, es dona per fallat («el mòbil no ha respost»).
+const GPS_ESPERA_MAX_MS = 20000;
+function posicioActual(maximumAge = 30000) {
   return new Promise((res, rej) => {
     if (!navigator.geolocation) return rej(new Error('el navegador no té geolocalització'));
-    navigator.geolocation.getCurrentPosition(p => res({ lat: p.coords.latitude, lng: p.coords.longitude, prec: p.coords.accuracy }),
-      e => rej(new Error(e && e.code === 1 ? 'permís de localització denegat' : e && e.code === 2 ? 'posició no disponible' : 'temps d’espera esgotat')),
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 });
+    let fet = false, rellotge = null;
+    const falla = msg => { if (fet) return; fet = true; clearTimeout(rellotge); rej(new Error(msg)); };
+    rellotge = setTimeout(() => falla('el mòbil no ha respost'), GPS_ESPERA_MAX_MS);
+    try {
+      navigator.geolocation.getCurrentPosition(
+        p => { if (fet) return; fet = true; clearTimeout(rellotge); res({ lat: p.coords.latitude, lng: p.coords.longitude, prec: p.coords.accuracy }); },
+        e => falla(e && e.code === 1 ? 'permís de localització denegat' : e && e.code === 2 ? 'posició no disponible' : 'temps d’espera esgotat'),
+        { enableHighAccuracy: true, timeout: 12000, maximumAge });
+    } catch (e) { falla('el navegador no deixa llegir la posició'); }
   });
+}
+// com activar la ubicació, segons el mòbil: surt quan no s'ha pogut llegir la posició
+function ajudaGpsHTML() {
+  return esIphone()
+    ? 'A l’iPhone, a <b>Configuració</b>:<ol><li><b>Privacitat i seguretat › Localització</b>: activada.</li><li>Més avall, a <b>Llocs web del Safari</b>: <b>Mentre s’usa l’app</b>, i <b>Ubicació precisa</b> activada.</li><li><b>Apps › Safari › Ubicació</b> (als iPhone antics, <b>Safari › Ubicació</b>): que no hi hagi <b>Denega</b>.</li></ol>Després tanca l’app del tot (llisca-la cap amunt) i torna-la a obrir.'
+    : 'Comprova que la ubicació del mòbil està activada i que l’app (o el navegador) hi té permís. Després tanca l’app del tot i torna-la a obrir.';
+}
+// el quadre d'ajuda just després de la fila del botó «Localitza’m» (sense error, el treu)
+function mostraAjudaGps(nota, err) {
+  const fila = nota && nota.parentElement; if (!fila) return;
+  const ja = fila.nextElementSibling && fila.nextElementSibling.classList.contains('gps-ajuda') ? fila.nextElementSibling : null;
+  if (!err) { if (ja) ja.remove(); return; }
+  const html = `<div class="msg gps-ajuda">${ajudaGpsHTML()}</div>`;
+  if (ja) ja.outerHTML = html; else fila.insertAdjacentHTML('afterend', html);
 }
 // el lloc d'un fitxatge, per a l'app: el lloc nostre més proper si és a menys de 300 m; si no, a quina distància queda del més proper; o sense GPS
 function llocFitxatgeText(f, llocs) {
@@ -13485,7 +13589,8 @@ function renderFitxar(main) {
     ${estat}
     <div id="ferr"></div>
     <div class="fx-botons"><button class="btn fx-entro" id="fx-entro" ${!t || dins || abs || st.ocupat ? 'disabled' : ''}>ENTRO</button><button class="btn fx-surto" id="fx-surto" ${!t || !dins || abs || st.ocupat ? 'disabled' : ''}>SURTO</button></div>
-    <p class="hint">${st.ocupat ? 'Obtenint la posició del mòbil…' : 'L’hora la posa el servidor (no el rellotge del mòbil); es desa també la posició del mòbil.'}</p>
+    <p class="hint">${st.ocupat ? 'Obtenint la posició del mòbil… (si en ' + GPS_ESPERA_MAX_MS / 1000 + ' segons no respon, podràs fitxar sense GPS)' : 'L’hora la posa el servidor (no el rellotge del mòbil); es desa també la posició del mòbil.'}</p>
+    ${st.gpsAjuda && !st.ocupat ? `<div class="msg gps-ajuda" id="fx-gps-ajuda"><b>El mòbil no ha donat la posició</b> (${h(st.gpsAjuda)}). ${ajudaGpsHTML()}</div>` : ''}
     <h3>Avui</h3>
     ${dAvui.length ? `<ul class="fx-regs">${dAvui.map(filaHTML).join('')}</ul>` : '<p class="hint">Cap fitxatge avui.</p>'}
     ${dies.length ? `<h3>Darrers dies</h3>${dies.map(d => `<div class="fx-dia">${nomDia(d)} ${dmy(d)}</div><ul class="fx-regs">${perDia.get(d).map(filaHTML).join('')}</ul>`).join('')}` : ''}`;
@@ -13518,16 +13623,23 @@ function esDeNit(ara, lat, lng) {
 async function fitxa(tipus) {
   const t = treballadorActual(), st = state.fx; if (!t || st.ocupat) return;
   st.ocupat = true; renderMain();
-  let pos = null, motiu = '';
-  try { pos = await posicioActual(); } catch (e) { motiu = e && e.message ? e.message : 'sense GPS'; }
-  if (!pos && !confirm('No s’ha pogut obtenir la posició del mòbil (' + motiu + '). Vols fitxar igualment? Quedarà anotat que és sense GPS.')) { st.ocupat = false; renderMain(); return; }
-  // avís de nit: de moment només és un avís, no es desa res
-  const nit = esDeNit(Date.now(), pos ? pos.lat : POSICIO_SOL_PER_DEFECTE.lat, pos ? pos.lng : POSICIO_SOL_PER_DEFECTE.lng);
-  if (nit && nit.nit && !confirm('És de nit: avui el sol ' + (+Date.now() < nit.sol.sortida ? 'surt a les ' + horaDe(nit.sol.sortida) : 's’ha post a les ' + horaDe(nit.sol.posta)) + ' i ara són les ' + horaDe(Date.now()) + '. Vols fitxar igualment?')) { st.ocupat = false; renderMain(); return; }
-  const r = await sb.from('fitxatges').insert({ treballador_id: t.id, tipus, lat: pos ? pos.lat : null, lng: pos ? pos.lng : null, precisio: pos ? pos.prec : null, observacions: pos ? null : 'sense GPS: ' + motiu }).select('id, moment').single();
-  st.ocupat = false;
-  if (r.error) { renderMain(); showFormError(friendly(r.error)); return; }
-  await loadTable('fitxatges'); renderMain();
+  let r = null;
+  try {
+    let pos = null, motiu = '';
+    try { pos = await posicioActual(); st.gpsAjuda = null; } catch (e) { motiu = e && e.message ? e.message : 'sense GPS'; st.gpsAjuda = motiu; }
+    if (!pos && !confirm('No s’ha pogut obtenir la posició del mòbil (' + motiu + '). Vols fitxar igualment? Quedarà anotat que és sense GPS.')) return;
+    // avís de nit: de moment només és un avís, no es desa res
+    const nit = esDeNit(Date.now(), pos ? pos.lat : POSICIO_SOL_PER_DEFECTE.lat, pos ? pos.lng : POSICIO_SOL_PER_DEFECTE.lng);
+    if (nit && nit.nit && !confirm('És de nit: avui el sol ' + (+Date.now() < nit.sol.sortida ? 'surt a les ' + horaDe(nit.sol.sortida) : 's’ha post a les ' + horaDe(nit.sol.posta)) + ' i ara són les ' + horaDe(Date.now()) + '. Vols fitxar igualment?')) return;
+    r = await sb.from('fitxatges').insert({ treballador_id: t.id, tipus, lat: pos ? pos.lat : null, lng: pos ? pos.lng : null, precisio: pos ? pos.prec : null, observacions: pos ? null : 'sense GPS: ' + motiu }).select('id, moment').single();
+    if (!r.error) await loadTable('fitxatges');
+  } catch (e) {
+    r = { error: e };
+  } finally {
+    st.ocupat = false; renderMain();   // passi el que passi, els botons ENTRO i SURTO no es queden bloquejats
+  }
+  if (!r) return;
+  if (r.error) { showFormError(friendly(r.error)); return; }
   toast((tipus === 'entrada' ? 'Entrada' : 'Sortida') + ' registrada a les ' + horaDe(r.data && r.data.moment ? r.data.moment : new Date()));
 }
 // llocs de feina: els llocs (dels clients) amb coordenades; es fitxa sempre a peu de lloc, mai des de l'oficina
