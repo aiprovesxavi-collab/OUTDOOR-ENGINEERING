@@ -2,7 +2,7 @@
 <html lang="ca">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-XskPcyDHFMQ931KmG7Zn6jP4m37isY3vSVRxoB9r9C4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-B0DK6JYZMANKIAW+5oShw0k22OXvbYCwSkw5P4kpOOU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestió de manteniment</title>
 <meta name="theme-color" content="#2f7d4a">
@@ -7129,30 +7129,47 @@ function pvVista(st) {
   const llocsEquip = new Set(C.rows('jardins').filter(j => j.actiu && Number(j.equip_id) === equipId && j.lloc_id).map(j => Number(j.lloc_id)));
   const hora0 = pvMin(PP['primera_hora_' + temporada]) ?? 7 * 60;
   return { PP, Pc, st, equipId, equip, ops, temporada, setmanaCicle, nCicle: pvNCicle(temporada, Pc), monday, personal, blocs, alCal, perReassignar, dies,
-    esmorzarDe, alsJardins, llocsEquip, hora0, jornada: Number(PP['jornada_' + temporada]) || 8 };
+    esmorzarDe, esmorzars, alsJardins, llocsEquip, hora0, jornada: Number(PP['jornada_' + temporada]) || 8 };
 }
 // un dia: on és cada bloc, el desplaçament de cadascú per arribar-hi, els conflictes i el dia de cada persona (de quan surt a quan acaba,
 // i les hores: feina + desplaçaments; l'esmorzar no compta)
 function pvDia(v, d) {
-  const PP = v.PP, em = PP.esmorzar_minuts, falten = new Set();
-  const esm = new Map(d.presents.map(t => [t.id, v.esmorzarDe(d.n, t.id)]));
+  const PP = v.PP, em = Number(PP.esmorzar_minuts) || 0, hE = pvMin(PP.esmorzar_inici) ?? 600, falten = new Set();
   // ENGANXADES, com amb imants (v62): l'ordre és el de l'inici desat; cada feina comença tan aviat com hi poden ser tots els qui la fan:
   // la primera de cadascú, a la primera hora de la temporada més el desplaçament; les altres, quan acaba l'anterior més el desplaçament
   // (0, al mateix lloc). La que té l'hora fixada (📌), a la seva hora (o quan s'hi pugui ser, si no s'hi arriba).
-  const blocs = v.alCal.filter(b => Number(b.dia) === d.n)
-    .map(b => ({ b, ids: pvIds(b), dur: pvDurada(b, v.temporada, v.Pc), clau: Number(b.inici), fixa: !!b.hora_fixa, lloc: pvLloc(b), viatges: new Map(), conflictes: [] }))
-    .sort((p, q) => p.clau - q.clau || (Number(p.b.id) || 0) - (Number(q.b.id) || 0));
-  const ultim = new Map();
-  blocs.forEach(x => {
+  // L'ESMORZAR (v63), igual, a la columna de cadascú: comença quan acaba la feina d'abans (es fa on s'és; el desplaçament, després) i la
+  // feina següent comença quan s'acaba, més el desplaçament. El que s'ha mogut té el seu lloc en l'ordre, com una feina; el que no, va sol
+  // al forat entre feines més a prop de l'hora de la configuració (o darrere de l'última). No compta com a treballat.
+  const presents = new Set(d.presents.map(t => t.id));
+  const feines = v.alCal.filter(b => Number(b.dia) === d.n)
+    .map(b => ({ b, ids: pvIds(b), dur: pvDurada(b, v.temporada, v.Pc), clau: Number(b.inici), fixa: !!b.hora_fixa, lloc: pvLloc(b), viatges: new Map(), conflictes: [] }));
+  const ambFeina = new Set(feines.flatMap(x => x.ids).filter(id => presents.has(id)));
+  const ambEsm = new Set(), esmorzars = [];
+  if (em) (v.esmorzars || []).filter(b => Number(b.dia) === d.n).forEach(b => {
+    const id = pvIds(b)[0]; if (!ambFeina.has(id) || ambEsm.has(id)) return;
+    ambEsm.add(id); esmorzars.push({ b, ids: [id], esm: true, clau: Number(b.inici), dur: em, fixa: false });
+  });
+  const cadena = [...feines, ...esmorzars].sort((p, q) => p.clau - q.clau || (p.esm ? 1 : 0) - (q.esm ? 1 : 0) || (Number(p.b.id) || 0) - (Number(q.b.id) || 0));
+  const est = new Map([...ambFeina].map(id => [id, { fi: null, lloc: null, feta: false, esm: null }]));   // per persona: quan queda lliure, on és
+  const esmorza = (s, ini, x) => { s.esm = { ini, fi: ini + em, bloc: x ? x.b : null }; s.fi = ini + em; if (x) { x.ini = ini; x.fi = ini + em; } };
+  cadena.forEach(x => {
+    if (x.esm) { const s = est.get(x.ids[0]); esmorza(s, s.fi ?? v.hora0, x); return; }
+    // l'esmorzar que va sol: abans d'aquesta feina, si així queda més a prop de l'hora de la configuració que si es fa després
+    if (em) x.ids.forEach(id => {
+      const s = est.get(id); if (!s || s.esm || !s.feta || ambEsm.has(id)) return;
+      const ini = s.fi + pvDesplacament(s.lloc, x.lloc, PP).min, sense = (x.fixa ? Math.max(x.clau, ini) : ini) + x.dur;
+      if (hE - s.fi <= sense - hE) esmorza(s, s.fi);
+    });
     let pot = v.hora0;
-    x.ids.forEach(id => { const p = ultim.get(id); pot = Math.max(pot, p ? p.fi + pvDesplacament(p.lloc, x.lloc, PP).min : v.hora0 + pvSortida(v, x.lloc).min); });
+    x.ids.forEach(id => { const s = est.get(id); if (s) pot = Math.max(pot, s.feta ? s.fi + pvDesplacament(s.lloc, x.lloc, PP).min : (s.fi ?? v.hora0) + pvSortida(v, x.lloc).min); });
     x.ini = x.fixa ? Math.max(x.clau, pot) : pot;
     if (x.fixa && x.ini > x.clau) x.conflictes.push(`té l’hora fixada a les ${pvHora(x.clau)}, però no s’hi pot ser fins a les ${pvHora(x.ini)}`);
-    // si passa per l'esmorzar d'algun dels qui el fan, s'allarga el que dura l'esmorzar
-    const ext = em && x.ids.some(id => { const e = esm.get(id); return e && e.ini != null && x.ini < e.ini + em && x.ini + x.dur > e.ini; }) ? em : 0;
-    x.fi = x.ini + x.dur + ext;
-    x.ids.forEach(id => ultim.set(id, x));
+    x.fi = x.ini + x.dur;
+    x.ids.forEach(id => { const s = est.get(id); if (s) { s.fi = x.fi; s.lloc = x.lloc; s.feta = true; } });
   });
+  if (em) est.forEach(s => { if (!s.esm && s.feta) esmorza(s, s.fi); });   // qui encara no ha esmorzat: darrere de l'última feina
+  const blocs = cadena.filter(x => !x.esm);
   const perOp = new Map();
   d.presents.forEach(t => {
     const seus = blocs.filter(x => x.ids.includes(t.id)).sort((a, b) => a.ini - b.ini || a.b.id - b.b.id), nom = pvNomCurt(t), jorn = v.jornada * 60;
@@ -7170,17 +7187,18 @@ function pvDia(v, d) {
       fi = Math.max(fi ?? 0, x.fi);
       prev = x;
     });
+    const e = seus.length && est.has(t.id) ? est.get(t.id).esm : null;
+    if (e) { inici = inici == null ? e.ini : Math.min(inici, e.ini); fi = Math.max(fi ?? 0, e.fi); }
     let tornada = null;
     if (prev) {
-      const dsp = pvTornada(v, prev.lloc);
+      const dsp = pvTornada(v, prev.lloc), des_de = e && e.ini >= prev.fi ? e.fi : prev.fi;   // si esmorza al final, torna després
       if (dsp.falta) falten.add([prev.lloc || 0, dsp.cap || 0].sort((p, q) => p - q).join('-'));
-      if (dsp.min || dsp.falta) { tornada = { min: dsp.min, de: prev.lloc, cap: dsp.cap || null, des_de: prev.fi, aMa: !!dsp.aMa, google: !!dsp.google, falta: !!dsp.falta, km: dsp.km }; viatge += dsp.min; fi = Math.max(fi, prev.fi + dsp.min); }
+      if (dsp.min || dsp.falta) { tornada = { min: dsp.min, de: prev.lloc, cap: dsp.cap || null, des_de, aMa: !!dsp.aMa, google: !!dsp.google, falta: !!dsp.falta, km: dsp.km }; viatge += dsp.min; fi = Math.max(fi, des_de + dsp.min); }
       if (!passa && feina + viatge > jorn) { passa = true; prev.conflictes.push(`amb la tornada, ${nom} passa de les ${pvDurText(jorn)} de jornada`); }
     }
-    const e = seus.length && em ? esm.get(t.id) : null;
-    perOp.set(t.id, { feina, viatge, total: feina + viatge, inici, fi, tornada, esmorzar: e, esmorzarDins: !!e && seus.some(x => x.ini <= e.ini && x.fi > e.ini) });
+    perOp.set(t.id, { feina, viatge, total: feina + viatge, inici, fi, tornada, esmorzar: e, esmorzarDins: false });
   });
-  return { blocs, perOp, falten };
+  return { blocs, perOp, falten, cadena, esmorzars };
 }
 // les columnes d'un bloc: de la primera a l'última persona, si són seguides; si no, un tros a cada grup de seguides
 function pvTrams(ids, presents) {
@@ -7280,8 +7298,9 @@ function renderPrevisio(main) {
   const esmHTML = (d, o, t, i, N) => {
     if (!o.esmorzar) return '';
     const e = o.esmorzar, k = `${d.n}-${t.id}`;
-    return `<div class="pv-esm ${o.esmorzarDins ? 'pv-esm-dins' : ''} ${sel.esm === k ? 'pv-sel' : ''}" draggable="true" data-esm="${k}" style="top:${y(e.ini)}px; height:${Math.max(14, Math.round(em * PV_ESCALA) - 2)}px; ${o.esmorzarDins ? posDreta(i, N) : pos(i, i, N, 4)}" title="Esmorzar · ${h(pvNomCurt(t))} · ${pvHora(e.ini)}–${pvHora(e.ini + em)} (no compta com a treballat). Arrossega’l, o clica’l i clica l’hora nova.">`
-      + `<b>${o.esmorzarDins ? 'Esmorzar' : 'ESMORZAR'}</b><span>${h(pvHora(e.ini))}${o.esmorzarDins ? '' : '–' + h(pvHora(e.ini + em))}</span></div>`;
+    const com = e.bloc ? 'Va enganxat a la feina d’abans.' : `Va sol, al forat més a prop de les ${pvHora(pvMin(PP.esmorzar_inici) ?? 600)}.`;
+    return `<div class="pv-esm ${sel.esm === k ? 'pv-sel' : ''}" draggable="true" data-esm="${k}" style="top:${y(e.ini)}px; height:${Math.max(14, Math.round(em * PV_ESCALA) - 2)}px; ${pos(i, i, N, 4)}" title="Esmorzar · ${h(pvNomCurt(t))} · ${pvHora(e.ini)}–${pvHora(e.fi)} (no compta com a treballat). ${h(com)} Arrossega’l, o clica’l i clica on va.">`
+      + `<b>ESMORZAR</b><span>${h(pvHora(e.ini))}–${h(pvHora(e.fi))}</span></div>`;
   };
   const diaHTML = ({ d, c }) => {
     const nom = DIES_SETMANA[d.n % 7] + (d.iso ? ' ' + dmy(d.iso).slice(0, 5) : ''), N = Math.max(1, d.presents.length);
@@ -7334,10 +7353,11 @@ function renderPrevisio(main) {
       + `<div class="pv-triat-acc">${b.tipus !== 'retall' ? `<button type="button" class="btn ghost small" data-canvi="${b.id}">⇄ ${b.tipus.endsWith('control') ? 'Fes-lo complet' : 'Fes-lo control'}</button>` : ''}<button type="button" class="btn ghost small" id="pv-fixa">${xSel.fixa ? '📌 Treu l’hora fixa' : '📌 Fixa l’hora'}</button><button type="button" class="btn ghost small" data-treu="${b.id}">Treu-lo</button></div>`
       + `<p class="pv-ajuda">${xSel.fixa ? `Té l’hora fixada a les ${h(pvHora(xSel.clau))}: si l’arrossegues, queda fixada on el deixis; amb «Treu l’hora fixa», torna a anar enganxat a la feina d’abans.` : 'Va enganxat a la feina d’abans (amb el desplaçament). Per moure’l, arrossega’l o clica on va: davant de la feina on el deixis (o al final). Per posar-lo a una hora concreta, «📌 Fixa l’hora».'} Esc: deixar-lo.</p>${xSel.conflictes.length ? `<ul class="pv-avisos">${xSel.conflictes.map(c => `<li>${h(c)}</li>`).join('')}</ul>` : ''}</div>`;
   } else if (sel.esm) {
-    const [dE, opE] = sel.esm.split('-').map(Number), e = v.esmorzarDe(dE, opE), t = C.get('treballadors', opE);
-    triat = `<div class="pv-triat"><b>Esmorzar · ${h(pvNomCurt(t))}</b><div class="pv-dur">${h(DIES_SETMANA[dE % 7])} · ${h(pvHora(e.ini))}–${h(pvHora(e.ini + em))} · no compta com a treballat</div>`
-      + `<p class="pv-ajuda">Clica a l’hora nova del mateix dia (o arrossega’l). Si cau dins d’una feina, la feina s’allarga ${h(String(em))} min.</p>`
-      + (e.bloc ? `<div class="pv-triat-acc"><button type="button" class="btn ghost small" id="pv-esm-torna">Torna a les ${h(pvHora(pvMin(PP.esmorzar_inici)))}</button></div>` : '') + '</div>';
+    const [dE, opE] = sel.esm.split('-').map(Number), dc = dies.find(x => x.d.n === dE), o = dc && dc.c.perOp.get(opE), e = o && o.esmorzar, t = C.get('treballadors', opE);
+    const hE = pvHora(pvMin(PP.esmorzar_inici) ?? 600);
+    if (e) triat = `<div class="pv-triat"><b>Esmorzar · ${h(pvNomCurt(t))}</b><div class="pv-dur">${h(DIES_SETMANA[dE % 7])} · ${h(pvHora(e.ini))}–${h(pvHora(e.fi))} · no compta com a treballat</div>`
+      + `<p class="pv-ajuda">${e.bloc ? 'Va enganxat a la feina d’abans (el desplaçament es fa després).' : `Va sol, al forat entre feines més a prop de les ${h(hE)}.`} Per moure’l, arrossega’l o clica on va: davant de la feina on el deixis (o darrere de l’última). Esc: deixar-lo.</p>`
+      + (e.bloc ? `<div class="pv-triat-acc"><button type="button" class="btn ghost small" id="pv-esm-torna">Que vagi sol (cap a les ${h(hE)})</button></div>` : '') + '</div>';
   }
   const falta = v.monday ? { items: [], sobren: [] } : pvFalta(v), retalls = pvRetalls(v);
   const faltenG = pvParellesFalten(v), te107 = 'despatx_adreca' in fila, nVelles = faltenG.filter(p => p.vella).length;
@@ -7394,7 +7414,7 @@ function pvConfigHTML(PP, equips) {
   return `<div class="panel pv-config"><h3>Configuració de la previsió</h3>
     <h4>La jornada</h4><div class="grid">
     ${t('primera_hora_estiu', 'Primera hora a l’estiu', 'hh:mm', 'des de quan es poden posar blocs')}${t('primera_hora_preestiu', 'Primera hora al preestiu', 'hh:mm')}${t('primera_hora_hivern', 'Primera hora a l’hivern', 'hh:mm')}
-    ${t('esmorzar_inici', 'Esmorzar a les', 'hh:mm', 'per defecte; cadascú el pot moure')}
+    ${t('esmorzar_inici', 'Esmorzar cap a les', 'hh:mm', 'va sol al forat entre feines més a prop d’aquesta hora; cadascú el pot moure')}
     ${n('jornada_estiu', 'Hores a l’estiu', '0.5', 'feina i desplaçaments')}${n('jornada_preestiu', 'Hores al preestiu', '0.5')}${n('jornada_hivern', 'Hores a l’hivern', '0.5')}
     ${n('esmorzar_minuts', 'Minuts d’esmorzar', '5', 'no compten com a treballats')}
     <label class="f"><span class="l">Dies de feina</span><select data-pvc="dies_setmana"><option value="5" ${PP.dies_setmana === 5 ? 'selected' : ''}>De dilluns a divendres</option><option value="6" ${PP.dies_setmana === 6 ? 'selected' : ''}>De dilluns a dissabte</option></select></label>
@@ -7433,7 +7453,7 @@ async function pvPosa(v, peca, dia, idsIn, minut) {
   let clau;
   if (fixa) clau = Math.max(0, Math.min(1435, Math.round(minut / 5) * 5));
   else {
-    const seus = c.blocs.filter(x => (!bloc || x.b.id !== bloc.id) && x.ids.some(id => ids.includes(id))).sort((p, q) => k(p) - k(q) || (Number(p.b.id) || 0) - (Number(q.b.id) || 0));
+    const seus = c.cadena.filter(x => (!bloc || x.b.id !== bloc.id) && x.ids.some(id => ids.includes(id))).sort((p, q) => k(p) - k(q) || (Number(p.b.id) || 0) - (Number(q.b.id) || 0));
     const seg = seus.find(x => minut < (x.ini + x.fi) / 2);
     clau = seg ? k(seg) - 0.5 : seus.length ? k(seus[seus.length - 1]) + 0.5 : Math.max(0, minut);
   }
@@ -7442,7 +7462,7 @@ async function pvPosa(v, peca, dia, idsIn, minut) {
 // l'ordre que es desa a cada feina (inici): l'hora on queda enganxada (la fixada, la seva hora), sempre creixent per a cada persona
 function pvClausDia(c) {
   const k = new Map(), seg = new Map();
-  [...c.blocs].reverse().forEach(x => {
+  [...c.cadena].reverse().forEach(x => {
     let n = x.fixa ? x.clau : Math.round(x.ini);
     if (!x.fixa) x.ids.forEach(id => { if (seg.has(id)) n = Math.min(n, seg.get(id) - 1); });
     n = Math.max(0, Math.min(1439, n));
@@ -7453,11 +7473,11 @@ function pvClausDia(c) {
 // en una setmana concreta que segueix la setmana tipus: l'inici d'una feina pròpia de la setmana (un retall) entre els de les feines que
 // té al costat, sense tocar les de la setmana tipus (null si no n'hi cap)
 function pvClauEntre(c, id) {
-  const i = c.blocs.findIndex(x => x.b.id === id), x = c.blocs[i]; if (!x) return null;
+  const i = c.cadena.findIndex(x => x.b.id === id), x = c.cadena[i]; if (!x) return null;
   const desat = y => { const r = C.get('previsio_blocs', y.b.id); return r ? Number(r.inici) : null; };
   let lo = -1, hi = 1440;
   x.ids.forEach(p => {
-    const abans = c.blocs.slice(0, i).reverse().find(y => y.ids.includes(p)), despres = c.blocs.slice(i + 1).find(y => y.ids.includes(p));
+    const abans = c.cadena.slice(0, i).reverse().find(y => y.ids.includes(p)), despres = c.cadena.slice(i + 1).find(y => y.ids.includes(p));
     if (abans && desat(abans) != null) lo = Math.max(lo, desat(abans));
     if (despres && desat(despres) != null) hi = Math.min(hi, desat(despres));
   });
@@ -7468,14 +7488,15 @@ function pvClauEntre(c, id) {
 // (l'ordre). En una setmana concreta que segueix la setmana tipus: si es toca una feina de la setmana tipus, primer la setmana passa a
 // tenir pla propi (la setmana tipus no canvia); un retall hi entra sense tocar-ne cap altra, si es pot.
 async function pvDesaDia(v, d, nou, camps) {
-  const altres = pvDia(v, d).blocs.filter(x => x.b.id !== nou.id);
-  const c = pvDia({ ...v, alCal: [...altres.map(x => ({ ...x.b, inici: x.fixa ? x.clau : x.ini })), nou] }, d);
+  const altres = pvDia(v, d).cadena.filter(x => x.b.id !== nou.id), esm = nou.tipus === 'esmorzar';
+  const c = pvDia({ ...v, alCal: [...altres.filter(x => !x.esm).map(x => ({ ...x.b, inici: x.fixa ? x.clau : x.ini })), ...(esm ? [] : [nou])],
+    esmorzars: [...altres.filter(x => x.esm).map(x => ({ ...x.b, inici: x.ini })), ...(esm ? [nou] : [])] }, d);
   const claus = pvClausDia(c);
   let canvis = altres.filter(x => !x.fixa && Number(x.b.inici) !== claus.get(x.b.id)).map(x => [x.b.id, claus.get(x.b.id)]);
   let clauNou = claus.get(nou.id), mapa = null;
   try {
     if (v.monday && !v.personal) {
-      const deTipus = nou.id > 0 && !(C.get('previsio_blocs', nou.id) || {}).setmana;
+      const deTipus = esm || (nou.id > 0 && !(C.get('previsio_blocs', nou.id) || {}).setmana);   // (l'esmorzar és de la setmana tipus)
       const entre = deTipus ? null : nou.hora_fixa ? clauNou : pvClauEntre(c, nou.id);
       if (entre == null) { mapa = await pvPersonalitza(v); toast('Aquesta setmana ara té pla propi; la setmana tipus no canvia', 6000); }
       else { clauNou = entre; canvis = []; }
@@ -7483,7 +7504,7 @@ async function pvDesaDia(v, d, nou, camps) {
     const idDe = id => (mapa && mapa.get(id)) || id;
     const r = nou.id > 0
       ? await sb.from('previsio_blocs').update({ ...camps, inici: clauNou }).eq('id', idDe(nou.id))
-      : await sb.from('previsio_blocs').insert({ equip_id: v.equipId, temporada: v.temporada, setmana_cicle: v.setmanaCicle, setmana: nou.tipus === 'retall' ? v.monday : null,
+      : await sb.from('previsio_blocs').insert({ equip_id: v.equipId, temporada: v.temporada, setmana_cicle: v.setmanaCicle, setmana: v.monday && (nou.tipus === 'retall' || esm) ? v.monday : null,
           dia: nou.dia, treballadors: pvIds(nou), tipus: nou.tipus, jardi_id: nou.jardi_id, piscina_id: nou.piscina_id, inici: clauNou });
     if (r.error) throw r.error;
     const rs = await Promise.all(canvis.map(([id, n]) => sb.from('previsio_blocs').update({ inici: n }).eq('id', idDe(id))));
@@ -7506,18 +7527,21 @@ async function pvFixa(v, id, hora) {
 // l'esmorzar d'una persona un dia: a una altra hora (o, amb «torna», a la de la configuració)
 async function pvPosaEsmorzar(v, dia, op, minut, torna) {
   const d = v.dies[dia - 1]; if (!d || !d.presents.some(t => t.id === op)) return false;
-  const ini = Math.max(v.hora0, Math.min(1380, Math.round(minut / 5) * 5));
-  try {
-    let e = v.esmorzarDe(dia, op).bloc;
-    if (torna && !e) return true;
-    if (v.monday && !v.personal) { const mapa = await pvPersonalitza(v); if (e) e = C.get('previsio_blocs', mapa.get(e.id)); toast('Aquesta setmana ara té pla propi; la setmana tipus no canvia', 6000); }
-    const r = torna ? await sb.from('previsio_blocs').update({ actiu: false }).eq('id', e.id)
-      : e ? await sb.from('previsio_blocs').update({ inici: ini }).eq('id', e.id)
-      : await sb.from('previsio_blocs').insert({ equip_id: v.equipId, temporada: v.temporada, setmana_cicle: v.setmanaCicle, setmana: v.monday || null, dia, treballadors: [op], tipus: 'esmorzar', jardi_id: null, piscina_id: null, inici: ini });
-    if (r.error) throw r.error;
-    await loadTable('previsio_blocs');
-    return true;
-  } catch (e) { showFormError(friendly(e)); return false; }
+  let e = v.esmorzarDe(dia, op).bloc;
+  if (torna) {   // que torni a anar sol
+    if (!e) return true;
+    try {
+      if (v.monday && !v.personal) { const mapa = await pvPersonalitza(v); e = C.get('previsio_blocs', mapa.get(e.id)) || e; toast('Aquesta setmana ara té pla propi; la setmana tipus no canvia', 6000); }
+      const r = await sb.from('previsio_blocs').update({ actiu: false }).eq('id', e.id); if (r.error) throw r.error;
+      await loadTable('previsio_blocs'); return true;
+    } catch (err) { showFormError(friendly(err)); return false; }
+  }
+  // on va: davant de la primera feina seva que, on s'ha deixat anar, queda per sota de la meitat (o darrere de l'última); s'hi enganxa sol
+  const c = pvDia(v, d), k = x => x.fixa ? x.clau : x.ini;
+  const seus = c.cadena.filter(x => !x.esm && x.ids.includes(op)).sort((p, q) => k(p) - k(q) || (Number(p.b.id) || 0) - (Number(q.b.id) || 0));
+  const seg = seus.find(x => minut < (x.ini + x.fi) / 2);
+  const clau = seg ? k(seg) - 0.5 : seus.length ? k(seus[seus.length - 1]) + 0.5 : Math.max(0, minut);
+  return pvDesaDia(v, d, { ...(e || {}), id: e ? e.id : -1, tipus: 'esmorzar', dia, treballadors: [op], jardi_id: null, piscina_id: null, inici: clau }, {});
 }
 // en una setmana concreta, la setmana passa a tenir pla propi: es copien els blocs de la setmana tipus (torna la correspondència)
 async function pvPersonalitza(v) {
