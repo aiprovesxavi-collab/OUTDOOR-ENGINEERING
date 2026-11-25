@@ -2,7 +2,7 @@
 <html lang="ca">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-F+sOhJcj8FHdn+jwmT7a8aQRMdUTR9REpoENZKwYsJ8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-HSsweZ/sXv0BxDoWxKPTCsg667tD06LIehvQvgnqtfE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestió de manteniment</title>
 <meta name="theme-color" content="#2f7d4a">
@@ -9045,9 +9045,22 @@ function renderConsumAigua(main) {
       <button class="btn ghost" id="ca-print" ${a.comptador ? '' : 'disabled'}>Imprimeix tot</button>
     </div>
     <div id="ca-cos">${a.comptador ? '<p class="sub">Carregant…</p>' : '<div class="empty">Tria un lloc i un comptador.</div>'}</div>`;
-  $('#ca-lloc').addEventListener('change', e => { a.lloc = e.target.value; a.comptador = ''; renderMain(); });
+  $('#ca-lloc').addEventListener('change', e => {
+    a.lloc = e.target.value;
+    const c = a.lloc ? comptadorPerDefecte(a.lloc, Number(a.any)) : null;   // (v70) si no hi ha dubte, ja triat
+    a.comptador = c ? String(c.id) : ''; renderMain();
+  });
   $('#ca-comptador').addEventListener('change', e => { a.comptador = e.target.value; renderMain(); });
-  $('#ca-any').addEventListener('change', e => { a.any = e.target.value; renderMain(); });
+  $('#ca-any').addEventListener('change', e => {
+    a.any = e.target.value;
+    // (v70) si el comptador triat no va funcionar aquell any (o no n'hi ha cap de triat) i en va funcionar un de sol, aquest
+    const ara = a.comptador ? C.get('comptadors', a.comptador) : null;
+    if (a.lloc && (!ara || !comptadorFuncionaAny(ara, Number(a.any)))) {
+      const c = comptadorPerDefecte(a.lloc, Number(a.any));
+      if (c && (!ara || comptadorFuncionaAny(c, Number(a.any)))) a.comptador = String(c.id);
+    }
+    renderMain();
+  });
   $('#ca-print').addEventListener('click', () => window.print());
   $('#ca-print-graf').addEventListener('click', () => {
     document.body.classList.add('print-grafiques');
@@ -9056,6 +9069,21 @@ function renderConsumAigua(main) {
     setTimeout(() => { window.print(); setTimeout(treu, 2000); }, 50);
   });
   if (a.comptador) carregaConsumAigua(Number(a.comptador), Number(a.any));
+}
+
+// (v70) si un comptador va funcionar durant un any: donat d'alta abans que s'acabés i no donat de baixa abans de començar (un que es
+// canvia l'1 de gener ja no compta per a aquell any, ni un que es posa el 31 de desembre)
+function comptadorFuncionaAny(c, any) {
+  const alta = c.data_alta ? String(c.data_alta).slice(0, 10) : '', baixa = c.data_baixa ? String(c.data_baixa).slice(0, 10) : '';
+  return (!alta || alta < `${any}-12-31`) && (!baixa || baixa > `${any}-01-01`);
+}
+// el comptador que surt triat en posar un lloc: si el lloc només en té un, aquest; si no, el que va funcionar l'any que es mira, si en
+// va funcionar un de sol (el que es va canviar l'any anterior ja no compta: surt l'actual). Si n'hi va haver dos, cap: el tria l'usuari.
+function comptadorPerDefecte(llocId, any) {
+  const cs = C.rows('comptadors').filter(c => c.actiu && Number(c.lloc_id) === Number(llocId));
+  if (cs.length === 1) return cs[0];
+  const delAny = cs.filter(c => comptadorFuncionaAny(c, any));
+  return delAny.length === 1 ? delAny[0] : null;
 }
 
 async function carregaConsumAigua(comptadorId, any) {
