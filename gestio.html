@@ -2,7 +2,7 @@
 <html lang="ca">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-hxF9k39eNevdryBj2BmcFvCc+8A8Xr5q+mZcbOJWM3U='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Q20Puinj+unm7JTfnma6V5H8GqspFJsuSg9E+vbCXkY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestió de manteniment</title>
 <meta name="theme-color" content="#2f7d4a">
@@ -1517,9 +1517,10 @@ function etiquetaBomba(r) {
 const llistaBombes = (r, C) => C.rows('piscina_bombes').filter(x => x.actiu && Number(x.piscina_id) === r.id).sort((a, b) => a.id - b.id).map(x => (etiquetaBomba(x) ? etiquetaBomba(x) + ' ' : '') + L('bombes', x.bomba_id) + (x.quantitat > 1 ? ' ×' + x.quantitat : '')).join(', ');
 const llistaEnllacos = (taula, fk, ref, refKey) => (r, C) => C.rows(taula).filter(x => x.actiu && Number(x[fk]) === r.id).map(x => L(ref, x[refKey]) + (x.quantitat > 1 ? ' ×' + x.quantitat : '')).join(', ');
 const delClientDelLloc = (r, f, C) => { const l = C.get('llocs', f.lloc_id); return !!l && Number(r.client_id) === Number(l.client_id); };
-// estat d'una agrupació, deduït de les dates: futur (sense inici), actual (inici sense fi), finalitzat (inici i fi)
-const claAgrupacio = r => !r.data_inici ? 'futur' : !r.data_fi ? 'actual' : 'finalitzat';
-const estatAgrupacio = r => ({ futur: 'Futur', actual: 'Actual', finalitzat: 'Finalitzat' })[claAgrupacio(r)] + (claAgrupacio(r) === 'finalitzat' && r.data_fi >= avui() ? ' (fins al ' + dmy(r.data_fi) + ')' : '');
+// estat d'una agrupació, deduït de les dates: futur (sense inici), actual (amb inici i sense fi, o amb una fi que encara no ha passat:
+// fins aquell dia inclòs), finalitzat (passada la data de fi). (v71: abans, en posar-hi la data de fi, ja passava a finalitzat)
+const claAgrupacio = r => !r.data_inici ? 'futur' : !r.data_fi || String(r.data_fi).slice(0, 10) >= avui() ? 'actual' : 'finalitzat';
+const estatAgrupacio = r => ({ futur: 'Futur', actual: 'Actual', finalitzat: 'Finalitzat' })[claAgrupacio(r)] + (claAgrupacio(r) === 'actual' && r.data_fi ? ' (fins al ' + dmy(r.data_fi) + ')' : '');
 const inclouText = r => [r.inclou_jardi && 'jardí', r.inclou_piscina && 'piscina', r.inclou_aigues_grises && 'aigües grises'].filter(Boolean).join(' i ') || 'sense tipus';
 // (v51) L'IPC (PARÀMETRES › IPC): cada any, les quotes de les agrupacions s'apugen amb l'IPC de l'any anterior; les que van començar durant
 // aquell any, només la part dels mesos que portaven (començada al febrer: 11/12; al desembre: 1/12; el mes d'inici compta sencer). Si l'IPC és
@@ -1972,7 +1973,9 @@ const SCHEMA = {
       computed: { inclou: { label: 'Inclou', fn: r => inclouText(r) },
         // (v51) la quota d'enguany, amb l'IPC
         quota: { label: 'Quota ' + anyActual(), num: true, fn: r => { if (!r.data_inici) return ''; const q = quotaAgrupacio(r, anyActual()); return q.falta ? 'falta l’IPC del ' + q.falta : q.quota.toFixed(2); } }, estat: { label: 'Estat', fn: r => estatAgrupacio(r), color: r => ({ futur: 'c-taronja', actual: 'c-verd-suau', finalitzat: '' })[claAgrupacio(r)] } },
-      filtres: [{ key: '_estat', tipus: 'opcions', label: 'Estat', opcions: [['futur', 'Futur'], ['actual', 'Actual'], ['finalitzat', 'Finalitzat']], prova: (r, v) => claAgrupacio(r) === v }],
+      // (v71) de manera predeterminada, les actuals (també les que tenen una data de fi que encara no ha arribat)
+      filtres: [{ key: '_estat', tipus: 'opcions', label: 'Estat', totsLabel: 'Les actuals', defecte: r => claAgrupacio(r) === 'actual',
+        opcions: [['futur', 'Les futures (sense data d’inici)'], ['finalitzat', 'Les finalitzades'], ['tots', 'Totes']], prova: (r, v) => v === 'tots' || claAgrupacio(r) === v }],
       validate: p => !(p.inclou_jardi || p.inclou_piscina || p.inclou_aigues_grises) ? 'Marca almenys què inclou l’agrupació: jardí, piscina o aigües grises.'
         : (p.data_fi && !p.data_inici) ? 'Una agrupació amb data de fi ha de tenir data d’inici.'
         : (p.data_fi && p.data_inici && p.data_fi < p.data_inici) ? 'La data de fi no pot ser anterior a la d’inici.' : null,
@@ -1985,9 +1988,9 @@ const SCHEMA = {
         { key: 'concepte_factura', label: 'Concepte a la factura', type: 'text', required: true },
         { key: 'preu', label: 'Preu mensual (sense IVA)', type: 'number', step: '0.01', required: true, nota: notaQuotesAgrupacio },
         { key: 'preu_any', label: 'Any d’aquest preu', type: 'number', step: '1', hint: 'buit: el de la data d’inici. Cada any següent s’apuja amb l’IPC (PARÀMETRES › IPC). Si canvies el preu, s’hi posa l’any d’ara; si només corregeixes un error d’un preu d’un altre any, torna-hi a posar aquell any' },
-        { key: 'estat', label: 'Estat', type: 'info', fmt: r => r ? estatAgrupacio(r) : 'Futur (sense data d’inici) · Actual (amb inici, sense fi) · Finalitzat (amb inici i fi)' },
+        { key: 'estat', label: 'Estat', type: 'info', fmt: r => r ? estatAgrupacio(r) : 'Futur (sense data d’inici) · Actual (amb inici, fins a la data de fi si n’hi ha) · Finalitzat (passada la data de fi)' },
         { key: 'data_inici', label: 'Data d’inici', type: 'date', hint: 'buida mentre el pressupost no estigui aprovat (estat Futur); en posar-la passa a Actual i entra a la facturació recurrent' },
-        { key: 'data_fi', label: 'Data de fi', type: 'date', hint: 'buida mentre el contracte segueixi; en posar-la passa a Finalitzat', nota: vals => ({ text: 'Amb aquestes dates l’agrupació és: ' + estatAgrupacio(vals), classe: claAgrupacio(vals) === 'actual' ? 'v-ok' : claAgrupacio(vals) === 'futur' ? 'v-calc' : '' }) },
+        { key: 'data_fi', label: 'Data de fi', type: 'date', hint: 'buida mentre el contracte segueixi. Quan diguin que s’acaba, posa-hi l’últim dia: fins aquell dia continua Actual (i es factura fins aquell dia); l’endemà passa a Finalitzat', nota: vals => ({ text: 'Amb aquestes dates l’agrupació és: ' + estatAgrupacio(vals), classe: claAgrupacio(vals) === 'actual' ? 'v-ok' : claAgrupacio(vals) === 'futur' ? 'v-calc' : '' }) },
         { key: 'facturat_fins', label: 'Facturat fins (abans del programa)', type: 'date', hint: 'el programa genera factures a partir del mes següent a aquesta data' },
         { key: 'pdf_pressupost', label: 'PDF del pressupost signat', type: 'file', folder: 'contractes' },
         { key: 'observacions', label: 'Observacions', type: 'textarea' },
@@ -3331,7 +3334,8 @@ function compteDeText(v) {
 const datalistComptes = () => `<datalist id="compta-llista">${comptesImputables().map(c => `<option value="${h(compteText(c))}"></option>`).join('')}</datalist>`;
 const noComptaHTML = () => '<div class="panel"><p class="msg err">La comptabilitat només la veu l’oficina.</p></div>';
 function comptaEstat() {
-  if (!state.compta) { const a = avui(); state.compta = { desde: a.slice(0, 8) + '01', fins: a, q: '', compteId: null, nivell: '3', edit: null, sel: null }; }
+  // (v72) de sortida, el mes sencer: les amortitzacions i les nòmines van a l'últim dia del mes, i «fins avui» les amagava
+  if (!state.compta) { const [desde, fins] = rangCompta('mes'); state.compta = { desde, fins, q: '', compteId: null, nivell: '3', edit: null, sel: null }; }
   return state.compta;
 }
 function rangCompta(tipus) {
@@ -3458,6 +3462,14 @@ async function renderComptaMajor(main) {
   const inp = main.querySelector('#cf-compte');
   inp.addEventListener('change', () => { const x = compteDeText(inp.value); if (x) { st.compteId = x.id; renderComptaMajor(main); } else if (inp.value.trim()) toastErr('No trobo aquest compte: escriu-ne el codi o tria’l de la llista.'); });
   if (!c) return;
+  if (!c.imputable) {   // (v72) un compte del pla (681, 28…): els apunts són als seus subcomptes
+    const fills = comptesImputables().filter(x => String(x.codi).startsWith(String(c.codi)));
+    const x = main.querySelector('#cm-cos');
+    if (x) x.innerHTML = `<p class="hint">El ${h(c.codi)} és un compte del pla: els apunts són als seus subcomptes. ${fills.length ? 'Tria’n un:' : 'Encara no en té cap.'}</p>`
+      + (fills.length ? `<p class="cm-fills">${fills.slice(0, 40).map(f => `<a href="#" data-major="${f.id}">${h(compteText(f))}</a>`).join('<br>')}</p>` : '');
+    if (x) bindEnllacosCompta(x);
+    return;
+  }
   let apunts; try { apunts = await comptaApunts({ desde: String(st.desde).slice(0, 4) + '-01-01', fins: st.fins, compteId: c.id }); } catch (e) { const x = main.querySelector('#cm-cos'); if (x) x.innerHTML = `<p class="msg err">${h(friendly(e))}</p>`; return; }
   const cos = main.querySelector('#cm-cos'); if (!cos) return;
   // el saldo anterior: el de l'exercici fins al dia abans (cada exercici comença amb el seu assentament d'obertura)
@@ -3473,7 +3485,17 @@ async function renderComptaMajor(main) {
     <table class="tbl compta-t"><thead><tr><th>Data</th><th>Assentament</th><th>Concepte</th><th class="num">Deure</th><th class="num">Haver</th><th class="num">Saldo</th></tr></thead><tbody>
       <tr class="saldo-ant"><td>${dmy(st.desde)}</td><td></td><td>Saldo anterior</td><td></td><td></td><td class="num">${saldoText(sa)}</td></tr>
       ${files || '<tr><td colspan="6" class="hint">Cap moviment en aquestes dates.</td></tr>'}</tbody>
-      <tfoot><tr class="total"><td colspan="3">Total del període</td><td class="num">${num2(td)}</td><td class="num">${num2(th)}</td><td class="num">${saldoText(saldo)}</td></tr></tfoot></table>`;
+      <tfoot><tr class="total"><td colspan="3">Total del període</td><td class="num">${num2(td)}</td><td class="num">${num2(th)}</td><td class="num">${saldoText(saldo)}</td></tr></tfoot></table>
+    <p class="hint" id="cm-despres" hidden></p>`;
+  // (v72) si el compte té moviments després de la data «fins al», que es vegi que n'hi ha (i amb un clic, fins a final d'aquell mes)
+  sb.from('assentament_apunts').select('data').eq('compte_id', c.id).gt('data', st.fins).order('data').limit(1).then(r => {
+    const d = !r.error && r.data && r.data[0] && String(r.data[0].data).slice(0, 10), p = cos.querySelector('#cm-despres');
+    if (!d || !p || !p.isConnected) return;
+    const fiMes = ymd(new Date(Number(d.slice(0, 4)), Number(d.slice(5, 7)), 0));
+    p.innerHTML = `Aquest compte té moviments després del ${dmy(st.fins)} (el primer, el ${dmy(d)}). <a href="#" id="cm-amplia">Mostra’ls fins al ${dmy(fiMes)}</a>`;
+    p.hidden = false;
+    p.querySelector('#cm-amplia').addEventListener('click', e => { e.preventDefault(); st.fins = fiMes; renderComptaMajor(main); });
+  }, () => {});
   cos.querySelectorAll('[data-cd-veure]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); st.desde = st.fins = a.dataset.cdData; st.q = ''; st.sel = Number(a.dataset.cdVeure); state.table = 'compta_diari'; renderApp(); }));
 }
 
@@ -6702,7 +6724,8 @@ function renderFacturacio(main) {
   main.innerHTML = `
     <h1>Facturació recurrent</h1>
     <p>Tria el mes i genera els esborranys: només els d’aquell mes. La factura de cada agrupació es fa dins del mateix mes, amb data del dia de facturació del seu client (octubre es factura el dia de facturació d’octubre, pel període d’octubre). El cobrament va a part: en emetre-la, el venciment es calcula amb el que hi ha pactat amb el client (termini de pagament i dia fix de pagament). Repassa'ls i emet. Un esborrany es pot obrir, corregir o eliminar; una factura emesa rep número i queda congelada.</p>
-    <p class="sub">${(() => { const ag = C.rows('agrupacions').filter(a => a.actiu); const n = k => ag.filter(a => claAgrupacio(a) === k).length; return `Agrupacions: <b>${n('actual')} actuals</b> (són les que facturen), ${n('futur')} futures (sense data d’inici: no facturen) i ${n('finalitzat')} finalitzades.`; })()}${(() => { const r = ipcRegistre(Number(st.any) - 1); return r ? ` Les quotes del ${st.any} porten l’IPC del ${Number(st.any) - 1} (${pctIpc(r.ipc)}).` : ''; })()}</p>
+    <p class="sub">${(() => { const ag = C.rows('agrupacions').filter(a => a.actiu); const n = k => ag.filter(a => claAgrupacio(a) === k).length; const pl = (k, u, m) => n(k) + ' ' + (n(k) === 1 ? u : m);
+      return `Agrupacions: <b>${pl('actual', 'actual', 'actuals')}</b> (són les que facturen, també les que tenen una data de fi que encara no ha arribat), ${pl('futur', 'futura', 'futures')} (sense data d’inici: no facturen) i ${pl('finalitzat', 'finalitzada', 'finalitzades')}.`; })()}${(() => { const r = ipcRegistre(Number(st.any) - 1); return r ? ` Les quotes del ${st.any} porten l’IPC del ${Number(st.any) - 1} (${pctIpc(r.ipc)}).` : ''; })()}</p>
     ${faltaIpc.length ? `<div class="msg err">Falta l’IPC del ${faltaIpc.join(', ')} (PARÀMETRES › IPC): sense, les quotes del ${h(st.any)} no es poden calcular i no se’n fa cap esborrany. <button type="button" class="btn small" id="posa-ipc">Posa l’IPC del ${faltaIpc[0]}</button></div>` : ''}
     <div class="bar fila-factura">
       <div class="ff-esq"><span class="nota">Mes a facturar</span>
