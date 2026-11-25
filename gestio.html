@@ -2,7 +2,7 @@
 <html lang="ca">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-q7aEQdQ9bbcI0HWOxuKc8wELDnCTV7jOdE6LMKFySh4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-/weiE0s1yFgL854gQURNZBvU/fAbXPVvD6Qr8YZFcU8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestió de manteniment</title>
 <meta name="theme-color" content="#2f7d4a">
@@ -2555,7 +2555,7 @@ const SCHEMA = {
       filtres: [{ key: 'data_factura', tipus: 'dates', label: 'Data' }, { key: 'proveidor_id', tipus: 'ref', ref: 'proveidors', label: 'Proveïdor' }, { key: 'compte_despesa_id', tipus: 'ref', ref: 'comptes_despesa', label: 'Compte' }],
       validate: (p, id) => !id && p.estat === 'ok' && !(p.compte_despesa_id && p.conforme_treballador_id && p.conforme_data) ? faltaConformitat : null,
       abansDesar: (p, id) => { const r = id ? C.get('factures_proveidor', id) : null; const abans = r ? String(r.data_venciment || '').slice(0, 10) : ''; if ((p.data_venciment || '') !== abans) p.venciment_origen = p.data_venciment ? 'manual' : null; },
-      extras: liniesProveidorHTML, bindExtras: liniesProveidorBind,
+      extras: liniesProveidorHTML, bindExtras: (frm, td) => { bindQuadraProveidor(frm); liniesProveidorBind(frm, td); },
       actions: r => [
         ...(r.pdf ? [{ label: 'Obre el PDF', noDesa: true, run: () => obreFitxer(r.pdf) }] : []),
         ...(r.pdf ? [{ label: liniesDeFactura(r.id).length ? 'Torna a llegir les línies del PDF' : 'Llegeix les línies del PDF', run: () => llegeixLiniesPdf(r.id) }] : []),
@@ -2572,7 +2572,9 @@ const SCHEMA = {
         { key: 'quota_iva', label: 'Quota IVA', type: 'number', step: '0.01' },
         { key: 'retencio_percent', label: 'Retenció IRPF %', type: 'number', step: '0.01', hint: 'professionals (gestoria, advocats…): normalment 15 %; lloguer d’un local o magatzem: 19 % (va al model 115)' },
         { key: 'retencio', label: 'Retenció IRPF (import)', type: 'number', step: '0.01', hint: 'buit = la base pel percentatge' },
-        { key: 'total', label: 'Total', type: 'number', step: '0.01', required: true, hint: 'el que s’ha de pagar (amb IVA i ja sense la retenció)' },
+        { key: 'import_sense_iva', label: 'Import sense IVA (taxes, suplerts…)', type: 'number', step: '0.01',
+          hint: 'les partides que no porten IVA: la taxa de trànsit de l’ITV, els suplerts del notari, les taxes de l’aigua…; van al mateix compte de despesa' },   // (v66, SQL 110)
+        { key: 'total', label: 'Total', type: 'number', step: '0.01', required: true, hint: 'el que s’ha de pagar: base + IVA − retenció + import sense IVA', nota: vals => notaQuadraProveidor(vals) },
         { key: 'compte_despesa_id', label: 'Compte de despesa', type: 'ref', ref: 'comptes_despesa', optionLabel: compteLabel, hint: 'el de la conformitat manuscrita: CXA · 6001001 · 21/04/2026' },
         { key: 'conforme_treballador_id', label: 'Conforme per', type: 'ref', ref: 'treballadors', filter: r => potConformar(r), optionLabel: r => inicialsTreballador(r) + ' — ' + nomTreballador(r), hint: 'les inicials que van després de la C' },
         { key: 'conforme_data', label: 'Data de la conformitat', type: 'date' },
@@ -5981,7 +5983,8 @@ function pintaNotes(td, frm) {
     const box = frm.querySelector(`[data-nota-for="${f.key}"]`), el = frm.querySelector(`[name="${f.key}"]`); if (!box) return;
     const n = (f.nota || f.notaBloc)(vals, row, C) || {};
     if (el) { el.classList.remove('v-ok', 'v-no', 'v-calc'); if (n.classe) el.classList.add(n.classe); }
-    if (n.html != null) { box.innerHTML = n.html; box.hidden = !n.html; } else { box.textContent = n.text || ''; box.hidden = !n.text; }
+    if (n.html != null) { if (box.dataset.html !== n.html) { box.innerHTML = n.html; box.dataset.html = n.html; } box.hidden = !n.html; }
+    else { box.textContent = n.text || ''; box.hidden = !n.text; delete box.dataset.html; }   // (v66) l'html, només si ha canviat
     if (f.type !== 'seccio') box.className = 'hint nota' + (n.classe ? ' n-' + n.classe.replace('v-', '') : '');
   });
 }
@@ -8497,7 +8500,9 @@ async function pujaFactures(fitxers) {
       if (data.numero && C.rows('factures_proveidor').some(f => f.actiu && f.proveidor_id === prov.id && f.numero && f.numero.trim().toLowerCase() === String(data.numero).trim().toLowerCase())) {
         fila.html = `<span class="c-taronja xip">ja existia</span> ${h(prov.nom)} · ${h(data.numero)}`; pinta(); continue;
       }
-      const total = data.total != null ? Number(data.total) : (data.base_imponible != null ? Number(data.base_imponible) + Number(data.quota_iva || 0) : 0);
+      const num = v => v == null || v === '' || isNaN(Number(v)) ? null : Number(v);   // (v66) la funció del 25/11/2026 també llegeix la retenció i l'import sense IVA
+      const siva = num(data.import_sense_iva), retP = num(data.retencio_percent), ret = num(data.retencio);
+      const total = data.total != null ? Number(data.total) : (data.base_imponible != null ? Number(data.base_imponible) + Number(data.quota_iva || 0) - (ret || 0) + (siva || 0) : 0);
       const conf = conformitatLlegida(data);
       const dataFactura = data.data_factura || avui();
       const vencLlegit = /^\d{4}-\d{2}-\d{2}$/.test(String(data.data_venciment || '')) ? data.data_venciment : null;
@@ -8505,6 +8510,7 @@ async function pujaFactures(fitxers) {
       const fp = {
         proveidor_id: prov.id, numero: data.numero || null, data_factura: dataFactura, data_venciment: vencLlegit || esperat, venciment_origen: vencLlegit ? 'factura' : (esperat ? 'calculat' : null),
         concepte: data.concepte || null, base_imponible: data.base_imponible ?? null, iva_percent: data.iva_percent ?? null, quota_iva: data.quota_iva ?? null,
+        retencio_percent: retP || null, retencio: ret || null, import_sense_iva: siva || null,
         total, forma_pagament: prov.forma_pagament || null, estat: 'revisar', pdf: path, extraccio: data,
         compte_despesa_id: conf.compte_id, conforme_treballador_id: conf.treballador_id, conforme_data: conf.data, conformitat_llegida: conf.text,
       };
@@ -8515,7 +8521,7 @@ async function pujaFactures(fitxers) {
       let liniesHtml = '';
       try { const n = await desaLiniesLlegides(ins.data.id, data.linies); liniesHtml = n ? ` · ${n} líni${n === 1 ? 'a' : 'es'} (${liniesPendentsText(ins.data.id)})` : ' · <i>sense línies</i>'; }
       catch (e2) { liniesHtml = ` · <b class="c-taronja">línies: ${h(e2.message || String(e2))}</b>`; }
-      fila.html = `<span class="c-verd-suau xip">entrada</span> ${h(prov.nom)}${creat ? ' <i>(proveïdor nou)</i>' : ''} · ${h(data.numero || 'sense número')} · ${eur(total)}${data.confianca && data.confianca !== 'alta' ? ` · <b>confiança ${h(data.confianca)}</b>` : ''}${vencHtml ? ' · ' + vencHtml : ''} · ${conf.html}${liniesHtml}`;
+      fila.html = `<span class="c-verd-suau xip">entrada</span> ${h(prov.nom)}${creat ? ' <i>(proveïdor nou)</i>' : ''} · ${h(data.numero || 'sense número')} · ${eur(total)}${(q => q && !q.ok ? ` · <b class="c-taronja">no quadra (${h(eur(q.calc))} ≠ ${h(eur(q.total))}): revisa-la</b>` : '')(quadraFacturaProveidor(fp))}${data.confianca && data.confianca !== 'alta' ? ` · <b>confiança ${h(data.confianca)}</b>` : ''}${vencHtml ? ' · ' + vencHtml : ''} · ${conf.html}${liniesHtml}`;
     } catch (e) {
       fila.html = `<span class="c-vermell xip">error</span> ${h(e.message || String(e))}`;
     }
@@ -8597,6 +8603,38 @@ const opcionsDesti = (l) => {
   return `<option value="" ${!l.desti_tipus ? 'selected' : ''}>— tria on va —</option><option value="stock" ${sel('stock')}>Stock (sense albarà)</option><option value="grup" ${sel('grup')}>Grup / oficina (sense albarà)</option>`
     + [...perClient.entries()].sort((a, b) => a[0].localeCompare(b[0], 'ca')).map(([c, xs]) => `<optgroup label="${h(c)}">${xs.map(x => `<option value="lloc:${x.id}" ${sel('lloc', x.id)}>${h(x.nom)}</option>`).join('')}</optgroup>`).join('');
 };
+// (v66) base + IVA − retenció + import sense IVA = total? El mateix càlcul que la comptabilitat (110), amb 2 cèntims de marge.
+function quadraFacturaProveidor(v) {
+  const n = k => { const x = v[k]; if (x === '' || x == null) return null; const y = Number(String(x).replace(',', '.')); return isNaN(y) ? null : y; };
+  const r2 = x => Math.round(x * 100) / 100;
+  const base = n('base_imponible'), total = n('total');
+  if (base == null || total == null) return null;
+  const quota = r2(n('quota_iva') ?? base * (n('iva_percent') || 0) / 100);
+  const ret = r2(n('retencio') ?? base * (n('retencio_percent') || 0) / 100);
+  const siva = r2(n('import_sense_iva') || 0), calc = r2(base + quota - ret + siva), falta = r2(total - calc);
+  return { ok: Math.abs(falta) <= 0.02, base, quota, ret, siva, calc, total, falta };
+}
+// la nota sota el total: si quadra, i si no, què hi falta (amb un clic per posar la diferència a «Import sense IVA»)
+function notaQuadraProveidor(vals) {
+  const q = quadraFacturaProveidor(vals); if (!q) return {};
+  const ee = v => eur(v).replace(' €', '\u00a0€');   // (l'import i el € a la mateixa línia)
+  const txt = `${ee(q.base)} + IVA ${ee(q.quota)}${q.ret ? ' − retenció ' + ee(q.ret) : ''}${q.siva ? ' + sense IVA ' + ee(q.siva) : ''} = ${ee(q.calc)}`;
+  if (q.ok) return { classe: 'v-ok', text: 'quadra: ' + txt + ' ✓' };
+  const pctRet = q.falta < 0 && !q.ret && q.base > 0 ? [1, 2, 7, 15, 19].find(r => Math.abs(r + q.falta / q.base * 100) <= 0.05) : null;
+  return { classe: 'v-no', html: `no quadra: ${h(txt)}, i el total és ${h(ee(q.total))}.`
+    + (q.falta > 0.02 ? ` Si els ${h(ee(q.falta))} que hi falten són una taxa o una partida sense IVA (ITV, notari, aigua…), <a href="#" data-posa-siva="${(q.siva + q.falta).toFixed(2)}">posa’ls a «Import sense IVA»</a>.` : '')
+    + (pctRet ? ` Potser hi falta una retenció del ${pctRet} %.` : '') };
+}
+function bindQuadraProveidor(frm) {
+  if (frm.dataset.quadraLligat) return; frm.dataset.quadraLligat = '1';
+  frm.addEventListener('click', e => {
+    const a = e.target.closest('[data-posa-siva]'); if (!a) return;
+    e.preventDefault();
+    const el = frm.querySelector('[name="import_sense_iva"]'); if (!el) return;
+    el.value = a.dataset.posaSiva;
+    el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+}
 function liniesProveidorHTML(row) {
   if (!row) return '';
   const ls = liniesDeFactura(row.id), prov = C.get('proveidors', row.proveidor_id), pct = prov && prov.percentatge_venda != null && prov.percentatge_venda !== '' ? Number(prov.percentatge_venda) : null;
@@ -9102,8 +9140,8 @@ function renderCalendariFacturacio(main) {
 
 /* ---------- Gràfiques d'ingressos (factures a clients) i de despeses (factures de proveïdor) per mes, amb l'any anterior ---------- */
 let graficsFacturacio = [];
-// import d'una factura de proveïdor sense IVA: la base si hi és; si no, el total menys la quota; si no, el total
-const baseProveidor = f => f.base_imponible != null ? Number(f.base_imponible) : (f.quota_iva != null ? Number(f.total || 0) - Number(f.quota_iva) : Number(f.total || 0));
+// import d'una factura de proveïdor sense IVA: la base (i les partides sense IVA) si hi és; si no, el total menys la quota; si no, el total
+const baseProveidor = f => f.base_imponible != null ? Number(f.base_imponible) + Number(f.import_sense_iva || 0) : (f.quota_iva != null ? Number(f.total || 0) - Number(f.quota_iva) : Number(f.total || 0));
 function mesosFacturacio(any, ambIva) {
   const ing = Array(12).fill(0), des = Array(12).fill(0);
   C.rows('factures').filter(f => f.actiu && (f.estat === 'emesa' || f.estat === 'cobrada') && String(f.data_factura || '').slice(0, 4) === String(any))
