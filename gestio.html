@@ -2,7 +2,7 @@
 <html lang="ca">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-/weiE0s1yFgL854gQURNZBvU/fAbXPVvD6Qr8YZFcU8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-1TmZ1qI2GK8BojDwyPTt7R3FrdjJ1JMwuvZ4MgQyVJs='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestió de manteniment</title>
 <meta name="theme-color" content="#2f7d4a">
@@ -243,6 +243,8 @@
   .fpl .pvp{ font-weight:600; white-space:nowrap; } .fpl .fet{ color:#2e7d32; font-weight:600; white-space:nowrap; }
   .fpl .llegit{ font-family:ui-monospace, monospace; font-size:13px; color:var(--ink-2); }
   .fpl .bar{ margin-top:10px; }
+  .fpl td.iva select{ width:118px; } .fpl td.imp{ white-space:nowrap; }   /* (v67) */
+  .fpl-iva{ margin:10px 0 0; font-size:14px; line-height:1.6; } .fpl-iva .v-ok{ color:#2e7d32; font-weight:600; } .fpl-iva .v-no{ color:#b8432b; font-weight:600; }
   /* (v55) el càlcul de la quota als pressupostos d'agrupació: petit, els components; gran, els totals */
   .cq{ display:flex; flex-direction:column; gap:10px; margin:4px 0 6px; }
   .cq-part{ border:1px solid var(--line-2); border-left:5px solid var(--blue); border-radius:8px; padding:10px 14px 9px; background:#fff; }
@@ -8635,6 +8637,42 @@ function bindQuadraProveidor(frm) {
     el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true }));
   });
 }
+// (v67) l'IVA % de cada línia (el llegeix la IA; a mà, es tria aquí): amb les línies, l'assentament reparteix l'IVA per tipus
+const IVA_LINIA = [['21', '21 %'], ['10', '10 %'], ['4', '4 %'], ['0', '0 %']];
+function opcionsIvaLinia(v) {
+  const s = v == null || v === '' ? '' : String(Number(v));
+  const ops = s === '' || IVA_LINIA.some(o => o[0] === s) ? IVA_LINIA : [...IVA_LINIA, [s, s.replace('.', ',') + ' %']];
+  return `<option value="" ${s === '' ? 'selected' : ''}>—</option>` + ops.map(([k, t]) => `<option value="${k}" ${k === s ? 'selected' : ''}>${t}</option>`).join('');
+}
+// les bases i les quotes per tipus (les línies a 0 % són l'import sense IVA; les que no tenen IVA % no hi compten)
+function ivaPerTipusLinies(ls) {
+  const r2 = x => Math.round(x * 100) / 100, g = new Map(); let sense = 0, senseTipus = 0;
+  ls.forEach(l => {
+    if (l.import == null || l.import === '') return;
+    if (l.iva_percent == null || l.iva_percent === '') { senseTipus++; return; }
+    const imp = Number(l.import), p = Number(l.iva_percent);
+    if (!p) sense += imp; else g.set(p, (g.get(p) || 0) + imp);
+  });
+  const tipus = [...g.entries()].map(([pct, b]) => ({ pct, base: r2(b), quota: r2(b * pct / 100) })).sort((a, b) => b.base - a.base || b.pct - a.pct);
+  return { tipus, sense: r2(sense), senseTipus, base: r2(tipus.reduce((t, x) => t + x.base, 0)), quota: r2(tipus.reduce((t, x) => t + x.quota, 0)) };
+}
+function ivaLiniesHTML(ls) {
+  const t = ivaPerTipusLinies(ls);
+  if (!t.tipus.length && !t.sense) return `<p class="fpl-iva hint">Posa l’IVA % de cada línia: amb les línies, l’IVA de l’assentament es reparteix per tipus (21 %, 10 %…). Les partides sense IVA, a 0 %.</p>`;
+  const parts = t.tipus.map(x => `${String(x.pct).replace('.', ',')} %: base ${eur(x.base)} · IVA ${eur(x.quota)}`).concat(t.sense ? [`sense IVA (0 %): ${eur(t.sense)}`] : []);
+  return `<div class="fpl-iva"><b>IVA per tipus, segons les línies:</b> ${parts.map(h).join(' — ')}${t.senseTipus ? ` <span class="c-taronja">(${t.senseTipus} ${t.senseTipus === 1 ? 'línia' : 'línies'} sense IVA %: no hi compt${t.senseTipus === 1 ? 'a' : 'en'})</span>` : ''}
+    · <span id="fpl-iva-estat"></span> <button type="button" class="btn ghost small" id="fpl-posa-dalt" ${t.senseTipus ? 'disabled title="Abans, posa l’IVA % a totes les línies"' : ''}>Posa-ho a dalt</button></div>`;
+}
+// si el resum de les línies coincideix amb la base, l'IVA i l'import sense IVA de dalt (en viu, mentre s'escriu)
+function pintaIvaLinies(frm, fpId) {
+  const box = document.getElementById('fpl-iva-estat'); if (!box) return;
+  const t = ivaPerTipusLinies(liniesDeFactura(fpId)), v = formValues(frm);
+  const n = k => v[k] === '' || v[k] == null || isNaN(Number(v[k])) ? null : Number(v[k]);
+  const base = n('base_imponible'), quota = n('quota_iva') ?? (base != null ? Math.round(base * (n('iva_percent') || 0)) / 100 : null), siva = n('import_sense_iva') || 0;
+  const ok = base != null && quota != null && Math.abs(base - t.base) <= 0.02 && Math.abs(quota - t.quota) <= 0.05 && (!t.sense || Math.abs(siva - t.sense) <= 0.02);
+  box.className = ok ? 'v-ok' : 'v-no';
+  box.textContent = ok ? 'coincideix amb el de dalt ✓' : `no coincideix amb el de dalt (base ${base == null ? '—' : eur(base)}, IVA ${quota == null ? '—' : eur(quota)}${siva ? ', sense IVA ' + eur(siva) : ''})`;
+}
 function liniesProveidorHTML(row) {
   if (!row) return '';
   const ls = liniesDeFactura(row.id), prov = C.get('proveidors', row.proveidor_id), pct = prov && prov.percentatge_venda != null && prov.percentatge_venda !== '' ? Number(prov.percentatge_venda) : null;
@@ -8647,6 +8685,8 @@ function liniesProveidorHTML(row) {
       <td class="desc"><input type="text" data-camp="descripcio" value="${h(l.descripcio)}" ${l.albara_id ? 'disabled' : ''}></td>
       <td class="q num"><input type="number" step="0.01" data-camp="quantitat" value="${h(l.quantitat)}" ${l.albara_id ? 'disabled' : ''}></td>
       <td class="c num"><input type="number" step="0.0001" data-camp="cost" value="${h(costLinia(l).toFixed(4).replace(/0+$/, '').replace(/\.$/, ''))}" ${l.albara_id ? 'disabled' : ''}></td>
+      <td class="num imp">${eur(l.import)}</td>
+      <td class="iva"><select data-camp="iva_percent">${opcionsIvaLinia(l.iva_percent)}</select></td>
       <td class="num pvp" data-pvp>${eur(pvpLinia(l, prov))}${(p => p ? ` <span class="hint" title="${h(p.nom)}">fitxa</span>` : '')(producteDeLinia(l, prov))}</td>
       <td class="llegit">${h(l.desti_llegit || '')}</td>
       <td class="d">${l.albara_id ? h(l.desti_tipus === 'lloc' ? L('llocs', l.lloc_id) : '') : `<select data-camp="desti">${opcionsDesti(l)}</select>`}</td>
@@ -8656,11 +8696,12 @@ function liniesProveidorHTML(row) {
   return `<div class="fpl" id="fpl">
     <h3>Línies de la factura i on va cada cosa</h3>
     <p class="sub">${ls.length ? 'Les ha llegit la IA del PDF: comprova la descripció, la quantitat, el cost i la destinació manuscrita. ' : (row.pdf ? 'Encara no s’han llegit les línies: fes «Llegeix les línies del PDF» (a baix) o afegeix-les a mà. ' : 'Afegeix les línies a mà. ')}${nota}</p>
-    ${ls.length ? `<table class="tbl informe"><thead><tr><th>#</th><th>Descripció</th><th class="num">Quant.</th><th class="num">Cost unit.</th><th class="num">PVP unit.</th><th>Llegit</th><th>Destinació</th><th>Albarà</th><th></th></tr></thead><tbody>${files}</tbody></table>` : ''}
+    ${ls.length ? `<table class="tbl informe"><thead><tr><th>#</th><th>Descripció</th><th class="num">Quant.</th><th class="num">Cost unit.</th><th class="num">Import</th><th>IVA %</th><th class="num">PVP unit.</th><th>Llegit</th><th>Destinació</th><th>Albarà</th><th></th></tr></thead><tbody>${files}</tbody></table>${ivaLiniesHTML(ls)}` : ''}
     <div class="addrow" id="fpl-nova">
       <label class="f" style="flex:4 1 0"><span class="l">Descripció</span><input type="text" data-nou="descripcio"></label>
       <label class="f" style="flex:.7 1 0"><span class="l">Quant.</span><input type="number" step="0.01" data-nou="quantitat" value="1"></label>
       <label class="f" style="flex:.9 1 0"><span class="l">Cost unit.</span><input type="number" step="0.0001" data-nou="cost"></label>
+      <label class="f" style="flex:1 1 0"><span class="l">IVA %</span><select data-nou="iva_percent">${opcionsIvaLinia(row.iva_percent != null && row.iva_percent !== '' ? row.iva_percent : 21)}</select></label>
       <label class="f" style="flex:2 1 0"><span class="l">Destinació</span><select data-nou="desti">${opcionsDesti({})}</select></label>
       <button type="button" class="btn small" id="fpl-afegeix">Afegeix línia</button>
     </div>
@@ -8679,6 +8720,7 @@ function liniesProveidorBind(frm, td) {
       if (camp === 'desti') p = llegeixDesti(el.value);
       else if (camp === 'cost') p = { preu_unitari: el.value === '' ? null : Number(el.value), import: el.value === '' ? null : Math.round(Number(el.value) * Number(l.quantitat || 1) * 100) / 100 };
       else if (camp === 'quantitat') p = { quantitat: Number(el.value) || 1, import: l.preu_unitari != null ? Math.round(Number(l.preu_unitari) * (Number(el.value) || 1) * 100) / 100 : l.import };
+      else if (camp === 'iva_percent') p = { iva_percent: el.value === '' ? null : Number(el.value) };   // (v67)
       else p = { descripcio: el.value.trim() || l.descripcio };
       const r = await sb.from('factura_proveidor_linies').update(p).eq('id', id);
       if (r.error) { showFormError(friendly(r.error)); return; }
@@ -8695,11 +8737,22 @@ function liniesProveidorBind(frm, td) {
     const desc = String(v('descripcio') || '').trim(); if (!desc) { showFormError('La línia necessita una descripció'); return; }
     const q = Number(v('quantitat')) || 1, cost = v('cost') === '' || v('cost') == null ? null : Number(v('cost'));
     const ordre = Math.max(0, ...liniesDeFactura(fpId).map(l => Number(l.ordre) || 0)) + 1;
-    const r = await sb.from('factura_proveidor_linies').insert({ factura_proveidor_id: fpId, ordre, descripcio: desc, quantitat: q, preu_unitari: cost, import: cost != null ? Math.round(cost * q * 100) / 100 : null, desti_llegit: null, ...llegeixDesti(v('desti')) });
+    const iva = v('iva_percent') === '' || v('iva_percent') == null ? null : Number(v('iva_percent'));   // (v67)
+    const r = await sb.from('factura_proveidor_linies').insert({ factura_proveidor_id: fpId, ordre, descripcio: desc, quantitat: q, preu_unitari: cost, import: cost != null ? Math.round(cost * q * 100) / 100 : null, iva_percent: iva, desti_llegit: null, ...llegeixDesti(v('desti')) });
     if (r.error) { showFormError(friendly(r.error)); return; }
     await loadTable('factura_proveidor_linies'); renderMain();
   });
   const crea = $('#fpl-crea'); if (crea) crea.addEventListener('click', () => creaAlbaransProveidor(fpId));
+  // (v67) l'IVA per tipus segons les línies: si coincideix amb el de dalt (en viu), i «Posa-ho a dalt»
+  pintaIvaLinies(frm, fpId);
+  if (!frm.dataset.ivaLligat) { frm.dataset.ivaLligat = '1'; frm.addEventListener('input', () => pintaIvaLinies(frm, fpId)); }
+  const pd = $('#fpl-posa-dalt'); if (pd) pd.addEventListener('click', e => {
+    e.preventDefault(); const t = ivaPerTipusLinies(liniesDeFactura(fpId));
+    const posa = (k, val) => { const el = frm.querySelector(`[name="${k}"]`); if (!el) return; el.value = val; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); };
+    posa('base_imponible', t.base.toFixed(2)); posa('quota_iva', t.quota.toFixed(2)); if (t.tipus.length) posa('iva_percent', String(t.tipus[0].pct));
+    if (t.sense) posa('import_sense_iva', t.sense.toFixed(2));
+    pintaIvaLinies(frm, fpId); toast('Posat a dalt: ara desa la factura.');
+  });
   box.querySelectorAll('a[data-obre-taula]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); state.mode = 'consulta'; state.table = a.dataset.obreTaula; state.editing = Number(a.dataset.obreId); renderApp(); window.scrollTo({ top: 0 }); }));
   void prov;
 }
