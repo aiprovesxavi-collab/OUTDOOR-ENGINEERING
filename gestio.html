@@ -2,7 +2,7 @@
 <html lang="ca">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-1TmZ1qI2GK8BojDwyPTt7R3FrdjJ1JMwuvZ4MgQyVJs='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-N3q2roW//e7eoZEwvOvtULSx+ZqiVz0UvwDQOxuCFF0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestió de manteniment</title>
 <meta name="theme-color" content="#2f7d4a">
@@ -795,6 +795,16 @@
   .nom-puja{ margin-top:auto; cursor:pointer; text-align:center; }
   body.operari .nom-doc{ padding:12px 10px; font-size:17px; } body.operari .nom-mes-nom{ font-size:14px; }
   @media (max-width:820px){ .nom-cal{ grid-template-columns:repeat(2, minmax(0,1fr)); } }
+  /* (v68) les nòmines a la comptabilitat */
+  .nom-estat{ display:flex; flex-wrap:wrap; gap:6px 16px; align-items:center; margin:0 0 14px; padding:9px 12px; border:1px solid #e3d29a; border-radius:8px; background:#fffbea; font-size:14px; line-height:1.5; }
+  .nom-doc-estat{ display:flex; flex-wrap:wrap; gap:4px 6px; align-items:center; font-size:13px; }
+  .nom-doc-estat .xip{ white-space:normal; } .nom-doc-estat a.xip{ cursor:pointer; text-decoration:none; color:inherit; } .nom-doc-estat a.xip:hover{ border-color:#1f5fbf; }
+  .nom-rev{ border-left-color:#d4ad45; } .nom-rev .ph .xip{ margin-left:10px; }
+  .nom-rev .nr-avisos div + div{ margin-top:4px; } .nom-rev .nr-mes{ margin:10px 0 0; font-size:14px; } .nom-rev .nr-seg{ margin-left:auto; font-size:14px; }
+  .nom-rev #nr-quadra{ display:block; margin-top:4px; }
+  .ss-t tr.ss-mes{ cursor:pointer; } .ss-t tr.ss-mes:hover td{ background:var(--bg-2); } .ss-t tr.ss-mes.obert td{ background:#f3f7f4; font-weight:600; }
+  .ss-t td.det{ padding:0 10px 12px 26px; background:#fbfcfb; } .ss-t td.det .tbl{ font-size:13px; } .ss-t .ss-avis{ color:#8a5a00; font-size:12px; font-weight:400; white-space:nowrap; }
+  .ss-t tfoot td{ font-weight:700; border-top:2px solid var(--line-2); } .ss-irpf{ max-width:520px; margin-top:22px; }
   .vac-any{ display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; }
   .vac-mini{ border:1px solid var(--line-2); border-radius:8px; padding:8px 8px 6px; background:#fff; }
   .vac-mini .t{ font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-2); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -1742,7 +1752,7 @@ const SCHEMA = {
     { label: 'FACTURACIÓ', color: '#8a8a8a', tables: ['agrupacions', 'facturacio_recurrent', 'factures', 'pdf_factures', 'marcat_cobrats', 'calendari_facturacio', 'vencudes', 'grafiques_facturacio', 'pressupostos_tasca', 'pressupostos_agrupacio', 'clausules_pressupost'] },
     { label: 'ALBARANS I PRODUCTES', color: '#c9c9c9', tables: ['productes', 'importa_tarifa', 'albarans', 'albarans_pendents'] },
     { label: 'PROVEÏDORS', color: '#c0691e', tables: ['proveidors', 'factures_proveidor', 'puja_factures_proveidor', 'pagaments_proveidor', 'comptes_despesa'] },
-    { label: 'COMPTABILITAT', color: '#3f6f4f', oficina: true, tables: ['compta_diari', 'compta_major', 'compta_sumes', 'compta_nou', 'compta_banc', 'compta_remeses', 'compta_immobilitzat', 'compta_contasol', 'comptes', 'compta_config'] },
+    { label: 'COMPTABILITAT', color: '#3f6f4f', oficina: true, tables: ['compta_diari', 'compta_major', 'compta_sumes', 'compta_nou', 'compta_banc', 'compta_remeses', 'compta_ss', 'compta_immobilitzat', 'compta_contasol', 'comptes', 'compta_config'] },
     { label: 'TASQUES', color: '#8b5a2b', tables: ['fulls_treball', 'tasques_piscina', 'informe_tasques_piscina', 'informe_tasques_dates'] },
     { label: 'INCIDÈNCIES', color: '#d9534f', tables: ['incidencies', 'accions_meves', 'calendari_accions', 'panell_accions', 'incidencia_reports', 'codis_qr'] },
     { label: 'CONSUM', color: '#1f5fbf', tables: ['comptadors', 'lectures', 'consum_aigua'] },
@@ -1764,6 +1774,7 @@ const SCHEMA = {
     compta_nou: { label: 'Assentament manual', render: main => renderComptaNou(main) },
     compta_banc: { label: 'Banc (conciliació)', render: main => renderComptaBanc(main) },
     compta_remeses: { label: 'Remeses de rebuts', render: main => renderComptaRemeses(main) },
+    compta_ss: { label: 'Seguretat Social i IRPF', render: main => renderComptaSS(main) },   // (v68, SQL 111)
     compta_immobilitzat: { label: 'Immobilitzat', render: main => renderComptaImmobilitzat(main) },
     compta_contasol: { label: 'Comptes de ContaSol', render: main => renderComptaContaSol(main) },
     compta_config: { label: 'Configuració i pendents', render: main => renderComptaConfig(main) },
@@ -2361,6 +2372,11 @@ const SCHEMA = {
     treballadors: {
       label: 'Treballadors', nou: 'Nou treballador', order: 'nom',
       display: r => nomTreballador(r),
+      // (v68) el compte 465 de ContaSol: amb punt també val (465.1 = 4650001); en desar-lo, el compte es crea al pla de comptes
+      abansDesar: p => { if (p.compte_codi != null) p.compte_codi = expandeixCodi(String(p.compte_codi).replace(/\s+/g, '')) || null; },
+      validate: p => p.compte_codi && !/^465\d{4}$/.test(p.compte_codi) ? 'El compte comptable del treballador ha de ser un 465 de 7 xifres, el de ContaSol: 4650001 (o 465.1).' : null,
+      despresDesar: async (id, p) => { if ('compte_codi' in p && potVeureCompta()) await loadTable('comptes'); },
+      despresCrear: async (id, p) => { if (p.compte_codi && potVeureCompta()) await loadTable('comptes'); },
       actions: r => [{ label: 'Documents', noDesa: true, run: () => { Object.assign(state.docs, { treb: String(r.id), cat: '', sel: null }); state.mode = 'consulta'; state.table = 'documents_treballadors'; state.editing = null; renderApp(); window.scrollTo({ top: 0 }); } }],
       list: ['nom', 'cognoms', 'telefon', 'email_acces', 'rol', 'equip_id', 'data_alta', 'data_baixa'],
       fields: [
@@ -2379,6 +2395,8 @@ const SCHEMA = {
         { key: 'equip_id', label: 'Equip', type: 'ref', ref: 'equips' },
         { key: 'data_alta', label: 'Data d’alta', type: 'date', hint: 'entrada a l’empresa: cada any, aquest dia, l’app felicita la persona pels anys que hi porta' },
         { key: 'data_baixa', label: 'Data de baixa', type: 'date' },
+        { key: 'compte_codi', label: 'Compte comptable (465)', type: 'text', nomesCompta: true, mostra: () => teCompteTreballador,   // (v68, SQL 111)
+          hint: 'el seu compte de ContaSol (465.1 = 4650001): hi va el líquid de les seves nòmines. Sense compte, les nòmines revisades queden a «pendents» de la comptabilitat' },
         { key: 'adreca', label: 'Adreça', type: 'text' },
         { key: 'cp', label: 'CP', type: 'text' },
         { key: 'poblacio', label: 'Població', type: 'text' },
@@ -2689,12 +2707,13 @@ const SCHEMA = {
       label: 'Pla de comptes', nou: 'Nou subcompte', order: 'codi',
       display: r => r.codi + ' — ' + r.nom,
       list: ['codi', 'nom', 'tipus_compte', 'centre_cost'],
-      computed: { tipus_compte: { label: 'Tipus', fn: r => r.imputable ? ({ client: 'client', proveidor: 'proveïdor', banc: 'banc', despesa: 'despesa' }[r.origen] || 'subcompte') : (['', 'grup', 'subgrup', 'compte', 'compte'][String(r.codi).length] || 'compte') } },
+      computed: { tipus_compte: { label: 'Tipus', fn: r => r.imputable ? ({ client: 'client', proveidor: 'proveïdor', banc: 'banc', despesa: 'despesa', treballador: 'treballador' }[r.origen] || 'subcompte') : (['', 'grup', 'subgrup', 'compte', 'compte'][String(r.codi).length] || 'compte') } },
       canBaixa: r => !!r.imputable,
       validate: (p, id) => {
         const r = id ? C.get('comptes', id) : null;
         if (r && !r.imputable) return p.codi === r.codi ? null : 'El codi dels comptes del pla (grups, subgrups i comptes de 3 xifres) no es pot canviar.';
         if (r && r.origen === 'despesa' && p.codi !== r.codi) return 'El codi d’un compte de despesa es canvia a «Comptes de despesa» (FACTURES DE PROVEÏDOR).';
+        if (r && r.origen === 'treballador' && p.codi !== r.codi) return 'El codi del compte d’un treballador es canvia a la seva fitxa (PERSONAL › Treballadors).';   // (v68)
         if (!/^[0-9]{7}$/.test(p.codi || '')) return 'Els subcomptes tenen 7 xifres; les tres primeres són el compte del pla (p. ex. 6290001).';
         if (!C.rows('comptes').some(c => c.codi === String(p.codi).slice(0, 3))) return 'El compte ' + String(p.codi).slice(0, 3) + ' no és al pla.';
         return null;
@@ -2703,7 +2722,7 @@ const SCHEMA = {
         { key: 'codi', label: 'Codi', type: 'text', required: true, dup: 'exact', hint: '7 xifres; les 3 primeres són el compte del pla: 6290001, 4300123…' },
         { key: 'nom', label: 'Nom', type: 'text', required: true },
         { key: 'centre_cost', label: 'Centre de cost', type: 'select', options: OPT.centre_cost, hint: 'per als informes de rendibilitat (ingressos i despeses)' },
-        { key: 'origen_info', label: 'D’on surt', type: 'info', fmt: r => !r ? 'subcompte nou' : r.client_id ? 'compte del client ' + L('clients', r.client_id) : r.proveidor_id ? 'compte del proveïdor ' + L('proveidors', r.proveidor_id) : r.compte_bancari_id ? 'compte bancari ' + L('comptes_bancaris', r.compte_bancari_id) : r.compte_despesa_id ? 'compte de despesa (es manté igual que a «Comptes de despesa»)' : r.imputable ? 'subcompte' : 'pla general comptable' },
+        { key: 'origen_info', label: 'D’on surt', type: 'info', fmt: r => !r ? 'subcompte nou' : r.client_id ? 'compte del client ' + L('clients', r.client_id) : r.proveidor_id ? 'compte del proveïdor ' + L('proveidors', r.proveidor_id) : r.compte_bancari_id ? 'compte bancari ' + L('comptes_bancaris', r.compte_bancari_id) : r.compte_despesa_id ? 'compte de despesa (es manté igual que a «Comptes de despesa»)' : r.treballador_id ? 'compte del treballador ' + nomTreballador(C.get('treballadors', r.treballador_id)) + ' (el codi es canvia a la seva fitxa)' : r.imputable ? 'subcompte' : 'pla general comptable' },
         { key: 'observacions', label: 'Observacions', type: 'textarea' },
       ],
     },
@@ -3050,6 +3069,10 @@ const MSG = {
   productes_referencia_unic: 'Ja hi ha un producte actiu amb aquesta referència.',
   productes_referencia_proveidor_unic: 'Aquest proveïdor ja té un producte actiu amb aquesta referència.',
   treballadors_email_acces_unic: 'Ja hi ha un treballador actiu amb aquest correu d’accés.',
+  treballadors_compte_codi_unic: 'Aquest compte comptable ja és d’un altre treballador.',   // (v68)
+  treballadors_compte_codi_check: 'El compte comptable del treballador ha de començar per 465 (p. ex. 4650001).',
+  "column of 'nomines'": 'Falta executar el fitxer 111_nomines_comptabilitat.sql a Supabase (SQL Editor).',
+  "'compte_codi' column": 'Falta executar el fitxer 111_nomines_comptabilitat.sql a Supabase (SQL Editor).',
   lectures_una_per_dia: 'Aquest comptador ja té una lectura en aquesta data.',
   contactes_un_sol_pare: 'Un contacte ha de ser d’un client o d’un administrador, però no dels dos ni de cap.',
   clients_iban_si_domiciliacio: 'Amb domiciliació cal l’IBAN del client.',
@@ -3094,7 +3117,7 @@ const C = {
   rows: t => cache[t] || [],
   get: (t, id) => { const pk = (SCHEMA.tables[t] || {}).pk; return pk ? (cache[t] || []).find(r => String(r[pk]) === String(id)) : (cache[t] || []).find(r => r.id === Number(id)); },
 };
-const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, copia: null, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, pagProv: { vista: 'marca', data: '', q: '', fets: {}, pagades: false }, ft: { id: null, form: null, vista: 'llista', nou: null, fets: false }, marques: {}, fac: { any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), avis: null }, ia: { missatges: [], enviant: false }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()) }, docs: { cat: '', treb: '', sel: null }, docsV: { veh: '', sel: null }, pdff: { num: '', des: '', fins: '', client: '' }, calAcc: { vista: '', ref: '', meves: false, fetes: false, interns: false, sel: null }, fx: { ocupat: false, gpsAjuda: null, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false, ed: null }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
+const state = { mode: 'entrada', table: null, editing: null, showInactive: false, q: '', keep: {}, copia: null, filtreEquip: '', aigua: { lloc: '', comptador: '', any: String(new Date().getFullYear()) }, tp: { lloc: '', piscina: '', desde: '', fins: '' }, tdt: { desde: '', fins: '' }, filtres: {}, cal: { desde: '', fins: '', cobr: true, pag: true, fets: false, dubtoses: false, detall: true }, cpa: { admin: '', q: '', vigent: false, baixes: false }, sol: { poblacio: '', any: String(new Date().getFullYear()) }, venc: { ref: '', avui: false, cobr: true, pag: true, dubtoses: true, perClient: true }, marcat: { data: '', q: '', fets: {} }, pagProv: { vista: 'marca', data: '', q: '', fets: {}, pagades: false }, ft: { id: null, form: null, vista: 'llista', nou: null, fets: false }, marques: {}, fac: { any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), avis: null }, ia: { missatges: [], enviant: false }, graf: { any: String(new Date().getFullYear()), ambIva: false }, qr: { lloc: '', base: '' }, nom: { treb: '', any: String(new Date().getFullYear()), rev: null, lot: null }, ss: { any: String(new Date().getFullYear()), mes: null }, docs: { cat: '', treb: '', sel: null }, docsV: { veh: '', sel: null }, pdff: { num: '', des: '', fins: '', client: '' }, calAcc: { vista: '', ref: '', meves: false, fetes: false, interns: false, sel: null }, fx: { ocupat: false, gpsAjuda: null, treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), vista: 'persona', dia: '', lluny: false, ed: null }, vac: { vista: 'any', treb: '', any: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1), pinzell: 'vacances' }, inc: { vista: 'llista', id: null, sel: null, form: null, capa: 'interna', zoom: 1, zoomFet: false, resizeFet: false, filtre: { estat: 'obertes', lloc: '', q: '' }, nova: null } };
 const L = (t, id) => { const r = C.get(t, id); return r ? SCHEMA.tables[t].display(r, L) : ''; };
 
 /* =====================================================================
@@ -3136,12 +3159,16 @@ function readConfig() {
 
 // carrega una taula sencera per blocs de 1.000 files (Supabase no en torna més d'un cop)
 // treballadors: les columnes que pot llegir tothom, i les personals a part (SQL 081: treballadors_privat(), segons qui ho demana)
+let teCompteTreballador = false;   // (v68) si la base de dades ja té el compte 465 dels treballadors (SQL 111)
 const COLS_TREBALLADORS = 'id,nom,cognoms,email_acces,rol,equip_id,data_alta,data_baixa,actiu,creat_el,actualitzat_el,codi_pressupost,titol_signatura,foto';
 async function loadTreballadors() {
   const priv = await sb.rpc('treballadors_privat');
   if (priv.error) {   // sense el SQL 081 encara: tota la taula, com abans
-    const tot = await sb.from('treballadors').select('*').order('id'); if (tot.error) throw tot.error; return tot.data;
+    const tot = await sb.from('treballadors').select('*').order('id'); if (tot.error) throw tot.error;
+    teCompteTreballador = (tot.data || []).some(t => 'compte_codi' in t);
+    return tot.data;
   }
+  teCompteTreballador = (priv.data || []).some(p => 'compte_codi' in p);   // (v68, SQL 111: el compte 465, només per a l'oficina)
   const { data, error } = await sb.from('treballadors').select(COLS_TREBALLADORS).order('id'); if (error) throw error;
   const per = new Map((priv.data || []).map(p => [Number(p.id), p]));
   return data.map(t => {
@@ -3269,8 +3296,8 @@ async function start() {
    ===================================================================== */
 const potVeureCompta = () => esOficina(treballadorActual());
 const esAdminCompta = () => (treballadorActual() || {}).rol === 'admin';
-const TIPUS_ASSENTAMENT = { factura_emesa: 'Factura emesa', factura_rebuda: 'Factura rebuda', cobrament: 'Cobrament', pagament: 'Pagament', manual: 'Manual', obertura: 'Obertura', regularitzacio: 'Regularització', tancament: 'Tancament', reversio: 'Reversió', moviment_banc: 'Moviment del banc', amortitzacio: 'Amortització' };
-const FASE_DOC = { emissio: 'Emissió', cobrament: 'Cobrament', recepcio: 'Recepció', pagament: 'Pagament', conciliacio: 'Banc', mes: 'Amortització' };
+const TIPUS_ASSENTAMENT = { factura_emesa: 'Factura emesa', factura_rebuda: 'Factura rebuda', cobrament: 'Cobrament', pagament: 'Pagament', manual: 'Manual', obertura: 'Obertura', regularitzacio: 'Regularització', tancament: 'Tancament', reversio: 'Reversió', moviment_banc: 'Moviment del banc', amortitzacio: 'Amortització', nomina: 'Nòmina' };
+const FASE_DOC = { emissio: 'Emissió', cobrament: 'Cobrament', recepcio: 'Recepció', pagament: 'Pagament', conciliacio: 'Banc', mes: 'Amortització', meritacio: 'Nòmina' };
 const num2 = v => (Math.round(Number(v || 0) * 100) / 100).toLocaleString('ca-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const imp2 = v => Number(v) ? num2(v) : '';
 const saldoText = v => { const x = Math.round(Number(v || 0) * 100) / 100; return x === 0 ? '0,00' : num2(Math.abs(x)) + (x > 0 ? ' D' : ' H'); };
@@ -3336,6 +3363,7 @@ function agrupaAssentaments(apunts) {
 function bindEnllacosCompta(cont) {
   cont.querySelectorAll('a[data-obre-taula]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); state.mode = 'consulta'; state.table = a.dataset.obreTaula; state.editing = Number(a.dataset.obreId); renderApp(); window.scrollTo({ top: 0 }); }));
   cont.querySelectorAll('a[data-major]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); comptaEstat().compteId = Number(a.dataset.major); state.table = 'compta_major'; state.editing = null; renderApp(); window.scrollTo({ top: 0 }); }));
+  cont.querySelectorAll('a[data-obre-nomina]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); obreNomina(Number(a.dataset.obreNomina)); }));   // (v68)
   cont.querySelectorAll('a[data-obre-immob]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); state.table = 'compta_immobilitzat'; state.editing = null; renderApp(); window.scrollTo({ top: 0 }); }));
   cont.querySelectorAll('a[data-obre-banc]').forEach(a => a.addEventListener('click', async e => {
     e.preventDefault();
@@ -3374,6 +3402,7 @@ function pintaDiari(main, apunts) {
     a.linies.forEach(l => { td += Number(l.deure) || 0; th += Number(l.haver) || 0; });
     const manual = !a.origen && (a.tipus === 'manual' || a.tipus === 'obertura');
     const doc = a.origen === 'factura' || a.origen === 'factura_proveidor' ? `<a href="#" data-obre-taula="${a.origen === 'factura' ? 'factures' : 'factures_proveidor'}" data-obre-id="${a.origen_id}">obre la factura</a>`
+      : a.origen === 'nomina' ? `<a href="#" data-obre-nomina="${a.origen_id}">obre la nòmina</a>`
       : a.origen === 'banc' ? `<a href="#" data-obre-banc="${a.origen_id}">obre el moviment del banc</a>` : a.origen === 'amortitzacio' ? '<a href="#" data-obre-immob>obre l’immobilitzat</a>' : '';
     const dataDoc = a.data_document && a.data_document !== a.data ? ` <span class="sub">(document del ${dmy(a.data_document)})</span>` : '';
     return `<tbody class="cd-a${a.estat === 'anul_lat' ? ' anul' : ''}${st.sel === a.id ? ' sel' : ''}" data-assentament="${a.id}">
@@ -3617,10 +3646,13 @@ async function renderComptaConfig(main) {
   const c = (cfg.data || [])[0] || {}, admin = esAdminCompta(), dis = admin ? '' : 'disabled';
   const defs = (def.data || []).slice().sort((a, b) => (a.ordre || 0) - (b.ordre || 0)), pendents = (pend.data || []).slice().sort((a, b) => String(b.quan).localeCompare(String(a.quan)));
   const opcions = sel => `<option value="">(cap)</option>` + comptesImputables().map(x => `<option value="${x.id}" ${Number(sel) === x.id ? 'selected' : ''}>${h(compteText(x))}</option>`).join('');
-  const docPendent = p => p.origen === 'banc' ? `<a href="#" data-obre-banc="${p.origen_id}">Moviment del banc #${p.origen_id}</a>` : p.origen === 'factura'
+  const docPendent = p => p.origen === 'banc' ? `<a href="#" data-obre-banc="${p.origen_id}">Moviment del banc #${p.origen_id}</a>`
+    : p.origen === 'nomina' ? (() => { const n = C.get('nomines', p.origen_id); return `<a href="#" data-obre-nomina="${p.origen_id}">${h(n ? etiquetaNomina(n) : 'Nòmina #' + p.origen_id)}</a>`; })()   // (v68)
+    : p.origen === 'factura'
     ? (() => { const f = C.get('factures', p.origen_id); return `<a href="#" data-obre-taula="factures" data-obre-id="${p.origen_id}">Factura ${h(f ? f.numero_complet || 'esborrany' : '#' + p.origen_id)}</a>${f ? ' · ' + h(L('clients', f.client_id)) : ''}`; })()
     : (() => { const f = C.get('factures_proveidor', p.origen_id); return `<a href="#" data-obre-taula="factures_proveidor" data-obre-id="${p.origen_id}">Factura de proveïdor ${h(f ? f.numero || 's/n' : '#' + p.origen_id)}</a>${f ? ' · ' + h(L('proveidors', f.proveidor_id)) + ' · ' + dmy(f.data_factura) : ''}`; })();
   const perRevisar = C.rows('factures_proveidor').filter(f => f.actiu && f.estat === 'revisar' && c.data_inici && f.data_factura >= c.data_inici).length;
+  const nomPerRevisar = teNominesCompta() ? C.rows('nomines').filter(n => n.actiu && (!n.comptable || n.comptable === 'revisar') && nominaDesDelInici(n)).length : 0;   // (v68)
   main.innerHTML = `<div class="panel compta compta-cfg"><div class="ph"><h2>Comptabilitat: configuració i pendents</h2></div>
     <p class="hint">Les factures emeses i rebudes s’assenten soles en desar-les; els cobraments i els pagaments, en conciliar el banc; les amortitzacions, des de «Immobilitzat». Un assentament ja fet només canvia si canvia el seu document. ${admin ? '' : 'Només l’administrador pot canviar la configuració.'}</p>
     <h3>Dates</h3>
@@ -3639,6 +3671,7 @@ async function renderComptaConfig(main) {
       ${pendents.map(p => `<tr><td>${docPendent(p)}</td><td>${h(p.missatge)}</td><td>${dmyhm(p.quan)}</td><td><button class="btn ghost small" data-reintenta="${h(p.origen)}:${p.origen_id}">Torna-ho a provar</button></td></tr>`).join('')}</tbody></table>`
       : '<p class="hint">Cap document pendent: tot el que toca està comptabilitzat.</p>'}
     ${perRevisar ? `<p class="hint">A més, ${perRevisar} factura${perRevisar === 1 ? '' : 'es'} de proveïdor per revisar: s’assentaran quan estiguin revisades.</p>` : ''}
+    ${nomPerRevisar ? `<p class="hint">${perRevisar ? 'I' : 'A més,'} ${nomPerRevisar} nòmin${nomPerRevisar === 1 ? 'a' : 'es'} per llegir o revisar (PERSONAL › Nòmines): s’assentaran quan estiguin revisades.</p>` : ''}
     <h3>Exercicis</h3>
     <table class="tbl"><thead><tr><th>Exercici</th><th>Des del</th><th>Fins al</th><th>Estat</th><th></th></tr></thead><tbody>
       ${(exs.data || []).slice().sort((a, b) => a.exercici - b.exercici).map(e => `<tr><td>${e.exercici}</td><td>${dmy(e.data_inici)}</td><td>${dmy(e.data_fi)}</td><td>${e.estat === 'tancat' ? 'tancat' : 'obert'}</td><td>${admin && e.estat !== 'tancat' ? `<button class="btn ghost small" data-renumera="${e.exercici}">Renumera per dates</button>` : ''}</td></tr>`).join('')}</tbody></table>
@@ -4047,6 +4080,7 @@ function propostesMoviment(m, d) {
       if (comb) afegeix(`${comb.length} factures pagades amb targeta`, 60, comb.map(x => ({ tipus: 'factura_proveidor', id: x.f.id, imp: Number(x.f.pendent) })));
     }
   }
+  if (!entra) propostesNomines(m, d, { abs, text, T, igual, afegeix, cpt });   // (v68) el líquid de les nòmines i la SS del mes
   // els que es repeteixen: com l'última vegada que va sortir el mateix concepte
   const clau = clauConcepte(m);
   if (clau) {
@@ -4087,6 +4121,41 @@ function propostesMoviment(m, d) {
   return out.filter(p => p.linies.every(l => l.tipus !== 'compte' || l.id) && !vistes.has(JSON.stringify(p.linies.map(l => [l.tipus, l.id, l.imp])))
                         && vistes.add(JSON.stringify(p.linies.map(l => [l.tipus, l.id, l.imp]))))
             .sort((a, b) => b.punts - a.punts).slice(0, 6);
+}
+// (v68) les nòmines: el líquid d'una nòmina (o de les d'un treballador, o de totes les d'un mes) al compte 465 de cada treballador, i la
+// Seguretat Social d'un mes (el que s'hi ha de pagar segons les nòmines), al 476. Les que ja tenen un pagament d'aquest import, no.
+function propostesNomines(m, d, { abs, text, T, igual, afegeix, cpt }) {
+  if (!teNominesCompta()) return;
+  const dm = String(m.data).slice(0, 10);
+  const finestra = (n, dt) => !!dt && dt >= ymd(new Date(Number(n.exercici), Number(n.mes) - 1, 1)) && dt <= ymd(new Date(Number(n.exercici), Number(n.mes), 20));
+  const dataMov = id => { const mv = d.movs.find(y => y.id === id); if (mv) return String(mv.data).slice(0, 10); const a = d.as.find(y => Number(y.origen_id) === id && !y.reverteix_id); return a ? String(a.data_document || a.data).slice(0, 10) : null; };
+  const pagada = (n, c) => d.conc.some(x => x.tipus === 'compte' && Number(x.compte_id) === c.id && Number(x.moviment_id) !== m.id && igual(x.import, n.liquid) && finestra(n, dataMov(Number(x.moviment_id))));
+  const esNomina = m.concepte_comu === '15' || /NOMINA/.test(T);
+  const cands = C.rows('nomines').filter(n => n.actiu && (n.comptable === 'ok' || n.comptable === 'revisar') && Number(n.liquid) > 0 && finestra(n, dm))
+    .map(n => { const t = C.get('treballadors', n.treballador_id); return { n, t, c: t && t.compte_codi ? compteCodi(t.compte_codi) : null }; })
+    .filter(x => x.t && x.c && !pagada(x.n, x.c));
+  const linia = (x, imp) => ({ tipus: 'compte', id: x.c.id, imp, concepte: `${x.n.concepte || 'Nòmina'} ${MESOS_CAT[x.n.mes - 1]} ${x.n.exercici} · ${nomTreballador(x.t)}` });
+  for (const [, xs] of agrupa(cands, x => x.t.id)) {
+    const nomT = nomTreballador(xs[0].t), sNom = surtNom(text, nomT);
+    xs.forEach(x => { if (igual(x.n.liquid, abs)) afegeix(`Nòmina de ${nomT} (${MESOS_CAT[x.n.mes - 1]})`, 62 + Math.round(sNom * 32) + (esNomina ? 4 : 0), [linia(x, abs)]); });
+    const comb = xs.length >= 2 ? combinacioQueSuma(xs.map(x => ({ x, v: Number(x.n.liquid) })), abs) : null;
+    if (comb) afegeix(`${comb.length} nòmines de ${nomT}`, 60 + Math.round(sNom * 32), comb.map(y => linia(y.x, Number(y.x.n.liquid))));
+  }
+  // totes les nòmines d'un mes en un sol càrrec (la remesa de nòmines)
+  for (const [, xs] of agrupa(cands, x => x.n.exercici + '-' + x.n.mes)) {
+    if (xs.length < 2 || !igual(xs.reduce((t, x) => t + Number(x.n.liquid), 0), abs)) continue;
+    afegeix(`Nòmines ${deMes(Number(xs[0].n.mes))} (${xs.length})`, 70 + (esNomina ? 22 : 0), xs.map(x => linia(x, Number(x.n.liquid))));
+  }
+  // la Seguretat Social d'un mes es paga el mes següent (o, com a molt, a principis de l'altre)
+  const ss = cpt('4760000'); if (!ss) return;
+  const textSS = /SEGURIDAD SOCIAL|TGSS|SEG SOCIAL|TESORERIA GENERAL/.test(T);
+  [1, 2].forEach(enrere => {
+    const dt = new Date(dm + 'T12:00:00'); dt.setDate(1); dt.setMonth(dt.getMonth() - enrere);
+    if (enrere === 2 && Number(dm.slice(8, 10)) > 10) return;
+    const r = ssDelMes(dt.getFullYear(), dt.getMonth() + 1);
+    if (r.n && r.aPagar > 0 && igual(r.aPagar, abs))
+      afegeix(`Seguretat Social ${deMes(r.mes)} (476)`, 70 + (textSS ? 25 : 0) - (enrere === 2 ? 8 : 0), [{ tipus: 'compte', id: ss, imp: abs, concepte: `Seguretat Social ${deMes(r.mes)} de ${r.any}` }]);
+  });
 }
 const propostaSegura = ps => ps.length && ps[0].punts >= 90 && !(ps[1] && ps[1].punts >= 80) && ps[0].linies.every(l => l.id) ? ps[0] : null;
 
@@ -4621,12 +4690,14 @@ async function ompleComptaDoc(main) {
     const vig = (as.data || []).filter(a => a.estat === 'vigent' && !a.reverteix_id).sort((a, b) => String(a.data).localeCompare(String(b.data)));
     const anul = (as.data || []).filter(a => a.estat === 'anul_lat').length;
     const p = ((pe && pe.data) || [])[0];
-    const r = C.get(origen === 'factura' ? 'factures' : 'factures_proveidor', id) || {};
-    const perque = origen === 'factura' ? (r.estat === 'esborrany' ? 's’assentarà en emetre-la' : r.estat === 'anul_lada' ? 'anul·lada: sense assentament (si té una rectificativa, en manté l’emissió)' : 'sense assentament (anterior a la data d’inici de la comptabilitat?)')
+    const r = C.get(origen === 'factura' ? 'factures' : origen === 'nomina' ? 'nomines' : 'factures_proveidor', id) || {};
+    const perque = origen === 'nomina' ? (r.comptable === 'ok' ? 'sense assentament (anterior a la data d’inici de la comptabilitat?)' : r.comptable === 'no' ? 'no es comptabilitza' : 's’assentarà quan estigui revisada')   // (v68)
+      : origen === 'factura' ? (r.estat === 'esborrany' ? 's’assentarà en emetre-la' : r.estat === 'anul_lada' ? 'anul·lada: sense assentament (si té una rectificativa, en manté l’emissió)' : 'sense assentament (anterior a la data d’inici de la comptabilitat?)')
                                         : (r.estat === 'revisar' ? 's’assentarà quan estigui revisada' : 'sense assentament (anterior a la data d’inici de la comptabilitat?)');
     let banc = '';
     try {
-      const cc = await sb.from('conciliacions').select('*').eq(origen === 'factura' ? 'factura_id' : 'factura_proveidor_id', id);
+      const cc = origen === 'nomina' ? { error: null, data: [] }   // (v68: el pagament d'una nòmina va al compte del treballador)
+        : await sb.from('conciliacions').select('*').eq(origen === 'factura' ? 'factura_id' : 'factura_proveidor_id', id);
       if (!cc.error && (cc.data || []).length) {
         const ids = [...new Set(cc.data.map(x => Number(x.moviment_id)))];
         const [mv, ab] = await Promise.all([sb.from('banc_moviments').select('*').in('id', ids), sb.from('assentaments').select('*').eq('origen', 'banc').in('origen_id', ids)]);
@@ -5609,6 +5680,7 @@ function formHTML(td, row) {
   td.fields.forEach(f => {
     if (f.nomesOficina && APP_NOMES_TASQUES) return;   // camps que a l'app no toquen (p. ex. la notificació d'un report: la marca la seguidora)
     if (f.nomesCompta && !potVeureCompta()) return;     // camps de comptabilitat: només l'oficina els veu (i, si no es pinten, no es desen)
+    if (f.mostra && !f.mostra()) return;                // (v68) camps que depenen d'un SQL (si encara no s'ha executat, no es pinten)
     if (f.grup) {
       if (grupObert !== f.grup) { if (grupObert) trossos.push('</div>'); trossos.push(`<div class="f wide chks" data-grup="${f.grup}">`); grupObert = f.grup; }
       trossos.push(unCamp(f));
@@ -11216,6 +11288,7 @@ const TIPUS_ALARMA = {   // (en aquest ordre a la pàgina)
   fulls:               { nom: 'Fulls de treball de fa més d’un mes sense passar a albarà', color: '#a8740e' },
   albarans:            { nom: 'Albarans oberts de fa més de 3 mesos', color: '#8a7c10' },
   comptabilitat:       { nom: 'Comptabilitat: documents que no s’han pogut comptabilitzar', color: '#3f6f4f' },
+  nomines:             { nom: 'Nòmines per llegir o revisar (s’assenten quan estan revisades)', color: '#b08d2a' },   // (v68)
   piscines:            { nom: 'Piscines: segona mostra vermella (pH o clor) dels últims 30 dies', color: '#0e7c86' },
   fitxatges:           { nom: 'Fitxatges: entrades de fa més de 12 hores sense sortida', color: '#455a64' },
 };
@@ -11437,8 +11510,16 @@ function calculaAlarmes() {
     const f = p.origen === 'factura' ? C.get('factures', p.origen_id) : null, fp = p.origen === 'factura_proveidor' ? C.get('factures_proveidor', p.origen_id) : null;
     const text = p.origen === 'factura' ? 'Factura ' + (f ? (f.numero_complet || 'esborrany') + ' · ' + L('clients', f.client_id) : '#' + p.origen_id)
       : p.origen === 'factura_proveidor' ? 'Factura de proveïdor ' + (fp ? (fp.numero || 'sense número') + ' · ' + L('proveidors', fp.proveidor_id) : '#' + p.origen_id)
-      : p.origen === 'banc' ? 'Moviment del banc #' + p.origen_id : String(p.origen || 'Document') + ' #' + p.origen_id;
+      : p.origen === 'banc' ? 'Moviment del banc #' + p.origen_id
+      : p.origen === 'nomina' ? (C.get('nomines', p.origen_id) ? etiquetaNomina(C.get('nomines', p.origen_id)) : 'Nòmina #' + p.origen_id) : String(p.origen || 'Document') + ' #' + p.origen_id;
     out.push({ tipus: 'comptabilitat', clau: `compta:${p.origen}:${p.origen_id}:${hashCurt(p.missatge)}`, text, detall: String(p.missatge || ''), ves: ['compta_config', null], ordre: String(p.quan || '') });
+  });
+  // (v68) les nòmines des de la data d'inici de la comptabilitat que encara no s'han llegit o revisat (s'assenten quan es revisen)
+  if (oficinaNomines() && potVeureCompta() && comptaInici && teNominesCompta()) C.rows('nomines').forEach(n => {
+    if (!n.actiu || !nominaDesDelInici(n) || (n.comptable && n.comptable !== 'revisar')) return;
+    out.push({ tipus: 'nomines', clau: `nomina:${n.id}`, text: etiquetaNomina(n), ordre: `${n.exercici}-${String(n.mes).padStart(2, '0')}-28`,
+      detall: n.comptable === 'revisar' ? 'llegida: falta revisar-la' : 'sense llegir: llegeix-la i revisa-la',
+      ves: ['nomines', null, () => Object.assign(state.nom, { treb: String(n.treballador_id), any: String(n.exercici), rev: n.id })] });
   });
   // piscines: la segona mostra (pH, clor lliure o, des de la v46, clor combinat) en vermell o pitjor, dels últims 30 dies
   const lim30 = ymd(new Date(Date.now() - 30 * 86400000)), xifra = v => String(v).replace('.', ',');
@@ -14603,55 +14684,369 @@ async function marcaAbsencies(trebId, dies, tipus) {
    L'oficina puja el document de cada mes (i el treu); cada treballador només veu els seus (la base de dades ho fa complir).
    ===================================================================== */
 const oficinaNomines = () => !APP_NOMES_TASQUES && esOficina(treballadorActual());
+// (v68, SQL 111) les nòmines a la comptabilitat: cada nòmina que puja l'oficina es llegeix amb la IA (la funció «llegeix-nomina») i queda
+// «per revisar»; quan l'oficina la revisa, s'assenta sola (640, 642, 476, 4751, 460, 4659 i el 465 del treballador, el de ContaSol).
+const CAMPS_NOMINA = ['meritat', 'prestacio_ss', 'ss_treballador', 'irpf_percent', 'irpf', 'bestretes', 'embargaments', 'altres_deduccions', 'liquid', 'ss_empresa'];
+// si la base de dades ja hi és (si no hi ha cap nòmina, no es pot saber: es prova, i si falta el 111 l'error ho diu)
+const teNominesCompta = () => { const ns = C.rows('nomines'); return !ns.length || ns.some(n => 'comptable' in n); };
+const deMes = m => (/^[aeiouàèéíòóú]/i.test(MESOS_CAT[m - 1]) ? 'd’' : 'de ') + MESOS_CAT[m - 1];
+const etiquetaNomina = (n, ambNom = true) => `${n.concepte || 'Nòmina'} ${deMes(Number(n.mes))} de ${n.exercici}${ambNom ? ' · ' + nomTreballador(C.get('treballadors', n.treballador_id)) : ''}`;
+const fiDeMesNomina = n => ymd(new Date(Number(n.exercici), Number(n.mes), 0));
+const estatNomina = n => n.comptable === 'ok' ? 'ok' : n.comptable === 'revisar' ? 'revisar' : n.comptable === 'no' ? 'no' : 'sense';
+const XIP_NOMINA = { sense: ['sense llegir', ''], revisar: ['per revisar', 'c-taronja'], ok: ['revisada ✓', 'ok'], no: ['no es comptabilitza', ''] };
+// les que han d'entrar a la comptabilitat: des del mes de la data d'inici (les d'abans, només si algú les llegeix a mà)
+const nominaDesDelInici = n => !comptaInici || `${n.exercici}-${String(n.mes).padStart(2, '0')}` >= String(comptaInici).slice(0, 7);
+const ordreNomines = (a, b) => (a.exercici - b.exercici) || (a.mes - b.mes)
+  || nomTreballador(C.get('treballadors', a.treballador_id)).localeCompare(nomTreballador(C.get('treballadors', b.treballador_id)), 'ca') || a.id - b.id;
+// obre una nòmina per revisar-la (des del diari, els pendents, les alarmes o la llista de dalt)
+function obreNomina(id) {
+  const n = C.get('nomines', id); if (!n || !n.actiu) { toastErr('No trobo la nòmina (potser s’ha tret).'); return; }
+  Object.assign(state.nom, { treb: String(n.treballador_id), any: String(n.exercici), rev: n.id });
+  state.table = 'nomines'; state.editing = null; renderApp(); window.scrollTo({ top: 0 });
+}
+
+// (v68) a l'oficina, cada document diu com és a la comptabilitat i es pot revisar
 function renderNomines(main) {
-  const st = state.nom, t = treballadorActual(), oficina = oficinaNomines();
+  const st = state.nom, t = treballadorActual(), oficina = oficinaNomines(), compta = oficina && teNominesCompta();
   const treballadors = C.rows('treballadors').filter(x => x.actiu).sort((a, b) => nomTreballador(a).localeCompare(nomTreballador(b), 'ca'));
+  let rev = compta && st.rev ? C.get('nomines', st.rev) : null;
+  if (rev && !rev.actiu) rev = null;
+  if (!rev) st.rev = null;
   if (oficina && !treballadors.some(x => String(x.id) === st.treb)) st.treb = String(t && treballadors.some(x => x.id === t.id) ? t.id : (treballadors[0] || {}).id || '');
-  const trebId = oficina ? Number(st.treb) : (t ? t.id : null);
+  const trebId = oficina ? Number(st.treb) : (t ? t.id : null), trebSel = C.get('treballadors', trebId);
   const any = Number(st.any) || new Date().getFullYear(), ara = new Date(), anyAra = ara.getFullYear(), mesAra = ara.getMonth() + 1;
   const totes = C.rows('nomines').filter(n => n.actiu && Number(n.treballador_id) === trebId);
   const delAny = totes.filter(n => Number(n.exercici) === any);
   const anys = [...new Set(totes.map(n => Number(n.exercici)))].sort();
   const perMes = m => delAny.filter(n => Number(n.mes) === m).sort((a, b) => String(a.creat_el).localeCompare(String(b.creat_el)));
+  const compteTreb = compta && teCompteTreballador && potVeureCompta() && trebSel
+    ? `<span class="hint">compte ${trebSel.compte_codi ? h(trebSel.compte_codi) : `465: <a href="#" data-fitxa-treb="${trebSel.id}">falta (posa’l a la fitxa)</a>`}</span>` : '';
   main.innerHTML = `<h1>${oficina ? 'Nòmines' : 'Les meves nòmines'}</h1>
-    <p class="sub">${oficina ? 'Un calendari per treballador: a cada mes, el document de la seva nòmina (PDF o foto). Només l’oficina els puja; cada treballador veu només els seus, des de l’app o des d’aquí.' : 'A cada mes, la teva nòmina. Toca-la per obrir-la.'}</p>
+    <p class="sub">${oficina ? 'Un calendari per treballador: a cada mes, el document de la seva nòmina (PDF o foto). Només l’oficina els puja; cada treballador veu només els seus, des de l’app o des d’aquí.' + (compta ? ' Cada nòmina que es puja es llegeix per a la comptabilitat i queda per revisar: quan la revises, s’assenta sola.' : '') : 'A cada mes, la teva nòmina. Toca-la per obrir-la.'}</p>
     ${!t ? '<div class="msg err">El teu usuari no té fitxa de treballador amb aquest correu d’accés: demana a l’oficina que t’hi afegeixin.</div>' : ''}
     <div class="bar">
-      ${oficina ? `<select id="nom-treb" style="width:auto; min-width:220px">${treballadors.map(x => `<option value="${x.id}" ${x.id === trebId ? 'selected' : ''}>${h(nomTreballador(x))}</option>`).join('')}</select>` : ''}
+      ${oficina ? `<select id="nom-treb" style="width:auto; min-width:220px">${treballadors.map(x => `<option value="${x.id}" ${x.id === trebId ? 'selected' : ''}>${h(nomTreballador(x))}</option>`).join('')}</select>${compteTreb}` : ''}
       <span class="nom-any"><button class="btn ghost small" data-any="-1" title="Any anterior">◀</button><input type="number" id="nom-any" value="${any}" min="2000" max="2100"><button class="btn ghost small" data-any="1" title="Any següent">▶</button></span>
       <span class="n">${delAny.length} ${delAny.length === 1 ? 'document' : 'documents'} el ${any}${anys.length && !anys.every(a => a === any) ? ' · anys amb nòmines: ' + anys.join(', ') : ''}</span>
     </div>
     <div id="ferr"></div>
+    ${compta ? estatNominesHTML() : ''}
+    ${rev ? revisioNominaHTML(rev) : ''}
     <div class="nom-cal">${MESOS.map((nom, i) => { const m = i + 1, docs = perMes(m);
       return `<div class="nom-mes ${docs.length ? 'te' : ''} ${m === mesAra && any === anyAra ? 'ara' : ''}"><div class="nom-mes-nom">${nom}</div>
-        ${docs.map(n => `<a href="#" class="nom-doc" data-obre="${h(n.pdf)}" title="${h(n.nom_fitxer || '')}">📄 ${h(n.concepte || 'Nòmina')}</a>${oficina ? `<span class="hint">pujada ${dmy(n.creat_el)}${n.pujada_per ? ' per ' + h(nomCurtTreballador(C.get('treballadors', n.pujada_per))) : ''} · <a href="#" data-treu="${n.id}">treu</a></span>` : ''}`).join('')}
+        ${docs.map(n => `<a href="#" class="nom-doc" data-obre="${h(n.pdf)}" title="${h(n.nom_fitxer || '')}">📄 ${h(n.concepte || 'Nòmina')}</a>${compta ? xipNominaHTML(n) : ''}${oficina ? `<span class="hint">pujada ${dmy(n.creat_el)}${n.pujada_per ? ' per ' + h(nomCurtTreballador(C.get('treballadors', n.pujada_per))) : ''} · <a href="#" data-treu="${n.id}">treu</a></span>` : ''}`).join('')}
         ${!docs.length && !oficina ? '<span class="nom-buit">—</span>' : ''}
         ${oficina ? `<label class="btn ghost small nom-puja">${docs.length ? 'Afegeix-hi un altre document' : 'Puja la nòmina'}<input type="file" accept="application/pdf,image/*" data-mes="${m}" hidden></label>` : ''}
       </div>`; }).join('')}</div>`;
   const canviaAny = v => { const n = Math.min(2100, Math.max(2000, Number(v) || anyAra)); st.any = String(n); renderMain(); };
   main.querySelectorAll('[data-any]').forEach(b => b.addEventListener('click', () => canviaAny(any + Number(b.dataset.any))));
   $('#nom-any').addEventListener('change', e => canviaAny(e.target.value));
-  if ($('#nom-treb')) $('#nom-treb').addEventListener('change', e => { st.treb = e.target.value; renderMain(); });
+  if ($('#nom-treb')) $('#nom-treb').addEventListener('change', e => { st.treb = e.target.value; st.rev = null; renderMain(); });
   main.querySelectorAll('[data-obre]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); obreFitxer(a.dataset.obre); }));
   main.querySelectorAll('[data-treu]').forEach(a => a.addEventListener('click', async e => { e.preventDefault(); try { await treuNomina(Number(a.dataset.treu)); renderMain(); } catch (err) { showFormError(friendly(err)); } }));
   main.querySelectorAll('input[type=file][data-mes]').forEach(inp => inp.addEventListener('change', async () => {
     const f = inp.files && inp.files[0]; if (!f) return;
-    try { await pujaNomina(trebId, any, Number(inp.dataset.mes), f); toast('Nòmina desada'); renderMain(); } catch (err) { inp.value = ''; showFormError(friendly(err)); }
+    try {
+      const r = await pujaNomina(trebId, any, Number(inp.dataset.mes), f);
+      if (!r) { inp.value = ''; return; }   // (cancel·lat)
+      if (r.llegida) toast('Nòmina desada i llegida: revisa-la', 4000);
+      else if (r.error) toastErr('Nòmina desada, però no s’ha pogut llegir: ' + r.error);
+      else toast('Nòmina desada');
+      renderMain();
+    } catch (err) { inp.value = ''; showFormError(friendly(err)); }
   }));
+  main.querySelectorAll('[data-fitxa-treb]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); state.mode = 'entrada'; state.table = 'treballadors'; state.editing = Number(a.dataset.fitxaTreb); renderApp(); window.scrollTo({ top: 0 }); }));
+  if (compta) bindEstatNomines(main);
+  if (rev) bindRevisioNomina(main, rev);
 }
-// puja el fitxer a nomines/<treballador>/ i en crea el registre; si el mes ja té un document, demana el concepte del nou (paga extra…)
+// l'estat de cada document a la comptabilitat (clicant-lo, es revisa)
+function xipNominaHTML(n) {
+  const e = estatNomina(n), [txt, cls] = XIP_NOMINA[e];
+  return `<span class="nom-doc-estat">${e === 'sense'
+    ? `<span class="xip">${txt}</span><a href="#" data-llegeix="${n.id}">Llegeix-la</a> · <a href="#" data-rev="${n.id}" title="Escriu-ne els imports a mà">a mà</a>`
+    : `<a href="#" class="xip ${cls}" data-rev="${n.id}" title="Obre-la per revisar-la">${txt}${n.liquid != null && e !== 'no' ? ' · ' + eur(n.liquid) : ''}</a>`}</span>`;
+}
+// a dalt: les que falten per revisar (de tothom), les que no s'han llegit i l'enllaç a la Seguretat Social
+function estatNominesHTML() {
+  const ns = C.rows('nomines').filter(n => n.actiu), lot = state.nom.lot;
+  const rev = ns.filter(n => n.comptable === 'revisar').sort(ordreNomines), sense = ns.filter(n => !n.comptable && nominaDesDelInici(n));
+  const anyAra = new Date().getFullYear();
+  const enllac = n => `<a href="#" data-rev="${n.id}">${h(nomCurtTreballador(C.get('treballadors', n.treballador_id)))} · ${MESOS_CAT[n.mes - 1]}${Number(n.exercici) !== anyAra ? ' ' + n.exercici : ''}</a>`;
+  return `<div class="nom-estat">
+    <span><b>Comptabilitat:</b> ${rev.length ? `${rev.length} per revisar: ${rev.slice(0, 8).map(enllac).join(', ')}${rev.length > 8 ? '…' : ''}` : 'cap nòmina per revisar ✓'}</span>
+    ${sense.length ? `<span>${sense.length} sense llegir${comptaInici ? ` (des ${deMes(Number(String(comptaInici).slice(5, 7)))} de ${String(comptaInici).slice(0, 4)})` : ''}
+      <button type="button" class="btn ghost small" id="nom-llegeix-tot" ${lot ? 'disabled' : ''}>${lot ? `Llegint ${Math.min(lot.fets + 1, lot.total)} de ${lot.total}…` : 'Llegeix-les'}</button></span>` : ''}
+    ${potVeureCompta() ? '<a href="#" id="nom-ss">Seguretat Social i IRPF →</a>' : ''}
+  </div>`;
+}
+function bindEstatNomines(main) {
+  main.querySelectorAll('[data-rev]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); obreNomina(Number(a.dataset.rev)); }));
+  main.querySelectorAll('[data-llegeix]').forEach(a => a.addEventListener('click', async e => {
+    e.preventDefault(); if (a.dataset.llegint) return; a.dataset.llegint = '1'; a.textContent = 'llegint…';
+    const id = Number(a.dataset.llegeix);
+    try { await llegeixNomina(id); state.nom.rev = id; toast('Llegida: revisa-la', 4000); } catch (err) { toastErr(err.message || friendly(err)); }
+    if (state.table === 'nomines') renderMain();
+  }));
+  const lt = main.querySelector('#nom-llegeix-tot'); if (lt) lt.addEventListener('click', () => llegeixNominesSenseLlegir());
+  const ss = main.querySelector('#nom-ss'); if (ss) ss.addEventListener('click', e => { e.preventDefault(); state.table = 'compta_ss'; state.editing = null; renderApp(); window.scrollTo({ top: 0 }); });
+}
+
+// meritat − SS − IRPF − bestretes − embargaments − altres = líquid? (el mateix càlcul que la comptabilitat, amb 2 cèntims de marge)
+function quadraNomina(v) {
+  const n = k => { const x = v[k]; if (x === '' || x == null) return null; const y = Number(String(x).replace(',', '.')); return isNaN(y) ? null : y; };
+  const r2 = x => Math.round(x * 100) / 100;
+  const mer = n('meritat'), liq = n('liquid'); if (mer == null || liq == null) return null;
+  const q = { mer, liq, ss: n('ss_treballador') || 0, irpf: n('irpf') || 0, best: n('bestretes') || 0, emb: n('embargaments') || 0, alt: n('altres_deduccions') || 0, prest: n('prestacio_ss') || 0 };
+  q.calc = r2(mer - q.ss - q.irpf - q.best - q.emb - q.alt); q.falta = r2(liq - q.calc);
+  q.itMal = q.prest < 0 || q.prest > mer + 0.005;
+  q.ok = Math.abs(q.falta) <= 0.02 && !q.itMal;
+  return q;
+}
+function notaQuadraNomina(q) {
+  if (!q) return { classe: '', text: 'Posa el total meritat i el líquid: ha de quadrar meritat − deduccions = líquid.' };
+  const ee = v => eur(v).replace(' €', ' €');
+  if (q.itMal) return { classe: 'v-no', text: 'La baixa en pagament delegat no pot ser més que el total meritat.' };
+  const txt = `${ee(q.mer)} − SS ${ee(q.ss)} − IRPF ${ee(q.irpf)}${q.best ? ' − bestretes ' + ee(q.best) : ''}${q.emb ? ' − embargaments ' + ee(q.emb) : ''}${q.alt ? ' − altres ' + ee(q.alt) : ''} = ${ee(q.calc)}`;
+  return q.ok ? { classe: 'v-ok', text: 'quadra: ' + txt + ' ✓' } : { classe: 'v-no', text: `no quadra: ${txt}, i el líquid és ${ee(q.liq)} (diferència de ${ee(Math.abs(q.falta))})` };
+}
+// el que convé mirar: el NIF i el mes que ha llegit la IA, si no n'està segura, el que diu ella i si el treballador té compte
+function avisosNomina(n, t) {
+  const x = n.extraccio || {}, out = [], net = s => String(s || '').replace(/[^0-9A-Z]/gi, '').toUpperCase();
+  if (x.es_nomina === false) out.push('La IA diu que aquest document no sembla una nòmina: si no ho és, «No es comptabilitza».');
+  if (x.treballador_nif && t.nif && net(x.treballador_nif) !== net(t.nif)) out.push(`El NIF de la nòmina (${h(x.treballador_nif)}) no és el de ${h(nomTreballador(t))} (${h(t.nif)}): és la nòmina d’una altra persona?`);
+  const p = String(x.periode_fi || x.periode_inici || '');
+  if (/^\d{4}-\d{2}/.test(p) && p.slice(0, 7) !== `${n.exercici}-${String(n.mes).padStart(2, '0')}`)
+    out.push(`La nòmina és ${deMes(Number(p.slice(5, 7)))} de ${p.slice(0, 4)}, i està pujada a ${MESOS_CAT[n.mes - 1]} de ${n.exercici}.`);
+  if (x.confianca === 'baixa' || x.confianca === 'mitjana') out.push(`La IA no n’està del tot segura (confiança ${h(x.confianca)}): repassa els imports amb el document.`);
+  if (x.avisos) out.push('La IA diu: ' + h(String(x.avisos)));
+  if (potVeureCompta() && teCompteTreballador && t.id && !t.compte_codi)
+    out.push(`${h(nomTreballador(t))} encara no té el compte 465 (el de ContaSol): <a href="#" data-fitxa-treb="${t.id}">posa’l a la seva fitxa</a>. Fins llavors, la nòmina revisada queda a «pendents» de la comptabilitat.`);
+  return out;
+}
+// el quadre per revisar una nòmina: els imports (els opcionals, només si n'hi ha), si quadra, els avisos i l'assentament
+function revisioNominaHTML(n) {
+  const t = C.get('treballadors', n.treballador_id) || {}, e = estatNomina(n), [txt, cls] = XIP_NOMINA[e], x = n.extraccio || {};
+  const OPC = { prestacio_ss: 'baixa (IT en pagament delegat)', bestretes: 'bestretes', embargaments: 'embargaments', altres_deduccions: 'altres deduccions' };
+  const v = k => n[k] == null || n[k] === '' ? '' : String(Number(n[k]));
+  const camp = (k, label, hint) => `<label class="f" data-nr="${k}" ${OPC[k] && !Number(n[k]) ? 'hidden' : ''}><span class="l">${label}</span><input type="number" step="0.01" name="${k}" value="${h(v(k))}">${hint ? `<span class="hint">${hint}</span>` : ''}${k === 'liquid' ? '<span class="hint nota" id="nr-quadra"></span>' : ''}</label>`;
+  const amagats = Object.keys(OPC).filter(k => !Number(n[k]));
+  const avisos = avisosNomina(n, t);
+  const seg = C.rows('nomines').filter(y => y.actiu && y.id !== n.id && y.comptable === 'revisar').sort(ordreNomines)[0];
+  return `<div class="panel nom-rev" id="nom-rev">
+    <div class="ph"><h2>${h(etiquetaNomina(n, false))} · ${h(nomTreballador(t))}</h2><span class="xip ${cls}">${txt}</span></div>
+    <p class="sub"><a href="#" data-obre="${h(n.pdf)}">Obre el document</a>${x.llegit_el ? ` · llegida per la IA el ${dmyhm(x.llegit_el)}` : ''}${n.revisada_el ? ` · revisada el ${dmyhm(n.revisada_el)}${n.revisada_per ? ' per ' + h(nomCurtTreballador(C.get('treballadors', n.revisada_per))) : ''}` : ''} · <a href="#" id="nr-tanca">tanca</a></p>
+    ${avisos.length ? `<div class="msg dc-avis nr-avisos">${avisos.map(a => `<div>⚠ ${a}</div>`).join('')}</div>` : ''}
+    ${e === 'sense' ? '<p class="hint">Encara no s’ha llegit: «Llegeix-la» n’omple els imports amb la IA (o escriu-los a mà).</p>' : ''}
+    <form id="nr-frm" novalidate><div class="grid">
+      <label class="f"><span class="l">Concepte</span><input type="text" name="concepte" value="${h(n.concepte || 'Nòmina')}"><span class="hint">Nòmina, Paga extra, Finiquit…</span></label>
+      <label class="f"><span class="l">Data de l’assentament</span><input type="date" name="data_comptable" value="${h(n.data_comptable ? String(n.data_comptable).slice(0, 10) : '')}"><span class="hint">buida: l’últim dia del mes (${dmy(fiDeMesNomina(n))})</span></label>
+      ${camp('meritat', 'Total meritat (brut)', 'tot el que cobra, també la baixa en pagament delegat, si n’hi ha')}
+      ${camp('prestacio_ss', 'De què, baixa en pagament delegat (IT)', 'la prestació de la SS que paga l’empresa: es descompta del que es paga a la SS')}
+      ${camp('ss_treballador', 'SS del treballador', 'les seves deduccions de Seguretat Social')}
+      ${camp('irpf_percent', 'IRPF %', '')}
+      ${camp('irpf', 'IRPF', 'la retenció (model 111)')}
+      ${camp('bestretes', 'Bestretes', 'les que es descompten aquest mes')}
+      ${camp('embargaments', 'Embargaments', 'el que es reté per pagar-ho a un altre (jutjat, Hisenda…)')}
+      ${camp('altres_deduccions', 'Altres deduccions', '')}
+      ${camp('liquid', 'Líquid a percebre', 'el que es paga al treballador')}
+      ${camp('ss_empresa', 'SS de l’empresa', 'l’aportació de l’empresa (la suma de la columna «aportación empresa»)')}
+    </div></form>
+    ${amagats.length ? `<p class="nr-mes"><a href="#" id="nr-mes">+ ${amagats.map(k => OPC[k]).join(', ')}</a></p>` : ''}
+    <div class="actions">
+      ${e === 'ok' ? '<button type="button" class="btn desa" id="nr-desa">Desa</button><button type="button" class="btn ghost" id="nr-desmarca">Torna-la a «per revisar»</button>'
+                   : '<button type="button" class="btn desa" id="nr-ok">Desa i marca-la com a revisada</button><button type="button" class="btn ghost" id="nr-desa">Desa (encara per revisar)</button>'}
+      <button type="button" class="btn ghost" id="nr-llegeix">${e === 'sense' ? 'Llegeix-la (IA)' : 'Torna-la a llegir (IA)'}</button>
+      ${e !== 'no' ? '<button type="button" class="btn ghost" id="nr-no">No es comptabilitza</button>' : ''}
+      ${seg ? `<a href="#" class="nr-seg" data-rev="${seg.id}">Següent per revisar: ${h(nomCurtTreballador(C.get('treballadors', seg.treballador_id)))} · ${MESOS_CAT[seg.mes - 1]} →</a>` : ''}
+    </div>
+    ${comptaDocHTML('nomina', n)}
+  </div>`;
+}
+function bindRevisioNomina(main, n) {
+  const box = main.querySelector('#nom-rev'); if (!box) return;
+  const frm = box.querySelector('#nr-frm');
+  const vals = () => { const o = {}; frm.querySelectorAll('input[name]').forEach(i => { o[i.name] = i.value; }); return o; };
+  const pinta = () => {
+    const q = quadraNomina(vals()), nt = notaQuadraNomina(q), el = box.querySelector('#nr-quadra');
+    if (el) { el.className = 'hint nota ' + nt.classe; el.textContent = nt.text; }
+    const liq = frm.querySelector('[name="liquid"]'); if (liq) { liq.classList.toggle('v-ok', !!(q && q.ok)); liq.classList.toggle('v-no', !!q && !q.ok); }
+    const ok = box.querySelector('#nr-ok'); if (ok) { ok.disabled = !(q && q.ok); ok.title = q && q.ok ? '' : 'Ha de quadrar: meritat − deduccions = líquid'; }
+  };
+  frm.addEventListener('input', pinta); pinta();
+  frm.addEventListener('submit', e => e.preventDefault());
+  const mes = box.querySelector('#nr-mes');
+  if (mes) mes.addEventListener('click', e => { e.preventDefault(); box.querySelectorAll('[data-nr][hidden]').forEach(l => { l.hidden = false; }); mes.parentElement.remove(); });
+  box.querySelector('#nr-tanca').addEventListener('click', e => { e.preventDefault(); state.nom.rev = null; renderMain(); });
+  // desa els imports del quadre (i, si cal, l'estat): el disparador de la base de dades en fa l'assentament
+  const desa = async comptable => {
+    const p = { concepte: frm.querySelector('[name="concepte"]').value.trim() || 'Nòmina', data_comptable: frm.querySelector('[name="data_comptable"]').value || null };
+    CAMPS_NOMINA.forEach(k => { const el = frm.querySelector(`[name="${k}"]`); p[k] = !el || el.value === '' || isNaN(Number(el.value)) ? null : Math.round(Number(el.value) * 100) / 100; });
+    if (comptable) {
+      p.comptable = comptable;
+      const t = treballadorActual();
+      p.revisada_per = comptable === 'ok' && t ? t.id : null; p.revisada_el = comptable === 'ok' ? new Date().toISOString() : null;
+    }
+    const r = await sb.from('nomines').update(p).eq('id', n.id); if (r.error) throw r.error;
+    await refrescaFiles('nomines', [n.id]);
+  };
+  const fes = (sel, f) => { const b = box.querySelector(sel); if (!b) return;
+    b.addEventListener('click', async () => { b.disabled = true; try { await f(); } catch (err) { showFormError(friendly(err)); } finally { if (b.isConnected) { b.disabled = false; pinta(); } } }); };
+  fes('#nr-ok', async () => {
+    const q = quadraNomina(vals()); if (!q || !q.ok) { showFormError('Encara no quadra: el meritat menys les deduccions ha de fer el líquid.'); return; }
+    await desa('ok'); toast('Revisada: la nòmina s’assenta sola', 4000); renderMain();
+  });
+  fes('#nr-desa', async () => { await desa(n.comptable === 'ok' ? null : 'revisar'); toast('Desada'); renderMain(); });
+  fes('#nr-desmarca', async () => { await desa('revisar'); toast('Torna a estar per revisar: l’assentament es treu'); renderMain(); });
+  fes('#nr-no', async () => { await desa('no'); toast('No es comptabilitza'); renderMain(); });
+  fes('#nr-llegeix', async () => {
+    if (n.comptable === 'ok' && !confirm('Ja està revisada. Si la tornes a llegir, els imports es tornen a omplir amb el que llegeixi la IA i tornarà a quedar per revisar. Continuar?')) return;
+    toast('Llegint la nòmina…', 30000); await llegeixNomina(n.id); toast('Llegida: revisa-la', 4000); renderMain();
+  });
+  box.querySelectorAll('[data-fitxa-treb]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); state.mode = 'entrada'; state.table = 'treballadors'; state.editing = Number(a.dataset.fitxaTreb); renderApp(); window.scrollTo({ top: 0 }); }));
+  ompleComptaDoc(main);
+}
+
+// llegeix una nòmina amb la IA (la funció «llegeix-nomina») i en desa els imports: queda per revisar
+const CLAUS_EXTRACCIO = ['es_nomina', 'tipus', 'treballador_nom', 'treballador_nif', 'naf', 'empresa_nif', 'periode_inici', 'periode_fi', 'meritat', 'prestacio_ss', 'ss_treballador',
+  'irpf_percent', 'irpf', 'bestretes', 'embargaments', 'altres_deduccions', 'total_deduccions', 'liquid', 'ss_empresa', 'confianca', 'avisos'];
+async function llegeixNomina(id) {
+  const n = C.get('nomines', id); if (!n) throw new Error('No trobo la nòmina.');
+  const { data, error } = await sb.functions.invoke('llegeix-nomina', { body: { path: n.pdf } });
+  if (error) {
+    let detall = error.message || String(error);
+    try { if (error.context && error.context.json) { const j = await error.context.json(); if (j && j.error) detall = j.error; } } catch (e2) {}
+    if (/Requested function was not found|NOT_FOUND|\b404\b/i.test(detall)) detall = 'encara no hi ha la funció «llegeix-nomina» a Supabase (Edge Functions): crea-la amb el codi de funcio-llegeix-nomina.ts';
+    throw new Error('Lectura: ' + detall);
+  }
+  if (!data || data.error) throw new Error('Lectura: ' + ((data && data.error) || 'sense resposta'));
+  const num = v => v == null || v === '' || isNaN(Number(v)) ? null : Math.round(Number(v) * 100) / 100;
+  const ext = { llegit_el: new Date().toISOString() };
+  CLAUS_EXTRACCIO.forEach(k => { const v = data[k]; if (v == null) return; ext[k] = typeof v === 'string' ? v.slice(0, 400) : typeof v === 'number' || typeof v === 'boolean' ? v : String(v).slice(0, 400); });
+  const p = { comptable: 'revisar', revisada_per: null, revisada_el: null, extraccio: ext };
+  CAMPS_NOMINA.forEach(k => { p[k] = num(data[k]); });
+  ['prestacio_ss', 'bestretes', 'embargaments', 'altres_deduccions'].forEach(k => { if (!p[k]) p[k] = null; });   // (només si n'hi ha)
+  if (data.tipus === 'paga_extra' && (n.concepte || 'Nòmina') === 'Nòmina') p.concepte = 'Paga extra';
+  const r = await sb.from('nomines').update(p).eq('id', id); if (r.error) throw new Error(friendly(r.error));
+  await refrescaFiles('nomines', [id]);
+  return C.get('nomines', id);
+}
+// les que encara no s'han llegit (des de la data d'inici de la comptabilitat), una darrere l'altra
+async function llegeixNominesSenseLlegir() {
+  const st = state.nom; if (st.lot) return;
+  const ids = C.rows('nomines').filter(n => n.actiu && !n.comptable && nominaDesDelInici(n)).sort(ordreNomines).map(n => n.id);
+  if (!ids.length) return;
+  st.lot = { fets: 0, total: ids.length }; const errors = [];
+  const pinta = () => { const b = document.getElementById('nom-llegeix-tot'); if (b && st.lot) { b.disabled = true; b.textContent = `Llegint ${Math.min(st.lot.fets + 1, st.lot.total)} de ${st.lot.total}…`; } };
+  pinta();
+  for (const id of ids) {
+    try { await llegeixNomina(id); } catch (e) { errors.push(e.message); if (/funció «llegeix-nomina»/.test(e.message)) break; }
+    st.lot.fets++; pinta();
+  }
+  const fetes = st.lot.fets - errors.length; st.lot = null;
+  if (errors.length) toastErr(`${fetes} llegides; ${ids.length - fetes} no: ${errors[0]}`); else toast(`${fetes} nòmines llegides: ara revisa-les`, 5000);
+  if (state.table === 'nomines') renderMain();
+}
+// puja el fitxer a nomines/<treballador>/ i en crea el registre; si el mes ja té un document, demana el concepte del nou (paga extra…).
+// (v68) A l'oficina, després la llegeix per a la comptabilitat i l'obre per revisar-la. Torna null si es cancel·la.
 async function pujaNomina(trebId, any, mes, file) {
   const t = treballadorActual(); if (!trebId) throw new Error('Tria el treballador.');
   file = await redueixFoto(file, FOTO_DOCUMENT);   // si és una foto (no un PDF), més lleugera
   const existents = C.rows('nomines').filter(n => n.actiu && Number(n.treballador_id) === trebId && Number(n.exercici) === any && Number(n.mes) === mes);
   let concepte = 'Nòmina';
-  if (existents.length) { const c = prompt(MESOS[mes - 1] + ' ' + any + ' ja té un document (' + existents.map(n => n.concepte).join(', ') + '). Concepte del nou:', 'Paga extra'); if (c == null) return; concepte = c.trim() || 'Nòmina'; }
+  if (existents.length) { const c = prompt(MESOS[mes - 1] + ' ' + any + ' ja té un document (' + existents.map(n => n.concepte).join(', ') + '). Concepte del nou:', 'Paga extra'); if (c == null) return null; concepte = c.trim() || 'Nòmina'; }
   const path = `nomines/${trebId}/${any}-${String(mes).padStart(2, '0')}_${Date.now()}_${file.name.replace(/[^\w.\-]+/g, '_')}`;
   const up = await sb.storage.from(BUCKET).upload(path, file, { contentType: file.type || undefined });
   if (up.error) throw new Error('No s’ha pogut pujar el fitxer: ' + friendly(up.error));
-  const ins = await sb.from('nomines').insert({ treballador_id: trebId, exercici: any, mes, concepte, pdf: path, nom_fitxer: file.name, pujada_per: t ? t.id : null });
+  const ins = await sb.from('nomines').insert({ treballador_id: trebId, exercici: any, mes, concepte, pdf: path, nom_fitxer: file.name, pujada_per: t ? t.id : null }).select('id').single();
   if (ins.error) throw ins.error;
   await loadTable('nomines');
+  if (!oficinaNomines() || !teNominesCompta() || !ins.data || !ins.data.id) return { desada: true };
+  state.nom.rev = ins.data.id;
+  try { toast('Nòmina desada. Llegint-la…', 30000); await llegeixNomina(ins.data.id); return { llegida: true }; }
+  catch (e) { return { error: e.message || friendly(e) }; }
+}
+
+/* ---------- COMPTABILITAT › Seguretat Social i IRPF: el que es deu a la SS cada mes segons les nòmines, i el que s'hi ha pagat ---------- */
+// un mes: la SS dels treballadors i la de l'empresa, les baixes en pagament delegat (es descompten), el que s'ha de pagar i l'IRPF.
+// Compten les nòmines llegides (també les que encara són per revisar); les que no es comptabilitzen, no.
+function ssDelMes(any, mes) {
+  const r2 = x => Math.round(x * 100) / 100;
+  const del = C.rows('nomines').filter(n => n.actiu && Number(n.exercici) === any && Number(n.mes) === mes && n.comptable !== 'no');
+  const amb = del.filter(n => n.comptable === 'revisar' || n.comptable === 'ok');
+  const s = k => r2(amb.reduce((t, n) => t + Number(n[k] || 0), 0));
+  const sst = s('ss_treballador'), sse = s('ss_empresa'), it = s('prestacio_ss');
+  return { any, mes, n: amb.length, docs: del.length, revisar: del.filter(n => n.comptable === 'revisar').length, sense: del.filter(n => !n.comptable).length,
+           sst, sse, it, aPagar: r2(sst + sse - it), irpf: s('irpf'), liquid: s('liquid'), nomines: amb.slice().sort(ordreNomines) };
+}
+async function compteSSId() {
+  try { const r = await sb.from('comptes_defecte').select('compte_id').eq('clau', 'ss'); const id = !r.error && r.data && r.data[0] && r.data[0].compte_id; if (id) return Number(id); } catch (e) {}
+  const c = compteCodi('4760000'); return c ? c.id : null;
+}
+async function renderComptaSS(main) {
+  if (!potVeureCompta()) { main.innerHTML = noComptaHTML(); return; }
+  const st = state.ss, any = Number(st.any) || new Date().getFullYear(), r2 = x => Math.round(x * 100) / 100;
+  if (!teNominesCompta()) { main.innerHTML = '<div class="panel compta"><div class="ph"><h2>Seguretat Social i IRPF</h2></div><p class="msg err">Falta executar el fitxer 111_nomines_comptabilitat.sql a Supabase.</p></div>'; return; }
+  const mesos = MESOS.map((_, i) => ssDelMes(any, i + 1)), avuiS = avui();
+  const visibles = mesos.filter(r => r.docs || r.mes === Number(st.mes));
+  const tot = k => r2(mesos.reduce((t, r) => t + r[k], 0));
+  const num = v => v ? num2(v) : '';
+  const fila = r => {
+    const venc = ymd(new Date(any, r.mes + 1, 0));   // (l'últim dia del mes següent: quan s'ha de pagar)
+    return `<tr class="ss-mes${Number(st.mes) === r.mes ? ' obert' : ''}" data-ss-mes="${r.mes}">
+      <td>${MESOS[r.mes - 1]}${r.revisar || r.sense ? `<div class="ss-avis">⚠ ${[r.revisar ? r.revisar + ' per revisar' : '', r.sense ? r.sense + ' sense llegir' : ''].filter(Boolean).join(', ')}</div>` : ''}</td>
+      <td class="num">${r.n}</td><td class="num">${num(r.sst)}</td><td class="num">${num(r.sse)}</td><td class="num">${r.it ? '−' + num2(r.it) : ''}</td>
+      <td class="num"><b>${num2(r.aPagar)}</b></td><td class="num" data-pagat="${r.mes}"><span class="hint">…</span></td><td class="num" data-dif="${r.mes}" data-apagar="${r.aPagar}" data-venc="${venc}"></td>
+      <td class="num">${num(r.irpf)}</td></tr>
+      ${Number(st.mes) === r.mes ? `<tr><td colspan="9" class="det">${detallSSHTML(r)}</td></tr>` : ''}`;
+  };
+  const trimestres = [1, 2, 3, 4].map(q => ({ q, irpf: r2(mesos.slice((q - 1) * 3, q * 3).reduce((t, r) => t + r.irpf, 0)), n: mesos.slice((q - 1) * 3, q * 3).reduce((t, r) => t + r.n, 0) }));
+  main.innerHTML = `<div class="panel compta"><div class="ph"><h2>Seguretat Social i IRPF de les nòmines</h2></div>
+    <div class="bar"><span class="nom-any"><button class="btn ghost small" data-ss-any="-1" title="Any anterior">◀</button><input type="number" id="ss-any" value="${any}" min="2000" max="2100"><button class="btn ghost small" data-ss-any="1" title="Any següent">▶</button></span>
+      <a href="#" id="ss-nomines">← Nòmines</a></div>
+    <p class="hint">A pagar = la SS dels treballadors + la de l’empresa − les baixes en pagament delegat (IT), segons les nòmines del mes: és el que ha de sortir al rebut de liquidació de cotitzacions (RLC), que es carrega a final del mes següent. Si l’RLC porta bonificacions o recàrrecs, la diferència serà aquesta. Pagat: el que s’ha pagat a la SS el mes següent (els moviments del banc conciliats al compte 476 i els assentaments fets a mà). Compten les nòmines llegides, també les que encara són per revisar (surten marcades). Clica un mes per veure’n cada treballador.</p>
+    ${visibles.length ? `<table class="tbl compta-t ss-t"><thead><tr><th>Mes</th><th class="num">Nòmines</th><th class="num">SS treballadors</th><th class="num">SS empresa</th><th class="num">Baixes (IT)</th><th class="num">A pagar a la SS</th><th class="num">Pagat</th><th class="num">Diferència</th><th class="num">IRPF</th></tr></thead>
+      <tbody>${visibles.map(fila).join('')}</tbody>
+      <tfoot><tr><td>${any}</td><td class="num">${mesos.reduce((t, r) => t + r.n, 0)}</td><td class="num">${num2(tot('sst'))}</td><td class="num">${num2(tot('sse'))}</td><td class="num">${tot('it') ? '−' + num2(tot('it')) : ''}</td>
+        <td class="num">${num2(tot('aPagar'))}</td><td class="num" id="ss-pagat-any"></td><td class="num"></td><td class="num">${num2(tot('irpf'))}</td></tr></tfoot></table>
+      <table class="tbl compta-t ss-irpf"><thead><tr><th>IRPF de les nòmines (model 111)</th><th class="num">Nòmines</th><th class="num">IRPF retingut</th></tr></thead>
+        <tbody>${trimestres.map(t => `<tr><td>${['1r', '2n', '3r', '4t'][t.q - 1]} trimestre</td><td class="num">${t.n}</td><td class="num">${num2(t.irpf)}</td></tr>`).join('')}</tbody></table>
+      <p class="hint">El model 111 també porta les retencions dels professionals (les factures de proveïdor amb retenció): són al compte 4751 del llibre major.</p>`
+      : `<p class="hint">Cap nòmina llegida el ${any}. Es llegeixen en pujar-les a PERSONAL › Nòmines.</p>`}
+  </div>`;
+  const canviaAny = v => { st.any = String(Math.min(2100, Math.max(2000, Number(v) || any))); st.mes = null; renderMain(); };
+  main.querySelectorAll('[data-ss-any]').forEach(b => b.addEventListener('click', () => canviaAny(any + Number(b.dataset.ssAny))));
+  main.querySelector('#ss-any').addEventListener('change', e => canviaAny(e.target.value));
+  main.querySelector('#ss-nomines').addEventListener('click', e => { e.preventDefault(); state.table = 'nomines'; state.editing = null; renderApp(); window.scrollTo({ top: 0 }); });
+  main.querySelectorAll('[data-ss-mes]').forEach(tr => tr.addEventListener('click', e => { if (e.target.closest('a')) return; st.mes = Number(st.mes) === Number(tr.dataset.ssMes) ? null : Number(tr.dataset.ssMes); renderMain(); }));
+  main.querySelectorAll('[data-rev]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); obreNomina(Number(a.dataset.rev)); }));
+  // el que s'ha pagat: el llibre major del compte de la SS (sense els assentaments de les nòmines), el mes següent
+  let pagat = null;
+  try {
+    const ssId = await compteSSId();
+    if (ssId) {
+      const ap = await comptaApunts({ desde: `${any}-02-01`, fins: `${any + 1}-01-31`, compteId: ssId });
+      pagat = new Map();
+      ap.forEach(l => { if (l.origen === 'nomina') return; const dt = new Date(String(l.data_document || l.data).slice(0, 10) + 'T12:00:00'); dt.setDate(1); dt.setMonth(dt.getMonth() - 1);
+        if (dt.getFullYear() !== any) return; const m = dt.getMonth() + 1; pagat.set(m, r2((pagat.get(m) || 0) + Number(l.deure || 0) - Number(l.haver || 0))); });
+    }
+  } catch (e) { pagat = null; }
+  if (!main.isConnected || state.table !== 'compta_ss') return;
+  main.querySelectorAll('[data-pagat]').forEach(td => { const m = Number(td.dataset.pagat), v = pagat ? pagat.get(m) : null; td.innerHTML = pagat == null ? '<span class="hint" title="No s’ha pogut consultar la comptabilitat">—</span>' : v ? num2(v) : ''; });
+  main.querySelectorAll('[data-dif]').forEach(td => {
+    const m = Number(td.dataset.dif), aP = Number(td.dataset.apagar), v = pagat ? pagat.get(m) : null;
+    if (v) { const d = r2(v - aP); td.innerHTML = Math.abs(d) < 0.01 ? '<span class="v-ok">quadra ✓</span>' : `<span class="v-no">${d > 0 ? '+' : '−'}${num2(Math.abs(d))}</span>`; }
+    else if (pagat && aP > 0) td.innerHTML = td.dataset.venc < avuiS ? '<span class="v-no">sense pagar</span>' : '<span class="hint">es paga el mes següent</span>';
+  });
+  const pa = main.querySelector('#ss-pagat-any'); if (pa && pagat) pa.textContent = num2([...pagat.values()].reduce((t, v) => t + v, 0));
+}
+function detallSSHTML(r) {
+  if (!r.docs) return '<p class="hint">Cap nòmina aquest mes.</p>';
+  const ns = C.rows('nomines').filter(n => n.actiu && Number(n.exercici) === r.any && Number(n.mes) === r.mes && n.comptable !== 'no').sort(ordreNomines);
+  const num = v => v == null || v === '' ? '' : num2(v);
+  return `<table class="tbl"><thead><tr><th>Treballador</th><th>Concepte</th><th>Estat</th><th class="num">Meritat</th><th class="num">SS treballador</th><th class="num">SS empresa</th><th class="num">Baixa (IT)</th><th class="num">IRPF</th><th class="num">Líquid</th></tr></thead>
+    <tbody>${ns.map(n => { const [txt, cls] = XIP_NOMINA[estatNomina(n)];
+      return `<tr><td>${h(nomTreballador(C.get('treballadors', n.treballador_id)))}</td><td>${h(n.concepte || 'Nòmina')}</td><td><a href="#" class="xip ${cls}" data-rev="${n.id}">${txt}</a></td>
+        <td class="num">${num(n.meritat)}</td><td class="num">${num(n.ss_treballador)}</td><td class="num">${num(n.ss_empresa)}</td><td class="num">${Number(n.prestacio_ss) ? num(n.prestacio_ss) : ''}</td><td class="num">${num(n.irpf)}</td><td class="num">${num(n.liquid)}</td></tr>`; }).join('')}</tbody></table>`;
 }
 async function treuNomina(id) {
   const n = C.get('nomines', id); if (!n) return;
