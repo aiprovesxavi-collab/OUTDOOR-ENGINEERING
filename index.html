@@ -2,7 +2,7 @@
 <html lang="ca">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-PWosbCApVRmzSZqBc8+9cm4yvUoMqetQutpW4ljWYB4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-xyulL3twhgyB92Fuw8nLxtrqq80sbXKhw5tYuTDQQ58='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co https://tile.openstreetmap.org; media-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co; connect-src 'self' data: blob: https://rafgewuvokjldxbyiqai.supabase.co wss://rafgewuvokjldxbyiqai.supabase.co; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestió de manteniment</title>
 <meta name="theme-color" content="#2f7d4a">
@@ -984,7 +984,7 @@
   .sa .sa-general{ margin-top:18px; }
   .operari .sa .tbl{ font-size:15px; } .operari .sa .tbl th, .operari .sa .tbl td{ padding:8px 6px; }
   /* consulta al client */
-  .boto-gran.client{ --bg-boto:#7b4fb3; } a.boto-gran{ text-decoration:none; } .boto-gran.envia{ --bg-boto:#fff; color:var(--ink); border:2px solid #7b4fb3; box-shadow:none; font-size:17px; padding:14px 12px; }
+  .boto-gran.client{ --bg-boto:#7b4fb3; } .boto-gran.traspas{ --bg-boto:#2b5f8a; } a.boto-gran{ text-decoration:none; } .boto-gran.envia{ --bg-boto:#fff; color:var(--ink); border:2px solid #7b4fb3; box-shadow:none; font-size:17px; padding:14px 12px; }
   .ao-envia{ margin:0 0 6px; } .ao-peticio.consulta.client{ border-color:#7b4fb3; }
   .fil-resp{ margin:4px 0 2px 14px; padding:3px 0 3px 10px; border-left:3px solid #9b6fd6; } .fil-resp.espera{ color:var(--ink-3); font-style:italic; }
   /* lectures de comptadors (app) */
@@ -11489,6 +11489,7 @@ const INC = {
     demanar_preu:         { nom: 'Demanar preu/disponibilitat', fase: 2, codi: 'F2B', peticio: true, carril: 'proveidor', visibleClient: false },
     autoritzar_actuacio:  { nom: 'Autoritzar execució (sense pressupost)', fase: 2, codi: 'F2D' },
     pressupost:           { nom: 'Elaborar pressupost', fase: 2, codi: 'F2E' },
+    traspassar:           { nom: 'Traspassar acció a tècnic o oficina', fase: 2, codi: 'F2F', funcio: true },   // (v65) F2F: no és cap caixa nova (la mateixa feina passa a una altra persona); no surt a les llegendes
     demanar_instruccions: { nom: 'Demanar instruccions al client', fase: 3, peticio: true, carril: 'client', ocult: true },   // retirat
     decisio_client:       { nom: 'Decisió de client', fase: 3, codi: 'F3', peticio: true, carril: 'client' },
     programar:            { nom: 'Programar feina', fase: 4, ocult: true },                                          // retirat
@@ -11507,7 +11508,7 @@ const INC = {
   qui: {
     obrir: ['seguidora'], assignar_seguidora: ['seguidora', 'oficina'], visibilitat_client: [],
     diagnosticar: ['seguidora', 'tecnic', 'oficina'], planificar: ['seguidora', 'tecnic', 'oficina'], consultar: ['seguidora', 'tecnic', 'oficina'],
-    demanar_preu: ['seguidora', 'tecnic', 'oficina'], pressupost: ['seguidora', 'tecnic', 'oficina'],
+    demanar_preu: ['seguidora', 'tecnic', 'oficina'], pressupost: ['seguidora', 'tecnic', 'oficina'], traspassar: ['seguidora', 'tecnic', 'oficina'],
     demanar_instruccions: ['seguidora', 'tecnic', 'oficina'], decisio_client: ['seguidora', 'tecnic', 'oficina'], autoritzar_actuacio: ['seguidora', 'tecnic', 'oficina'],
     programar: ['seguidora', 'tecnic', 'oficina'], assignar: ['seguidora', 'tecnic', 'oficina'], executar: ['seguidora', 'tecnic', 'oficina'], demanar_material: ['seguidora', 'tecnic', 'oficina'],
     registrar_resultat: ['seguidora', 'tecnic', 'oficina'], albarans: ['seguidora', 'tecnic', 'oficina'], conclusio: ['seguidora', 'tecnic', 'oficina'], tancar: ['seguidora'], reobrir: ['seguidora'],
@@ -11577,6 +11578,7 @@ const PANELL_DEFECTE = [
   { clau: 'consulta_client', codi: 'F2C', nom: 'Demanar aclaració client', qui: ['tecnic', 'oficina'], carrils: ['client'], ve_de: ['tots'], seguent: 'pressupost' },
   { clau: 'autoritzar_actuacio', codi: 'F2D', nom: 'Autoritzar execució (sense pressupost)', qui: ['tecnic', 'oficina'], carrils: ['tecnic'], ve_de: ['tots'], seguent: 'executar' },
   { clau: 'pressupost', codi: 'F2E', nom: 'Elaborar pressupost', qui: ['tecnic', 'oficina'], carrils: ['tecnic'], ve_de: ['tots'], seguent: 'decisio_client' },
+  { clau: 'traspassar', codi: 'F2F', nom: 'Traspassar acció a tècnic o oficina', qui: ['tecnic', 'oficina'], carrils: ['tecnic'], ve_de: ['tots'], seguent: null },   // (v65, SQL 109)
   { clau: 'decisio_client', codi: 'F3', nom: 'Decisió de client', qui: ['tecnic', 'oficina'], carrils: ['client'], ve_de: ['tots'], seguent: 'executar' },
   { clau: 'executar', codi: 'F4E', nom: 'Execució feina', qui: ['tecnic', 'oficina', 'subcontractista'], carrils: ['operari', 'tecnic', 'subcontractista'], ve_de: ['tots'], seguent: 'albarans' },
   { clau: 'demanar_material', codi: 'F4D', nom: 'Demanar material/permisos', qui: ['tecnic', 'oficina'], carrils: ['subcontractista', 'proveidor'], ve_de: ['tots'], seguent: 'executar' },
@@ -11587,6 +11589,7 @@ const PANELL_DEFECTE = [
 const PANELL_QUI = [['tecnic', 'Tècnic'], ['oficina', 'Oficina'], ['seguidora', 'Seguidora'], ['subcontractista', 'Subcontractista']];
 const PANELL_CARRILS = [['operari', 'Operari'], ['tecnic', 'Tècnic / oficina'], ['seguidora', 'Seguidora'], ['subcontractista', 'Subcontractista'], ['proveidor', 'Proveïdor'], ['client', 'Client']];
 const PANELL_FIXES = ['obrir', 'tancar', 'assignar_seguidora'];   // sempre al carril de la seguidora (F1, F6 i F0)
+const carrilFixPanell = k => PANELL_FIXES.includes(k) ? ['seguidora'] : k === 'traspassar' ? ['tecnic'] : null;   // (v65) F2F: sempre a un tècnic o a l'oficina
 // una llista de text de la base de dades (ve com a llista o, segons per on, com a text «{a,b}»)
 const llistaText = (v, def) => Array.isArray(v) ? v.map(String) : typeof v === 'string' && v.trim() ? v.replace(/^\{|\}$/g, '').split(',').map(s => s.replace(/^"|"$/g, '').trim()).filter(Boolean) : def.slice();
 let PANELL = PANELL_DEFECTE.map(d => ({ ...d, desada: false }));
@@ -11604,12 +11607,12 @@ function filesPanell() {
 // aplica el panell a les regles de les incidències: els noms, qui envia cada caixa i d'on pot venir (la matriu de transicions)
 function aplicaPanell() {
   PANELL = filesPanell();
-  const passos = PANELL.filter(r => !['obrir', 'tancar', 'assignar_seguidora'].includes(r.clau));   // el que s'encarrega des d'una caixa (F0 i F6 tenen el seu botó)
+  const passos = PANELL.filter(r => !['obrir', 'tancar', 'assignar_seguidora', 'traspassar'].includes(r.clau));   // el que s'encarrega des d'una caixa (F0 i F6 tenen el seu botó; (v65) F2F no és cap pas: va a part, amb potTraspassar)
   for (const r of PANELL) { const tp = INC.tipus[r.clau]; if (tp) { tp.nom = r.nom; tp.codi = r.codi; } INC.qui[r.clau] = r.qui.slice(); }
   // «De tots els F»: des de qualsevol caixa (de l'obertura, un sol primer pas: v41); «Només de…»: des d'aquestes. D'una consulta interna,
   // del tancament, d'una reassignació de seguidora o d'una «informació al client» antiga no en surt res
   for (const k of Object.keys(INC.tipus))
-    INC.transicions[k] = ['consultar', 'tancar', 'assignar_seguidora', 'visibilitat_client'].includes(k) ? [] : passos.filter(r => r.ve_de.includes('tots') || r.ve_de.includes(k)).map(r => r.clau);
+    INC.transicions[k] = ['consultar', 'tancar', 'assignar_seguidora', 'visibilitat_client', 'traspassar'].includes(k) ? [] : passos.filter(r => r.ve_de.includes('tots') || r.ve_de.includes(k)).map(r => r.clau);
   // el primer pas que es pot triar en obrir la incidència: el que pot sortir de l'obertura i va a una persona de la casa
   INC.primers = (INC.transicions.obrir || []).filter(k => carrilsPermesos(k).some(c => ['operari', 'tecnic', 'seguidora'].includes(c)));
 }
@@ -11675,7 +11678,8 @@ const peticionsPendents = a => peticionsObertes(a).filter(accioVisibleCapa);
 // una consulta: qui té una acció pregunta a qui li l'ha enviada. La seva feina queda aturada (esperant) i la consulta surt a dalt de tot, al carril
 // de qui l'ha de contestar; quan contesta, la feina torna a qui l'estava fent, a la mateixa acció (F2, F3, F4…).
 const esConsulta = a => !!a && a.tipus === 'consultar';
-// una consulta o aclaració al client (la fa el tècnic o la seguidora en qualsevol moment; no atura cap feina)
+// una consulta o aclaració al client (la fa el tècnic, l'oficina o la seguidora, en qualsevol moment). (v65) Si surt d'una caixa seva oberta,
+// aquella caixa queda finalitzada: la feina passa al client, com qualsevol feina passada (si no surt de cap caixa, no atura res)
 const esConsultaClient = a => !!a && a.tipus === 'consulta_client';
 const consultaOberta = a => !!a && peticionsObertes(a).find(esConsulta) || null;
 // la fase d'una acció; una consulta és de la fase de la feina sobre la qual es pregunta
@@ -11734,7 +11738,7 @@ const demanantDe = a => {
 // un proveïdor o un subcontractista), encarregada des d'una caixa oberta del tècnic, de l'oficina, de l'administrador o de la seguidora, deixa
 // aquella caixa finalitzada (gris): ja no depèn d'ells. La de l'operari no (encara hi treballa; l'operari no encarrega mai res), ni la d'una
 // acció de fora, ni encarregar-se una feina a un mateix.
-const passaAAltri = (og, x) => !!og && !!x && !esConsulta(x) && !esConsultaClient(x) && !['obrir', 'tancar', 'reobrir', 'assignar_seguidora', 'visibilitat_client'].includes(x.tipus)
+const passaAAltri = (og, x) => !!og && !!x && !esConsulta(x) && !['obrir', 'tancar', 'reobrir', 'assignar_seguidora', 'visibilitat_client'].includes(x.tipus)
   && (CARRILS_EXTERNS.includes(x.carril) || (!!x.responsable_treballador_id && Number(x.responsable_treballador_id) !== Number(og.responsable_treballador_id)));
 const tancaOrigenEnPassar = (origen, nova) => !!origen && origen.actiu !== false && origen.estat !== 'finalitzada' && ['tecnic', 'seguidora'].includes(origen.carril)
   && !origen.es_peticio && !esConsulta(origen) && passaAAltri(origen, nova);
@@ -11811,7 +11815,7 @@ function renderPanellAccions(main) {
       <td>${r.qui.length ? r.qui.map(k => `<span class="pa-qui">${h(nomQuiPanell(k))}</span>`).join(' ') : '<span class="v-no">ningú</span>'}</td>
       <td>${carrilsPanellHTML(r)}</td>
       <td>${h(veDeText(r))}</td>
-      <td>${seg ? h(seg.codi) + ' · ' + h(seg.nom) : '—'}</td>
+      <td>${r.clau === 'traspassar' ? '<span class="hint">la mateixa feina, amb una altra persona</span>' : seg ? h(seg.codi) + ' · ' + h(seg.nom) : '—'}</td>
       ${pot ? `<td><button class="btn ghost small" data-pa-edita="${r.clau}">Edita</button></td>` : ''}
     </tr>`;
   }).join('');
@@ -11820,21 +11824,21 @@ function renderPanellAccions(main) {
     ${!desades ? `<div class="msg">Encara falta executar el fitxer <b>094_panell_accions.sql</b>: ara valen els valors de la taula original${pot ? ' i els canvis no es poden desar' : ''}.</div>` : ''}
     <div id="ferr"></div>
     <div class="pa-wrap"><table class="tbl pa-taula"><thead><tr><th>Funció</th><th>Subfunció</th><th>Nom de l’acció</th><th>Qui envia el calaix</th><th>A quin carril va (i qui respon)</th><th>D’on ve</th><th>Predeterminat després</th>${pot ? '<th></th>' : ''}</tr></thead><tbody>${files}</tbody></table></div>
-    <p class="hint">L’operari no envia mai cap caixa: respon les que li arriben. El subcontractista no entra a l’app: el que envia ho entra el tècnic o l’oficina que li porta la feina. «De tots els F»: es pot encarregar des de qualsevol caixa (de «${h(nomTipus('obrir'))}», només el primer pas).${ultim ? ` Últim canvi: ${dmyhm(ultim.actualitzat_el)}, ${h(nomTreballador(C.get('treballadors', ultim.actualitzat_per)))} (${h(ultim.codi)}).` : ''}</p>`;
+    <p class="hint">L’operari no envia mai cap caixa: respon les que li arriben. ${h(codiTipus('traspassar'))} «${h(nomTipus('traspassar'))}»: des d’una caixa oberta d’un tècnic, de l’oficina o de la seguidora, la mateixa feina passa a una altra d’aquestes persones (la caixa d’abans queda finalitzada). El subcontractista no entra a l’app: el que envia ho entra el tècnic o l’oficina que li porta la feina. «De tots els F»: es pot encarregar des de qualsevol caixa (de «${h(nomTipus('obrir'))}», només el primer pas).${ultim ? ` Últim canvi: ${dmyhm(ultim.actualitzat_el)}, ${h(nomTreballador(C.get('treballadors', ultim.actualitzat_per)))} (${h(ultim.codi)}).` : ''}</p>`;
   bindPanellAccions(main);
 }
 function editorPanellHTML(r) {
-  const f = state.panell.form || {}, fixa = PANELL_FIXES.includes(r.clau);
+  const f = state.panell.form || {}, fixa = carrilFixPanell(r.clau);
   const qui = f.qui || r.qui, carrils = f.carrils || r.carrils, veDe = f.ve_de || r.ve_de, tots = veDe.includes('tots'), seguent = f.seguent !== undefined ? f.seguent : r.seguent;
-  const origens = PANELL.filter(x => !['tancar', 'assignar_seguidora'].includes(x.clau)).map(x => [x.clau, x.codi + ' · ' + x.nom]).concat([['reobrir', nomTipus('reobrir')]]);
-  const seguents = PANELL.filter(x => !['obrir', 'assignar_seguidora'].includes(x.clau) && x.clau !== r.clau);
+  const origens = PANELL.filter(x => !['tancar', 'assignar_seguidora', 'traspassar'].includes(x.clau)).map(x => [x.clau, x.codi + ' · ' + x.nom]).concat([['reobrir', nomTipus('reobrir')]]);
+  const seguents = PANELL.filter(x => !['obrir', 'assignar_seguidora', 'traspassar'].includes(x.clau) && x.clau !== r.clau);
   return `<div class="pa-editor">
     <div class="f"><span class="l">Nom de l’acció</span><input type="text" id="pa-nom" value="${h(f.nom != null ? f.nom : r.nom)}"></div>
     <div class="f"><span class="l">Qui envia el calaix</span><div class="multi">${PANELL_QUI.map(([k, n]) => `<label><input type="checkbox" name="pa-qui" value="${k}" ${qui.includes(k) ? 'checked' : ''}><span>${h(n)}</span></label>`).join('')}</div><span class="hint">la seguidora: la de cada incidència. L’operari no n’envia mai; el subcontractista no entra a l’app</span></div>
-    <div class="f"><span class="l">A quin carril va</span>${fixa ? '<div class="info">Seguidora (sempre)</div>' : `<div class="multi">${PANELL_CARRILS.map(([k, n]) => `<label><input type="checkbox" name="pa-carril" value="${k}" ${carrils.includes(k) ? 'checked' : ''}><span>${h(n)}</span></label>`).join('')}</div><span class="hint">operari, tècnic/oficina o seguidora: respon qui la rep (on hi ha tècnic/oficina, també hi pot anar la seguidora) · proveïdor, subcontractista o client: n’entra la resposta qui l’ha enviada</span>`}</div>
+    <div class="f"><span class="l">A quin carril va</span>${fixa ? `<div class="info">${h(fixa.map(nomCarrilPanell).join(', '))} (sempre)</div>` : `<div class="multi">${PANELL_CARRILS.map(([k, n]) => `<label><input type="checkbox" name="pa-carril" value="${k}" ${carrils.includes(k) ? 'checked' : ''}><span>${h(n)}</span></label>`).join('')}</div><span class="hint">operari, tècnic/oficina o seguidora: respon qui la rep (on hi ha tècnic/oficina, també hi pot anar la seguidora) · proveïdor, subcontractista o client: n’entra la resposta qui l’ha enviada</span>`}</div>
     <div class="f"><span class="l">D’on ve</span>${r.clau === 'obrir' || r.clau === 'assignar_seguidora' ? `<div class="info">${h(veDeText(r))} (sempre)</div>`
       : `<div><span class="seg pa-vede"><button type="button" class="${tots ? 'on' : ''}" data-pa-vede="tots">De tots els F</button><button type="button" class="${tots ? '' : 'on'}" data-pa-vede="alguns">Només d’algunes caixes</button></span></div>${tots ? '' : `<div class="multi">${origens.map(([k, n]) => `<label><input type="checkbox" name="pa-vede" value="${k}" ${veDe.includes(k) ? 'checked' : ''}><span>${h(n)}</span></label>`).join('')}</div>`}`}</div>
-    ${r.clau === 'tancar' || r.clau === 'assignar_seguidora' ? '' : `<div class="f"><span class="l">Predeterminat després</span><select id="pa-seguent"><option value="">— (cap)</option>${seguents.map(x => `<option value="${x.clau}" ${seguent === x.clau ? 'selected' : ''}>${h(x.codi)} · ${h(x.nom)}</option>`).join('')}</select></div>`}
+    ${r.clau === 'tancar' || r.clau === 'assignar_seguidora' || r.clau === 'traspassar' ? '' : `<div class="f"><span class="l">Predeterminat després</span><select id="pa-seguent"><option value="">— (cap)</option>${seguents.map(x => `<option value="${x.clau}" ${seguent === x.clau ? 'selected' : ''}>${h(x.codi)} · ${h(x.nom)}</option>`).join('')}</select></div>`}
     <div class="actions"><button class="btn desa" id="pa-desa">Desa</button><button class="btn ghost small" id="pa-original" title="Hi posa els valors de la taula original (després cal desar-ho)">Valors de la taula original</button></div>
   </div>`;
 }
@@ -11860,9 +11864,9 @@ function bindPanellAccions(main) {
   const desa = main.querySelector('#pa-desa'); if (desa) desa.addEventListener('click', async () => {
     llegeix(); const r = filaPanell(st.edita), f = st.form || {};
     const dades = { nom: String(f.nom != null ? f.nom : r.nom).trim(), qui_envia: f.qui || r.qui,
-      carrils: PANELL_FIXES.includes(r.clau) ? ['seguidora'] : (f.carrils || r.carrils),
+      carrils: carrilFixPanell(r.clau) || (f.carrils || r.carrils),
       ve_de: r.clau === 'obrir' ? ['inici'] : r.clau === 'assignar_seguidora' ? ['qualsevol'] : (f.ve_de || r.ve_de),
-      seguent: ['tancar', 'assignar_seguidora'].includes(r.clau) ? null : (f.seguent !== undefined ? f.seguent : r.seguent) || null };
+      seguent: ['tancar', 'assignar_seguidora', 'traspassar'].includes(r.clau) ? null : (f.seguent !== undefined ? f.seguent : r.seguent) || null };
     if (!dades.nom) { showFormError('Posa el nom de l’acció.'); return; }
     if (!dades.carrils.length) { showFormError('Tria com a mínim un carril.'); return; }
     if (!dades.ve_de.length) { showFormError('Tria de quines caixes pot venir (o «De tots els F»).'); return; }
@@ -11872,7 +11876,8 @@ function bindPanellAccions(main) {
     try {
       const res = await sb.from('accions_panell').update(dades).eq('clau', r.clau).select('id');
       if (res.error) throw res.error;
-      if (!res.data || !res.data.length) throw new Error(C.rows('accions_panell').length ? 'No s’ha desat: el panell només el poden canviar els tècnics i l’oficina.' : 'No s’ha desat: encara falta executar el fitxer 094_panell_accions.sql.');
+      if (!res.data || !res.data.length) throw new Error(!C.rows('accions_panell').length ? 'No s’ha desat: encara falta executar el fitxer 094_panell_accions.sql.'
+        : !C.rows('accions_panell').some(x => x.clau === r.clau) ? 'No s’ha desat: encara falta executar el fitxer 109_consulta_client_i_traspas.sql.' : 'No s’ha desat: el panell només el poden canviar els tècnics i l’oficina.');
       await loadTable('accions_panell'); aplicaPanell();
       toast('Desat: ' + r.codi + ' · ' + dades.nom); st.edita = null; st.form = null; renderMain();
     } catch (e) { desa.disabled = false; showFormError(friendly(e)); }
@@ -12472,7 +12477,7 @@ function renderDiagramaInc(main) {
     <aside class="ic-panell" id="ic-panell" hidden></aside>`;
   $('#inc-torna').addEventListener('click', () => { st.vista = 'llista'; st.sel = null; st.form = null; if (st.torna === 'inc_finalitzades' || st.torna === 'of_pendents') { state.table = st.torna; st.torna = null; renderApp(); window.scrollTo({ top: 0 }); return; } renderMain(); });
   if ($('#inc-accio')) $('#inc-accio').addEventListener('click', () => { st.sel = null; main.querySelectorAll('.ic-caixa.sel').forEach(x => x.classList.remove('sel')); st.form = { tipus: 'accio', origen: null }; pintaPanell(inc); });
-  if ($('#inc-cclient')) $('#inc-cclient').addEventListener('click', () => { st.sel = null; main.querySelectorAll('.ic-caixa.sel').forEach(x => x.classList.remove('sel')); st.form = { tipus: 'consulta_client' }; pintaPanell(inc); const tx = $('#cc-text'); if (tx) tx.focus(); });
+  if ($('#inc-cclient')) $('#inc-cclient').addEventListener('click', () => { const abans = st.sel; st.sel = null; main.querySelectorAll('.ic-caixa.sel').forEach(x => x.classList.remove('sel')); st.form = { tipus: 'consulta_client', origenDef: abans }; pintaPanell(inc); const tx = $('#cc-text'); if (tx) tx.focus(); });
   if ($('#inc-tanca')) $('#inc-tanca').addEventListener('click', () => { st.form = { tipus: 'tanca' }; st.sel = null; pintaPanell(inc); });
   if ($('#inc-seguidora')) $('#inc-seguidora').addEventListener('click', () => { st.sel = null; main.querySelectorAll('.ic-caixa.sel').forEach(x => x.classList.remove('sel')); st.form = { tipus: 'seguidora' }; pintaPanell(inc); });   // (v42) F0
   if ($('#inc-reobre')) $('#inc-reobre').addEventListener('click', () => { st.form = { tipus: 'reobre' }; st.sel = null; pintaPanell(inc); });
@@ -12583,6 +12588,7 @@ function renderAccioOperari(main) {
   $('#inc-torna').addEventListener('click', () => { st.vista = 'llista'; st.sel = null; st.form = null; state.table = st.torna === 'inc_finalitzades' ? 'inc_finalitzades' : 'accions_meves'; st.torna = null; renderApp(); window.scrollTo({ top: 0 }); });
   main.querySelectorAll('[data-tria]').forEach(b => b.addEventListener('click', () => { st.sel = Number(b.dataset.tria); st.form = null; renderMain(); }));
   if (a) bindAccioOperari(inc, a, main);
+  if (a) bindTraspasApp(inc, a, main);   // (v65)
   bindConsultaClientApp(inc, main);
   ompleMiniatures(main);
 }
@@ -12630,7 +12636,9 @@ function accioOperariHTML(inc, a) {
       : `<button type="button" class="boto-gran consulta" id="cons-obre">Demana consulta</button>`);
   }
   // CONSULTA AL CLIENT (el tècnic o la seguidora, en qualsevol moment)
-  if (potConsultarClient(inc)) html.push(consultaClientAppHTML(inc));
+  if (potConsultarClient(inc)) html.push(consultaClientAppHTML(inc, a.id));   // (v65) si la fas d'aquí, aquesta acció queda finalitzada
+  // (v65) TRASPASSA-LA (F2F): un tècnic o l'oficina passa la seva acció a un altre tècnic o a l'oficina
+  if (perActuar && Number(a.responsable_treballador_id) === (t || {}).id && potTraspassar(inc, a)) html.push(traspasAppHTML(inc, a));
   // les fotos i els vídeos: un sol lloc (les antigues del full de treball s'hi veuen també)
   html.push(caixaMediaHTML(a, potPujarAdj(inc, a), { extres: full && Array.isArray(full.adjunts) ? full.adjunts : [] }));
   // FULL DE TREBALL (opcional: només si cal apuntar-hi jornades o material)
@@ -12677,7 +12685,7 @@ function bindAccioOperari(inc, a, main) {
   const cr = $('#cc-registra'); if (cr) cr.addEventListener('click', async () => {
     const resposta = ($('#cc-resposta').value || '').trim(); if (!resposta) { err('Escriu la resposta del client.', cr); return; }
     cr.disabled = true;
-    try { await finalitzaAccio(inc, a, { resultat: resposta }); st.form = null; toast('Resposta del client apuntada: és a dalt de tot de l’historial.', 6000); renderMain(); }
+    try { await finalitzaAccio(inc, a, { resultat: resposta }); st.form = null; const resta = accionsInc(inc).some(x => x.id !== a.id && x.estat !== 'finalitzada'); toast('Resposta del client apuntada: és a dalt de tot de l’historial.' + (resta || inc.estat !== 'oberta' ? '' : ' Ara cal encarregar el pas següent (des de l’oficina).'), 6000); renderMain(); }
     catch (e) { cr.disabled = false; err(friendly(e), cr); }
   });
   const cq = $('#cons-contesta'); if (cq) cq.addEventListener('click', async () => {
@@ -12715,7 +12723,7 @@ function panellHTML(inc) {
   const st = state.inc, t = trebInc();
   if (st.form && st.form.tipus === 'accio') return formAccioHTML(inc, st.form.origen ? C.get('incidencia_accions', st.form.origen) : null);
   if (st.form && st.form.tipus === 'seguidora') return formSeguidoraHTML(inc);   // (v42) F0
-  if (st.form && st.form.tipus === 'consulta_client') return `<h3>${h(codiTipus('consulta_client'))} · ${h(nomTipus('consulta_client'))}</h3><p class="sub">Una pregunta o una aclaració al client. No atura cap feina; quan contesti, hi apuntes la resposta i queda amb la pregunta a dalt de l’historial.</p>${formConsultaClientHTML(inc)}`;
+  if (st.form && st.form.tipus === 'consulta_client') return `<h3>${h(codiTipus('consulta_client'))} · ${h(nomTipus('consulta_client'))}</h3><p class="sub">Una pregunta o una aclaració al client. Si la fas des d’una acció teva, aquesta queda finalitzada: la feina passa al client, i a la seva caixa hi surten les teves inicials. Quan contesti, n’apuntes la resposta (et torna a tu) i queda amb la pregunta a dalt de l’historial.</p>${formConsultaClientHTML(inc)}`;
   if (st.form && st.form.tipus === 'tanca') { const rc = reportsInc(inc).find(x => correuReporta(x)); return `<h3>Tanca la incidència</h3><div class="f"><span class="l">Motiu</span><select id="tanca-motiu">${INC.motiusTancament.map(o => `<option value="${o[0]}">${h(o[1])}</option>`).join('')}</select></div><div class="f"><span class="l">Resultat final</span><textarea lang="ca" spellcheck="true" id="tanca-resultat"></textarea><span class="hint">és el que rebrà qui va avisar, si li envies el resum. Si cal, després es pot reobrir.</span></div>${rc ? `<label class="chk" style="padding:0"><input type="checkbox" id="tanca-correu" checked> En tancar, prepara el correu de resum per a ${h(quiReporta(rc))} (${h(correuReporta(rc))})</label>` : ''}<div class="actions"><button class="btn danger" id="tanca-ok">Tanca</button></div>`; }
   if (st.form && st.form.tipus === 'tancada') { const rc = reportsInc(inc).find(x => correuReporta(x)); return `<h3>Incidència tancada</h3><div class="msg ok">${h(inc.numero)} ha quedat tancada: ${h(etiquetaOpt(INC.motiusTancament, inc.motiu_tancament))}.</div>${rc ? `<p class="sub">Resum del que s’ha fet, a punt per enviar a <b>${h(quiReporta(rc))}</b> (${h(correuReporta(rc))}). S’obre al teu programa de correu: revisa’l i envia’l.</p><a class="btn" id="tanca-mail" href="${enllacMailto(correuReporta(rc), 'Incidència ' + inc.numero + ' · ' + inc.titol + ' · resolta', cosResumTancament(inc, rc))}">Envia el resum a ${h(quiReporta(rc))}</a><details style="margin-top:12px"><summary class="hint">Veure el text</summary><pre style="white-space:pre-wrap; font:inherit; font-size:13px; color:var(--ink-2)">${h(cosResumTancament(inc, rc))}</pre></details>` : '<p class="sub">Cap persona amb correu va fer el report: no hi ha resum per enviar.</p>'}<div class="actions"><button class="btn ghost" id="panell-cancel">Tanca el panell</button></div>`; }
   if (st.form && st.form.tipus === 'edita') { const contactes = contactesDelLloc(inc.lloc_id), marcats = new Set((inc.contactes_autoritzats || []).map(Number));
@@ -12747,6 +12755,7 @@ function panellHTML(inc) {
     : primerPasDe(a) ? [] : derivablesTots.filter(k => k !== 'assignar_seguidora');
   let ops = '';
   if (derivables.length && !esReoberta(a)) ops += `<button class="btn ghost small" data-op="deriva">${obertura ? 'Encarrega el primer pas…' : a.estat === 'finalitzada' ? 'Encarrega el pas següent…' : 'Deriva una acció / fes una petició…'}</button> `;
+  if (!client && oberta && potDerivar && potTraspassar(inc, a)) ops += `<button class="btn ghost small" data-op="traspassa">Traspassa-la a un tècnic o a l’oficina…</button> `;   // (v65) F2F
   if (!client && potConsultar(inc, a)) ops += `<button class="btn ghost small" data-op="consulta">Demana consulta a ${h(nomCurtTreballador(destinatariConsulta(inc, a)))}…</button> `;
   if (potActuar && a.venciment && a.estat !== 'finalitzada' && !esSeguidora(inc) && !cons) ops += `<button class="btn ghost small" data-op="ampliacio">Demana ampliació de termini</button> `;
   if (!client && oberta && cc && a.estat !== 'finalitzada' && potActuar) ops += enllacosConsultaClient(inc, a, false) + ' ';
@@ -12811,10 +12820,12 @@ function formAccioHTML(inc, origen) {
   const st = state.inc, t = trebInc(), f = st.form;
   let tipusPossibles = Object.keys(INC.tipus).filter(k => !['obrir', 'visibilitat_client', 'tancar', 'reobrir', 'assignar_seguidora'].includes(k) && !INC.tipus[k].ocult);   // (v42) reassignar i tancar tenen el seu botó
   if (origen) tipusPossibles = tipusPossibles.filter(k => (INC.transicions[origen.tipus] || []).includes(k));
+  tipusPossibles = tipusPossibles.filter(k => !(INC.tipus[k] || {}).funcio); if (potTraspassar(inc, origen)) tipusPossibles.push('traspassar');   // (v65) F2F: només d'una caixa oberta de la casa
   tipusPossibles = tipusPossibles.filter(k => potCrearTipus(inc, k)).sort((x, y) => ordrePanell(x) - ordrePanell(y));   // (v42) en l'ordre del panell (F2A, F2B…)
   if (!tipusPossibles.length) return `<h3>Nova acció</h3><p class="v-no">Des d’aquesta acció no en pots derivar cap altra amb el teu rol.</p><div class="actions"><button class="btn ghost" id="panell-cancel">Tanca</button></div>`;
   const habitual = origen ? seguentHabitual(origen) : null;
   const tipus = f.tipusSel && tipusPossibles.includes(f.tipusSel) ? f.tipusSel : (habitual && tipusPossibles.includes(habitual) ? habitual : tipusPossibles[0]);
+  if (tipus === 'traspassar') return formTraspasHTML(inc, origen, tipusPossibles);   // (v65) F2F
   const tp = INC.tipus[tipus];
   const permesos = carrilsPermesos(tipus);
   let carril = f.carril || tp.carril || carrilDeResponsable(inc, t.id); if (!permesos.includes(carril)) carril = permesos[0];
@@ -12926,6 +12937,7 @@ function bindPanell(inc) {
       pintaPanell(inc);
     }
     else if (op === 'seguidora') { st.form = { tipus: 'accio', origen: a.id, tipusSel: 'assignar_seguidora', nomesSeguidora: true }; pintaPanell(inc); }
+    else if (op === 'traspassa') { st.form = { tipus: 'accio', origen: a.id, tipusSel: 'traspassar' }; pintaPanell(inc); }   // (v65) F2F
     else if (op === 'consulta') { desaForm(); st.form = { tipus: 'consulta', accio: a.id }; pintaPanell(inc); const c = $('#cons-text'); if (c) c.focus(); }
     else if (op === 'ampliacio') { st.form = { tipus: 'ampliacio', accio: a.id }; pintaPanell(inc); }
   }));
@@ -13059,13 +13071,28 @@ function bindPanell(inc) {
   // formulari de nova acció: es repinta en canviar tipus o carril, conservant el que s'ha escrit
   const naTipus = $('#na-tipus'); if (naTipus) {
     const guarda = () => { const f = st.form; f.tipusSel = $('#na-tipus').value; f.titol = $('#na-titol').value; f.desc = $('#na-desc').value; f.carril = $('#na-carril').value; f.resp = $('#na-resp') ? $('#na-resp').value : ''; f.gestor = $('#na-gestor') ? $('#na-gestor').value : ''; f.grup = $('#na-grup') ? $('#na-grup').value : ''; f.inici = $('#na-inici') ? $('#na-inici').value : ''; f.venciment = $('#na-venc') ? $('#na-venc').value : ''; f.peticio = $('#na-peticio') ? $('#na-peticio').checked : null; f.visible = $('#na-visible').checked; f.int = $('#na-int').value; };
-    naTipus.addEventListener('change', () => { guarda(); const f = st.form, tp = INC.tipus[f.tipusSel]; if (!tp) { pintaPanell(inc); return; } const abans = f.carril; f.carril = tp.carril || (['operari', 'seguidora', 'tecnic'].includes(f.carril) && f.resp ? carrilDeResponsable(inc, Number(f.resp)) : carrilDeResponsable(inc, t.id)); if (!carrilsPermesos(f.tipusSel).includes(f.carril)) f.carril = carrilsPermesos(f.tipusSel)[0]; if (f.carril !== abans) f.resp = ''; f.titol = tp.nom; f.peticio = null; f.visible = null; f.venciment = ''; pintaPanell(inc); });
+    naTipus.addEventListener('change', () => { guarda(); const f = st.form, tp = INC.tipus[f.tipusSel]; if (!tp) { pintaPanell(inc); return; } const abans = f.carril; f.carril = tp.carril || (['operari', 'seguidora', 'tecnic'].includes(f.carril) && f.resp ? carrilDeResponsable(inc, Number(f.resp)) : carrilDeResponsable(inc, t.id)); if (!carrilsPermesos(f.tipusSel).includes(f.carril)) f.carril = carrilsPermesos(f.tipusSel)[0]; if (f.carril !== abans) f.resp = ''; f.titol = tp.nom; f.peticio = null; f.visible = null; f.venciment = ''; f.trDe = null; pintaPanell(inc); });
     $('#na-carril').addEventListener('change', () => { guarda(); st.form.resp = ''; st.form.venciment = ''; pintaPanell(inc); });
     if ($('#na-resp')) $('#na-resp').addEventListener('change', () => { guarda(); const f = st.form; if (['operari', 'seguidora', 'tecnic'].includes(f.carril) && f.resp) { f.carril = carrilDeResponsable(inc, Number(f.resp)); pintaPanell(inc); } });
     if ($('#na-grup')) $('#na-grup').addEventListener('change', () => { guarda(); st.form.venciment = ''; pintaPanell(inc); });
     if ($('#na-inici')) $('#na-inici').addEventListener('change', () => { guarda(); st.form.venciment = ''; pintaPanell(inc); });   // el venciment es torna a comptar des de l'inici
     $('#na-ok').addEventListener('click', async () => {
       guarda(); const f = st.form, tp = INC.tipus[f.tipusSel], origen = f.origen ? C.get('incidencia_accions', f.origen) : null;
+      if (f.tipusSel === 'traspassar') {   // (v65) F2F: la mateixa feina passa a una altra persona; la caixa d'origen queda finalitzada
+        if (!origen || !potTraspassar(inc, origen)) { errorInc('Aquesta acció ja no es pot traspassar: només una caixa oberta d’un tècnic, de l’oficina o de la seguidora.'); return; }
+        if (!f.resp) { errorInc('Tria a qui la traspasses.'); return; }
+        if (!f.titol.trim()) { errorInc('Posa un títol.'); return; }
+        if (!f.venciment) { errorInc('Cal un venciment.'); return; }
+        if (f.inici && new Date(f.inici) > new Date(f.venciment)) { errorInc('La data en què es pot començar no pot ser després del venciment.'); return; }
+        $('#na-ok').disabled = true;
+        try {
+          const r = await traspassaAccio(inc, origen, { resp: Number(f.resp), titol: f.titol.trim(), descripcio: f.desc.trim() || null, grup: f.grup || null, venciment: deLocalDT(f.venciment),
+            inici: f.inici ? deLocalDT(f.inici) : null, visible: !!f.visible, internes: f.int.trim() || null });
+          toast('Traspassada a ' + nomCurtTreballador(r.nou) + ': ara «' + nomTipus(origen.tipus) + '» és seva (la caixa d’abans queda finalitzada).', 6000);
+          st.form = null; st.sel = r.id; renderMain();
+        } catch (e) { $('#na-ok').disabled = false; errorInc(friendly(e)); }
+        return;
+      }
       const extern = f.carril === 'client' || f.carril === 'proveidor' || f.carril === 'subcontractista';
       if (origen && origen.tipus === 'obrir' && f.tipusSel !== 'assignar_seguidora' && primerPasDe(origen)) { errorInc('Des d’«Obrir incidència» només s’encarrega el primer pas, i ja hi és: encarrega aquesta acció des de la caixa del primer pas (o de la que toqui).'); return; }   // (v41)
       if (!f.titol.trim()) { errorInc('Posa un títol.'); return; }
@@ -13206,8 +13233,115 @@ async function creaConsulta(inc, a, text) {
   return { id: r.data.id, dest };
 }
 
+/* ---------- (v65) F2F «Traspassar acció a tècnic o oficina» ----------
+   Una caixa oberta d'un tècnic, de l'oficina o de la seguidora passa a una altra d'aquestes persones (d'un tècnic a l'oficina, de l'oficina a
+   un tècnic…). No és cap tipus de caixa nou: la mateixa feina (el mateix tipus, títol, instruccions i termini; es poden canviar) passa a
+   l'altra persona en una caixa nova, i la d'origen queda finalitzada (gris), com sempre que es passa la feina; a la caixeta nova hi surten les
+   inicials de qui l'ha traspassada. Retirar la caixa nova (feta per error) o desfer el finalitzat de la d'origen ho deixa com abans. */
+const ROLS_TRASPAS = ['admin', 'oficina', 'tecnic'];
+// d'on pot venir, segons el panell (columna «D'on ve»); no és cap pas, i per això no entra a INC.transicions
+const veDeTraspas = og => { const r = filaPanell('traspassar'); return !!r && (r.ve_de.includes('tots') || r.ve_de.includes(og.tipus)); };
+const potTraspassar = (inc, og) => !!inc && inc.estat === 'oberta' && !!og && og.actiu !== false && og.estat !== 'finalitzada' && ['tecnic', 'seguidora'].includes(og.carril)
+  && !og.es_peticio && !esConsulta(og) && !esConsultaClient(og) && !['obrir', 'tancar', 'reobrir', 'assignar_seguidora', 'visibilitat_client'].includes(og.tipus)
+  && !esReoberta(og) && !!og.responsable_treballador_id && veDeTraspas(og) && potCrearTipus(inc, 'traspassar');
+// a qui es pot traspassar: un tècnic o algú de l'oficina (també l'administrador i la seguidora), que no sigui qui la té ara
+const candidatsTraspas = (inc, og) => C.rows('treballadors').filter(x => x.actiu && ROLS_TRASPAS.includes(x.rol) && x.id !== Number(og.responsable_treballador_id)
+  && carrilsPermesos('traspassar').includes(carrilDeResponsable(inc, x.id))).sort((a, b) => nomTreballador(a).localeCompare(nomTreballador(b), 'ca'));
+// o = { resp, titol, descripcio, grup, venciment, inici, visible, internes }: el que no hi sigui, com a la caixa d'origen
+async function traspassaAccio(inc, og, o) {
+  const t = trebInc(), nou = C.get('treballadors', Number(o.resp));
+  if (!potTraspassar(inc, og)) throw new Error('Aquesta acció ja no es pot traspassar: només una caixa oberta d’un tècnic, de l’oficina o de la seguidora.');
+  if (!nou || !candidatsTraspas(inc, og).some(x => x.id === nou.id)) throw new Error('Tria un tècnic o algú de l’oficina (una altra persona).');
+  const grup = o.grup !== undefined ? o.grup : og.grup_termini || null;
+  const dades = { incidencia_id: inc.id, tipus: og.tipus, carril: carrilDeResponsable(inc, nou.id), titol: o.titol || og.titol || nomTipus(og.tipus),
+    descripcio: o.descripcio !== undefined ? o.descripcio : og.descripcio || null, creat_per: t.id, responsable_treballador_id: nou.id, responsable_proveidor_id: null,
+    responsable_contacte_id: null, gestor_id: null, estat: 'pendent', grup_termini: grup,
+    venciment: o.venciment !== undefined ? o.venciment : og.venciment || vencimentPerGrup(grup || 'mig_termini').toISOString(),
+    inici: o.inici !== undefined ? o.inici : (iniciFutur(og) ? og.inici : null), origen_accio_id: og.id, es_peticio: false,
+    visible_client: o.visible !== undefined ? !!o.visible : !!og.visible_client, observacions_internes: o.internes !== undefined ? o.internes : og.observacions_internes || null };
+  const r = await sb.from('incidencia_accions').insert(dades).select('id').single(); if (r.error) throw r.error;
+  await eventInc(inc.id, r.data.id, 'nova_accio', nomTipus('traspassar') + ': «' + (!esNomTipus(dades.tipus, dades.titol) ? dades.titol : nomTipus(dades.tipus)) + '» → ' + nomTreballador(nou)
+    + (dades.inici ? ' · ' + textInici(dades) : '') + (dades.venciment ? ' · venç ' + dmyhm(dades.venciment) : ''), og.id);
+  await recarregaInc();
+  const o2 = C.get('incidencia_accions', og.id);
+  if (o2 && o2.actiu && o2.estat !== 'finalitzada') {
+    const abans = senseePassa(o2.resultat);   // (si hi havia tornat la feina, el que hi deia es conserva)
+    try { await finalitzaAccio(inc, o2, { resultat: (abans ? abans + ' · ' : '') + 'Passa a ' + nomTreballador(nou) + ': «' + nomTipus('traspassar') + '»', passa: true }); }
+    catch (e) { toastErr('S’ha traspassat, però «' + nomTipus(og.tipus) + '» no s’ha pogut finalitzar: ' + friendly(e)); }
+  }
+  await recarregaInc();
+  return { id: r.data.id, nou };
+}
+// el formulari de l'oficina (dins de «Nova acció»/«Deriva una acció»): a qui, i el que s'endú la caixa nova (per defecte, el de la d'ara)
+function formTraspasHTML(inc, origen, tipusPossibles) {
+  const f = state.inc.form;
+  if (f.trDe !== origen.id) Object.assign(f, { trDe: origen.id, titol: origen.titol || nomTipus(origen.tipus), desc: String(f.desc || '').trim() ? f.desc : origen.descripcio || '',
+    grup: origen.grup_termini || 'mig_termini', inici: iniciFutur(origen) ? aLocalDT(origen.inici) : '', venciment: origen.venciment ? aLocalDT(origen.venciment) : '',
+    visible: !!origen.visible_client, int: String(f.int || '').trim() ? f.int : origen.observacions_internes || '' });
+  const cands = candidatsTraspas(inc, origen), resp = cands.find(x => x.id === Number(f.resp)) || cands[0] || null;
+  const venc = f.venciment || aLocalDT(vencimentPerGrup(f.grup || 'mig_termini', f.inici ? new Date(f.inici) : undefined));
+  const nomOg = !esNomTipus(origen.tipus, origen.titol) ? origen.titol : nomTipus(origen.tipus);
+  return `<h3>${h(codiTipus('traspassar'))} · ${h(nomTipus('traspassar'))}</h3>
+    <p class="sub">«${h(nomOg)}» (ara la porta ${h(nomResponsable(origen))}) passa a un altre tècnic o a algú de l’oficina: aquesta caixa queda finalitzada i se’n fa una d’igual per a qui la rep, amb el mateix termini (si cal, el canvies).</p>
+    <div class="f"><span class="l">Tipus</span><select id="na-tipus">${tipusPossibles.map(k => `<option value="${k}" ${k === 'traspassar' ? 'selected' : ''}>${h(codiTipus(k))} · ${h(INC.tipus[k].nom)}</option>`).join('')}</select></div>
+    <input type="hidden" id="na-carril" value="${resp ? carrilDeResponsable(inc, resp.id) : 'tecnic'}">
+    <div class="f"><span class="l">A qui la traspasses</span>${cands.length ? `<select id="na-resp">${cands.map(x => `<option value="${x.id}" ${resp && resp.id === x.id ? 'selected' : ''}>${h(nomTreballador(x))}${x.id === Number(inc.seguidora_id) ? ' (seguidora)' : ''}</option>`).join('')}</select>` : '<p class="v-no">No hi ha cap altre tècnic ni ningú de l’oficina.</p>'}</div>
+    <div class="f"><span class="l">Títol</span><input type="text" id="na-titol" value="${h(f.titol || '')}"></div>
+    <div class="f"><span class="l">Descripció / instruccions</span><textarea lang="ca" spellcheck="true" id="na-desc">${h(f.desc || '')}</textarea><span class="hint">les de la caixa d’ara: hi pots afegir el que calgui per a qui la rep</span></div>
+    <div class="f"><span class="l">Es pot començar</span><input type="datetime-local" id="na-inici" value="${h(f.inici || '')}"><span class="hint">buit = de seguida</span></div>
+    <div class="f"><span class="l">Grup de termini</span><select id="na-grup">${INC.grups.map(g => `<option value="${g[0]}" ${g[0] === f.grup ? 'selected' : ''}>${h(g[1])}</option>`).join('')}</select></div>
+    <div class="f"><span class="l">Termini final (venciment)</span><input type="datetime-local" id="na-venc" value="${h(venc)}">${origen.venciment ? `<span class="hint">el que tenia: ${dmyhm(origen.venciment)}${foraTermini(origen) ? ' (ja ha passat)' : ''}</span>` : ''}</div>
+    <label class="chk" style="padding:0"><input type="checkbox" id="na-visible" ${f.visible ? 'checked' : ''}> Visible al client</label>
+    <div class="f"><span class="l">Observacions internes</span><textarea lang="ca" spellcheck="true" id="na-int">${h(f.int || '')}</textarea><span class="hint">${NOTA_INTERNES}</span></div>
+    ${resp ? `<p class="hint" style="margin:0">«${h(nomOg)}» quedarà finalitzada: la feina passa a ${h(nomTreballador(resp))}, i a la seva caixeta hi sortiran les inicials de qui l’ha traspassada.</p>` : ''}
+    <div class="actions"><button class="btn" id="na-ok" ${resp ? '' : 'disabled'}>Traspassa-la</button></div>`;
+}
+// a l'app (un tècnic, o l'oficina): el botó TRASPASSA-LA a la pantalla de la seva acció, o el formulari obert
+function traspasAppHTML(inc, a) {
+  const fo = state.inc.form && state.inc.form.tipus === 'traspas' && state.inc.form.accio === a.id ? state.inc.form : null;
+  if (!fo) return `<button type="button" class="boto-gran traspas" id="tr-obre">Traspassa-la a un tècnic o a l’oficina</button>`;
+  const cands = candidatsTraspas(inc, a);
+  return `<div class="ao-bloc ao-cons" id="tr-form">
+    <div class="ao-sobre"><span>${h(codiTipus('traspassar'))} · ${h(nomTipus('traspassar'))}</span></div>
+    <div class="f"><span class="l">A qui la traspasses</span>${cands.length ? `<select id="tr-resp">${cands.map(x => `<option value="${x.id}" ${Number(fo.resp) === x.id ? 'selected' : ''}>${h(nomTreballador(x))}${x.id === Number(inc.seguidora_id) ? ' (seguidora)' : ''}</option>`).join('')}</select>` : '<span class="v-no">No hi ha cap altre tècnic ni ningú de l’oficina.</span>'}</div>
+    <div class="f"><span class="l">Nota per a qui la rep (si cal)</span><textarea lang="ca" spellcheck="true" id="tr-nota">${h(fo.nota || '')}</textarea></div>
+    <p class="hint">La teva acció queda finalitzada i en surt una d’igual per a qui triïs, amb el mateix termini${a.venciment ? ' (' + dmyhm(a.venciment) + ')' : ''}; a la seva caixeta hi sortiran les teves inicials.</p>
+    <button type="button" class="boto-gran traspas" id="tr-ok" ${cands.length ? '' : 'disabled'}>Traspassa-la</button>
+    <a href="#" id="tr-cancel" class="ao-cancel">Cancel·la</a></div>`;
+}
+function bindTraspasApp(inc, a, main) {
+  const st = state.inc;
+  const ob = main.querySelector('#tr-obre'); if (ob) ob.addEventListener('click', e => { e.preventDefault(); st.form = { tipus: 'traspas', accio: a.id }; renderMain(); const s = $('#tr-form'); if (s && s.scrollIntoView) s.scrollIntoView({ block: 'center' }); });
+  const ca = main.querySelector('#tr-cancel'); if (ca) ca.addEventListener('click', e => { e.preventDefault(); st.form = null; renderMain(); });
+  const desa = () => { if (st.form && st.form.tipus === 'traspas') { const r = $('#tr-resp'), n = $('#tr-nota'); if (r) st.form.resp = r.value; if (n) st.form.nota = n.value; } };
+  const rs = main.querySelector('#tr-resp'); if (rs) rs.addEventListener('change', desa);
+  const nt = main.querySelector('#tr-nota'); if (nt) nt.addEventListener('input', desa);
+  const ok = main.querySelector('#tr-ok'); if (ok) ok.addEventListener('click', async () => {
+    desa(); const resp = Number(($('#tr-resp') || {}).value), nota = String(($('#tr-nota') || {}).value || '').trim();
+    if (!resp) { errorAo(main, 'Tria a qui la traspasses.', ok); return; }
+    ok.disabled = true;
+    try {
+      const t = trebInc(), desc = [a.descripcio || '', nota ? 'Nota de ' + nomCurtTreballador(t) + ': ' + nota : ''].filter(Boolean).join('\n\n') || null;
+      const r = await traspassaAccio(inc, a, { resp, descripcio: desc });
+      st.form = null; toast('Traspassada a ' + nomCurtTreballador(r.nou) + ': ara és seva. La teva queda finalitzada.', 6000); renderMain();
+    } catch (e) { ok.disabled = false; errorAo(main, friendly(e), ok); }
+  });
+}
+// (v65) la consulta al client (F2C) passa la feina al client: si surt d'una caixa teva oberta (del tècnic, de l'oficina o de la seguidora),
+// aquella caixa queda finalitzada, com quan es passa la feina a qualsevol altra persona; a la caixa del client hi surten les teves inicials (ets
+// qui en gestiona la resposta) i, quan contesta, la resposta et torna. Aquestes són les caixes d'on pot sortir (la més nova, primer).
+const origensConsultaClient = inc => { const t = trebInc(); return !t || !inc ? [] : accionsInc(inc).filter(x => Number(x.responsable_treballador_id) === t.id && activa(x) && !esReoberta(x)
+  && tancaOrigenEnPassar(x, { tipus: 'consulta_client', carril: 'client' })).sort((x, y) => String(y.creat_el || '').localeCompare(String(x.creat_el || '')) || y.id - x.id); };
+// la que es proposa: la de la pantalla (a l'app) o la que hi havia triada al diagrama; si no, la teva única caixa oberta
+function origenConsultaPerDefecte(inc, pref) {
+  const ogs = origensConsultaClient(inc);
+  if (pref != null && ogs.some(x => x.id === Number(pref))) return Number(pref);
+  return ogs.length === 1 ? ogs[0].id : null;
+}
+
 /* ---------- consulta al client: el tècnic o la seguidora (o l'oficina) pregunten o aclareixen alguna cosa al client, en qualsevol moment ----------
-   No atura cap feina: queda al carril del client, esperant. S'envia al client per WhatsApp o per correu (el text ja va preparat); quan contesta,
+   (v65) Si surt d'una caixa seva oberta, la feina passa al client i aquella caixa queda finalitzada; si no, no atura res. Queda al carril del
+   client, esperant. S'envia al client per WhatsApp o per correu (el text ja va preparat); quan contesta,
    qui l'ha feta (o la seguidora, o l'oficina) hi apunta la resposta, i la pregunta i la resposta queden juntes, a dalt de tot de l'historial. */
 function potConsultarClient(inc) {
   const t = trebInc();
@@ -13218,15 +13352,27 @@ function contactePerDefecte(inc) {
   const cs = contactesDelLloc(inc.lloc_id), aut = (inc.contactes_autoritzats || []).map(Number);
   return cs.find(c => aut.includes(c.id)) || cs.find(c => c.principal) || cs[0] || null;
 }
-async function creaConsultaClient(inc, contacteId, text) {
+async function creaConsultaClient(inc, contacteId, text, origenId) {
   const t = trebInc(), c = contacteId ? C.get('contactes', contacteId) : null;
+  // (v65) d'una caixa teva oberta: la feina passa al client i aquella caixa queda finalitzada (l'historial les lliga: desfer-la retira la consulta,
+  // i retirar la consulta la torna a obrir)
+  const og = origenId ? C.get('incidencia_accions', origenId) : null, tanca = !!og && Number(og.responsable_treballador_id) === t.id && tancaOrigenEnPassar(og, { tipus: 'consulta_client', carril: 'client' });
   const dades = { incidencia_id: inc.id, tipus: 'consulta_client', carril: 'client', titol: nomTipus('consulta_client'), descripcio: text, creat_per: t.id,
     responsable_treballador_id: null, responsable_proveidor_id: null, responsable_contacte_id: c ? c.id : null, gestor_id: t.id, estat: 'pendent', grup_termini: null, venciment: null, inici: null,
-    origen_accio_id: null, es_peticio: true, visible_client: true, adjunts: [] };
+    origen_accio_id: tanca ? og.id : null, es_peticio: true, visible_client: true, adjunts: [] };
   const r = await sb.from('incidencia_accions').insert(dades).select('id').single(); if (r.error) throw r.error;
-  await eventInc(inc.id, r.data.id, 'nova_accio', 'Consulta al client' + (c ? ' → ' + c.nom : '') + ': ' + String(text).slice(0, 160));
+  await eventInc(inc.id, r.data.id, 'nova_accio', 'Consulta al client' + (c ? ' → ' + c.nom : '') + ': ' + String(text).slice(0, 160), tanca ? og.id : undefined);
+  let tancada = null;
+  if (tanca) {
+    await recarregaInc(); const o2 = C.get('incidencia_accions', og.id);
+    if (o2 && o2.actiu && o2.estat !== 'finalitzada') {
+      const abans = senseePassa(o2.resultat);
+      try { await finalitzaAccio(inc, o2, { resultat: (abans ? abans + ' · ' : '') + 'Passa al client: «' + nomTipus('consulta_client') + '»' + (c ? ' → ' + c.nom : ''), passa: true }); tancada = o2; }
+      catch (e) { toastErr('La consulta s’ha apuntat, però «' + nomTipus(o2.tipus) + '» no s’ha pogut finalitzar: ' + friendly(e)); }
+    }
+  }
   await recarregaInc();
-  return r.data.id;
+  return { id: r.data.id, tancada };
 }
 // el missatge per enviar-la: la pregunta, la incidència i qui la fa (es pot retocar abans d'enviar-lo)
 function missatgeConsultaClient(inc, a) {
@@ -13243,26 +13389,31 @@ function enllacosConsultaClient(inc, a, gran) {
     + (c.email ? ` <a class="${cls}" href="${enllacMailto(c.email, m.assumpte, m.cos)}" title="${h(c.email)}">Envia per correu${c.nom ? ' a ' + h(c.nom) : ''}</a>` : '');
 }
 // el formulari (a l'app i a l'oficina): a qui i què
-function formConsultaClientHTML(inc) {
+function formConsultaClientHTML(inc, pref) {
   const fo = state.inc.form && state.inc.form.tipus === 'consulta_client' ? state.inc.form : {}, cs = contactesDelLloc(inc.lloc_id), def = fo.contacte || (contactePerDefecte(inc) || {}).id;
-  return `<div class="f"><span class="l">A qui</span>${cs.length ? `<select id="cc-contacte">${cs.map(c => `<option value="${c.id}" ${Number(def) === c.id ? 'selected' : ''}>${h(c.nom)}${c.carrec ? ' (' + h(c.carrec) + ')' : ''}</option>`).join('')}</select>` : '<span class="hint">Aquest lloc no té cap persona de contacte: la consulta queda apuntada per al client.</span>'}</div>
+  // (v65) de quina caixa teva surt (aquella queda finalitzada: la feina passa al client), o cap (una consulta a part)
+  const ogs = origensConsultaClient(inc), og = fo.origen !== undefined ? fo.origen : origenConsultaPerDefecte(inc, pref != null ? pref : fo.origenDef);
+  const triaOg = ogs.length ? `<div class="f"><span class="l">La teva acció</span><select id="cc-origen">${ogs.map(x => `<option value="${x.id}" ${Number(og) === x.id ? 'selected' : ''}>«${h(codiDe(x))} · ${h(!esNomTipus(x.tipus, x.titol) ? x.titol : nomTipus(x.tipus))}» queda finalitzada</option>`).join('')}<option value="" ${og ? '' : 'selected'}>Cap: és una consulta a part (no tanca res)</option></select><span class="hint">la feina passa al client: a la seva caixa hi sortiran les teves inicials i, quan contesti, la resposta et torna</span></div>` : '';
+  return `${triaOg}<div class="f"><span class="l">A qui</span>${cs.length ? `<select id="cc-contacte">${cs.map(c => `<option value="${c.id}" ${Number(def) === c.id ? 'selected' : ''}>${h(c.nom)}${c.carrec ? ' (' + h(c.carrec) + ')' : ''}</option>`).join('')}</select>` : '<span class="hint">Aquest lloc no té cap persona de contacte: la consulta queda apuntada per al client.</span>'}</div>
     <div class="f"><span class="l">Què vols preguntar o aclarir al client?</span><textarea lang="ca" spellcheck="true" id="cc-text">${h(fo.text || '')}</textarea><span class="hint">Després la podràs enviar per WhatsApp o per correu, amb el text ja preparat.</span></div>
     <button type="button" class="boto-gran client" id="cc-envia">Fes la consulta</button>`;
 }
 function bindFormConsultaClient(inc, cont, err) {
   const st = state.inc, env = cont.querySelector('#cc-envia'); if (!env) return;
+  const so = cont.querySelector('#cc-origen'); if (so) so.addEventListener('change', () => { if (st.form && st.form.tipus === 'consulta_client') st.form.origen = so.value ? Number(so.value) : null; });   // (v65)
   env.addEventListener('click', async () => {
     const text = (cont.querySelector('#cc-text').value || '').trim(), sel = cont.querySelector('#cc-contacte');
     if (!text) { err('Escriu què vols preguntar al client.', env); return; }
     env.disabled = true;
-    try { const id = await creaConsultaClient(inc, sel && sel.value ? Number(sel.value) : null, text); st.form = null; st.sel = id; toast('«' + nomTipus('consulta_client') + '» apuntada: ara envia-la per WhatsApp o per correu.', 6000); renderMain(); }
+    const so = cont.querySelector('#cc-origen');
+    try { const r = await creaConsultaClient(inc, sel && sel.value ? Number(sel.value) : null, text, so && so.value ? Number(so.value) : null); st.form = null; st.sel = r.id; toast('«' + nomTipus('consulta_client') + '» apuntada: ara envia-la per WhatsApp o per correu.' + (r.tancada ? ' «' + nomTipus(r.tancada.tipus) + '» queda finalitzada: ara espera el client.' : ''), 6000); renderMain(); }
     catch (e) { env.disabled = false; err(friendly(e), env); }
   });
 }
 // a l'app: el botó CONSULTA AL CLIENT, o el formulari obert
-function consultaClientAppHTML(inc) {
+function consultaClientAppHTML(inc, pref) {
   const fo = state.inc.form && state.inc.form.tipus === 'consulta_client';
-  return fo ? `<div class="ao-bloc ao-cons" id="cc-form">${formConsultaClientHTML(inc)}<a href="#" id="cc-cancel" class="ao-cancel">Cancel·la</a></div>` : `<button type="button" class="boto-gran client" id="cc-obre">${h(nomTipus('consulta_client'))}</button>`;
+  return fo ? `<div class="ao-bloc ao-cons" id="cc-form">${formConsultaClientHTML(inc, pref)}<a href="#" id="cc-cancel" class="ao-cancel">Cancel·la</a></div>` : `<button type="button" class="boto-gran client" id="cc-obre">${h(nomTipus('consulta_client'))}</button>`;
 }
 function bindConsultaClientApp(inc, main) {
   const st = state.inc;
@@ -13661,7 +13812,7 @@ function renderCalendariAccions(main) {
     cos = `${capDies}${setmanaHTML(items, dl, { setmana: true })}
       <div class="ca-llista"><h3>${delaSetmana.length} ${delaSetmana.length === 1 ? 'acció' : 'accions'} aquesta setmana</h3>${delaSetmana.map(x => `<div class="ic-targeta ${x.vencuda ? 'fora' : ''}" data-accio="${x.a.id}" style="border-left-color:${colorAccio(x.a.tipus)}"><b>${h(nomTipus(x.a.tipus))}</b>${!esNomTipus(x.a.tipus, x.a.titol) ? ' · ' + h(x.a.titol) : ''} · ${h(x.inc.numero)} ${h(x.inc.titol)}<br><span class="hint">${h(llocInc(x.inc).nom || '')} · ${h(nomResponsable(x.a))} · del ${dmy(x.inici)} ${x.a.venciment ? 'al ' + dmyhm(x.a.venciment) : '(sense termini)'}${x.vencuda ? ' · <b class="v-no">fora de termini</b>' : ''}${x.feta ? ' · finalitzada' : ''}</span></div>`).join('') || '<div class="empty">Cap acció en aquesta setmana.</div>'}</div>`;
   }
-  const tipusLlegenda = f => Object.keys(INC.tipus).filter(k => INC.tipus[k].fase === f && !['obrir', 'tancar', 'reobrir', 'visibilitat_client', 'assignar_seguidora'].includes(k) && (!INC.tipus[k].ocult || C.rows('incidencia_accions').some(a => a.actiu && a.tipus === k)));
+  const tipusLlegenda = f => Object.keys(INC.tipus).filter(k => INC.tipus[k].fase === f && !INC.tipus[k].funcio && !['obrir', 'tancar', 'reobrir', 'visibilitat_client', 'assignar_seguidora'].includes(k) && (!INC.tipus[k].ocult || C.rows('incidencia_accions').some(a => a.actiu && a.tipus === k)));
   const llegenda = [1, 2, 3, 4, 5, 6].filter(f => tipusLlegenda(f).length).map(f => `<span class="fase">F${f} ${h(INC.fases[f])}:</span>` + tipusLlegenda(f).map(k => `<span style="background:${colorAccio(k)}; color:${textSobre(colorAccio(k))}">${h(codiTipus(k))} ${h(INC.tipus[k].nom)}</span>`).join('')).join('<br>');
   main.innerHTML = `<h1>Calendari d’accions</h1>
     <p class="sub">${APP_NOMES_TASQUES ? 'Les teves accions (les que tens assignades, gestiones o has demanat): cada franja va de quan es va demanar fins al termini; un color per tipus. Toca una franja per veure què es demana.' : 'Cada franja és una acció, de quan es va demanar fins al termini; un color per tipus (una gamma per fase). Clica una franja per veure què es demana.'} Amb vora vermella, fora de termini; ratllades, sense termini (fins avui).</p>
